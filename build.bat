@@ -105,7 +105,7 @@ if not exist tests\bin mkdir tests\bin
 set TEST_FAILED=0
 for %%f in (tests\*.c) do (
     echo Compiling %%f...
-    gcc %%f -o tests\bin\%%~nf.exe %WARNING_FLAGS% -Wno-overlength-strings -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -lshcore
+    gcc %%f -o tests\bin\%%~nf.exe %WARNING_FLAGS% -Wno-overlength-strings -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -lshcore -lpropsys
     if !errorlevel! neq 0 (
         echo [Error] Failed to compile %%f
         set TEST_FAILED=1
