@@ -3471,6 +3471,212 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
     return 0;
 }
 
+static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerState *state, LPARAM l_param) {
+    POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+    RECT rc; GetClientRect(hwnd, &rc);
+    int icon_size = ABS(hg_g_current_font_size);
+    if (icon_size < SC(16)) icon_size = SC(16);
+
+    if (state->is_resizing && GetCapture() == hwnd) {
+        POINT cur_mouse; GetCursorPos(&cur_mouse);
+        int dw = cur_mouse.x - state->start_mouse.x;
+        int dh = cur_mouse.y - state->start_mouse.y;
+        int border = SC(HG_BORDER_THICKNESS);
+
+        int total_tasks = hg_g_window_count;
+        int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+        int total_items = total_tasks + total_shortcuts;
+        if (total_items <= 0) total_items = 1;
+
+        int cols = 1;
+        if (ABS(dh) > ABS(dw)) {
+            int new_height = (state->start_rect.bottom - state->start_rect.top) + dh;
+            if (new_height < SC(HG_MIN_WINDOW_HEIGHT)) new_height = SC(HG_MIN_WINDOW_HEIGHT);
+
+            int edit_height = SC(20);
+            if (hg_g_edit_msg_wnd && hg_g_main_font) {
+                HDC hdc = GetDC(hg_g_edit_msg_wnd);
+                if (hdc) {
+                    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
+                    TEXTMETRIC tm = {0};
+                    GetTextMetrics(hdc, &tm);
+                    edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
+                    SelectObject(hdc, old_font);
+                    ReleaseDC(hg_g_edit_msg_wnd, hdc);
+                }
+            }
+            int row_height = icon_size + SC(10);
+            int available_toolbar_h = new_height - (border * 2 + edit_height);
+            int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
+            if (target_rows < 1) target_rows = 1;
+            if (target_rows > total_items) target_rows = total_items;
+            cols = (total_items + target_rows - 1) / target_rows;
+        } else {
+            int new_width = (state->start_rect.right - state->start_rect.left) + dw;
+            if (new_width < SC(HG_MIN_WINDOW_WIDTH)) new_width = SC(HG_MIN_WINDOW_WIDTH);
+            int tb_width = new_width - (border * 2);
+            if (tb_width <= 0) tb_width = 1;
+            cols = get_items_per_row(tb_width, icon_size);
+        }
+        if (cols <= 0) cols = 1;
+
+        int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+        int req_w = exact_tb_width + border * 2;
+
+        int rows = (total_items + cols - 1) / cols;
+        if (rows <= 0) rows = 1;
+        int row_height = icon_size + SC(10);
+        int req_toolbar_height = SC(10) + rows * row_height;
+
+        int edit_height = SC(20);
+        if (hg_g_edit_msg_wnd && hg_g_main_font) {
+            HDC hdc = GetDC(hg_g_edit_msg_wnd);
+            if (hdc) {
+                HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
+                TEXTMETRIC tm = {0};
+                GetTextMetrics(hdc, &tm);
+                edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
+                SelectObject(hdc, old_font);
+                ReleaseDC(hg_g_edit_msg_wnd, hdc);
+            }
+        }
+        int req_h = border * 2 + edit_height + req_toolbar_height;
+
+        SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, req_w, req_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        return 0;
+    }
+
+    if (state->is_moving_taskbox && GetCapture() == hwnd) {
+        POINT cur_mouse;
+        GetCursorPos(&cur_mouse);
+        int dx = cur_mouse.x - state->start_mouse.x;
+        int dy = cur_mouse.y - state->start_mouse.y;
+        if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+            SetWindowPos(hg_g_taskbox_wnd, NULL,
+                         state->start_rect.left + dx,
+                         state->start_rect.top + dy,
+                         0, 0,
+                         SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        return 0;
+    }
+
+    int cur_type = -1, cur_index = -1;
+    get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index);
+
+    if (hg_g_drag_source_index != -1 && !hg_g_is_dragging && GetCapture() == hwnd && state->pressed_type == 0) {
+        if (ABS(pt.x - hg_g_drag_start_pt.x) > GetSystemMetrics(SM_CXDRAG) ||
+            ABS(pt.y - hg_g_drag_start_pt.y) > GetSystemMetrics(SM_CYDRAG)) {
+            hg_g_is_dragging = TRUE;
+        }
+    }
+
+    if (hg_g_is_dragging && hg_g_drag_source_index != -1) {
+        hg_g_drag_current_pt = pt;
+        if (cur_type == 0 && cur_index != -1) {
+            hg_g_drag_target_index = cur_index;
+        } else if (cur_type == -1 || cur_type == 1) {
+            hg_g_drag_target_index = -1;
+        }
+        InvalidateRect(hwnd, NULL, FALSE);
+    } else if (cur_type != state->hovered_type || cur_index != state->hovered_index) {
+        state->hovered_type = cur_type;
+        state->hovered_index = cur_index;
+        update_focus_message(state->hovered_type, state->hovered_index);
+        InvalidateRect(hwnd, NULL, FALSE);
+    }
+
+    TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, hwnd, 0 };
+    TrackMouseEvent(&tme);
+    return 0;
+}
+
+static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerState *state, LPARAM l_param) {
+    if (state->is_resizing) {
+        state->is_resizing = FALSE;
+        state->pressed_type = -1;
+        state->pressed_index = -1;
+        ReleaseCapture();
+        InvalidateRect(hwnd, NULL, FALSE);
+
+        /* 크기 조절 완료 시 불필요한 우측 여백을 제거하고 정확하게 스냅되도록 함 */
+        RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
+        int icon_size = ABS(hg_g_current_font_size);
+        if (icon_size < SC(16)) icon_size = SC(16);
+        int border = SC(HG_BORDER_THICKNESS);
+        int tb_width = (rc.right - rc.left) - border * 2;
+        int cols = get_items_per_row(tb_width, icon_size);
+        int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+        int new_w = exact_tb_width + border * 2;
+        SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+        GetWindowRect(hg_g_taskbox_wnd, &rc);
+        save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+    } else if (state->is_moving_taskbox) {
+        state->is_moving_taskbox = FALSE;
+        state->pressed_type = -1;
+        state->pressed_index = -1;
+        ReleaseCapture();
+        InvalidateRect(hwnd, NULL, FALSE);
+
+        RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
+        save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+    } else if (hg_g_drag_source_index != -1) {
+        BOOL was_dragging = hg_g_is_dragging;
+        int final_source = hg_g_drag_source_index;
+        int final_target = hg_g_drag_target_index;
+        hg_g_drag_source_index = -1;
+        hg_g_drag_target_index = -1;
+        state->pressed_type = -1;
+        state->pressed_index = -1;
+        hg_g_is_dragging = FALSE;
+        ReleaseCapture();
+        InvalidateRect(hwnd, NULL, FALSE);
+
+        if (!was_dragging) {
+            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+            RECT rc; GetClientRect(hwnd, &rc);
+            int icon_size = ABS(hg_g_current_font_size);
+            if (icon_size < SC(16)) icon_size = SC(16);
+            int cur_type = -1, cur_index = -1;
+            if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
+                if (cur_type == 0 && cur_index == final_source) {
+                    activate_taskbar_item(cur_index);
+                }
+            }
+        } else {
+            if (final_target != -1 && final_target != final_source) {
+                 WindowItem temp = hg_g_window_items[final_source];
+                 if (final_source < final_target) {
+                     for (int i = final_source; i < final_target; i++) {
+                         hg_g_window_items[i] = hg_g_window_items[i + 1];
+                     }
+                 } else {
+                     for (int i = final_source; i > final_target; i--) {
+                         hg_g_window_items[i] = hg_g_window_items[i - 1];
+                     }
+                 }
+                 hg_g_window_items[final_target] = temp;
+                 hg_g_toolbar_focus_index = final_target;
+                 update_toolbar_tooltips(hwnd);
+            }
+        }
+    } else if (state->pressed_type == 1 && state->pressed_index != -1) {
+        int cur_index = state->pressed_index;
+        state->pressed_type = -1;
+        state->pressed_index = -1;
+        ReleaseCapture();
+        InvalidateRect(hwnd, NULL, FALSE);
+        activate_toolbar_item(cur_index);
+    } else {
+        state->pressed_type = -1;
+        state->pressed_index = -1;
+        ReleaseCapture();
+        InvalidateRect(hwnd, NULL, FALSE);
+    }
+    return 0;
+}
+
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
     static int hovered_type = -1, hovered_index = -1;
     static int pressed_type = -1, pressed_index = -1;
@@ -3508,6 +3714,8 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 
             int cur_type = -1, cur_index = -1;
             if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
+                hovered_type = cur_type;
+                hovered_index = cur_index;
                 hg_g_focus_area = cur_type;
                 pressed_type = cur_type;
                 pressed_index = cur_index;
@@ -3531,209 +3739,52 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             return 0;
         }
         case WM_MOUSEMOVE: {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            RECT rc; GetClientRect(hwnd, &rc);
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
-
-            if (is_resizing && GetCapture() == hwnd) {
-                POINT cur_mouse; GetCursorPos(&cur_mouse);
-                int dw = cur_mouse.x - start_mouse.x;
-                int dh = cur_mouse.y - start_mouse.y;
-                int border = SC(HG_BORDER_THICKNESS);
-
-                int total_tasks = hg_g_window_count;
-                int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-                int total_items = total_tasks + total_shortcuts;
-                if (total_items <= 0) total_items = 1;
-
-                int cols = 1;
-                if (ABS(dh) > ABS(dw)) {
-                    int new_height = (start_rect.bottom - start_rect.top) + dh;
-                    if (new_height < SC(HG_MIN_WINDOW_HEIGHT)) new_height = SC(HG_MIN_WINDOW_HEIGHT);
-
-                    int edit_height = SC(20);
-                    if (hg_g_edit_msg_wnd && hg_g_main_font) {
-                        HDC hdc = GetDC(hg_g_edit_msg_wnd);
-                        if (hdc) {
-                            HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                            TEXTMETRIC tm = {0};
-                            GetTextMetrics(hdc, &tm);
-                            edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
-                            SelectObject(hdc, old_font);
-                            ReleaseDC(hg_g_edit_msg_wnd, hdc);
-                        }
-                    }
-                    int row_height = icon_size + SC(10);
-                    int available_toolbar_h = new_height - (border * 2 + edit_height);
-                    int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
-                    if (target_rows < 1) target_rows = 1;
-                    if (target_rows > total_items) target_rows = total_items;
-                    cols = (total_items + target_rows - 1) / target_rows;
-                } else {
-                    int new_width = (start_rect.right - start_rect.left) + dw;
-                    if (new_width < SC(HG_MIN_WINDOW_WIDTH)) new_width = SC(HG_MIN_WINDOW_WIDTH);
-                    int tb_width = new_width - (border * 2);
-                    if (tb_width <= 0) tb_width = 1;
-                    cols = get_items_per_row(tb_width, icon_size);
-                }
-                if (cols <= 0) cols = 1;
-
-                int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-                int req_w = exact_tb_width + border * 2;
-
-                int rows = (total_items + cols - 1) / cols;
-                if (rows <= 0) rows = 1;
-                int row_height = icon_size + SC(10);
-                int req_toolbar_height = SC(10) + rows * row_height;
-
-                int edit_height = SC(20);
-                if (hg_g_edit_msg_wnd && hg_g_main_font) {
-                    HDC hdc = GetDC(hg_g_edit_msg_wnd);
-                    if (hdc) {
-                        HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                        TEXTMETRIC tm = {0};
-                        GetTextMetrics(hdc, &tm);
-                        edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
-                        SelectObject(hdc, old_font);
-                        ReleaseDC(hg_g_edit_msg_wnd, hdc);
-                    }
-                }
-
-                int req_h = border * 2 + edit_height + req_toolbar_height;
-
-                SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, req_w, req_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                return 0;
-            }
-
-            if (is_moving_taskbox && GetCapture() == hwnd) {
-                POINT cur_mouse;
-                GetCursorPos(&cur_mouse);
-                int dx = cur_mouse.x - start_mouse.x;
-                int dy = cur_mouse.y - start_mouse.y;
-                if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
-                    SetWindowPos(hg_g_taskbox_wnd, NULL,
-                                 start_rect.left + dx,
-                                 start_rect.top + dy,
-                                 0, 0,
-                                 SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-                }
-                return 0;
-            }
-
-            int cur_type = -1, cur_index = -1;
-            get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index);
-
-            if (hg_g_drag_source_index != -1 && !hg_g_is_dragging && GetCapture() == hwnd && pressed_type == 0) {
-                if (ABS(pt.x - hg_g_drag_start_pt.x) > GetSystemMetrics(SM_CXDRAG) ||
-                    ABS(pt.y - hg_g_drag_start_pt.y) > GetSystemMetrics(SM_CYDRAG)) {
-                    hg_g_is_dragging = TRUE;
-                }
-            }
-
-            if (hg_g_is_dragging && hg_g_drag_source_index != -1) {
-                hg_g_drag_current_pt = pt;
-                if (cur_type == 0 && cur_index != -1) {
-                    hg_g_drag_target_index = cur_index;
-                } else if (cur_type == -1 || cur_type == 1) {
-                    hg_g_drag_target_index = -1;
-                }
-                InvalidateRect(hwnd, NULL, FALSE);
-            } else if (cur_type != hovered_type || cur_index != hovered_index) {
-                hovered_type = cur_type;
-                hovered_index = cur_index;
-                update_focus_message(hovered_type, hovered_index);
-                InvalidateRect(hwnd, NULL, FALSE);
-            }
-
-            TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, hwnd, 0 };
-            TrackMouseEvent(&tme);
-            break;
+            ToolbarControllerState state = {
+                hovered_type,
+                hovered_index,
+                pressed_type,
+                pressed_index,
+                cached_icon_size,
+                is_resizing,
+                is_moving_taskbox,
+                start_mouse,
+                start_rect
+            };
+            LRESULT result = toolbar_controller_on_mouse_move(hwnd, &state, l_param);
+            hovered_type = state.hovered_type;
+            hovered_index = state.hovered_index;
+            pressed_type = state.pressed_type;
+            pressed_index = state.pressed_index;
+            cached_icon_size = state.cached_icon_size;
+            is_resizing = state.is_resizing;
+            is_moving_taskbox = state.is_moving_taskbox;
+            start_mouse = state.start_mouse;
+            start_rect = state.start_rect;
+            return result;
         }
         case WM_LBUTTONUP: {
-            if (is_resizing) {
-                is_resizing = FALSE;
-                pressed_type = -1;
-                pressed_index = -1;
-                ReleaseCapture();
-                InvalidateRect(hwnd, NULL, FALSE);
-
-                /* 크기 조절 완료 시 불필요한 우측 여백을 제거하고 정확하게 스냅되도록 함 */
-                RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
-                int icon_size = ABS(hg_g_current_font_size);
-                if (icon_size < SC(16)) icon_size = SC(16);
-                int border = SC(HG_BORDER_THICKNESS);
-                int tb_width = (rc.right - rc.left) - border * 2;
-                int cols = get_items_per_row(tb_width, icon_size);
-                int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-                int new_w = exact_tb_width + border * 2;
-                SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-
-                GetWindowRect(hg_g_taskbox_wnd, &rc);
-                save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
-            } else if (is_moving_taskbox) {
-                is_moving_taskbox = FALSE;
-                pressed_type = -1;
-                pressed_index = -1;
-                ReleaseCapture();
-                InvalidateRect(hwnd, NULL, FALSE);
-
-                RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
-                save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
-            } else if (hg_g_drag_source_index != -1) {
-                BOOL was_dragging = hg_g_is_dragging;
-                int final_source = hg_g_drag_source_index;
-                int final_target = hg_g_drag_target_index;
-                hg_g_drag_source_index = -1;
-                hg_g_drag_target_index = -1;
-                pressed_type = -1;
-                pressed_index = -1;
-                hg_g_is_dragging = FALSE;
-                ReleaseCapture();
-                InvalidateRect(hwnd, NULL, FALSE);
-
-                if (!was_dragging) {
-                    POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-                    RECT rc; GetClientRect(hwnd, &rc);
-                    int icon_size = ABS(hg_g_current_font_size);
-                    if (icon_size < SC(16)) icon_size = SC(16);
-                    int cur_type = -1, cur_index = -1;
-                    if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
-                        if (cur_type == 0 && cur_index == final_source) {
-                            activate_taskbar_item(cur_index);
-                        }
-                    }
-                } else {
-                    if (final_target != -1 && final_target != final_source) {
-                         WindowItem temp = hg_g_window_items[final_source];
-                         if (final_source < final_target) {
-                             for (int i = final_source; i < final_target; i++) {
-                                 hg_g_window_items[i] = hg_g_window_items[i + 1];
-                             }
-                         } else {
-                             for (int i = final_source; i > final_target; i--) {
-                                 hg_g_window_items[i] = hg_g_window_items[i - 1];
-                             }
-                         }
-                         hg_g_window_items[final_target] = temp;
-                         hg_g_toolbar_focus_index = final_target;
-                         update_toolbar_tooltips(hwnd);
-                    }
-                }
-            } else if (pressed_type == 1 && pressed_index != -1) {
-                int cur_index = pressed_index;
-                pressed_type = -1;
-                pressed_index = -1;
-                ReleaseCapture();
-                InvalidateRect(hwnd, NULL, FALSE);
-                activate_toolbar_item(cur_index);
-            } else {
-                pressed_type = -1;
-                pressed_index = -1;
-                ReleaseCapture();
-                InvalidateRect(hwnd, NULL, FALSE);
-            }
-            return 0;
+            ToolbarControllerState state = {
+                hovered_type,
+                hovered_index,
+                pressed_type,
+                pressed_index,
+                cached_icon_size,
+                is_resizing,
+                is_moving_taskbox,
+                start_mouse,
+                start_rect
+            };
+            LRESULT result = toolbar_controller_on_lbutton_up(hwnd, &state, l_param);
+            hovered_type = state.hovered_type;
+            hovered_index = state.hovered_index;
+            pressed_type = state.pressed_type;
+            pressed_index = state.pressed_index;
+            cached_icon_size = state.cached_icon_size;
+            is_resizing = state.is_resizing;
+            is_moving_taskbox = state.is_moving_taskbox;
+            start_mouse = state.start_mouse;
+            start_rect = state.start_rect;
+            return result;
         }
         case WM_RBUTTONUP: {
             RECT rc; GetClientRect(hwnd, &rc);
