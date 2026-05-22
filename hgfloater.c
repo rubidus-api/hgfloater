@@ -3677,6 +3677,230 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
     return 0;
 }
 
+static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, int cur_index, int icon_size, LPARAM l_param, POINT *screen_pt) {
+    if (!screen_pt) return FALSE;
+
+    if (l_param == 0) {
+        RECT rc;
+        RECT rc_item;
+        GetClientRect(hwnd, &rc);
+        get_toolbar_item_rect(cur_type, cur_index, rc.right, rc.bottom, icon_size, &rc_item);
+        screen_pt->x = rc_item.left;
+        screen_pt->y = rc_item.top;
+        ClientToScreen(hwnd, screen_pt);
+    } else {
+        GetCursorPos(screen_pt);
+    }
+
+    return TRUE;
+}
+
+static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param) {
+    HWND target = hg_g_window_items[cur_index].hwnd;
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu) return;
+
+    /* Windows: Focus only (remove Run) */
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESTORE, L"Focus (&F)");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_MOVETO_0_0, L"Move to (0, 0) (&0)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_CLOSE, L"Close Window (&X)");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_1, L"640x480 (&A)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_2, L"800x600 (&S)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_3, L"1280x960 (&D)");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_1, L"640x360 (&Q)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_2, L"800x480 (&W)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_3, L"960x540 (&E)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_4, L"1280x720 (&R)");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_1, L"360x640 (&1)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_2, L"480x800 (&2)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_3, L"540x960 (&3)");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_4, L"720x1280 (&4)");
+
+    POINT screen_pt;
+    if (!toolbar_controller_get_context_menu_point(hwnd, 0, cur_index, icon_size, l_param, &screen_pt)) {
+        DestroyMenu(h_menu);
+        return;
+    }
+
+    SetMenuDefaultItem(h_menu, HG_IDM_TASK_RESTORE, FALSE);
+    int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
+
+    if (cmd == HG_IDM_TASK_RESTORE) {
+        activate_taskbar_item(cur_index);
+    } else if (cmd == HG_IDM_TASK_CLOSE) {
+        PostMessageW(target, WM_CLOSE, 0, 0);
+    } else if (cmd == HG_IDM_TASK_MOVETO_0_0) {
+        SetWindowPos(target, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    } else if (cmd >= HG_IDM_TASK_RESIZE_4_3_1 && cmd <= HG_IDM_TASK_RESIZE_9_16_4) {
+        int cx = 0, cy = 0;
+        switch (cmd) {
+            case HG_IDM_TASK_RESIZE_4_3_1: cx = 640; cy = 480; break;
+            case HG_IDM_TASK_RESIZE_4_3_2: cx = 800; cy = 600; break;
+            case HG_IDM_TASK_RESIZE_4_3_3: cx = 1280; cy = 960; break;
+            case HG_IDM_TASK_RESIZE_16_9_1: cx = 640; cy = 360; break;
+            case HG_IDM_TASK_RESIZE_16_9_2: cx = 800; cy = 480; break;
+            case HG_IDM_TASK_RESIZE_16_9_3: cx = 960; cy = 540; break;
+            case HG_IDM_TASK_RESIZE_16_9_4: cx = 1280; cy = 720; break;
+            case HG_IDM_TASK_RESIZE_9_16_1: cx = 360; cy = 640; break;
+            case HG_IDM_TASK_RESIZE_9_16_2: cx = 480; cy = 800; break;
+            case HG_IDM_TASK_RESIZE_9_16_3: cx = 540; cy = 960; break;
+            case HG_IDM_TASK_RESIZE_9_16_4: cx = 720; cy = 1280; break;
+        }
+        if (cx > 0 && cy > 0) {
+            SetWindowPos(target, NULL, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+    }
+
+    DestroyMenu(h_menu);
+}
+
+static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param) {
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu) return;
+
+    /* Shortcuts: Run only (remove Focus) */
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_RUN, L"Run (&R)");
+    if (cur_index >= HG_NUM_BASIC_ICONS) {
+        AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_OPEN_DIR, L"Open File Location (&O)");
+    }
+
+    POINT screen_pt;
+    if (!toolbar_controller_get_context_menu_point(hwnd, 1, cur_index, icon_size, l_param, &screen_pt)) {
+        DestroyMenu(h_menu);
+        return;
+    }
+
+    SetMenuDefaultItem(h_menu, HG_IDM_SHORTCUT_RUN, FALSE);
+    int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
+
+    if ((UINT)cmd == HG_IDM_SHORTCUT_RUN) {
+        activate_toolbar_item(cur_index);
+    } else if ((UINT)cmd == HG_IDM_SHORTCUT_OPEN_DIR) {
+        int s_idx = cur_index - HG_NUM_BASIC_ICONS;
+        if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
+            PIDLIST_ABSOLUTE pidl = ILCreateFromPathW(hg_g_shortcuts[s_idx].path);
+            if (pidl) {
+                SHOpenFolderAndSelectItems(pidl, 0, NULL, 0);
+                ILFree(pidl);
+            }
+        }
+    }
+
+    DestroyMenu(h_menu);
+}
+
+static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerState *state, LPARAM l_param) {
+    POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+
+    int icon_size = ABS(hg_g_current_font_size);
+    if (icon_size < SC(16)) icon_size = SC(16);
+
+    int cur_type = -1, cur_index = -1;
+    if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
+        state->hovered_type = cur_type;
+        state->hovered_index = cur_index;
+        hg_g_focus_area = cur_type;
+        state->pressed_type = cur_type;
+        state->pressed_index = cur_index;
+
+        if (cur_type == 1 && cur_index == 0) { // Resize Drag Tool
+            state->is_resizing = TRUE;
+            GetCursorPos(&state->start_mouse);
+            GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
+        } else if (cur_type == 1 && cur_index == 1) { // Move Drag Tool
+            state->is_moving_taskbox = TRUE;
+            GetCursorPos(&state->start_mouse);
+            GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
+        } else if (cur_type == 0) { // Task drag start
+            hg_g_is_dragging = FALSE;
+            hg_g_drag_source_index = cur_index;
+            hg_g_drag_start_pt = pt;
+        }
+        InvalidateRect(hwnd, NULL, FALSE);
+        SetCapture(hwnd);
+    }
+    return 0;
+}
+
+static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param) {
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+
+    int icon_size = ABS(hg_g_current_font_size);
+    if (icon_size < SC(16)) icon_size = SC(16);
+
+    int cur_type = -1, cur_index = -1;
+    if (l_param == 0) {
+        cur_type = hg_g_focus_area;
+        cur_index = hg_g_toolbar_focus_index;
+    } else {
+        POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+        get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index);
+    }
+
+    if (cur_type == 0 && cur_index != -1) {
+        toolbar_controller_show_task_context_menu(hwnd, cur_index, icon_size, l_param);
+    } else if (cur_type == 1 && cur_index != -1) {
+        toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
+    }
+
+    return 0;
+}
+
+static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param) {
+    POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+
+    int icon_size = ABS(hg_g_current_font_size);
+    if (icon_size < SC(16)) icon_size = SC(16);
+
+    int cur_type = -1, cur_index = -1;
+    if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
+        if (cur_type == 0) {
+            HWND target = hg_g_window_items[cur_index].hwnd;
+            if (IsWindow(target)) {
+                PostMessageW(target, WM_CLOSE, 0, 0);
+            }
+        }
+    }
+    return 0;
+}
+
+static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerState *state) {
+    state->hovered_type = -1;
+    state->hovered_index = -1;
+    if (!state->is_resizing && !state->is_moving_taskbox && !hg_g_is_dragging) {
+        state->pressed_type = -1;
+        state->pressed_index = -1;
+        ReleaseCapture();
+    }
+    update_focus_message(-1, -1);
+    InvalidateRect(hwnd, NULL, FALSE);
+    return 0;
+}
+
+static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param) {
+    if (LOWORD(w_param) & MK_CONTROL) {
+        short delta = (short)HIWORD(w_param);
+        update_size(delta > 0 ? 1 : -1);
+        return 0;
+    }
+    if (GetKeyState(VK_MENU) < 0) {
+        return SendMessageW(GetParent(hwnd), WM_MOUSEWHEEL, w_param, l_param);
+    }
+    return 0;
+}
+
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
     static int hovered_type = -1, hovered_index = -1;
     static int pressed_type = -1, pressed_index = -1;
@@ -3707,36 +3931,28 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             return 0;
         }
         case WM_LBUTTONDOWN: {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            RECT rc; GetClientRect(hwnd, &rc);
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
-
-            int cur_type = -1, cur_index = -1;
-            if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
-                hovered_type = cur_type;
-                hovered_index = cur_index;
-                hg_g_focus_area = cur_type;
-                pressed_type = cur_type;
-                pressed_index = cur_index;
-
-                if (cur_type == 1 && cur_index == 0) { // Resize Drag Tool
-                    is_resizing = TRUE;
-                    GetCursorPos(&start_mouse);
-                    GetWindowRect(hg_g_taskbox_wnd, &start_rect);
-                } else if (cur_type == 1 && cur_index == 1) { // Move Drag Tool
-                    is_moving_taskbox = TRUE;
-                    GetCursorPos(&start_mouse);
-                    GetWindowRect(hg_g_taskbox_wnd, &start_rect);
-                } else if (cur_type == 0) { // Task drag start
-                    hg_g_is_dragging = FALSE;
-                    hg_g_drag_source_index = cur_index;
-                    hg_g_drag_start_pt = pt;
-                }
-                InvalidateRect(hwnd, NULL, FALSE);
-                SetCapture(hwnd);
-            }
-            return 0;
+            ToolbarControllerState state = {
+                hovered_type,
+                hovered_index,
+                pressed_type,
+                pressed_index,
+                cached_icon_size,
+                is_resizing,
+                is_moving_taskbox,
+                start_mouse,
+                start_rect
+            };
+            LRESULT result = toolbar_controller_on_lbutton_down(hwnd, &state, l_param);
+            hovered_type = state.hovered_type;
+            hovered_index = state.hovered_index;
+            pressed_type = state.pressed_type;
+            pressed_index = state.pressed_index;
+            cached_icon_size = state.cached_icon_size;
+            is_resizing = state.is_resizing;
+            is_moving_taskbox = state.is_moving_taskbox;
+            start_mouse = state.start_mouse;
+            start_rect = state.start_rect;
+            return result;
         }
         case WM_MOUSEMOVE: {
             ToolbarControllerState state = {
@@ -3786,169 +4002,36 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             start_rect = state.start_rect;
             return result;
         }
-        case WM_RBUTTONUP: {
-            RECT rc; GetClientRect(hwnd, &rc);
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
-            int cur_type = -1, cur_index = -1;
-
-            if (l_param == 0) {
-                /* Keyboard trigger: use current focus */
-                cur_type = hg_g_focus_area;
-                cur_index = hg_g_toolbar_focus_index;
-            } else {
-                /* Mouse trigger: use coordinates */
-                POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-                get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index);
-            }
-
-            if (cur_type != -1 && cur_index != -1) {
-                if (cur_type == 0) {
-                    HWND target = hg_g_window_items[cur_index].hwnd;
-                    HMENU h_menu = CreatePopupMenu();
-                    if (h_menu) {
-                        /* Windows: Focus only (remove Run) */
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESTORE, L"Focus (&F)");
-                        AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_MOVETO_0_0, L"Move to (0, 0) (&0)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_CLOSE, L"Close Window (&X)");
-                        AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_1, L"640x480 (&A)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_2, L"800x600 (&S)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_3, L"1280x960 (&D)");
-                        AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_1, L"640x360 (&Q)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_2, L"800x480 (&W)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_3, L"960x540 (&E)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_4, L"1280x720 (&R)");
-                        AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_1, L"360x640 (&1)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_2, L"480x800 (&2)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_3, L"540x960 (&3)");
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_4, L"720x1280 (&4)");
-
-                        POINT screen_pt;
-                        if (l_param == 0) {
-                            RECT rc_item;
-                            get_toolbar_item_rect(0, cur_index, rc.right, rc.bottom, icon_size, &rc_item);
-                            screen_pt.x = rc_item.left; screen_pt.y = rc_item.top;
-                            ClientToScreen(hwnd, &screen_pt);
-                        } else {
-                            GetCursorPos(&screen_pt);
-                        }
-
-                        SetMenuDefaultItem(h_menu, HG_IDM_TASK_RESTORE, FALSE);
-                        int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
-
-                        if (cmd == HG_IDM_TASK_RESTORE) {
-                            activate_taskbar_item(cur_index);
-                        } else if (cmd == HG_IDM_TASK_CLOSE) {
-                            PostMessageW(target, WM_CLOSE, 0, 0);
-                        } else if (cmd == HG_IDM_TASK_MOVETO_0_0) {
-                            SetWindowPos(target, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-                        } else if (cmd >= HG_IDM_TASK_RESIZE_4_3_1 && cmd <= HG_IDM_TASK_RESIZE_9_16_4) {
-                            int cx = 0, cy = 0;
-                            switch (cmd) {
-                                case HG_IDM_TASK_RESIZE_4_3_1: cx = 640; cy = 480; break;
-                                case HG_IDM_TASK_RESIZE_4_3_2: cx = 800; cy = 600; break;
-                                case HG_IDM_TASK_RESIZE_4_3_3: cx = 1280; cy = 960; break;
-                                case HG_IDM_TASK_RESIZE_16_9_1: cx = 640; cy = 360; break;
-                                case HG_IDM_TASK_RESIZE_16_9_2: cx = 800; cy = 480; break;
-                                case HG_IDM_TASK_RESIZE_16_9_3: cx = 960; cy = 540; break;
-                                case HG_IDM_TASK_RESIZE_16_9_4: cx = 1280; cy = 720; break;
-                                case HG_IDM_TASK_RESIZE_9_16_1: cx = 360; cy = 640; break;
-                                case HG_IDM_TASK_RESIZE_9_16_2: cx = 480; cy = 800; break;
-                                case HG_IDM_TASK_RESIZE_9_16_3: cx = 540; cy = 960; break;
-                                case HG_IDM_TASK_RESIZE_9_16_4: cx = 720; cy = 1280; break;
-                            }
-                            if (cx > 0 && cy > 0) {
-                                SetWindowPos(target, NULL, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                            }
-                        }
-                        DestroyMenu(h_menu);
-                    }
-                } else if (cur_type == 1) {
-                    HMENU h_menu = CreatePopupMenu();
-                    if (h_menu) {
-                        /* Shortcuts: Run only (remove Focus) */
-                        AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_RUN, L"Run (&R)");
-                        if (cur_index >= HG_NUM_BASIC_ICONS) {
-                            AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_OPEN_DIR, L"Open File Location (&O)");
-                        }
-
-                        POINT screen_pt;
-                        if (l_param == 0) {
-                            RECT rc_item;
-                            get_toolbar_item_rect(1, cur_index, rc.right, rc.bottom, icon_size, &rc_item);
-                            screen_pt.x = rc_item.left; screen_pt.y = rc_item.top;
-                            ClientToScreen(hwnd, &screen_pt);
-                        } else {
-                            GetCursorPos(&screen_pt);
-                        }
-
-                        SetMenuDefaultItem(h_menu, HG_IDM_SHORTCUT_RUN, FALSE);
-                        int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
-
-                        if ((UINT)cmd == HG_IDM_SHORTCUT_RUN) {
-                            activate_toolbar_item(cur_index);
-                        } else if ((UINT)cmd == HG_IDM_SHORTCUT_OPEN_DIR) {
-                            int s_idx = cur_index - HG_NUM_BASIC_ICONS;
-                            if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
-                                PIDLIST_ABSOLUTE pidl = ILCreateFromPathW(hg_g_shortcuts[s_idx].path);
-                                if (pidl) {
-                                    SHOpenFolderAndSelectItems(pidl, 0, NULL, 0);
-                                    ILFree(pidl);
-                                }
-                            }
-                        }
-                        DestroyMenu(h_menu);
-                    }
-                }
-            }
-            return 0;
-        }
-        case WM_MBUTTONUP: {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            RECT rc; GetClientRect(hwnd, &rc);
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
-            int cur_type = -1, cur_index = -1;
-            if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
-                if (cur_type == 0) {
-                    HWND target = hg_g_window_items[cur_index].hwnd;
-                    if (IsWindow(target)) {
-                        PostMessageW(target, WM_CLOSE, 0, 0);
-                    }
-                }
-            }
-            return 0;
-        }
+        case WM_RBUTTONUP:
+            return toolbar_controller_on_rbutton_up(hwnd, l_param);
+        case WM_MBUTTONUP:
+            return toolbar_controller_on_mbutton_up(hwnd, l_param);
         case WM_MOUSELEAVE: {
-            hovered_type = -1;
-            hovered_index = -1;
-            if (!is_resizing && !is_moving_taskbox && !hg_g_is_dragging) {
-                pressed_type = -1;
-                pressed_index = -1;
-                ReleaseCapture();
-            }
-            update_focus_message(-1, -1);
-            InvalidateRect(hwnd, NULL, FALSE);
-            return 0;
+            ToolbarControllerState state = {
+                hovered_type,
+                hovered_index,
+                pressed_type,
+                pressed_index,
+                cached_icon_size,
+                is_resizing,
+                is_moving_taskbox,
+                start_mouse,
+                start_rect
+            };
+            LRESULT result = toolbar_controller_on_mouse_leave(hwnd, &state);
+            hovered_type = state.hovered_type;
+            hovered_index = state.hovered_index;
+            pressed_type = state.pressed_type;
+            pressed_index = state.pressed_index;
+            cached_icon_size = state.cached_icon_size;
+            is_resizing = state.is_resizing;
+            is_moving_taskbox = state.is_moving_taskbox;
+            start_mouse = state.start_mouse;
+            start_rect = state.start_rect;
+            return result;
         }
-        case WM_MOUSEWHEEL: {
-            if (LOWORD(w_param) & MK_CONTROL) {
-                short delta = (short)HIWORD(w_param);
-                update_size(delta > 0 ? 1 : -1);
-                return 0;
-            }
-            if (GetKeyState(VK_MENU) < 0) {
-                return SendMessageW(GetParent(hwnd), WM_MOUSEWHEEL, w_param, l_param);
-            }
-            return 0;
-        }
+        case WM_MOUSEWHEEL:
+            return toolbar_controller_on_mouse_wheel(hwnd, w_param, l_param);
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
