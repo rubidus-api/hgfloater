@@ -58,7 +58,7 @@
 &#x20; - `floater\_controller\_on\_keydown(HWND hwnd, WPARAM w\_param, LPARAM l\_param)`
 &#x20; - `floater\_controller\_on\_command(HWND hwnd, int id)`
 &#x20; - `floater\_controller\_on\_destroy(HWND hwnd)`
-\- \[ ] \*\*Taskbox Controller 구현 및 바인딩\*\*
+- [x] **Taskbox Controller 구현 및 바인딩**
 &#x20; - `taskbox\_controller\_on\_create(HWND hwnd)`
 &#x20; - `taskbox\_controller\_on\_paint(HWND hwnd)`
 &#x20; - `taskbox\_controller\_on\_keydown(HWND hwnd, WPARAM w\_param, LPARAM l\_param)`

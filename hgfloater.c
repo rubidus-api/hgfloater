@@ -356,6 +356,8 @@ void refresh_window_list(BOOL force);
 void update_layout(HWND hwnd);
 void update_floater_layout(HWND hwnd);
 void update_focus_message(int override_type, int override_index);
+LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass, DWORD_PTR dw_ref_data);
 LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 void save_config(const WCHAR* section, int x, int y, int w, int h);
 void save_floater_font_config(void);
@@ -4424,46 +4426,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
-    switch (msg) {
-        case WM_DISPLAYCHANGE: {
-            update_monitor_enum();
-            return 0;
-        }
-        case WM_THEMECHANGED:
-        case WM_SYSCOLORCHANGE: {
-            init_color_scheme();
-            update_theme_colors();
-            apply_dwm_attributes(hwnd);
-            if (hg_g_floater_wnd) apply_dwm_attributes(hg_g_floater_wnd);
-            if (hg_g_about_wnd) apply_dwm_attributes(hg_g_about_wnd);
-            if (hg_g_main_bg_brush) DeleteObject(hg_g_main_bg_brush);
-            hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
-            SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
-            if (hg_g_about_wnd) {
-                SetClassLongPtrW(hg_g_about_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
-                InvalidateRect(hg_g_about_wnd, NULL, TRUE);
-                HWND edit_wnd = GetDlgItem(hg_g_about_wnd, 100);
-                if (edit_wnd) InvalidateRect(edit_wnd, NULL, TRUE);
-            }
-            if (hg_g_edit_bg_brush) { DeleteObject(hg_g_edit_bg_brush); hg_g_edit_bg_brush = NULL; }
-            if (hg_g_tooltip_wnd) {
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
-            }
-            InvalidateRect(hwnd, NULL, TRUE);
-            if (hg_g_floater_wnd) InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
-            if (hg_g_toolbar_wnd) InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
-            
-            return 0;
-        }
-        case WM_GETMINMAXINFO: {
-            MINMAXINFO* mmi = (MINMAXINFO*)l_param;
-            mmi->ptMinTrackSize.x = SC(HG_MIN_WINDOW_WIDTH);
-            mmi->ptMinTrackSize.y = SC(HG_MIN_WINDOW_HEIGHT);
-            return 0;
-        }
-        case WM_CREATE: {
+static LRESULT taskbox_controller_on_create(HWND hwnd) {
             /* 툴바 클래스 등록 */
             WNDCLASSW twc = {0};
             twc.style = CS_HREDRAW | CS_VREDRAW;
@@ -4521,97 +4484,8 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             SetTimer(hwnd, 1, 1000, NULL); /* 1초마다 시계 및 목록 갱신 */
             return 0;
         }
-        case WM_MOUSEWHEEL: {
-            if (GetKeyState(VK_MENU) < 0) {
-                /* Alt 키가 눌린 상태에서만 투명도 조절 실행 */
-                short delta = (short)HIWORD(w_param);
-                update_taskbox_alpha(delta > 0 ? 1 : -1);
-            } else {
-                /* Alt 키가 없으면 태스크바 창으로 메시지를 전달하여 창 전체에서 스크롤 가능하게 함 */
-                /* Ctrl+휠(크기조절) 메시지도 태스크바 창에서 처리되도록 전달됨 */
-                SendMessageW(hg_g_toolbar_wnd, WM_MOUSEWHEEL, w_param, l_param);
-            }
-            return 0;
-        }
-        case WM_NOTIFY: {
-            /* ListView 관련 통지 제거됨 */
-            break;
-        }
-        case WM_ENTERSIZEMOVE: { 
-            hg_g_in_sizemove = TRUE; 
-            GetWindowRect(hwnd, &hg_g_drag_start_rect);
-            return DefWindowProcW(hwnd, msg, w_param, l_param); 
-        } 
-        case WM_EXITSIZEMOVE: { 
-            hg_g_in_sizemove = FALSE;
-            RECT rc = {0};
-            GetWindowRect(hwnd, &rc);
-            
-            int dw = (rc.right - rc.left) - (hg_g_drag_start_rect.right - hg_g_drag_start_rect.left);
-            int dh = (rc.bottom - rc.top) - (hg_g_drag_start_rect.bottom - hg_g_drag_start_rect.top);
 
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
-            int border = SC(HG_BORDER_THICKNESS);
-            
-            int total_tasks = hg_g_window_count;
-            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-            int total_items = total_tasks + total_shortcuts;
-            if (total_items <= 0) total_items = 1;
-
-            int cols;
-            if (ABS(dh) > ABS(dw)) {
-                int edit_height = SC(20);
-                if (hg_g_edit_msg_wnd && hg_g_main_font) {
-                    HDC hdc = GetDC(hg_g_edit_msg_wnd);
-                    if (hdc) {
-                        HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                        TEXTMETRIC tm = {0};
-                        if (GetTextMetrics(hdc, &tm)) {
-                            edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
-                        }
-                        if (old_font) SelectObject(hdc, old_font);
-                        ReleaseDC(hg_g_edit_msg_wnd, hdc);
-                    }
-                }
-
-                int row_height = icon_size + SC(10);
-                int current_h = rc.bottom - rc.top;
-                int available_toolbar_h = current_h - (border * 2 + edit_height);
-                int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
-                if (target_rows < 1) target_rows = 1;
-                if (target_rows > total_items) target_rows = total_items;
-                cols = (total_items + target_rows - 1) / target_rows;
-            } else {
-                int tb_width = (rc.right - rc.left) - border * 2;
-                cols = get_items_per_row(tb_width, icon_size);
-            }
-            if (cols <= 0) cols = 1;
-            
-            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-            int new_w = exact_tb_width + border * 2;
-            
-            SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-            
-            update_layout(hwnd); /* Will trigger snap exact height */
-            GetWindowRect(hwnd, &rc);
-            save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
-            return 0;
-        }
-        case WM_TIMER:
-            if (w_param == 1) {
-                if (IsWindowVisible(hwnd)) {
-                    refresh_window_list(FALSE);
-                }
-            } else if (w_param == HG_TIMER_HIGHLIGHT) {
-                hg_g_taskbox_highlight_ticks--;
-                if (hg_g_taskbox_highlight_ticks <= 0) {
-                    KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-                }
-                InvalidateRect(hwnd, NULL, FALSE);
-            }
-            return 0;
-        case WM_PAINT: {
+static LRESULT taskbox_controller_on_paint(HWND hwnd) {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
             RECT rc; GetClientRect(hwnd, &rc);
@@ -4647,25 +4521,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             EndPaint(hwnd, &ps);
             return 0;
         }
-        case WM_NCHITTEST: {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            ScreenToClient(hwnd, &pt);
-            RECT rc; GetClientRect(hwnd, &rc);
-            int border = SC(HG_BORDER_THICKNESS);
-
-            if (pt.x < border && pt.y < border) return HTTOPLEFT;
-            if (pt.x > rc.right - border && pt.y < border) return HTTOPRIGHT;
-            if (pt.x < border && pt.y > rc.bottom - border) return HTBOTTOMLEFT;
-            if (pt.x > rc.right - border && pt.y > rc.bottom - border) return HTBOTTOMRIGHT;
-            if (pt.y < border) return HTTOP;
-            if (pt.y > rc.bottom - border) return HTBOTTOM;
-            if (pt.x < border) return HTLEFT;
-            if (pt.x > rc.right - border) return HTRIGHT;
-
-            return HTCAPTION; /* 그 외 모든 클라이언트 영역은 드래그 가능하게 */
-        }
-        case WM_SYSKEYDOWN:
-        case WM_KEYDOWN: {
+static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
             int dx = 0, dy = 0;
             int move_step = SC(20);
             BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
@@ -4873,7 +4729,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             }
             return 0;
         }
-        case WM_COMMAND: {
+static LRESULT taskbox_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param) {
             if (LOWORD(w_param) == HG_IDM_CLOSE_APP) {
                 if (hg_g_floater_wnd) DestroyWindow(hg_g_floater_wnd);
             } else if (LOWORD(w_param) == HG_IDM_ABOUT || LOWORD(w_param) == HG_IDM_RESET_ALL) {
@@ -4883,8 +4739,191 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
                 update_edit_font_size(-1);
             }
+            return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
+        }
+static LRESULT taskbox_controller_on_destroy(HWND hwnd) {
+            hg_g_taskbox_highlight_ticks = 0;
+            KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
+            KillTimer(hwnd, 1);      
+
+            if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) { 
+                DeleteObject(hg_g_main_font); 
+            }
+            hg_g_main_font = NULL;
+            
+            if (hg_g_edit_bg_brush) { DeleteObject(hg_g_edit_bg_brush); hg_g_edit_bg_brush = NULL; }
+            if (hg_g_toolbar_btn_font) { DeleteObject(hg_g_toolbar_btn_font); hg_g_toolbar_btn_font = NULL; }
+            if (hg_g_hbr_highlight) { DeleteObject(hg_g_hbr_highlight); hg_g_hbr_highlight = NULL; }
+            if (hg_g_tooltip_wnd && IsWindow(hg_g_tooltip_wnd)) { DestroyWindow(hg_g_tooltip_wnd); hg_g_tooltip_wnd = NULL; }
+            for (int i = 0; i < hg_g_shortcut_count; i++) {
+                if (hg_g_shortcuts[i].icon) { DestroyIcon(hg_g_shortcuts[i].icon); hg_g_shortcuts[i].icon = NULL; }
+            }
+            for (int i = 0; i < hg_g_window_count; i++) {
+                if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
+                    DestroyIcon(hg_g_window_items[i].icon);
+                    hg_g_window_items[i].icon = NULL;
+                }
+            }
+            /* 전역 종료는 floater_proc에서 처리하므로 주석 처리 */
+            /* PostQuitMessage(0); */
+            return 0;
+    }
+
+LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+    switch (msg) {
+        case WM_DISPLAYCHANGE: {
+            update_monitor_enum();
+            return 0;
+        }
+        case WM_THEMECHANGED:
+        case WM_SYSCOLORCHANGE: {
+            init_color_scheme();
+            update_theme_colors();
+            apply_dwm_attributes(hwnd);
+            if (hg_g_floater_wnd) apply_dwm_attributes(hg_g_floater_wnd);
+            if (hg_g_about_wnd) apply_dwm_attributes(hg_g_about_wnd);
+            if (hg_g_main_bg_brush) DeleteObject(hg_g_main_bg_brush);
+            hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
+            SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+            if (hg_g_about_wnd) {
+                SetClassLongPtrW(hg_g_about_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+                InvalidateRect(hg_g_about_wnd, NULL, TRUE);
+                HWND edit_wnd = GetDlgItem(hg_g_about_wnd, 100);
+                if (edit_wnd) InvalidateRect(edit_wnd, NULL, TRUE);
+            }
+            if (hg_g_edit_bg_brush) { DeleteObject(hg_g_edit_bg_brush); hg_g_edit_bg_brush = NULL; }
+            if (hg_g_tooltip_wnd) {
+                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
+                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
+            }
+            InvalidateRect(hwnd, NULL, TRUE);
+            if (hg_g_floater_wnd) InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+            if (hg_g_toolbar_wnd) InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
+            
+            return 0;
+        }
+        case WM_GETMINMAXINFO: {
+            MINMAXINFO* mmi = (MINMAXINFO*)l_param;
+            mmi->ptMinTrackSize.x = SC(HG_MIN_WINDOW_WIDTH);
+            mmi->ptMinTrackSize.y = SC(HG_MIN_WINDOW_HEIGHT);
+            return 0;
+        }
+        case WM_CREATE:
+            return taskbox_controller_on_create(hwnd);
+        case WM_MOUSEWHEEL: {
+            if (GetKeyState(VK_MENU) < 0) {
+                /* Alt 키가 눌린 상태에서만 투명도 조절 실행 */
+                short delta = (short)HIWORD(w_param);
+                update_taskbox_alpha(delta > 0 ? 1 : -1);
+            } else {
+                /* Alt 키가 없으면 태스크바 창으로 메시지를 전달하여 창 전체에서 스크롤 가능하게 함 */
+                /* Ctrl+휠(크기조절) 메시지도 태스크바 창에서 처리되도록 전달됨 */
+                SendMessageW(hg_g_toolbar_wnd, WM_MOUSEWHEEL, w_param, l_param);
+            }
+            return 0;
+        }
+        case WM_NOTIFY: {
+            /* ListView 관련 통지 제거됨 */
             break;
         }
+        case WM_ENTERSIZEMOVE: { 
+            hg_g_in_sizemove = TRUE; 
+            GetWindowRect(hwnd, &hg_g_drag_start_rect);
+            return DefWindowProcW(hwnd, msg, w_param, l_param); 
+        } 
+        case WM_EXITSIZEMOVE: { 
+            hg_g_in_sizemove = FALSE;
+            RECT rc = {0};
+            GetWindowRect(hwnd, &rc);
+            
+            int dw = (rc.right - rc.left) - (hg_g_drag_start_rect.right - hg_g_drag_start_rect.left);
+            int dh = (rc.bottom - rc.top) - (hg_g_drag_start_rect.bottom - hg_g_drag_start_rect.top);
+
+            int icon_size = ABS(hg_g_current_font_size);
+            if (icon_size < SC(16)) icon_size = SC(16);
+            int border = SC(HG_BORDER_THICKNESS);
+            
+            int total_tasks = hg_g_window_count;
+            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+            int total_items = total_tasks + total_shortcuts;
+            if (total_items <= 0) total_items = 1;
+
+            int cols;
+            if (ABS(dh) > ABS(dw)) {
+                int edit_height = SC(20);
+                if (hg_g_edit_msg_wnd && hg_g_main_font) {
+                    HDC hdc = GetDC(hg_g_edit_msg_wnd);
+                    if (hdc) {
+                        HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
+                        TEXTMETRIC tm = {0};
+                        if (GetTextMetrics(hdc, &tm)) {
+                            edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
+                        }
+                        if (old_font) SelectObject(hdc, old_font);
+                        ReleaseDC(hg_g_edit_msg_wnd, hdc);
+                    }
+                }
+
+                int row_height = icon_size + SC(10);
+                int current_h = rc.bottom - rc.top;
+                int available_toolbar_h = current_h - (border * 2 + edit_height);
+                int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
+                if (target_rows < 1) target_rows = 1;
+                if (target_rows > total_items) target_rows = total_items;
+                cols = (total_items + target_rows - 1) / target_rows;
+            } else {
+                int tb_width = (rc.right - rc.left) - border * 2;
+                cols = get_items_per_row(tb_width, icon_size);
+            }
+            if (cols <= 0) cols = 1;
+            
+            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+            int new_w = exact_tb_width + border * 2;
+            
+            SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            
+            update_layout(hwnd); /* Will trigger snap exact height */
+            GetWindowRect(hwnd, &rc);
+            save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+            return 0;
+        }
+        case WM_TIMER:
+            if (w_param == 1) {
+                if (IsWindowVisible(hwnd)) {
+                    refresh_window_list(FALSE);
+                }
+            } else if (w_param == HG_TIMER_HIGHLIGHT) {
+                hg_g_taskbox_highlight_ticks--;
+                if (hg_g_taskbox_highlight_ticks <= 0) {
+                    KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
+                }
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            return 0;
+        case WM_PAINT:
+            return taskbox_controller_on_paint(hwnd);
+        case WM_NCHITTEST: {
+            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+            ScreenToClient(hwnd, &pt);
+            RECT rc; GetClientRect(hwnd, &rc);
+            int border = SC(HG_BORDER_THICKNESS);
+
+            if (pt.x < border && pt.y < border) return HTTOPLEFT;
+            if (pt.x > rc.right - border && pt.y < border) return HTTOPRIGHT;
+            if (pt.x < border && pt.y > rc.bottom - border) return HTBOTTOMLEFT;
+            if (pt.x > rc.right - border && pt.y > rc.bottom - border) return HTBOTTOMRIGHT;
+            if (pt.y < border) return HTTOP;
+            if (pt.y > rc.bottom - border) return HTBOTTOM;
+            if (pt.x < border) return HTLEFT;
+            if (pt.x > rc.right - border) return HTRIGHT;
+
+            return HTCAPTION; /* 그 외 모든 클라이언트 영역은 드래그 가능하게 */
+        }
+        case WM_SYSKEYDOWN:
+        case WM_KEYDOWN:
+            return taskbox_controller_on_keydown(hwnd, msg, w_param, l_param);
+        case WM_COMMAND:
+            return taskbox_controller_on_command(hwnd, w_param, l_param);
         case WM_SIZE: {
             update_layout(hwnd);
             InvalidateRect(hwnd, NULL, TRUE); /* 외곽선 다시 그리기 */
@@ -4917,31 +4956,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
         }
         case WM_DESTROY:
-            hg_g_taskbox_highlight_ticks = 0;
-            KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-            KillTimer(hwnd, 1);      
-
-            if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) { 
-                DeleteObject(hg_g_main_font); 
-            }
-            hg_g_main_font = NULL;
-            
-            if (hg_g_edit_bg_brush) { DeleteObject(hg_g_edit_bg_brush); hg_g_edit_bg_brush = NULL; }
-            if (hg_g_toolbar_btn_font) { DeleteObject(hg_g_toolbar_btn_font); hg_g_toolbar_btn_font = NULL; }
-            if (hg_g_hbr_highlight) { DeleteObject(hg_g_hbr_highlight); hg_g_hbr_highlight = NULL; }
-            if (hg_g_tooltip_wnd && IsWindow(hg_g_tooltip_wnd)) { DestroyWindow(hg_g_tooltip_wnd); hg_g_tooltip_wnd = NULL; }
-            for (int i = 0; i < hg_g_shortcut_count; i++) {
-                if (hg_g_shortcuts[i].icon) { DestroyIcon(hg_g_shortcuts[i].icon); hg_g_shortcuts[i].icon = NULL; }
-            }
-            for (int i = 0; i < hg_g_window_count; i++) {
-                if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-                    DestroyIcon(hg_g_window_items[i].icon);
-                    hg_g_window_items[i].icon = NULL;
-                }
-            }
-            /* 전역 종료는 floater_proc에서 처리하므로 주석 처리 */
-            /* PostQuitMessage(0); */
-            return 0;
+            return taskbox_controller_on_destroy(hwnd);
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
