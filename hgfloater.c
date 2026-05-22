@@ -218,6 +218,10 @@
 #endif
 #define DWMWCP_DONOTROUND 2
 
+#ifndef WM_DWMCOLORIZATIONCOLORCHANGED
+#define WM_DWMCOLORIZATIONCOLORCHANGED 0x0320
+#endif
+
 #define HG_COLOR_BG_DEFAULT    hg_g_color_scheme_selected.bg
 #define HG_COLOR_BG_TOOLBAR    hg_g_color_scheme_selected.border
 #define HG_COLOR_BG_FLASH      hg_g_color_scheme_selected.flash
@@ -643,6 +647,78 @@ void update_theme_colors() {
         hg_g_color_scheme_selected = hg_g_color_scheme_dark;
     } else {
         hg_g_color_scheme_selected = hg_g_color_scheme_light;
+    }
+}
+
+void apply_dwm_attributes(HWND hwnd);
+
+static BOOL should_refresh_theme_on_setting_change(LPARAM l_param)
+{
+    const WCHAR* setting = (const WCHAR*)l_param;
+
+    if (!setting || !*setting) {
+        return TRUE;
+    }
+
+    return lstrcmpiW(setting, L"ImmersiveColorSet") == 0
+        || lstrcmpiW(setting, L"AppsUseLightTheme") == 0
+        || lstrcmpiW(setting, L"WindowsThemeElement") == 0
+        || lstrcmpiW(setting, L"HighContrast") == 0;
+}
+
+static void refresh_theme_surfaces(HWND hwnd)
+{
+    update_theme_colors();
+
+    apply_dwm_attributes(hwnd);
+    if (hg_g_floater_wnd && hg_g_floater_wnd != hwnd) {
+        apply_dwm_attributes(hg_g_floater_wnd);
+    }
+    if (hg_g_about_wnd && hg_g_about_wnd != hwnd) {
+        apply_dwm_attributes(hg_g_about_wnd);
+    }
+
+    if (hg_g_main_bg_brush) {
+        DeleteObject(hg_g_main_bg_brush);
+        hg_g_main_bg_brush = NULL;
+    }
+    hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
+    if (hwnd && IsWindow(hwnd)) {
+        SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+    }
+
+    if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
+        SetClassLongPtrW(hg_g_about_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+        InvalidateRect(hg_g_about_wnd, NULL, TRUE);
+        HWND edit_wnd = GetDlgItem(hg_g_about_wnd, 100);
+        if (edit_wnd) {
+            InvalidateRect(edit_wnd, NULL, TRUE);
+        }
+    }
+
+    if (hg_g_edit_bg_brush) {
+        DeleteObject(hg_g_edit_bg_brush);
+        hg_g_edit_bg_brush = NULL;
+    }
+
+    if (hg_g_tooltip_wnd && IsWindow(hg_g_tooltip_wnd)) {
+        SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
+        SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
+    }
+
+    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+        SetClassLongPtrW(hg_g_controlbox_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
+    }
+
+    if (hwnd) {
+        InvalidateRect(hwnd, NULL, TRUE);
+    }
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+    }
+    if (hg_g_toolbar_wnd && IsWindow(hg_g_toolbar_wnd)) {
+        InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
     }
 }
 
@@ -5268,35 +5344,15 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             update_monitor_enum();
             return 0;
         }
+        case WM_SETTINGCHANGE:
+            if (!should_refresh_theme_on_setting_change(l_param)) {
+                break;
+            }
+            /* fallthrough */
         case WM_THEMECHANGED:
-        case WM_SYSCOLORCHANGE: {
-            init_color_scheme();
-            update_theme_colors();
-            apply_dwm_attributes(hwnd);
-            if (hg_g_floater_wnd) apply_dwm_attributes(hg_g_floater_wnd);
-            if (hg_g_about_wnd) apply_dwm_attributes(hg_g_about_wnd);
-            if (hg_g_main_bg_brush) DeleteObject(hg_g_main_bg_brush);
-            hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
-            SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
-            if (hg_g_about_wnd) {
-                SetClassLongPtrW(hg_g_about_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
-                InvalidateRect(hg_g_about_wnd, NULL, TRUE);
-                HWND edit_wnd = GetDlgItem(hg_g_about_wnd, 100);
-                if (edit_wnd) InvalidateRect(edit_wnd, NULL, TRUE);
-            }
-            if (hg_g_edit_bg_brush) { DeleteObject(hg_g_edit_bg_brush); hg_g_edit_bg_brush = NULL; }
-            if (hg_g_tooltip_wnd) {
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
-            }
-            if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
-                SetClassLongPtrW(hg_g_controlbox_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
-                InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
-            }
-            InvalidateRect(hwnd, NULL, TRUE);
-            if (hg_g_floater_wnd) InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
-            if (hg_g_toolbar_wnd) InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
-
+        case WM_SYSCOLORCHANGE:
+        case WM_DWMCOLORIZATIONCOLORCHANGED: {
+            refresh_theme_surfaces(hwnd);
             return 0;
         }
         case WM_GETMINMAXINFO: {

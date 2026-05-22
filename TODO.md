@@ -27,12 +27,13 @@
 ### 2026-05-23
 - 시스템 테마 색상과 DWM accent color를 읽어 테마 팔레트를 갱신하는 구조를 정리함
 - 고대비 모드는 별도 항목으로 남겨 두고, 현재 단계에서는 accent color 반영만 적용함
+- `WM_SETTINGCHANGE`, `WM_THEMECHANGED`, `WM_SYSCOLORCHANGE`, `WM_DWMCOLORIZATIONCOLORCHANGED`를 같은 테마 갱신 경로로 묶음
 
 ## 후속 로드맵
 
 ### 1. 테마 처리 정리
 - [x] 시스템 테마/Accent Color를 반영하는 테마 구조 정리
-- [ ] `WM_SETTINGCHANGE` 및 색상 변경 메시지 처리 정리
+- [x] `WM_SETTINGCHANGE` 및 색상 변경 메시지 처리 정리
 - [ ] 고대비 모드 대응 검토
 
 ### 2. Window Manager 정리
