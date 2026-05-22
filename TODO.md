@@ -23,13 +23,14 @@
 - Floater / Taskbox / Controlbox controller 분리 완료
 - Toolbar controller 분리 작업은 보류 상태
 - Toolbar paint 경로를 `toolbar_controller_on_paint()`로 분리 시작
+- Toolbar mouse move / lbutton up 경로를 helper로 분리 완료
 
 ## 후속 로드맵
 
 ### 1. Toolbar Controller 분리
 - [x] `toolbar_controller_on_paint(HWND hwnd)`
-- [ ] `toolbar_controller_on_mouse_move(HWND hwnd, int x, int y)`
-- [ ] `toolbar_controller_on_lbutton_up(HWND hwnd, int x, int y)`
+- [x] `toolbar_controller_on_mouse_move(HWND hwnd, LPARAM l_param)`
+- [x] `toolbar_controller_on_lbutton_up(HWND hwnd, LPARAM l_param)`
 
 ### 2. 테마 처리 정리
 - [ ] 시스템 테마/Accent Color를 반영하는 테마 구조 정리
