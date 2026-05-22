@@ -90,12 +90,12 @@
 
 #define HG_ABOUT_TEXT_W HG_ABOUT_FIXED_W HG_ABOUT_README_W
 
-/* 
+/*
  * hgfloater (HellGates Series)
  * - Drag & Drop Reordering
  * - Real-time Clock Titlebar
  * - Fixed List Order (Incremental Update)
- * 
+ *
  * [Resource Audit]
  * - Stack: Large arrays (windowItems, hg_g_shortcuts) moved to global scope to prevent stack overflow.
  * - Memory: Shortcut icons are destroyed before reload; GDI objects in WM_PAINT are properly released.
@@ -240,7 +240,7 @@
 /* =========================================================================
  * 데이터 구조체 (Data Structures)
  * ========================================================================= */
-typedef struct 
+typedef struct
 {
     COLORREF bg, border, text, flash, selected;
 } color_scheme_t;
@@ -374,6 +374,18 @@ void save_config(const WCHAR* section, int x, int y, int w, int h);
 void save_floater_font_config(void);
 void save_taskbox_font_config(void);
 static int get_controlbox_required_height(void);
+
+typedef struct ToolbarControllerState {
+    int hovered_type;
+    int hovered_index;
+    int pressed_type;
+    int pressed_index;
+    int cached_icon_size;
+    BOOL is_resizing;
+    BOOL is_moving_taskbox;
+    POINT start_mouse;
+    RECT start_rect;
+} ToolbarControllerState;
 
 /* =========================================================================
  * 오디오 제어 기능 (Audio Control Implementation)
@@ -567,7 +579,7 @@ void init_color_scheme(void)
 {
     /* 기존 다크 모드의 색상(THEME_CUSTOM_*)을 라이트 모드에, 기존 라이트 모드의 색상을 다크 모드에 스왑하여 설정 */
     hg_g_color_scheme_light = (color_scheme_t){
-        .bg = HG_THEME_CUSTOM_BG, 
+        .bg = HG_THEME_CUSTOM_BG,
         .border = HG_THEME_CUSTOM_BORDER,
         .text = HG_THEME_CUSTOM_TEXT,
         .flash = HG_THEME_CUSTOM_FLASH,
@@ -575,7 +587,7 @@ void init_color_scheme(void)
     };
 
     hg_g_color_scheme_dark = (color_scheme_t){
-        .bg = GetSysColor(COLOR_WINDOW), 
+        .bg = GetSysColor(COLOR_WINDOW),
         .border = GetSysColor(COLOR_WINDOWFRAME),
         .text = GetSysColor(COLOR_WINDOWTEXT),
         .flash = GetSysColor(COLOR_HOTLIGHT),
@@ -590,7 +602,7 @@ void update_theme_colors() {
     if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(HIGHCONTRASTW), &hc, 0)) {
         if (hc.dwFlags & HCF_HIGHCONTRASTON) is_hc = TRUE;
     }
-    
+
     hg_g_is_dark_mode = 0;
     DWORD use_light_theme = 1;
     DWORD cbData = sizeof(use_light_theme);
@@ -616,7 +628,7 @@ void apply_dwm_attributes(HWND hwnd) {
     DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &hg_g_color_scheme_selected.border, sizeof(hg_g_color_scheme_selected.border));
     DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &hg_g_color_scheme_selected.bg, sizeof(hg_g_color_scheme_selected.bg));
     DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &hg_g_color_scheme_selected.text, sizeof(hg_g_color_scheme_selected.text));
-    
+
     int corner_pref = DWMWCP_DONOTROUND;
     DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
 }
@@ -642,10 +654,10 @@ void update_monitor_enum() {
     for (int i = 0; i < hg_g_monitor_count; ++i) {
         saved_monitors[i] = hg_g_monitors[i];
     }
-    
+
     hg_g_monitor_count = 0;
     EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
-    
+
     for (int i = 0; i < hg_g_monitor_count; ++i) {
         hg_g_monitors[i].active = FALSE;
         hg_g_monitors[i].hwnd = NULL;
@@ -675,15 +687,15 @@ HRESULT hellgates_wsprintf(LPWSTR dest, size_t dest_size, LPCWSTR format, ...) {
     return hr;
 }
 
-/* 
- * Normalize a path for long path support by ensuring it's absolute 
+/*
+ * Normalize a path for long path support by ensuring it's absolute
  * and optionally adding the \\?\ prefix if needed.
- * Note: shell functions like ShellExecute don't like \\?\, but 
+ * Note: shell functions like ShellExecute don't like \\?\, but
  * basic file APIs like GetFileAttributesW/CreateFileW love it.
  */
 void normalize_path_for_api(const WCHAR* input, WCHAR* output, size_t output_size) {
     if (!input || !output || output_size == 0) return;
-    
+
     /* Resolve relative paths to absolute first */
     WCHAR full[HG_MAX_PATH];
     if (GetFullPathNameW(input, HG_MAX_PATH, full, NULL) == 0) {
@@ -716,14 +728,14 @@ void init_paths() {
     hellgates_wsprintf(hg_g_base_path, HG_MAX_PATH, L"%ls\\.HellGates\\hgfloater", profile);
     hellgates_wsprintf(hg_g_shortcuts_path, HG_MAX_PATH, L"%ls\\shortcuts", hg_g_base_path);
     hellgates_wsprintf(hg_g_config_path, HG_MAX_PATH, L"%ls\\config.ini", hg_g_base_path);
-    
+
     SHCreateDirectoryExW(NULL, hg_g_base_path, NULL);
     SHCreateDirectoryExW(NULL, hg_g_shortcuts_path, NULL);
-    
+
     /* Migrate legacy config.ini.txt to config.ini if it exists */
     WCHAR legacy_config_path[HG_MAX_PATH];
     hellgates_wsprintf(legacy_config_path, HG_MAX_PATH, L"%ls\\config.ini.txt", hg_g_base_path);
-    
+
     WCHAR norm_legacy[HG_MAX_PATH], norm_config[HG_MAX_PATH];
     normalize_path_for_api(legacy_config_path, norm_legacy, HG_MAX_PATH);
     normalize_path_for_api(hg_g_config_path, norm_config, HG_MAX_PATH);
@@ -738,7 +750,7 @@ BOOL is_alt_tab_window(HWND hwnd) {
     if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd || hwnd == hg_g_about_wnd) return FALSE;
     if (!IsWindow(hwnd)) return FALSE;
     if (!IsWindowVisible(hwnd)) return FALSE;
-    
+
     /* 텍스트가 없는 창은 제외 */
     if (GetWindowTextLengthW(hwnd) == 0) return FALSE;
 
@@ -753,7 +765,7 @@ BOOL is_alt_tab_window(HWND hwnd) {
     /* Cloaked 상태 체크 (가상 데스크톱 등 숨겨진 창 제외) */
     int cloaked = 0;
     if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked)))) {
-        if (cloaked != 0) return FALSE; 
+        if (cloaked != 0) return FALSE;
     }
 
     return TRUE;
@@ -1561,7 +1573,7 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
 
     if (_wcsicmp(proc_name, L"ApplicationFrameHost.exe") == 0) {
         /* ApplicationFrameHost specific logic */
-        
+
         /* Frame AUMID */
         WCHAR* frame_aumid = get_aumid_from_hwnd(hwnd);
         if (frame_aumid) {
@@ -1614,7 +1626,7 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
             h_icon = get_icon_from_process_exe(child_pid, own_icon);
             if (h_icon) return h_icon;
         }
-        
+
         /* Fallback to frame WM_GETICON */
         h_icon = get_icon_from_hwnd_msg(hwnd);
         if (h_icon) {
@@ -1626,10 +1638,10 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
             if (own_icon) *own_icon = FALSE;
             return h_icon;
         }
-        
+
     } else {
         /* Standard or standalone Packaged win32/UWP apps */
-        
+
         /* 1. Try WM_GETICON first for standard apps. */
         h_icon = get_icon_from_hwnd_msg(hwnd);
         if (h_icon) {
@@ -1778,7 +1790,7 @@ void load_shortcuts() {
 /* 메시지 에디트 컨트롤에 텍스트 추가 및 스크롤 (효율적인 행 관리) */
 void append_message(const WCHAR* msg) {
     if (!hg_g_edit_msg_wnd || !msg) return;
-    
+
     int line_count = (int)SendMessageW(hg_g_edit_msg_wnd, EM_GETLINECOUNT, 0, 0);
     if (line_count > HG_TASKBOX_EDIT_CONTROL_TRIM_THRESHOLD) {
         int remove_count = line_count - HG_TASKBOX_EDIT_CONTROL_RETAIN_COUNT;
@@ -1788,7 +1800,7 @@ void append_message(const WCHAR* msg) {
             SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"");
         }
     }
-    
+
     int len = GetWindowTextLengthW(hg_g_edit_msg_wnd);
     SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
     if (len > 0) SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
@@ -1805,25 +1817,25 @@ void draw_outlined_text(HDC hdc, const WCHAR* text, int len, RECT* rc, UINT form
     if (!hdc || !text || !rc || len <= 0) return;
     int old_bk_mode = SetBkMode(hdc, TRANSPARENT);
     COLORREF old_text_color = GetTextColor(hdc);
-    
+
     SetTextColor(hdc, outline_color);
     RECT temp_rc;
     /* 8방향 외곽선으로 가독성 극대화 (DPI 배율에 맞춰 두께 조절) */
     int offset = SC(1);
     if (offset < 1) offset = 1;
-    
+
     int dx[] = {-offset, 0, offset, -offset, offset, -offset, 0, offset};
     int dy[] = {-offset, -offset, -offset, 0, 0, offset, offset, offset};
-    
+
     for (int i = 0; i < 8; i++) {
         temp_rc = *rc;
         OffsetRect(&temp_rc, dx[i], dy[i]);
         DrawTextW(hdc, text, len, &temp_rc, format);
     }
-    
+
     SetTextColor(hdc, text_color);
     DrawTextW(hdc, text, len, rc, format);
-    
+
     SetTextColor(hdc, old_text_color);
     SetBkMode(hdc, old_bk_mode);
 }
@@ -1842,34 +1854,34 @@ void get_toolbar_item_rect(int item_type, int item_index, int width, int height,
         if (out_rect) SetRectEmpty(out_rect);
         return;
     }
-    
+
     int cols = get_items_per_row(width, icon_size);
     if (cols <= 0) cols = 1;
     int row_height = icon_size + SC(10);
-    
+
     int total_tasks = hg_g_window_count;
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-    
+
     int min_required_rows = (total_tasks + total_shortcuts + cols - 1) / cols;
     if (min_required_rows <= 0) min_required_rows = 1;
-    
+
     int visible_rows = (height - SC(20) + SC(10)) / row_height;
     if (visible_rows <= 0) visible_rows = 1;
-    
+
     int rows = (visible_rows > min_required_rows) ? visible_rows : min_required_rows;
-    
+
     int total_cells = rows * cols;
-    
+
     int cell_index;
     if (item_type == 0) {
         cell_index = item_index;
     } else {
         cell_index = total_cells - 1 - item_index;
     }
-    
+
     int row = cell_index / cols;
     int col = cell_index % cols;
-    
+
     out_rect->left = SC(10) + col * (icon_size + SC(15));
     out_rect->top = SC(10) + row * row_height;
     out_rect->right = out_rect->left + icon_size;
@@ -1896,11 +1908,11 @@ void update_toolbar_tooltips(HWND hwnd) {
 
     int icon_size = ABS(hg_g_current_font_size);
     if (icon_size < SC(16)) icon_size = SC(16);
-    
+
     int total_tasks = hg_g_window_count;
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
     int id_counter = 0;
-    
+
     for (int i = 0; i < total_tasks; i++) {
         RECT item_rc;
         get_toolbar_item_rect(0, i, client_rc.right, client_rc.bottom, icon_size, &item_rc);
@@ -1915,7 +1927,7 @@ void update_toolbar_tooltips(HWND hwnd) {
         InflateRect(&ti_tool.rect, SC(4), SC(4));
         SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti_tool);
     }
-    
+
     for (int i = 0; i < total_shortcuts; i++) {
         RECT item_rc;
         get_toolbar_item_rect(1, i, client_rc.right, client_rc.bottom, icon_size, &item_rc);
@@ -1936,7 +1948,7 @@ void update_toolbar_tooltips(HWND hwnd) {
         InflateRect(&ti_tool.rect, SC(4), SC(4));
         SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti_tool);
     }
-    
+
     SendMessageW(hg_g_tooltip_wnd, TTM_ACTIVATE, TRUE, 0);
     last_total_count = id_counter;
 }
@@ -1950,12 +1962,12 @@ BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param) {
     /* 소유자가 없는 최상위 창이거나 작업 표시줄에 나타나는 창 스타일인 경우 */
     HWND owner = GetWindow(hwnd, GW_OWNER);
     LONG_PTR ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-    
+
     if (owner == NULL || (ex_style & WS_EX_APPWINDOW)) {
         /* Cloaked 상태 체크 (가상 데스크톱 등 숨겨진 창 제외) */
         int cloaked = 0;
         if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked)))) {
-            if (cloaked != 0) return TRUE; 
+            if (cloaked != 0) return TRUE;
         }
 
         if (is_minimize) {
@@ -1981,13 +1993,13 @@ void load_config(const WCHAR* section, int* x, int* y, int* w, int* h, int def_x
     GetPrivateProfileStringW(section, L"y", def_buf, buf, 32, hg_g_config_path);
     *y = (int)wcstol(buf, &endptr, 10);
     if (endptr == buf) *y = def_y;
-    
+
     UINT uw = GetPrivateProfileIntW(section, L"w", def_w, hg_g_config_path);
     *w = (uw == 0 || uw > 30000) ? def_w : (int)uw;
-    
+
     UINT uh = GetPrivateProfileIntW(section, L"h", def_h, hg_g_config_path);
     *h = (uh == 0 || uh > 30000) ? def_h : (int)uh;
-    
+
     /* Auto-initialize the dimensions to the file */
     save_config(section, *x, *y, *w, *h);
 }
@@ -2025,7 +2037,7 @@ void load_taskbox_font_config() {
     if (fs < 12) fs = 12;
     if (fs > 128) fs = 128;
     hg_g_edit_font_size = -SC((int)fs);
-    
+
     UINT is = GetPrivateProfileIntW(L"taskbox", L"icon_size", 22, hg_g_config_path);
     if (is < 16) is = 16;
     if (is > 128) is = 128;
@@ -2040,7 +2052,7 @@ void save_taskbox_font_config() {
     int unscaled = (int)(ABS(hg_g_edit_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
     hellgates_wsprintf(buf, 32, L"%d", unscaled);
     WritePrivateProfileStringW(L"taskbox", L"font_size", buf, hg_g_config_path);
-    
+
     int unscaled_icon = (int)(ABS(hg_g_current_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
     hellgates_wsprintf(buf, 32, L"%d", unscaled_icon);
     WritePrivateProfileStringW(L"taskbox", L"icon_size", buf, hg_g_config_path);
@@ -2058,12 +2070,12 @@ int get_alpha_config(const WCHAR* section, int def_alpha) {
     int a = (int)GetPrivateProfileIntW(section, L"alpha", def_alpha, hg_g_config_path);
     if (a < 128) a = 128;
     if (a > 255) a = 255;
-    
+
     /* Auto-initialize / format the alpha value inside config.ini */
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%d", a);
     WritePrivateProfileStringW(section, L"alpha", buf, hg_g_config_path);
-    
+
     return a;
 }
 
@@ -2239,14 +2251,14 @@ void update_size(int delta) {
         int border = SC(HG_BORDER_THICKNESS);
         int tb_width = (rc.right - rc.left) - border * 2;
         if (tb_width <= 0) tb_width = 1;
-        
+
         int cols = get_items_per_row(tb_width, old_size);
         if (cols <= 0) cols = 1;
-        
+
         /* Calculate exact width required for the SAME number of columns but NEW icon size */
         int exact_tb_width = (cols - 1) * (new_size + SC(15)) + new_size + SC(20);
         int new_w = exact_tb_width + border * 2;
-        
+
         SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 
         load_shortcuts();
@@ -2278,11 +2290,11 @@ void update_edit_font_size(int delta) {
         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
         InvalidateRect(hg_g_edit_msg_wnd, NULL, TRUE);
     }
-    
+
     if (hg_g_tooltip_wnd) {
         SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
     }
-    
+
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         update_layout(hg_g_taskbox_wnd);
         InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
@@ -2291,7 +2303,7 @@ void update_edit_font_size(int delta) {
         update_controlbox_layout(hg_g_controlbox_wnd);
         InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
     }
-    
+
     for (int i = 0; i < hg_g_monitor_count; ++i) {
         if (hg_g_monitors[i].hwnd && IsWindow(hg_g_monitors[i].hwnd)) {
             HWND edit_wnd = GetDlgItem(hg_g_monitors[i].hwnd, 104);
@@ -2380,19 +2392,19 @@ void update_floater_layout(HWND hwnd) {
     SelectObject(hdc, hg_g_floater_date_font);
     GetTextExtentPoint32W(hdc, date_str, (int)lstrlenW(date_str), &sz_date);
     SelectObject(hdc, old_font);
-    
+
     int pen_width = SC(HG_BORDER_THICKNESS);
     int padding_x = pen_width + SC(20);
     int padding_y = pen_width + SC(10);
     int width = (sz_time.cx > sz_date.cx ? sz_time.cx : sz_date.cx) + padding_x;
     int height = sz_time.cy + sz_date.cy + padding_y;
-    
+
     RECT rc;
     GetWindowRect(hwnd, &rc);
     if (rc.right - rc.left != width || rc.bottom - rc.top != height) {
         SetWindowPos(hwnd, NULL, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
-    
+
     /* 폰트 삭제 제거 (정적 캐시 사용) */
     ReleaseDC(hwnd, hdc);
 }
@@ -2402,14 +2414,14 @@ void ensure_window_visible(HWND hwnd, const WCHAR* section) {
     if (!IsWindow(hwnd) || !section) return;
     RECT rc = {0};
     if (!GetWindowRect(hwnd, &rc)) return;
-    
+
     HMONITOR monitor_handle = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
     MONITORINFO mi;
     SecureZeroMemory(&mi, sizeof(mi));
     mi.cbSize = sizeof(mi);
     if (GetMonitorInfoW(monitor_handle, &mi)) {
         /* 창의 일부라도 작업 영역(Work Area)을 벗어나면 0,0으로 이동 */
-        if (rc.left < mi.rcWork.left || rc.top < mi.rcWork.top || 
+        if (rc.left < mi.rcWork.left || rc.top < mi.rcWork.top ||
             rc.right > mi.rcWork.right || rc.bottom > mi.rcWork.bottom) {
             SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
             save_config(section, 0, 0, rc.right - rc.left, rc.bottom - rc.top);
@@ -2420,12 +2432,12 @@ void ensure_window_visible(HWND hwnd, const WCHAR* section) {
 static LRESULT floater_controller_on_create(HWND hwnd) {
             hg_g_shellhook_msg = RegisterWindowMessageW(L"SHELLHOOK");
             RegisterShellHookWindow(hwnd);
-            
+
             SetLayeredWindowAttributes(hwnd, 0, hg_g_floater_alpha, LWA_ALPHA);
-            
+
             /* 창 모서리 및 DWM 속성 설정 */
             apply_dwm_attributes(hwnd);
-            
+
             update_floater_layout(hwnd);
             SetTimer(hwnd, 1, 1000, NULL);
             return 0;
@@ -2435,11 +2447,11 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
             RECT rc; GetClientRect(hwnd, &rc);
-            
+
             if (rc.right > 0 && rc.bottom > 0) {
                 HDC mem_dc = CreateCompatibleDC(hdc);
                 HBITMAP mem_bm = NULL, old_bm = NULL;
-                
+
                 if (mem_dc) {
                     mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
                     if (mem_bm) {
@@ -2456,7 +2468,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
                         if (date_size < 10) date_size = 10;
                         if (!hg_g_floater_time_font) hg_g_floater_time_font = CreateFontW(SC(time_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
                         if (!hg_g_floater_date_font) hg_g_floater_date_font = CreateFontW(SC(date_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
-                        
+
                         if (hg_g_floater_time_font && hg_g_floater_date_font) {
                             /* 하이라이트 효과 (깜빡임) - 배경색 변경 */
                             COLORREF bg_color = HG_COLOR_BG_DEFAULT;
@@ -2465,7 +2477,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
                             }
                             HBRUSH bg_brush = CreateSolidBrush(bg_color);
                             int pen_width = SC(HG_BORDER_THICKNESS);
-                            
+
                             COLORREF border_color = HG_COLOR_BG_TOOLBAR;
                             HPEN border_pen = CreatePen(PS_SOLID, pen_width, border_color);
 
@@ -2473,7 +2485,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
                             HPEN old_pen = NULL;
                             if (bg_brush) old_brush = (HBRUSH)SelectObject(mem_dc, bg_brush);
                             if (border_pen) old_pen = (HPEN)SelectObject(mem_dc, border_pen);
-                            
+
                             /* 백그라운드 지우기 */
                             FillRect(mem_dc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH)); // Not actually needed but good practice before drawing
 
@@ -2483,7 +2495,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
                             if (bg_brush && border_pen) {
                                 Rectangle(mem_dc, draw_rc.left, draw_rc.top, draw_rc.right, draw_rc.bottom);
                             }
-                            
+
                             /* 텍스트 그리기 */
                             SYSTEMTIME st;
                             GetLocalTime(&st);
@@ -2492,10 +2504,10 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
                             const WCHAR* months[] = { L"", L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec" };
                             const WCHAR* days[] = { L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat" };
                             hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
-                            
+
                             SetBkMode(mem_dc, TRANSPARENT);
                             SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
-                         
+
                             /* 텍스트 크기 측정하여 수직 중앙 정렬 */
                             SIZE sz_time = {0}, sz_date = {0};
                             HFONT old_font_in_paint = (HFONT)SelectObject(mem_dc, hg_g_floater_time_font);
@@ -2507,28 +2519,28 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
                             int start_y = (rc.bottom - rc.top - total_text_height) / 2;
                             if (start_y < 0) start_y = 0;
 
-                            RECT time_rc = rc; 
+                            RECT time_rc = rc;
                             time_rc.top = start_y;
                             time_rc.bottom = time_rc.top + sz_time.cy;
-                            
-                            RECT date_rc = rc; 
+
+                            RECT date_rc = rc;
                             date_rc.top = time_rc.bottom;
                             date_rc.bottom = date_rc.top + sz_date.cy;
-                            
+
                             SelectObject(mem_dc, hg_g_floater_time_font);
                             DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-                            
+
                             SelectObject(mem_dc, hg_g_floater_date_font);
                             DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
-                            
+
                             SelectObject(mem_dc, old_font_in_paint);
-                            
+
                             if (old_brush) SelectObject(mem_dc, old_brush);
                             if (old_pen) SelectObject(mem_dc, old_pen);
                             if (bg_brush) DeleteObject(bg_brush);
                             if (border_pen) DeleteObject(border_pen);
                         }
-                        
+
                         BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
                         SelectObject(mem_dc, old_bm);
                         DeleteObject(mem_bm);
@@ -2536,7 +2548,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd) {
                     DeleteDC(mem_dc);
                 }
             }
-            
+
             EndPaint(hwnd, &ps);
             return 0;
 }
@@ -2621,11 +2633,11 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         RECT m_rc = hg_g_monitors[idx].rcMonitor;
                         int mw = m_rc.right - m_rc.left;
                         int mh = m_rc.bottom - m_rc.top;
-                        
+
                         /* Default size */
                         int def_w = 640;
                         int def_h = (mw > 0) ? (def_w * mh / mw) : 480;
-                        
+
                         WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
                         StringCchPrintfW(key_x, 64, L"monitor%d_x", idx + 1);
                         StringCchPrintfW(key_y, 64, L"monitor%d_y", idx + 1);
@@ -2633,21 +2645,21 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         StringCchPrintfW(key_h, 64, L"monitor%d_h", idx + 1);
                         StringCchPrintfW(key_name, 64, L"monitor%d_name", idx + 1);
                         WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[idx].name, hg_g_config_path);
-                        
+
                         x = (int)GetPrivateProfileIntW(L"monitor", key_x, 100, hg_g_config_path);
                         y = (int)GetPrivateProfileIntW(L"monitor", key_y, 100, hg_g_config_path);
                         w = (int)GetPrivateProfileIntW(L"monitor", key_w, def_w, hg_g_config_path);
                         h = (int)GetPrivateProfileIntW(L"monitor", key_h, def_h, hg_g_config_path);
-                        
+
                         /* Create window */
                         HWND mwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, L"hgmonitor_class", hg_g_monitors[idx].name,
                                                     WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN,
                                                     x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
-                        
+
                         if (mwnd) {
                             apply_dwm_attributes(mwnd);
                             hg_g_monitors[idx].hwnd = mwnd;
-                            
+
                             /* Add tooltip */
                             if (hg_g_tooltip_wnd) {
                                 TOOLINFOW ti = { 0 };
@@ -2687,7 +2699,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                     ShowWindow(hg_g_about_wnd, SW_SHOWNORMAL);
                     SetForegroundWindow(hg_g_about_wnd);
                 } else {
-                    hg_g_about_wnd = CreateWindowExW(0, L"hgabout_class", L"about hgfloater", 
+                    hg_g_about_wnd = CreateWindowExW(0, L"hgabout_class", L"about hgfloater",
                                                WS_OVERLAPPEDWINDOW,
                                                CW_USEDEFAULT, CW_USEDEFAULT, SC(400), SC(300),
                                                NULL, NULL, GetModuleHandle(NULL), NULL);
@@ -2747,7 +2759,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         update_controlbox_layout(hg_g_controlbox_wnd);
                         InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
                     }
-                    
+
                     if (hg_g_edit_msg_wnd) {
                         if (!hg_g_main_font) {
                             hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
@@ -2755,7 +2767,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         }
                         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
                     }
-                    
+
                     if (hg_g_tooltip_wnd && hg_g_main_font) {
                         SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
                     }
@@ -2792,7 +2804,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                                     rc.right - rc.left, rc.bottom - rc.top);
                     }
                 } /* if (hg_g_taskbox_wnd) */
-                
+
                 /* Arrange Monitor Windows */
                 update_monitor_enum();
                 int mx = SC(300), my = SC(300);
@@ -2804,7 +2816,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         int m_h = (mmw > 0) ? (m_w * mmh / mmw) : SC(480);
 
                         SetWindowPos(hg_g_monitors[i].hwnd, NULL, mx, my, m_w, m_h, SWP_NOZORDER | SWP_NOACTIVATE);
-                        
+
                         WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
                         StringCchPrintfW(key_x, 64, L"monitor%d_x", i + 1);
                         StringCchPrintfW(key_y, 64, L"monitor%d_y", i + 1);
@@ -2812,7 +2824,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         StringCchPrintfW(key_h, 64, L"monitor%d_h", i + 1);
                         StringCchPrintfW(key_name, 64, L"monitor%d_name", i + 1);
                         WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[i].name, hg_g_config_path);
-                        
+
                         WCHAR buf[32];
                         hellgates_wsprintf(buf, 32, L"%d", mx);
                         WritePrivateProfileStringW(L"monitor", key_x, buf, hg_g_config_path);
@@ -2822,7 +2834,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         WritePrivateProfileStringW(L"monitor", key_w, buf, hg_g_config_path);
                         hellgates_wsprintf(buf, 32, L"%d", m_h);
                         WritePrivateProfileStringW(L"monitor", key_h, buf, hg_g_config_path);
-                        
+
                         mx += SC(50); my += SC(50);
                     }
                 }
@@ -2900,7 +2912,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     int new_size = initial_floater_font_size + delta;
                     if (new_size < HG_FLOATER_MIN_FONT_SIZE) new_size = HG_FLOATER_MIN_FONT_SIZE;
                     if (new_size > HG_FLOATER_MAX_FONT_SIZE) new_size = HG_FLOATER_MAX_FONT_SIZE;
-                    
+
                     if (hg_g_floater_font_size != new_size) {
                         hg_g_floater_font_size = new_size;
                         floater_moved = TRUE;
@@ -2919,7 +2931,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 }
             }
             return 0;
-        }        
+        }
         case WM_LBUTTONUP: {
             if (GetCapture() == hwnd) {
                 ReleaseCapture();
@@ -2927,7 +2939,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 floater_moved = FALSE;
                 if (was_moved) {
                     save_floater_font_config();
-                } else {                
+                } else {
                     /* 드래그가 아니었을 때만 토글 */
                     if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
                         hide_taskbox(hg_g_taskbox_wnd);
@@ -2944,13 +2956,13 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         case WM_RBUTTONUP: {
             HMENU hMenu = CreatePopupMenu();
             if (!hMenu) return 0;
-            
+
             /* Volume Controls */
             int cur_vol = get_system_volume();
             WCHAR vol_str[64];
             StringCchPrintfW(vol_str, 64, L"System Volume: %d%%", cur_vol);
             AppendMenuW(hMenu, MF_STRING | MF_DISABLED | MF_GRAYED, HG_IDM_VOLUME_PERCENT, vol_str);
-            
+
             HMENU hVolMenu = CreatePopupMenu();
             AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_0,   L"0%");
             AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_25,  L"25%");
@@ -2959,7 +2971,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_100, L"100%");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hVolMenu, L"Set Volume (&V)");
             AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_CONTROLBOX, L"Open Controlbox (&C)");
-          
+
             /* Audio Devices - Placeholder sub-menu */
             hg_g_h_audio_submenu = CreatePopupMenu();
             if (hg_g_h_audio_submenu) {
@@ -2981,7 +2993,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             } else {
                 DestroyMenu(hMonMenu);
             }
-            
+
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(hMenu, MF_STRING, HG_IDM_ABOUT, L"About (&A)");
             AppendMenuW(hMenu, MF_STRING, HG_IDM_POWER_OFF, L"System Shutdown(&S)");
@@ -3004,7 +3016,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 /* Clear placeholder items */
                 while (GetMenuItemCount(hg_g_h_audio_submenu) > 0)
                     DeleteMenu(hg_g_h_audio_submenu, 0, MF_BYPOSITION);
-                
+
                 update_audio_device_list();
                 if (hg_g_audio_device_count <= 0) {
                     AppendMenuW(hg_g_h_audio_submenu, MF_STRING | MF_DISABLED | MF_GRAYED, 0, L"No devices found");
@@ -3044,7 +3056,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 static SYSTEMTIME last_st = {0};
                 SYSTEMTIME st;
                 GetLocalTime(&st);
-                if (st.wMinute != last_st.wMinute || st.wHour != last_st.wHour || 
+                if (st.wMinute != last_st.wMinute || st.wHour != last_st.wHour ||
                     st.wDay != last_st.wDay || st.wMonth != last_st.wMonth || st.wYear != last_st.wYear) {
                     last_st = st;
                     update_floater_layout(hwnd);
@@ -3073,7 +3085,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 
                 /* 플로팅 박스와 태스크 박스를 최상위로 올림 */
                 SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-                
+
                 /* 플로팅 박스 하이라이트 효과 시작 */
                 hg_g_floater_highlight_ticks = HG_HIGHLIGHT_TICKS;
                 if (!SetTimer(hwnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
@@ -3091,14 +3103,14 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     }
                     SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
                     SetForegroundWindow(hg_g_taskbox_wnd);
-                    
+
                     /* 하이라이트 효과 */
                     hg_g_taskbox_highlight_ticks = HG_HIGHLIGHT_TICKS;
                     if (!SetTimer(hg_g_taskbox_wnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
                         hg_g_taskbox_highlight_ticks = 0;
                     }
                     InvalidateRect(hg_g_taskbox_wnd, NULL, FALSE);
-                    
+
                     /* 태스크 리스트 첫 번째 아이콘에 포커스 (Unified Toolbar) */
                     hg_g_focus_area = 0;
                     SetFocus(hg_g_toolbar_wnd);
@@ -3106,7 +3118,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         hg_g_toolbar_focus_index = 0;
                     }
                     update_focus_message(-2, -2);
-                    
+
                     InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
                 } else {
                     /* 태스크 박스가 없거나 숨겨진 상태라면 플로팅 박스를 포커스 */
@@ -3152,7 +3164,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 void activate_toolbar_item(int index) {
     if (index < 0) return;
     if (index == 0) {
-        /* R button - handled by drag, no click action needed or could be a toggle? 
+        /* R button - handled by drag, no click action needed or could be a toggle?
            User said "이 버튼을 드래그하면 그것에 맞춰 창 크기를 변경하게 해 줘".
            Clicking it doesn't have a specified action. */
     } else if (index == 1) {
@@ -3168,12 +3180,12 @@ void activate_toolbar_item(int index) {
         AppendMenuW(hMenu, MF_STRING, 1001, L"Open Shortcuts Folder");
         AppendMenuW(hMenu, MF_STRING, 1002, L"Edit Configuration");
         AppendMenuW(hMenu, MF_STRING, 1003, L"Reset Settings");
-        
+
         POINT pt;
         GetCursorPos(&pt);
         int cmd = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, hg_g_taskbox_wnd, NULL);
         DestroyMenu(hMenu);
-        
+
         if (cmd == 1001) {
             ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
         } else if (cmd == 1002) {
@@ -3210,7 +3222,7 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
     switch (msg) {
         case WM_CREATE: {
             apply_dwm_attributes(hwnd);
-            HWND edit_wnd = CreateWindowExW(0, L"EDIT", 
+            HWND edit_wnd = CreateWindowExW(0, L"EDIT",
                 HG_ABOUT_TEXT_W,
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
                 SC(10), SC(10), SC(364), SC(240), hwnd, (HMENU)100, GetModuleHandle(NULL), NULL);
@@ -3258,7 +3270,7 @@ void update_focus_message(int override_type, int override_index) {
     if (override_type == -1 && override_index == -1) {
         return;
     }
-    
+
     int type = (override_type == -2) ? hg_g_focus_area : override_type;
     int index = (override_index == -2) ? hg_g_toolbar_focus_index : override_index;
 
@@ -3304,6 +3316,161 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
     return 0;
 }
 
+
+static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type, int pressed_index, int *cached_icon_size) {
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    RECT rc; GetClientRect(hwnd, &rc);
+
+    if (rc.right > 0 && rc.bottom > 0) {
+        HDC mem_dc = CreateCompatibleDC(hdc);
+        HBITMAP mem_bm = NULL, old_bm = NULL;
+
+        if (mem_dc) {
+            mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            if (mem_bm) {
+                old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
+                if (!old_bm) {
+                    DeleteObject(mem_bm);
+                    DeleteDC(mem_dc);
+                    EndPaint(hwnd, &ps);
+                    return 0;
+                }
+
+                COLORREF bg_color = HG_COLOR_BG_TOOLBAR;
+                if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
+                    bg_color = HG_COLOR_BG_FLASH;
+                }
+                HBRUSH hbr_bg = CreateSolidBrush(bg_color);
+                if (hbr_bg) { FillRect(mem_dc, &rc, hbr_bg); DeleteObject(hbr_bg); }
+
+                int icon_size = ABS(hg_g_current_font_size);
+                if (icon_size < SC(16)) icon_size = SC(16);
+
+                if (icon_size != *cached_icon_size || !hg_g_toolbar_btn_font) {
+                    if (hg_g_toolbar_btn_font) DeleteObject(hg_g_toolbar_btn_font);
+                    hg_g_toolbar_btn_font = CreateFontW(icon_size, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                       DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                    *cached_icon_size = icon_size;
+                }
+
+                int visual_order[HG_MAX_WINDOW_ITEMS];
+                for(int i=0; i<hg_g_window_count; i++) visual_order[i] = i;
+
+                if (hg_g_is_dragging && hg_g_drag_source_index != -1) {
+                    int src = hg_g_drag_source_index;
+                    int dst = hg_g_drag_target_index;
+                    if (dst != -1 && dst != src) {
+                        int temp = visual_order[src];
+                        if (src < dst) {
+                            for(int i=src; i<dst; i++) visual_order[i] = visual_order[i+1];
+                        } else {
+                            for(int i=src; i>dst; i--) visual_order[i] = visual_order[i-1];
+                        }
+                        visual_order[dst] = temp;
+                    }
+                }
+
+                // Draw tasks (type 0)
+                for (int pos = 0; pos < hg_g_window_count; pos++) {
+                    int r_idx = visual_order[pos];
+                    RECT rc_item, rc_btn;
+                    get_toolbar_item_rect(0, pos, rc.right, rc.bottom, icon_size, &rc_item);
+                    rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
+
+                    if (hg_g_is_dragging && hg_g_drag_source_index != -1 && r_idx == hg_g_drag_source_index) {
+                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        if (hbr) { FrameRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        continue;
+                    }
+
+                    if (pressed_type == 0 && pressed_index == r_idx && !hg_g_is_dragging) {
+                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
+                    } else if ((hovered_type == 0 && hovered_index == pos && !hg_g_is_dragging) || (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx)) {
+                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
+                        if (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx) {
+                            HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+                            if (hbr_focus) { FrameRect(mem_dc, &rc_btn, hbr_focus); DeleteObject(hbr_focus); }
+                        }
+                    }
+                    if (hg_g_window_items[r_idx].icon) {
+                        DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
+                    }
+                }
+
+                // Draw hg_g_shortcuts (type 1)
+                int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+                for (int i = 0; i < total_shortcuts; i++) {
+                    RECT rc_item, rc_btn;
+                    get_toolbar_item_rect(1, i, rc.right, rc.bottom, icon_size, &rc_item);
+                    rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
+
+                    COLORREF opp_bg = ~bg_color & 0x00FFFFFF;
+                    HBRUSH hbr_opp = CreateSolidBrush(opp_bg);
+                    if (hbr_opp) { FillRect(mem_dc, &rc_btn, hbr_opp); DeleteObject(hbr_opp); }
+
+                    if (pressed_type == 1 && pressed_index == i) {
+                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
+                    } else if ((hovered_type == 1 && hovered_index == i) || (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i)) {
+                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
+                        if (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i) {
+                            HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+                            if (hbr_focus) { FrameRect(mem_dc, &rc_btn, hbr_focus); DeleteObject(hbr_focus); }
+                        }
+                    }
+
+                    if (i >= HG_NUM_BASIC_ICONS) {
+                        int s_idx = i - HG_NUM_BASIC_ICONS;
+                        if (hg_g_shortcuts[s_idx].icon) {
+                            DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_shortcuts[s_idx].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
+                        }
+                    } else if (hg_g_toolbar_btn_font) {
+                        SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
+                        SetBkMode(mem_dc, TRANSPARENT);
+                        HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
+                        WCHAR btn_text[2] = {0};
+                        if (i == 0) btn_text[0] = L'R';
+                        else if (i == 1) btn_text[0] = L'M';
+                        else if (i == 2) btn_text[0] = L'X';
+                        else if (i == 3) btn_text[0] = L'D';
+                        else if (i == 4) btn_text[0] = L'S';
+                        draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE, HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
+                        SelectObject(mem_dc, old_font);
+                    }
+                }
+
+                if (hg_g_is_dragging && hg_g_drag_source_index != -1 && hg_g_drag_source_index < hg_g_window_count) {
+                    int cx = hg_g_drag_current_pt.x - icon_size / 2;
+                    int cy = hg_g_drag_current_pt.y - icon_size / 2;
+                    RECT drag_rc = { cx - SC(4), cy - SC(4), cx + icon_size + SC(4), cy + icon_size + SC(4) };
+                    HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                    if (hbr) { FillRect(mem_dc, &drag_rc, hbr); DeleteObject(hbr); }
+                    DrawEdge(mem_dc, &drag_rc, BDR_RAISEDINNER, BF_RECT);
+                    if (hg_g_window_items[hg_g_drag_source_index].icon) {
+                        DrawIconEx(mem_dc, cx, cy, hg_g_window_items[hg_g_drag_source_index].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
+                    }
+                }
+
+                BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
+                SelectObject(mem_dc, old_bm);
+                DeleteObject(mem_bm);
+            }
+            DeleteDC(mem_dc);
+        }
+    }
+    EndPaint(hwnd, &ps);
+    return 0;
+}
+
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
     static int hovered_type = -1, hovered_index = -1;
     static int pressed_type = -1, pressed_index = -1;
@@ -3327,159 +3494,8 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             update_toolbar_tooltips(hwnd);
             return 0;
         }
-        case WM_PAINT: {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            RECT rc; GetClientRect(hwnd, &rc);
-            
-            if (rc.right > 0 && rc.bottom > 0) {
-                HDC mem_dc = CreateCompatibleDC(hdc);
-                HBITMAP mem_bm = NULL, old_bm = NULL;
-                
-                if (mem_dc) {
-                    mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-                    if (mem_bm) {
-                        old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
-                        if (!old_bm) {
-                            DeleteObject(mem_bm);
-                            DeleteDC(mem_dc);
-                            EndPaint(hwnd, &ps);
-                            return 0;
-                        }
-                        
-                        COLORREF bg_color = HG_COLOR_BG_TOOLBAR;
-                        if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
-                            bg_color = HG_COLOR_BG_FLASH;
-                        }
-                        HBRUSH hbr_bg = CreateSolidBrush(bg_color);
-                        if (hbr_bg) { FillRect(mem_dc, &rc, hbr_bg); DeleteObject(hbr_bg); }
-
-                        int icon_size = ABS(hg_g_current_font_size);
-                        if (icon_size < SC(16)) icon_size = SC(16);
-                        
-                        if (icon_size != cached_icon_size || !hg_g_toolbar_btn_font) {
-                            if (hg_g_toolbar_btn_font) DeleteObject(hg_g_toolbar_btn_font);
-                            hg_g_toolbar_btn_font = CreateFontW(icon_size, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, 
-                                               DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, 
-                                               CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
-                            cached_icon_size = icon_size;
-                        }
-
-                        int visual_order[HG_MAX_WINDOW_ITEMS];
-                        for(int i=0; i<hg_g_window_count; i++) visual_order[i] = i;
-
-                        if (hg_g_is_dragging && hg_g_drag_source_index != -1) {
-                            int src = hg_g_drag_source_index;
-                            int dst = hg_g_drag_target_index;
-                            if (dst != -1 && dst != src) {
-                                int temp = visual_order[src];
-                                if (src < dst) {
-                                    for(int i=src; i<dst; i++) visual_order[i] = visual_order[i+1];
-                                } else {
-                                    for(int i=src; i>dst; i--) visual_order[i] = visual_order[i-1];
-                                }
-                                visual_order[dst] = temp;
-                            }
-                        }
-
-                        // Draw tasks (type 0)
-                        for (int pos = 0; pos < hg_g_window_count; pos++) {
-                            int r_idx = visual_order[pos];
-                            RECT rc_item, rc_btn;
-                            get_toolbar_item_rect(0, pos, rc.right, rc.bottom, icon_size, &rc_item);
-                            rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
-
-                            if (hg_g_is_dragging && hg_g_drag_source_index != -1 && r_idx == hg_g_drag_source_index) {
-                                HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                                if (hbr) { FrameRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
-                                continue;
-                            }
-
-                            if (pressed_type == 0 && pressed_index == r_idx && !hg_g_is_dragging) {
-                                HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                                if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
-                                DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
-                            } else if ((hovered_type == 0 && hovered_index == pos && !hg_g_is_dragging) || (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx)) {
-                                HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                                if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
-                                DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
-                                if (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx) {
-                                    HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
-                                    if (hbr_focus) { FrameRect(mem_dc, &rc_btn, hbr_focus); DeleteObject(hbr_focus); }
-                                }
-                            }
-                            if (hg_g_window_items[r_idx].icon) {
-                                DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
-                            }
-                        }
-
-                        // Draw hg_g_shortcuts (type 1)
-                        int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-                        for (int i = 0; i < total_shortcuts; i++) {
-                            RECT rc_item, rc_btn;
-                            get_toolbar_item_rect(1, i, rc.right, rc.bottom, icon_size, &rc_item);
-                            rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
-
-                            COLORREF opp_bg = ~bg_color & 0x00FFFFFF;
-                            HBRUSH hbr_opp = CreateSolidBrush(opp_bg);
-                            if (hbr_opp) { FillRect(mem_dc, &rc_btn, hbr_opp); DeleteObject(hbr_opp); }
-
-                            if (pressed_type == 1 && pressed_index == i) {
-                                HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                                if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
-                                DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
-                            } else if ((hovered_type == 1 && hovered_index == i) || (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i)) {
-                                HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                                if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
-                                DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
-                                if (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i) {
-                                    HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
-                                    if (hbr_focus) { FrameRect(mem_dc, &rc_btn, hbr_focus); DeleteObject(hbr_focus); }
-                                }
-                            }
-
-                            if (i >= HG_NUM_BASIC_ICONS) {
-                                int s_idx = i - HG_NUM_BASIC_ICONS;
-                                if (hg_g_shortcuts[s_idx].icon) {
-                                    DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_shortcuts[s_idx].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
-                                }
-                            } else if (hg_g_toolbar_btn_font) {
-                                SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
-                                SetBkMode(mem_dc, TRANSPARENT);
-                                HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
-                                WCHAR btn_text[2] = {0};
-                                if (i == 0) btn_text[0] = L'R';
-                                else if (i == 1) btn_text[0] = L'M';
-                                else if (i == 2) btn_text[0] = L'X';
-                                else if (i == 3) btn_text[0] = L'D';
-                                else if (i == 4) btn_text[0] = L'S';
-                                draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE, HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
-                                SelectObject(mem_dc, old_font);
-                            }
-                        }
-
-                        if (hg_g_is_dragging && hg_g_drag_source_index != -1 && hg_g_drag_source_index < hg_g_window_count) {
-                            int cx = hg_g_drag_current_pt.x - icon_size / 2;
-                            int cy = hg_g_drag_current_pt.y - icon_size / 2;
-                            RECT drag_rc = { cx - SC(4), cy - SC(4), cx + icon_size + SC(4), cy + icon_size + SC(4) };
-                            HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                            if (hbr) { FillRect(mem_dc, &drag_rc, hbr); DeleteObject(hbr); }
-                            DrawEdge(mem_dc, &drag_rc, BDR_RAISEDINNER, BF_RECT);
-                            if (hg_g_window_items[hg_g_drag_source_index].icon) {
-                                DrawIconEx(mem_dc, cx, cy, hg_g_window_items[hg_g_drag_source_index].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
-                            }
-                        }
-                        
-                        BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
-                        SelectObject(mem_dc, old_bm);
-                        DeleteObject(mem_bm);
-                    }
-                    DeleteDC(mem_dc);
-                }
-            }
-            EndPaint(hwnd, &ps);
-            return 0;
-        }
+        case WM_PAINT:
+            return toolbar_controller_on_paint(hwnd, hovered_type, hovered_index, pressed_type, pressed_index, &cached_icon_size);
         case WM_KEYDOWN: {
             SendMessage(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
             return 0;
@@ -3489,13 +3505,13 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             RECT rc; GetClientRect(hwnd, &rc);
             int icon_size = ABS(hg_g_current_font_size);
             if (icon_size < SC(16)) icon_size = SC(16);
-            
+
             int cur_type = -1, cur_index = -1;
             if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
                 hg_g_focus_area = cur_type;
                 pressed_type = cur_type;
                 pressed_index = cur_index;
-                
+
                 if (cur_type == 1 && cur_index == 0) { // Resize Drag Tool
                     is_resizing = TRUE;
                     GetCursorPos(&start_mouse);
@@ -3525,17 +3541,17 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 int dw = cur_mouse.x - start_mouse.x;
                 int dh = cur_mouse.y - start_mouse.y;
                 int border = SC(HG_BORDER_THICKNESS);
-                
+
                 int total_tasks = hg_g_window_count;
                 int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
                 int total_items = total_tasks + total_shortcuts;
                 if (total_items <= 0) total_items = 1;
-                
+
                 int cols = 1;
                 if (ABS(dh) > ABS(dw)) {
                     int new_height = (start_rect.bottom - start_rect.top) + dh;
                     if (new_height < SC(HG_MIN_WINDOW_HEIGHT)) new_height = SC(HG_MIN_WINDOW_HEIGHT);
-                    
+
                     int edit_height = SC(20);
                     if (hg_g_edit_msg_wnd && hg_g_main_font) {
                         HDC hdc = GetDC(hg_g_edit_msg_wnd);
@@ -3562,15 +3578,15 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     cols = get_items_per_row(tb_width, icon_size);
                 }
                 if (cols <= 0) cols = 1;
-                
+
                 int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
                 int req_w = exact_tb_width + border * 2;
-                
+
                 int rows = (total_items + cols - 1) / cols;
                 if (rows <= 0) rows = 1;
                 int row_height = icon_size + SC(10);
                 int req_toolbar_height = SC(10) + rows * row_height;
-                
+
                 int edit_height = SC(20);
                 if (hg_g_edit_msg_wnd && hg_g_main_font) {
                     HDC hdc = GetDC(hg_g_edit_msg_wnd);
@@ -3583,9 +3599,9 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         ReleaseDC(hg_g_edit_msg_wnd, hdc);
                     }
                 }
-                
+
                 int req_h = border * 2 + edit_height + req_toolbar_height;
-                
+
                 SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, req_w, req_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                 return 0;
             }
@@ -3641,7 +3657,7 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 pressed_index = -1;
                 ReleaseCapture();
                 InvalidateRect(hwnd, NULL, FALSE);
-                
+
                 /* 크기 조절 완료 시 불필요한 우측 여백을 제거하고 정확하게 스냅되도록 함 */
                 RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
                 int icon_size = ABS(hg_g_current_font_size);
@@ -3652,7 +3668,7 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
                 int new_w = exact_tb_width + border * 2;
                 SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                
+
                 GetWindowRect(hg_g_taskbox_wnd, &rc);
                 save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
             } else if (is_moving_taskbox) {
@@ -3661,7 +3677,7 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 pressed_index = -1;
                 ReleaseCapture();
                 InvalidateRect(hwnd, NULL, FALSE);
-                
+
                 RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
                 save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
             } else if (hg_g_drag_source_index != -1) {
@@ -3675,7 +3691,7 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 hg_g_is_dragging = FALSE;
                 ReleaseCapture();
                 InvalidateRect(hwnd, NULL, FALSE);
-                
+
                 if (!was_dragging) {
                     POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
                     RECT rc; GetClientRect(hwnd, &rc);
@@ -3746,24 +3762,24 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_MOVETO_0_0, L"Move to (0, 0) (&0)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_CLOSE, L"Close Window (&X)");
                         AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-                        
+
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_1, L"640x480 (&A)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_2, L"800x600 (&S)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_3, L"1280x960 (&D)");
                         AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-                        
+
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_1, L"640x360 (&Q)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_2, L"800x480 (&W)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_3, L"960x540 (&E)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_4, L"1280x720 (&R)");
                         AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-                        
+
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_1, L"360x640 (&1)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_2, L"480x800 (&2)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_3, L"540x960 (&3)");
                         AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_4, L"720x1280 (&4)");
-                        
-                        POINT screen_pt; 
+
+                        POINT screen_pt;
                         if (l_param == 0) {
                             RECT rc_item;
                             get_toolbar_item_rect(0, cur_index, rc.right, rc.bottom, icon_size, &rc_item);
@@ -3772,10 +3788,10 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         } else {
                             GetCursorPos(&screen_pt);
                         }
-                        
+
                         SetMenuDefaultItem(h_menu, HG_IDM_TASK_RESTORE, FALSE);
                         int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
-                        
+
                         if (cmd == HG_IDM_TASK_RESTORE) {
                             activate_taskbar_item(cur_index);
                         } else if (cmd == HG_IDM_TASK_CLOSE) {
@@ -3811,7 +3827,7 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         if (cur_index >= HG_NUM_BASIC_ICONS) {
                             AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_OPEN_DIR, L"Open File Location (&O)");
                         }
-                        
+
                         POINT screen_pt;
                         if (l_param == 0) {
                             RECT rc_item;
@@ -3821,10 +3837,10 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         } else {
                             GetCursorPos(&screen_pt);
                         }
-                        
+
                         SetMenuDefaultItem(h_menu, HG_IDM_SHORTCUT_RUN, FALSE);
                         int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
-                        
+
                         if ((UINT)cmd == HG_IDM_SHORTCUT_RUN) {
                             activate_toolbar_item(cur_index);
                         } else if ((UINT)cmd == HG_IDM_SHORTCUT_OPEN_DIR) {
@@ -3891,13 +3907,13 @@ BOOL get_explorer_path(HWND target_hwnd, WCHAR* out_path, int max_len) {
     out_path[0] = L'\0';
     IShellWindows *psw = NULL;
     if (FAILED(CoCreateInstance(&CLSID_ShellWindows, NULL, CLSCTX_ALL, &IID_IShellWindows, (void**)&psw))) return FALSE;
-    
+
     long count = 0;
     if (FAILED(psw->lpVtbl->get_Count(psw, &count))) {
         psw->lpVtbl->Release(psw);
         return FALSE;
     }
-    
+
     BOOL found = FALSE;
     for (long i = 0; i < count; i++) {
         VARIANT v;
@@ -4083,7 +4099,7 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
             HMENU h_menu = CreatePopupMenu();
             if (!h_menu) return 0;
             AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_COPYALL, L"Copy All (&A)");
-            
+
             POINT pt;
             if (l_param == (LPARAM)-1) { /* Keyboard shortcut */
                 RECT rc; GetWindowRect(hwnd, &rc);
@@ -4092,15 +4108,15 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
                 pt.x = GET_X_LPARAM(l_param);
                 pt.y = GET_Y_LPARAM(l_param);
             }
-            
+
             int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
-            
+
             if (cmd == HG_IDM_EDIT_COPYALL) {
                 SendMessageW(hwnd, EM_SETSEL, 0, (LPARAM)-1);
                 SendMessageW(hwnd, WM_COPY, 0, 0);
                 SendMessageW(hwnd, EM_SETSEL, (WPARAM)-1, 0);
             }
-            
+
             DestroyMenu(h_menu);
             return 0;
         }
@@ -4137,14 +4153,14 @@ void update_layout(HWND hwnd) {
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
     int rows = (total_tasks + total_shortcuts + cols - 1) / cols;
     if (rows <= 0) rows = 1;
-    
+
     int row_height = icon_size + SC(10);
-    
+
     RECT win_rc;
     GetWindowRect(hwnd, &win_rc);
     int current_height = win_rc.bottom - win_rc.top;
     int current_width = win_rc.right - win_rc.left;
-    
+
     int req_toolbar_height = SC(10) + rows * row_height;
     int required_total_height = border * 2 + edit_height + req_toolbar_height;
 
@@ -4192,23 +4208,23 @@ static BOOL monitor_pt_to_screen_pt(HWND hwnd, int monitor_idx, POINT client_pt,
     int preview_left = border;
     int preview_right = rc.right - border;
     int preview_bottom = rc.bottom - border;
-    
+
     if (!allow_out && (client_pt.x < preview_left || client_pt.x > preview_right ||
         client_pt.y < preview_top || client_pt.y > preview_bottom)) {
         return FALSE;
     }
-    
+
     int pw = preview_right - preview_left;
     int ph = preview_bottom - preview_top;
     if (pw <= 0 || ph <= 0) return FALSE;
-    
+
     RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
     int mw = m_rc.right - m_rc.left;
     int mh = m_rc.bottom - m_rc.top;
-    
+
     double rx = (double)(client_pt.x - preview_left) / pw;
     double ry = (double)(client_pt.y - preview_top) / ph;
-    
+
     out_screen_pt->x = m_rc.left + (int)(rx * mw);
     out_screen_pt->y = m_rc.top + (int)(ry * mh);
     return TRUE;
@@ -4230,21 +4246,21 @@ static BOOL screen_pt_to_monitor_pt(HWND hwnd, int monitor_idx, POINT screen_pt,
     int preview_left = border;
     int preview_right = rc.right - border;
     int preview_bottom = rc.bottom - border;
-    
+
     int pw = preview_right - preview_left;
     int ph = preview_bottom - preview_top;
     if (pw <= 0 || ph <= 0) return FALSE;
-    
+
     RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
     int mw = m_rc.right - m_rc.left;
     int mh = m_rc.bottom - m_rc.top;
     if (mw <= 0 || mh <= 0) return FALSE;
-    
+
     double rx = (double)(screen_pt.x - m_rc.left) / mw;
     double ry = (double)(screen_pt.y - m_rc.top) / mh;
-    
+
     if (rx < 0.0 || rx > 1.0 || ry < 0.0 || ry > 1.0) return FALSE;
-    
+
     out_client_pt->x = preview_left + (int)(rx * pw);
     out_client_pt->y = preview_top + (int)(ry * ph);
     return TRUE;
@@ -4287,7 +4303,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 POINT screen_pt;
                 screen_pt.x = (int)(INT_PTR)GetPropW(hwnd, L"drop_x");
                 screen_pt.y = (int)(INT_PTR)GetPropW(hwnd, L"drop_y");
-                
+
                 POINT client_pt;
                 if (screen_pt_to_monitor_pt(hwnd, monitor_idx, screen_pt, &client_pt)) {
                     POINT tb_screen_pt = client_pt;
@@ -4304,7 +4320,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             if (edit_wnd && hg_g_main_font) {
                 int border = SC(HG_BORDER_THICKNESS);
                 int w = (int)LOWORD(l_param) - border * 2;
-                
+
                 HDC hdc = GetDC(edit_wnd);
                 HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
                 TEXTMETRIC tm = {0};
@@ -4312,7 +4328,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 int edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
                 SelectObject(hdc, old_font);
                 ReleaseDC(edit_wnd, hdc);
-                
+
                 MoveWindow(edit_wnd, border, border, w, edit_height, TRUE);
             }
             InvalidateRect(hwnd, NULL, FALSE);
@@ -4332,7 +4348,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             HDC hdc = BeginPaint(hwnd, &ps);
             RECT rc;
             GetClientRect(hwnd, &rc);
-            
+
             if (rc.right > 0 && rc.bottom > 0) {
                 HDC mem_dc = CreateCompatibleDC(hdc);
                 HBITMAP mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
@@ -4343,7 +4359,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                     EndPaint(hwnd, &ps);
                     return 0;
                 }
-                
+
                 int border = SC(HG_BORDER_THICKNESS);
                 int edit_height = 0;
                 HWND edit_wnd = GetDlgItem(hwnd, 104);
@@ -4352,19 +4368,19 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                     GetWindowRect(edit_wnd, &erc);
                     edit_height = erc.bottom - erc.top;
                 }
-                
+
                 if (monitor_idx >= 0 && hg_g_monitors[monitor_idx].active) {
                     RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
                     int mw = m_rc.right - m_rc.left;
                     int mh = m_rc.bottom - m_rc.top;
-                    
+
                     HDC hdc_screen = GetDC(NULL);
                     SetStretchBltMode(mem_dc, HALFTONE);
                     /* Draw preview area below the edit box + border */
                     int preview_top = border + edit_height;
                     StretchBlt(mem_dc, border, preview_top, rc.right - 2 * border, rc.bottom - preview_top - border, hdc_screen, m_rc.left, m_rc.top, mw, mh, SRCCOPY);
                     ReleaseDC(NULL, hdc_screen);
-                    
+
                     /* Draw cursor if needed */
                     POINT cursor_pt;
                     if (GetCursorPos(&cursor_pt)) {
@@ -4374,7 +4390,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                             if (GetAsyncKeyState(VK_MBUTTON) < 0) fill_color = RGB(255, 255, 0); /* yellow */
                             else if (GetAsyncKeyState(VK_RBUTTON) < 0) fill_color = RGB(0, 0, 255); /* blue */
                             else if (GetAsyncKeyState(VK_LBUTTON) < 0) fill_color = RGB(0, 255, 0); /* green */
-                            
+
                             int len = SC(8);
                             /* Draw black crosshair background for contrast */
                             HPEN hPenBg = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
@@ -4383,7 +4399,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                             LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
                             MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
                             LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
-                            
+
                             /* Draw colored crosshair core */
                             HPEN hPenFg = CreatePen(PS_SOLID, 1, fill_color);
                             SelectObject(mem_dc, hPenFg);
@@ -4391,14 +4407,14 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                             LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
                             MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
                             LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
-                            
+
                             SelectObject(mem_dc, oldPen);
                             DeleteObject(hPenBg);
                             DeleteObject(hPenFg);
                         }
                     }
                 }
-                
+
                 /* Draw border like taskbox/floater */
                 HBRUSH border_brush = CreateSolidBrush(HG_COLOR_BG_TOOLBAR);
                 if (border_brush) {
@@ -4407,7 +4423,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                     RECT rc_left = {0, border, border, rc.bottom - border};
                     RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
                     RECT rc_edit_bg = {0, border, rc.right, border + edit_height};
-                    
+
                     FillRect(mem_dc, &rc_top, border_brush);
                     FillRect(mem_dc, &rc_bottom, border_brush);
                     FillRect(mem_dc, &rc_left, border_brush);
@@ -4415,9 +4431,9 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                     FillRect(mem_dc, &rc_edit_bg, border_brush);
                     DeleteObject(border_brush);
                 }
-                
+
                 BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
-                
+
                 SelectObject(mem_dc, old_bm);
                 DeleteObject(mem_bm);
                 DeleteDC(mem_dc);
@@ -4437,19 +4453,19 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             POINT screen_pt;
             if (monitor_pt_to_screen_pt(hwnd, monitor_idx, pt, &screen_pt, FALSE)) {
                 INPUT inputs[2] = {0};
-                
+
                 inputs[0].type = INPUT_MOUSE;
                 if (msg == WM_LBUTTONDOWN) inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
                 else if (msg == WM_RBUTTONDOWN) inputs[0].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
                 else if (msg == WM_MBUTTONDOWN) inputs[0].mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
-                
+
                 SetCursorPos(screen_pt.x, screen_pt.y);
-                
+
                 inputs[1].type = INPUT_MOUSE;
                 if (msg == WM_LBUTTONDOWN) inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
                 else if (msg == WM_RBUTTONDOWN) inputs[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
                 else if (msg == WM_MBUTTONDOWN) inputs[1].mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
-                
+
                 SendInput(2, inputs, sizeof(INPUT));
             }
             return 0;
@@ -4470,7 +4486,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 if (msg == WM_LBUTTONUP) inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
                 else if (msg == WM_RBUTTONUP) inputs[0].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
                 else if (msg == WM_MBUTTONUP) inputs[0].mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
-                
+
                 SetCursorPos(screen_pt.x, screen_pt.y);
                 SendInput(1, inputs, sizeof(INPUT));
             }
@@ -4499,7 +4515,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             if (pt.x >= rc.right - border) return HTRIGHT;
             if (pt.y < rc.top + border) return HTTOP;
             if (pt.y >= rc.bottom - border) return HTBOTTOM;
-            
+
             return HTCLIENT;
         }
         case WM_SIZING: {
@@ -4512,7 +4528,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 if (mh > 0 && mw > 0) {
                     int w = prc->right - prc->left;
                     int h = prc->bottom - prc->top;
-                    
+
                     /* Depending on sizing edge, adjust width or height */
                     switch (w_param) {
                         case WMSZ_LEFT:
@@ -4547,7 +4563,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 StringCchPrintfW(key_h, 64, L"monitor%d_h", monitor_idx + 1);
                 StringCchPrintfW(key_name, 64, L"monitor%d_name", monitor_idx + 1);
                 WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[monitor_idx].name, hg_g_config_path);
-                
+
                 WCHAR buf[32];
                 hellgates_wsprintf(buf, 32, L"%d", rc.left);
                 WritePrivateProfileStringW(L"monitor", key_x, buf, hg_g_config_path);
@@ -4575,14 +4591,14 @@ static LRESULT taskbox_controller_on_create(HWND hwnd) {
             RegisterClassW(&twc);
 
             /* UI용 일반 폰트 생성 (아이콘 크기와 분리) */
-            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, 
-                               DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, 
+            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                               DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
                                CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
             if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
             hg_g_toolbar_wnd = CreateWindowExW(0, L"hgtoolbar_class", NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd, (HMENU)HG_IDC_TOOLBAR, GetModuleHandle(NULL), NULL);
-            
-            hg_g_edit_msg_wnd = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL, 
+
+            hg_g_edit_msg_wnd = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL,
                 WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY,
                 0, 0, 0, 0, hwnd, (HMENU)HG_IDC_EDIT_MSG, GetModuleHandle(NULL), NULL);
             if (hg_g_edit_msg_wnd) {
@@ -4596,7 +4612,7 @@ static LRESULT taskbox_controller_on_create(HWND hwnd) {
                                      WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX,
                                      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                      hwnd, NULL, GetModuleHandle(NULL), NULL);
-            
+
             if (hg_g_tooltip_wnd) {
                 SendMessageW(hg_g_tooltip_wnd, TTM_SETMAXTIPWIDTH, 0, SC(1000));
                 /* 툴팁 폰트도 DPI 배율이 적용된 폰트로 설정 */
@@ -4610,11 +4626,11 @@ static LRESULT taskbox_controller_on_create(HWND hwnd) {
             }
 
             /* taskbar_wnd creation removed */
-            
+
             load_shortcuts();
             refresh_window_list(TRUE);
             update_toolbar_tooltips(hg_g_toolbar_wnd);
-            
+
             /* 창 테두리 및 모서리 등 DWM 속성 설정 */
             apply_dwm_attributes(hwnd);
 
@@ -4627,7 +4643,7 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd) {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
             RECT rc; GetClientRect(hwnd, &rc);
-            
+
             /* 하이라이트 효과 (깜빡임) */
             COLORREF bg_color = HG_CLICKABLE_BG;
             if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
@@ -4648,12 +4664,12 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd) {
                 RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
                 RECT rc_left = {0, border, border, rc.bottom - border};
                 RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
-                
+
                 FillRect(hdc, &rc_top, hbr_border);
                 FillRect(hdc, &rc_bottom, hbr_border);
                 FillRect(hdc, &rc_left, hbr_border);
                 FillRect(hdc, &rc_right, hbr_border);
-                
+
                 DeleteObject(hbr_border);
             }
             EndPaint(hwnd, &ps);
@@ -4664,14 +4680,14 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int move_step = SC(20);
             BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
             BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
-            
+
             /* Alt + 방향키/hjkl/wasd: 현재 창 이동 (태스크 박스) */
             if (is_alt) {
                 if (w_param == VK_LEFT || w_param == 'H' || w_param == 'A') dx = -move_step;
                 else if (w_param == VK_RIGHT || w_param == 'L' || w_param == 'D') dx = move_step;
                 else if (w_param == VK_UP || w_param == 'K' || w_param == 'W') dy = -move_step;
                 else if (w_param == VK_DOWN || w_param == 'J' || w_param == 'S') dy = move_step;
-                
+
                 if (dx != 0 || dy != 0) {
                     move_window_by_offset(hwnd, dx, dy);
                     /* 이동 후에도 최소한 일부는 화면에 보이도록 보호 */
@@ -4706,14 +4722,14 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                     int tb_width = (rc.right - rc.left) - border * 2;
                     int cols = get_items_per_row(tb_width, icon_size);
                     int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-                    
+
                     if (tb_width > exact_tb_width + SC(5)) {
                         /* Right padding exists, snap to current cols */
                     } else if (cols > 1) {
                         cols--;
                         exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
                     }
-                    
+
                     int new_w = exact_tb_width + border * 2;
                     SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                     return 0;
@@ -4765,7 +4781,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                         int new_rows = (total_items + cols - 1) / cols;
                         if (new_rows > current_rows) break;
                     }
-                    
+
                     int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
                     int new_w = exact_tb_width + border * 2;
                     SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -4783,33 +4799,33 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             /* 탐색 및 선택 */
             int total_tasks = hg_g_window_count;
             int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-            
+
             if (total_tasks > 0 || total_shortcuts > 0) {
                 int icon_size = ABS(hg_g_current_font_size);
                 if (icon_size < SC(16)) icon_size = SC(16);
-                
+
                 RECT rc_toolbar;
                 GetClientRect(hg_g_toolbar_wnd, &rc_toolbar);
-                
+
                 int cols = get_items_per_row(rc_toolbar.right, icon_size);
                 int min_required_rows = (total_tasks + total_shortcuts + cols - 1) / cols;
                 if (min_required_rows <= 0) min_required_rows = 1;
-                
+
                 int visible_rows = (rc_toolbar.bottom - SC(20) + SC(10)) / (icon_size + SC(10));
                 if (visible_rows <= 0) visible_rows = 1;
-                
+
                 int rows = (visible_rows > min_required_rows) ? visible_rows : min_required_rows;
                 int total_cells = rows * cols;
-                
+
                 int current_cell = -1;
                 if (hg_g_focus_area == 0) {
                     current_cell = hg_g_toolbar_focus_index;
                 } else {
                     current_cell = total_cells - 1 - hg_g_toolbar_focus_index;
                 }
-                
+
                 if (current_cell < 0) current_cell = 0;
-                
+
                 int r = current_cell / cols;
                 int c = current_cell % cols;
                 BOOL changed = FALSE;
@@ -4838,9 +4854,9 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                     if (c >= cols) { c = 0; r++; }
                     if (r < 0) r = 0;
                     if (r >= rows) r = rows - 1;
-                    
+
                     int new_cell = r * cols + c;
-                    
+
                     // 빈 공간이라면 가장 가까운 유효한 셀로 이동 (이 경우는 Task의 마지막이나 Shortcut의 첫번째가 될 것)
                     if (new_cell >= total_tasks && new_cell < total_cells - total_shortcuts) {
                         if (new_cell > current_cell) {
@@ -4862,7 +4878,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                     }
                     update_focus_message(-2, -2);
                 }
-                
+
                 InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
             }
             return 0;
@@ -4882,13 +4898,13 @@ static LRESULT taskbox_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
 static LRESULT taskbox_controller_on_destroy(HWND hwnd) {
             hg_g_taskbox_highlight_ticks = 0;
             KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-            KillTimer(hwnd, 1);      
+            KillTimer(hwnd, 1);
 
-            if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) { 
-                DeleteObject(hg_g_main_font); 
+            if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) {
+                DeleteObject(hg_g_main_font);
             }
             hg_g_main_font = NULL;
-            
+
             if (hg_g_edit_bg_brush) { DeleteObject(hg_g_edit_bg_brush); hg_g_edit_bg_brush = NULL; }
             if (hg_g_toolbar_btn_font) { DeleteObject(hg_g_toolbar_btn_font); hg_g_toolbar_btn_font = NULL; }
             if (hg_g_hbr_highlight) { DeleteObject(hg_g_hbr_highlight); hg_g_hbr_highlight = NULL; }
@@ -5122,7 +5138,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             InvalidateRect(hwnd, NULL, TRUE);
             if (hg_g_floater_wnd) InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
             if (hg_g_toolbar_wnd) InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
-            
+
             return 0;
         }
         case WM_GETMINMAXINFO: {
@@ -5149,23 +5165,23 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             /* ListView 관련 통지 제거됨 */
             break;
         }
-        case WM_ENTERSIZEMOVE: { 
-            hg_g_in_sizemove = TRUE; 
+        case WM_ENTERSIZEMOVE: {
+            hg_g_in_sizemove = TRUE;
             GetWindowRect(hwnd, &hg_g_drag_start_rect);
-            return DefWindowProcW(hwnd, msg, w_param, l_param); 
-        } 
-        case WM_EXITSIZEMOVE: { 
+            return DefWindowProcW(hwnd, msg, w_param, l_param);
+        }
+        case WM_EXITSIZEMOVE: {
             hg_g_in_sizemove = FALSE;
             RECT rc = {0};
             GetWindowRect(hwnd, &rc);
-            
+
             int dw = (rc.right - rc.left) - (hg_g_drag_start_rect.right - hg_g_drag_start_rect.left);
             int dh = (rc.bottom - rc.top) - (hg_g_drag_start_rect.bottom - hg_g_drag_start_rect.top);
 
             int icon_size = ABS(hg_g_current_font_size);
             if (icon_size < SC(16)) icon_size = SC(16);
             int border = SC(HG_BORDER_THICKNESS);
-            
+
             int total_tasks = hg_g_window_count;
             int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
             int total_items = total_tasks + total_shortcuts;
@@ -5199,12 +5215,12 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 cols = get_items_per_row(tb_width, icon_size);
             }
             if (cols <= 0) cols = 1;
-            
+
             int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
             int new_w = exact_tb_width + border * 2;
-            
+
             SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-            
+
             update_layout(hwnd); /* Will trigger snap exact height */
             GetWindowRect(hwnd, &rc);
             save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
@@ -5260,13 +5276,13 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             SetTextColor(hdc_static, hg_g_color_scheme_selected.text);
             /* 투명 배경 모드 시 글자가 겹쳐 그려지는 문제 방지를 위해 배경을 칠함 */
             SetBkMode(hdc_static, OPAQUE);
-            
+
             COLORREF bg_color = hg_g_color_scheme_selected.bg;
             if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
                 bg_color = HG_COLOR_BG_FLASH;
             }
             SetBkColor(hdc_static, bg_color);
-            
+
             /* 하이라이트 중일 때는 브러시를 캐싱하여 반환 (GDI 누수 방지) */
             if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
                 if (!hg_g_hbr_highlight) {
@@ -5274,7 +5290,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 }
                 return hg_g_hbr_highlight ? (LRESULT)hg_g_hbr_highlight : (LRESULT)GetStockObject(BLACK_BRUSH);
             }
-            
+
             if (!hg_g_edit_bg_brush) hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
             return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
         }
@@ -5331,7 +5347,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     }
 
     /* 초기 값들에 DPI 배율 적용 */
-    
+
     INITCOMMONCONTROLSEX icex;
     icex.dwSize = sizeof(icex);
     icex.dwICC = ICC_WIN95_CLASSES | ICC_BAR_CLASSES | ICC_TAB_CLASSES;
