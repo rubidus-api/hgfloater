@@ -64,7 +64,7 @@
 &#x20; - `taskbox\_controller\_on\_keydown(HWND hwnd, WPARAM w\_param, LPARAM l\_param)`
 &#x20; - `taskbox\_controller\_on\_command(HWND hwnd, int id, HWND ctrl\_hwnd)`
 &#x20; - `taskbox\_controller\_on\_destroy(HWND hwnd)`
-\- \[ ] \*\*Controlbox Controller 구현 및 바인딩\*\*
+\- [x] \*\*Controlbox Controller 구현 및 바인딩\*\*
 &#x20; - `controlbox\_controller\_on\_create(HWND hwnd)`
 &#x20; - `controlbox\_controller\_on\_paint(HWND hwnd)`
 &#x20; - `controlbox\_controller\_on\_command(HWND hwnd, int id)`

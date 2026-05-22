@@ -119,10 +119,17 @@
 #define HG_IDC_LISTBOX 101
 #define HG_IDC_TOOLBAR 102
 #define HG_IDC_EDIT_MSG 103
+#define HG_IDC_CONTROLBOX_VALUE 104
+#define HG_IDC_CONTROLBOX_SLIDER 105
 #define HG_WINDOW_WIDTH 480
 #define HG_WINDOW_HEIGHT 160
 #define HG_MIN_WINDOW_WIDTH 64
 #define HG_MIN_WINDOW_HEIGHT 32
+#define HG_CONTROLBOX_MIN_WIDTH 150
+#define HG_CONTROLBOX_MAX_WIDTH 1000
+#define HG_CONTROLBOX_TRACKBAR_HEIGHT 28
+#define HG_CONTROLBOX_LABEL_GAP 6
+#define HG_CONTROLBOX_DEFAULT_WIDTH 260
 
 #define HG_MAX_PATH 32768
 #define HG_MAX_STR  1024
@@ -145,6 +152,7 @@
 #define HG_IDM_FONT_UP      210
 #define HG_IDM_FONT_DOWN    211
 #define HG_IDM_POWER_OFF    212
+#define HG_IDM_OPEN_CONTROLBOX 213
 
 #define HG_IDM_TASK_MOVETO_0_0    300
 #define HG_IDM_TASK_CLOSE         301
@@ -289,6 +297,9 @@ HWND hg_g_toolbar_wnd;
 HWND hg_g_edit_msg_wnd;
 HWND hg_g_tooltip_wnd;
 HWND hg_g_taskbox_wnd;
+HWND hg_g_controlbox_wnd = NULL;
+HWND hg_g_controlbox_value_wnd = NULL;
+HWND hg_g_controlbox_slider_wnd = NULL;
 HMENU hg_g_h_audio_submenu = NULL;
 
 UINT hg_g_shellhook_msg = 0;
@@ -362,6 +373,7 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 void save_config(const WCHAR* section, int x, int y, int w, int h);
 void save_floater_font_config(void);
 void save_taskbox_font_config(void);
+static int get_controlbox_required_height(void);
 
 /* =========================================================================
  * 오디오 제어 기능 (Audio Control Implementation)
@@ -2084,12 +2096,24 @@ void move_window_by_offset(HWND hwnd, int dx, int dy) {
     /* Save position and size after movement */
     if (hwnd == hg_g_floater_wnd) save_config(L"floater", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
     else if (hwnd == hg_g_taskbox_wnd) save_config(L"taskbox", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
+    else if (hwnd == hg_g_controlbox_wnd) save_config(L"controlbox", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
 }
 
 void resize_window_by_offset(HWND hwnd, int dw, int dh) {
     if (!IsWindow(hwnd)) return;
     RECT rc = {0};
     if (!GetWindowRect(hwnd, &rc)) return;
+
+    if (hwnd == hg_g_controlbox_wnd) {
+        int new_w = (rc.right - rc.left) + dw;
+        int new_h = get_controlbox_required_height();
+        if (new_w < SC(HG_CONTROLBOX_MIN_WIDTH)) new_w = SC(HG_CONTROLBOX_MIN_WIDTH);
+        if (new_w > SC(HG_CONTROLBOX_MAX_WIDTH)) new_w = SC(HG_CONTROLBOX_MAX_WIDTH);
+        SetWindowPos(hwnd, NULL, 0, 0, new_w, new_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        save_config(L"controlbox", rc.left, rc.top, new_w, new_h);
+        return;
+    }
+
     int new_w = (rc.right - rc.left) + dw;
     int new_h = (rc.bottom - rc.top) + dh;
     if (new_w < SC(HG_MIN_WINDOW_WIDTH)) new_w = SC(HG_MIN_WINDOW_WIDTH);
@@ -2098,6 +2122,104 @@ void resize_window_by_offset(HWND hwnd, int dw, int dh) {
     /* Save position and size after resizing */
     if (hwnd == hg_g_floater_wnd) save_config(L"floater", rc.left, rc.top, new_w, new_h);
     else if (hwnd == hg_g_taskbox_wnd) save_config(L"taskbox", rc.left, rc.top, new_w, new_h);
+}
+
+static int get_controlbox_required_height(void) {
+    int border = SC(HG_BORDER_THICKNESS);
+    int label_height = SC(18);
+
+    if (hg_g_main_font) {
+        HDC hdc = GetDC(NULL);
+        if (hdc) {
+            HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
+            TEXTMETRICW tm = {0};
+            if (GetTextMetricsW(hdc, &tm)) {
+                label_height = tm.tmHeight + tm.tmExternalLeading + SC(4);
+            }
+            if (old_font) SelectObject(hdc, old_font);
+            ReleaseDC(NULL, hdc);
+        }
+    }
+
+    return border * 2 + label_height + SC(HG_CONTROLBOX_LABEL_GAP) + SC(HG_CONTROLBOX_TRACKBAR_HEIGHT) + SC(8);
+}
+
+static void controlbox_sync_volume_ui(void) {
+    if (!hg_g_controlbox_wnd || !IsWindow(hg_g_controlbox_wnd)) return;
+
+    int cur_vol = get_system_volume();
+    WCHAR vol_str[64];
+    StringCchPrintfW(vol_str, 64, L"System Volume: %d%%", cur_vol);
+
+    if (hg_g_controlbox_value_wnd && IsWindow(hg_g_controlbox_value_wnd)) {
+        SetWindowTextW(hg_g_controlbox_value_wnd, vol_str);
+    }
+    if (hg_g_controlbox_slider_wnd && IsWindow(hg_g_controlbox_slider_wnd)) {
+        SendMessageW(hg_g_controlbox_slider_wnd, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)cur_vol);
+    }
+}
+
+static void update_controlbox_layout(HWND hwnd) {
+    if (!IsWindow(hwnd)) return;
+
+    RECT rc = {0};
+    GetClientRect(hwnd, &rc);
+    int border = SC(HG_BORDER_THICKNESS);
+    int label_height = SC(18);
+
+    if (hg_g_main_font) {
+        HDC hdc = GetDC(hwnd);
+        if (hdc) {
+            HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
+            TEXTMETRICW tm = {0};
+            if (GetTextMetricsW(hdc, &tm)) {
+                label_height = tm.tmHeight + tm.tmExternalLeading + SC(4);
+            }
+            if (old_font) SelectObject(hdc, old_font);
+            ReleaseDC(hwnd, hdc);
+        }
+    }
+
+    int slider_height = SC(HG_CONTROLBOX_TRACKBAR_HEIGHT);
+    int required_height = border * 2 + label_height + SC(HG_CONTROLBOX_LABEL_GAP) + slider_height + SC(8);
+    int current_height = rc.bottom;
+    int current_width = rc.right;
+
+    if (current_height != required_height && !hg_g_in_sizemove) {
+        SetWindowPos(hwnd, NULL, 0, 0, current_width, required_height, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        return;
+    }
+
+    int inner_w = current_width - border * 2;
+    if (inner_w < 0) inner_w = 0;
+
+    if (hg_g_controlbox_value_wnd && IsWindow(hg_g_controlbox_value_wnd)) {
+        MoveWindow(hg_g_controlbox_value_wnd, border, border, inner_w, label_height, TRUE);
+    }
+    if (hg_g_controlbox_slider_wnd && IsWindow(hg_g_controlbox_slider_wnd)) {
+        MoveWindow(hg_g_controlbox_slider_wnd, border, border + label_height + SC(HG_CONTROLBOX_LABEL_GAP), inner_w, slider_height, TRUE);
+    }
+}
+
+static void show_controlbox_window(void) {
+    int x = 240, y = 240, w = SC(HG_CONTROLBOX_DEFAULT_WIDTH), h = get_controlbox_required_height();
+    load_config(L"controlbox", &x, &y, &w, &h, 240, 240, SC(HG_CONTROLBOX_DEFAULT_WIDTH), h);
+    if (w < SC(HG_CONTROLBOX_MIN_WIDTH)) w = SC(HG_CONTROLBOX_MIN_WIDTH);
+    if (w > SC(HG_CONTROLBOX_MAX_WIDTH)) w = SC(HG_CONTROLBOX_MAX_WIDTH);
+    h = get_controlbox_required_height();
+
+    if (!IsWindow(hg_g_controlbox_wnd)) {
+        hg_g_controlbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
+            L"hgcontrolbox_class", L"controlbox", WS_POPUP,
+            x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
+        if (!hg_g_controlbox_wnd) return;
+    }
+
+    SetWindowPos(hg_g_controlbox_wnd, HWND_TOPMOST, x, y, w, h, SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    ShowWindow(hg_g_controlbox_wnd, SW_SHOWNORMAL);
+    SetForegroundWindow(hg_g_controlbox_wnd);
+    update_controlbox_layout(hg_g_controlbox_wnd);
+    controlbox_sync_volume_ui();
 }
 
 void update_size(int delta) {
@@ -2164,6 +2286,10 @@ void update_edit_font_size(int delta) {
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         update_layout(hg_g_taskbox_wnd);
         InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+    }
+    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+        update_controlbox_layout(hg_g_controlbox_wnd);
+        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
     }
     
     for (int i = 0; i < hg_g_monitor_count; ++i) {
@@ -2554,6 +2680,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                 set_system_volume(75);
             } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_100) {
                 set_system_volume(100);
+            } else if (LOWORD(w_param) == HG_IDM_OPEN_CONTROLBOX) {
+                show_controlbox_window();
             } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
                 if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
                     ShowWindow(hg_g_about_wnd, SW_SHOWNORMAL);
@@ -2615,6 +2743,10 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                     save_config(L"taskbox", 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
 
                     update_layout(hg_g_taskbox_wnd);
+                    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+                        update_controlbox_layout(hg_g_controlbox_wnd);
+                        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
+                    }
                     
                     if (hg_g_edit_msg_wnd) {
                         if (!hg_g_main_font) {
@@ -2626,6 +2758,11 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                     
                     if (hg_g_tooltip_wnd && hg_g_main_font) {
                         SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+                    }
+
+                    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+                        update_controlbox_layout(hg_g_controlbox_wnd);
+                        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
                     }
 
                     InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
@@ -2821,6 +2958,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_75,  L"75%");
             AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_100, L"100%");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hVolMenu, L"Set Volume (&V)");
+            AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_CONTROLBOX, L"Open Controlbox (&C)");
           
             /* Audio Devices - Placeholder sub-menu */
             hg_g_h_audio_submenu = CreatePopupMenu();
@@ -4769,6 +4907,187 @@ static LRESULT taskbox_controller_on_destroy(HWND hwnd) {
             return 0;
     }
 
+static LRESULT controlbox_controller_on_create(HWND hwnd) {
+    SetLayeredWindowAttributes(hwnd, 0, hg_g_taskbox_alpha, LWA_ALPHA);
+    apply_dwm_attributes(hwnd);
+
+    hg_g_controlbox_value_wnd = CreateWindowExW(0, L"STATIC", L"System Volume: 0%",
+        WS_CHILD | WS_VISIBLE | SS_CENTER,
+        0, 0, 0, 0, hwnd, (HMENU)HG_IDC_CONTROLBOX_VALUE, GetModuleHandle(NULL), NULL);
+    if (hg_g_controlbox_value_wnd && hg_g_main_font) {
+        SendMessageW(hg_g_controlbox_value_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+    }
+
+    hg_g_controlbox_slider_wnd = CreateWindowExW(0, TRACKBAR_CLASSW, NULL,
+        WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_AUTOTICKS,
+        0, 0, 0, 0, hwnd, (HMENU)HG_IDC_CONTROLBOX_SLIDER, GetModuleHandle(NULL), NULL);
+    if (hg_g_controlbox_slider_wnd) {
+        SendMessageW(hg_g_controlbox_slider_wnd, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100));
+        SendMessageW(hg_g_controlbox_slider_wnd, TBM_SETTICFREQ, 25, 0);
+        SendMessageW(hg_g_controlbox_slider_wnd, TBM_SETPAGESIZE, 0, 10);
+        SendMessageW(hg_g_controlbox_slider_wnd, TBM_SETPOS, TRUE, get_system_volume());
+    }
+
+    update_controlbox_layout(hwnd);
+    controlbox_sync_volume_ui();
+    return 0;
+}
+
+static LRESULT controlbox_controller_on_paint(HWND hwnd) {
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+
+    if (rc.right > 0 && rc.bottom > 0) {
+        HDC mem_dc = CreateCompatibleDC(hdc);
+        if (mem_dc) {
+            HBITMAP mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            if (mem_bm) {
+                HBITMAP old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
+                if (old_bm) {
+                    HBRUSH hbr_bg = hg_g_main_bg_brush ? hg_g_main_bg_brush : CreateSolidBrush(HG_COLOR_BG_DEFAULT);
+                    if (hbr_bg) FillRect(mem_dc, &rc, hbr_bg);
+                    if (!hg_g_main_bg_brush && hbr_bg) DeleteObject(hbr_bg);
+
+                    int border = SC(HG_BORDER_THICKNESS);
+                    HBRUSH hbr_border = CreateSolidBrush(HG_COLOR_BG_TOOLBAR);
+                    if (hbr_border) {
+                        RECT rc_top = {0, 0, rc.right, border};
+                        RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
+                        RECT rc_left = {0, border, border, rc.bottom - border};
+                        RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
+                        FillRect(mem_dc, &rc_top, hbr_border);
+                        FillRect(mem_dc, &rc_bottom, hbr_border);
+                        FillRect(mem_dc, &rc_left, hbr_border);
+                        FillRect(mem_dc, &rc_right, hbr_border);
+                        DeleteObject(hbr_border);
+                    }
+
+                    BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
+                    SelectObject(mem_dc, old_bm);
+                }
+                DeleteObject(mem_bm);
+            }
+            DeleteDC(mem_dc);
+        }
+    }
+
+    EndPaint(hwnd, &ps);
+    return 0;
+}
+
+static LRESULT controlbox_controller_on_scroll(HWND hwnd, HWND slider_hwnd) {
+    (void)hwnd;
+    if (!slider_hwnd || slider_hwnd != hg_g_controlbox_slider_wnd) return 0;
+    int pos = (int)SendMessageW(slider_hwnd, TBM_GETPOS, 0, 0);
+    set_system_volume(pos);
+    controlbox_sync_volume_ui();
+    return 0;
+}
+
+static LRESULT controlbox_controller_on_command(HWND hwnd, int id) {
+    (void)hwnd;
+    (void)id;
+    return 0;
+}
+
+static LRESULT controlbox_controller_on_destroy(HWND hwnd) {
+    RECT rc = {0};
+    if (GetWindowRect(hwnd, &rc)) {
+        save_config(L"controlbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+    }
+    hg_g_controlbox_wnd = NULL;
+    hg_g_controlbox_value_wnd = NULL;
+    hg_g_controlbox_slider_wnd = NULL;
+    return 0;
+}
+
+LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+    switch (msg) {
+        case WM_MOUSEACTIVATE:
+            return MA_ACTIVATE;
+        case WM_CREATE:
+            return controlbox_controller_on_create(hwnd);
+        case WM_ERASEBKGND:
+            return 1;
+        case WM_PAINT:
+            return controlbox_controller_on_paint(hwnd);
+        case WM_GETMINMAXINFO: {
+            MINMAXINFO* mmi = (MINMAXINFO*)l_param;
+            int required_height = get_controlbox_required_height();
+            mmi->ptMinTrackSize.x = SC(HG_CONTROLBOX_MIN_WIDTH);
+            mmi->ptMaxTrackSize.x = SC(HG_CONTROLBOX_MAX_WIDTH);
+            mmi->ptMinTrackSize.y = required_height;
+            mmi->ptMaxTrackSize.y = required_height;
+            return 0;
+        }
+        case WM_NCHITTEST: {
+            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+            ScreenToClient(hwnd, &pt);
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            int border = SC(HG_BORDER_THICKNESS);
+            if (pt.x < border) return HTLEFT;
+            if (pt.x > rc.right - border) return HTRIGHT;
+            return HTCAPTION;
+        }
+        case WM_SIZE:
+            update_controlbox_layout(hwnd);
+            return 0;
+        case WM_HSCROLL:
+            return controlbox_controller_on_scroll(hwnd, (HWND)l_param);
+        case WM_COMMAND:
+            return controlbox_controller_on_command(hwnd, LOWORD(w_param));
+        case WM_SYSKEYDOWN:
+        case WM_KEYDOWN: {
+            BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
+            BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+            if (is_alt) {
+                int dx = 0, dy = 0;
+                int move_step = SC(20);
+                if (w_param == VK_LEFT || w_param == 'A') dx = -move_step;
+                else if (w_param == VK_RIGHT || w_param == 'D') dx = move_step;
+                else if (w_param == VK_UP || w_param == 'W') dy = -move_step;
+                else if (w_param == VK_DOWN || w_param == 'S') dy = move_step;
+                if (dx || dy) {
+                    move_window_by_offset(hwnd, dx, dy);
+                    ensure_window_visible(hwnd, L"controlbox");
+                    return 0;
+                }
+            }
+            if (is_ctrl) {
+                if (w_param == VK_LEFT || w_param == 'A') {
+                    resize_window_by_offset(hwnd, -SC(20), 0);
+                    return 0;
+                }
+                if (w_param == VK_RIGHT || w_param == 'D') {
+                    resize_window_by_offset(hwnd, SC(20), 0);
+                    return 0;
+                }
+            }
+            if (w_param == VK_ESCAPE) {
+                DestroyWindow(hwnd);
+                return 0;
+            }
+            return DefWindowProcW(hwnd, msg, w_param, l_param);
+        }
+        case WM_EXITSIZEMOVE: {
+            RECT rc = {0};
+            if (GetWindowRect(hwnd, &rc)) {
+                save_config(L"controlbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+            }
+            return 0;
+        }
+        case WM_CLOSE:
+            DestroyWindow(hwnd);
+            return 0;
+        case WM_DESTROY:
+            return controlbox_controller_on_destroy(hwnd);
+    }
+    return DefWindowProcW(hwnd, msg, w_param, l_param);
+}
+
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
     switch (msg) {
         case WM_DISPLAYCHANGE: {
@@ -4795,6 +5114,10 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             if (hg_g_tooltip_wnd) {
                 SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
                 SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
+            }
+            if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+                SetClassLongPtrW(hg_g_controlbox_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+                InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
             }
             InvalidateRect(hwnd, NULL, TRUE);
             if (hg_g_floater_wnd) InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
@@ -5037,6 +5360,21 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
     if (!hg_g_main_bg_brush) hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
 
+    WNDCLASSEXW cwc = {0};
+    cwc.cbSize = sizeof(WNDCLASSEXW);
+    cwc.lpfnWndProc = controlbox_proc;
+    cwc.hInstance = instance;
+    cwc.lpszClassName = L"hgcontrolbox_class";
+    cwc.hCursor = LoadCursorW(NULL, IDC_ARROW);
+    cwc.hbrBackground = hg_g_main_bg_brush;
+    cwc.hIcon = icon_large;
+    cwc.hIconSm = icon_small;
+    if (!RegisterClassExW(&cwc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
+        MessageBoxW(NULL, L"Failed to register controlbox class.", L"hgfloater", MB_ICONERROR);
+        exit_code = 1;
+        goto cleanup_finish;
+    }
+
     WNDCLASSEXW awc = {0};
     awc.cbSize = sizeof(WNDCLASSEXW);
     awc.lpfnWndProc = about_proc;
@@ -5175,6 +5513,10 @@ cleanup_finish:
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         DestroyWindow(hg_g_taskbox_wnd);
         hg_g_taskbox_wnd = NULL;
+    }
+    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+        DestroyWindow(hg_g_controlbox_wnd);
+        hg_g_controlbox_wnd = NULL;
     }
     if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
         DestroyWindow(hg_g_floater_wnd);
