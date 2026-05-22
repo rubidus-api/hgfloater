@@ -290,6 +290,8 @@ int hg_g_monitor_count = 0;
  * ========================================================================= */
 color_scheme_t hg_g_color_scheme_dark, hg_g_color_scheme_light, hg_g_color_scheme_selected;
 int hg_g_is_dark_mode = 1;
+static COLORREF hg_g_system_accent_color = 0;
+static BOOL hg_g_has_system_accent_color = FALSE;
 
 double hg_g_scale_factor = 1.0;
 
@@ -575,6 +577,20 @@ BOOL set_default_audio_device(const WCHAR* device_id) {
 /* =========================================================================
  * 핵심 기능 구현 (Core Implementation)
  * ========================================================================= */
+static void refresh_system_accent_color(void)
+{
+    DWORD accent_color = 0;
+    BOOL opaque_blend = FALSE;
+
+    if (SUCCEEDED(DwmGetColorizationColor(&accent_color, &opaque_blend))) {
+        hg_g_system_accent_color = (COLORREF)(accent_color & 0x00FFFFFFu);
+        hg_g_has_system_accent_color = TRUE;
+    } else {
+        hg_g_system_accent_color = GetSysColor(COLOR_HOTLIGHT);
+        hg_g_has_system_accent_color = FALSE;
+    }
+}
+
 void init_color_scheme(void)
 {
     /* 기존 다크 모드의 색상(THEME_CUSTOM_*)을 라이트 모드에, 기존 라이트 모드의 색상을 다크 모드에 스왑하여 설정 */
@@ -603,6 +619,8 @@ void update_theme_colors() {
         if (hc.dwFlags & HCF_HIGHCONTRASTON) is_hc = TRUE;
     }
 
+    refresh_system_accent_color();
+
     hg_g_is_dark_mode = 0;
     DWORD use_light_theme = 1;
     DWORD cbData = sizeof(use_light_theme);
@@ -612,6 +630,12 @@ void update_theme_colors() {
         RegCloseKey(hKey);
     }
     if (use_light_theme == 0) hg_g_is_dark_mode = 1;
+
+    init_color_scheme();
+
+    if (!is_hc && hg_g_has_system_accent_color) {
+        hg_g_color_scheme_dark.flash = hg_g_system_accent_color;
+    }
 
     if (is_hc) {
         hg_g_color_scheme_selected = hg_g_color_scheme_dark;
