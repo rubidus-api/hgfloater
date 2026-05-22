@@ -14,53 +14,48 @@
 - [x] Floater Widget Controller 분리 및 바인딩
 - [x] Taskbox Controller 분리 및 바인딩
 - [x] Controlbox Controller 분리 및 바인딩
-- [ ] Toolbar Controller 분리 및 바인딩
+- [x] Toolbar Controller 분리 및 바인딩
 
 ## 세부 진행 로그
 
 ### 2026-05-22
 - 매크로 상수 네이밍 정리 완료
 - Floater / Taskbox / Controlbox controller 분리 완료
-- Toolbar controller 분리 작업은 보류 상태
-- Toolbar paint 경로를 `toolbar_controller_on_paint()`로 분리 시작
-- Toolbar mouse move / lbutton up 경로를 helper로 분리 완료
+- Toolbar controller의 남은 메시지 핸들러를 helper로 정리 완료
+- Toolbar controller 분리 작업은 현재 완료 상태
+- 다음 단계는 테마 처리 정리
 
 ## 후속 로드맵
 
-### 1. Toolbar Controller 분리
-- [x] `toolbar_controller_on_paint(HWND hwnd)`
-- [x] `toolbar_controller_on_mouse_move(HWND hwnd, LPARAM l_param)`
-- [x] `toolbar_controller_on_lbutton_up(HWND hwnd, LPARAM l_param)`
-
-### 2. 테마 처리 정리
+### 1. 테마 처리 정리
 - [ ] 시스템 테마/Accent Color를 반영하는 테마 구조 정리
 - [ ] `WM_SETTINGCHANGE` 및 색상 변경 메시지 처리 정리
 - [ ] 고대비 모드 대응 검토
 
-### 3. Window Manager 정리
+### 2. Window Manager 정리
 - [ ] 창 등록/해제용 중앙 관리 구조 정리
 - [ ] controlbox / about / monitor 류 보조 창 전환 로직 정리
 
-### 4. IME 및 입력 상태 처리
+### 3. IME 및 입력 상태 처리
 - [ ] IME 초기 상태 설정 경로 정리
 - [ ] 설정 파일 기반 초기값 로딩 검토
 - [ ] 키보드 레이아웃/입력기 선택 흐름 정리
 
-### 5. 단일 인스턴스 및 IPC
+### 4. 단일 인스턴스 및 IPC
 - [ ] 단일 실행 보장 로직 정리
 - [ ] `WM_COPYDATA` 기반 인자 전달 정리
 - [ ] CLI 옵션 디스패처 정리
 
-### 6. 전역 리소스 수명 주기
+### 5. 전역 리소스 수명 주기
 - [ ] 공통 폰트/브러시/툴팁 등의 소유권 정리
 - [ ] 생성/해제 위치를 애플리케이션 종료 지점 기준으로 재배치
 - [ ] 더블 프리 및 NULL 재초기화 점검
 
-### 7. 활성 포커스 시각 표시기
+### 6. 활성 포커스 시각 표시기
 - [ ] 활성/비활성 상태 재도색 경로 정리
 - [ ] 테두리 및 상태 도트 렌더링 방식 검토
 
-### 8. 설정 관리자 정리
+### 7. 설정 관리자 정리
 - [ ] 창 위치/크기/테마/IME/볼륨 관련 설정 구조 정리
 - [ ] 저장 및 복원 흐름 정리
 
