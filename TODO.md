@@ -23,12 +23,15 @@
 - Floater / Taskbox / Controlbox controller 분리 완료
 - Toolbar controller의 남은 메시지 핸들러를 helper로 정리 완료
 - Toolbar controller 분리 작업은 현재 완료 상태
-- 다음 단계는 테마 처리 정리
+
+### 2026-05-23
+- 시스템 테마 색상과 DWM accent color를 읽어 테마 팔레트를 갱신하는 구조를 정리함
+- 고대비 모드는 별도 항목으로 남겨 두고, 현재 단계에서는 accent color 반영만 적용함
 
 ## 후속 로드맵
 
 ### 1. 테마 처리 정리
-- [ ] 시스템 테마/Accent Color를 반영하는 테마 구조 정리
+- [x] 시스템 테마/Accent Color를 반영하는 테마 구조 정리
 - [ ] `WM_SETTINGCHANGE` 및 색상 변경 메시지 처리 정리
 - [ ] 고대비 모드 대응 검토
 
