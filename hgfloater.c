@@ -294,6 +294,7 @@ int hg_g_monitor_count = 0;
  * ========================================================================= */
 color_scheme_t hg_g_color_scheme_dark, hg_g_color_scheme_light, hg_g_color_scheme_selected;
 int hg_g_is_dark_mode = 1;
+static BOOL hg_g_is_high_contrast = FALSE;
 static COLORREF hg_g_system_accent_color = 0;
 static BOOL hg_g_has_system_accent_color = FALSE;
 
@@ -623,6 +624,7 @@ void update_theme_colors() {
         if (hc.dwFlags & HCF_HIGHCONTRASTON) is_hc = TRUE;
     }
 
+    hg_g_is_high_contrast = is_hc;
     refresh_system_accent_color();
 
     hg_g_is_dark_mode = 0;
@@ -633,16 +635,22 @@ void update_theme_colors() {
         RegQueryValueExW(hKey, L"AppsUseLightTheme", NULL, NULL, (LPBYTE)&use_light_theme, &cbData);
         RegCloseKey(hKey);
     }
-    if (use_light_theme == 0) hg_g_is_dark_mode = 1;
+    if (!hg_g_is_high_contrast && use_light_theme == 0) hg_g_is_dark_mode = 1;
 
     init_color_scheme();
 
-    if (!is_hc && hg_g_has_system_accent_color) {
+    if (!hg_g_is_high_contrast && hg_g_has_system_accent_color) {
         hg_g_color_scheme_dark.flash = hg_g_system_accent_color;
     }
 
-    if (is_hc) {
-        hg_g_color_scheme_selected = hg_g_color_scheme_dark;
+    if (hg_g_is_high_contrast) {
+        hg_g_color_scheme_selected = (color_scheme_t) {
+            .bg = GetSysColor(COLOR_BTNFACE),
+            .border = GetSysColor(COLOR_WINDOWFRAME),
+            .text = GetSysColor(COLOR_BTNTEXT),
+            .flash = GetSysColor(COLOR_HOTLIGHT),
+            .selected = GetSysColor(COLOR_HIGHLIGHT),
+        };
     } else if (hg_g_is_dark_mode) {
         hg_g_color_scheme_selected = hg_g_color_scheme_dark;
     } else {
@@ -724,7 +732,8 @@ static void refresh_theme_surfaces(HWND hwnd)
 
 void apply_dwm_attributes(HWND hwnd) {
     if (!hwnd || !IsWindow(hwnd)) return;
-    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &hg_g_is_dark_mode, sizeof(hg_g_is_dark_mode));
+    BOOL use_immersive_dark_mode = hg_g_is_dark_mode && !hg_g_is_high_contrast;
+    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &use_immersive_dark_mode, sizeof(use_immersive_dark_mode));
     DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &hg_g_color_scheme_selected.border, sizeof(hg_g_color_scheme_selected.border));
     DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &hg_g_color_scheme_selected.bg, sizeof(hg_g_color_scheme_selected.bg));
     DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &hg_g_color_scheme_selected.text, sizeof(hg_g_color_scheme_selected.text));
