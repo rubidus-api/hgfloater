@@ -156,6 +156,8 @@
 #define HG_IDM_POWER_OFF    212
 #define HG_IDM_OPEN_CONTROLBOX 213
 
+#define HG_COPYDATA_COMMAND_LINE 0x4847434CU
+
 #define HG_IDM_TASK_MOVETO_0_0    300
 #define HG_IDM_TASK_CLOSE         301
 #define HG_IDM_TASK_RESIZE_4_3_1  302
@@ -333,6 +335,8 @@ int hg_g_toolbar_focus_index = 0;
 UINT hg_g_hotkey_modifiers = MOD_WIN | MOD_ALT;
 UINT hg_g_hotkey_key = VK_SPACE;
 BOOL hg_g_hotkey_registered = FALSE;
+WCHAR hg_g_pending_command_line[HG_MAX_PATH];
+BOOL hg_g_has_pending_command_line = FALSE;
 
 WCHAR hg_g_base_path[HG_MAX_PATH];
 WCHAR hg_g_shortcuts_path[HG_MAX_PATH];
@@ -813,11 +817,60 @@ static void unregister_app_window_classes(HINSTANCE instance)
     }
 }
 
-static void request_existing_instance_activation(void)
+static void store_pending_command_line(LPCWSTR cmd_line)
+{
+    if (!cmd_line || !cmd_line[0]) {
+        return;
+    }
+
+    if (FAILED(StringCchCopyW(hg_g_pending_command_line, HG_ARRAYSIZE(hg_g_pending_command_line), cmd_line))) {
+        hg_g_pending_command_line[0] = L'\0';
+        hg_g_has_pending_command_line = FALSE;
+        return;
+    }
+
+    hg_g_has_pending_command_line = TRUE;
+}
+
+static BOOL forward_command_line_to_instance(HWND existing_wnd, LPCWSTR cmd_line)
+{
+    COPYDATASTRUCT cds;
+
+    if (!existing_wnd || !IsWindow(existing_wnd) || !cmd_line || !cmd_line[0]) {
+        return FALSE;
+    }
+
+    cds.dwData = HG_COPYDATA_COMMAND_LINE;
+    cds.cbData = (DWORD)((wcslen(cmd_line) + 1) * sizeof(WCHAR));
+    cds.lpData = (PVOID)cmd_line;
+    return SendMessageW(existing_wnd, WM_COPYDATA, 0, (LPARAM)&cds) != 0;
+}
+
+static LRESULT handle_copydata_command_line(const COPYDATASTRUCT* cds)
+{
+    if (!cds || cds->dwData != HG_COPYDATA_COMMAND_LINE || !cds->lpData || cds->cbData < sizeof(WCHAR)) {
+        return FALSE;
+    }
+
+    if (FAILED(StringCchCopyW(hg_g_pending_command_line, HG_ARRAYSIZE(hg_g_pending_command_line), (LPCWSTR)cds->lpData))) {
+        hg_g_pending_command_line[0] = L'\0';
+        hg_g_has_pending_command_line = FALSE;
+        return FALSE;
+    }
+
+    hg_g_has_pending_command_line = TRUE;
+    return TRUE;
+}
+
+static void request_existing_instance_activation(LPCWSTR cmd_line)
 {
     HWND existing_wnd = FindWindowW(HG_CLASS_FLOATER_WIDGET, NULL);
     if (!existing_wnd) {
         return;
+    }
+
+    if (cmd_line && cmd_line[0]) {
+        forward_command_line_to_instance(existing_wnd, cmd_line);
     }
 
     if (IsIconic(existing_wnd)) {
@@ -3420,6 +3473,8 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             }
             return 0;
         }
+        case WM_COPYDATA:
+            return handle_copydata_command_line((const COPYDATASTRUCT*)l_param);
         case WM_DESTROY:
             return floater_controller_on_destroy(hwnd);
         default: {
@@ -5762,7 +5817,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         goto cleanup_finish;
     }
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        request_existing_instance_activation();
+        request_existing_instance_activation(cmd_line);
         goto cleanup_finish;
     }
 
@@ -5796,6 +5851,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         exit_code = 1;
         goto cleanup_finish;
     }
+
+    store_pending_command_line(cmd_line);
 
     int fx, fy, fw, fh, tx, ty, tw, th;
     load_config(L"floater", &fx, &fy, &fw, &fh, 100, 100, SC(80), SC(55));
