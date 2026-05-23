@@ -2423,6 +2423,113 @@ static void show_controlbox_window(void) {
     controlbox_sync_volume_ui();
 }
 
+static void close_about_window(HWND hwnd) {
+    if (hg_g_about_wnd == hwnd) {
+        hg_g_about_wnd = NULL;
+    }
+    if (hwnd && IsWindow(hwnd)) {
+        DestroyWindow(hwnd);
+    }
+}
+
+static void show_about_window(void) {
+    if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
+        ShowWindow(hg_g_about_wnd, SW_SHOWNORMAL);
+        SetForegroundWindow(hg_g_about_wnd);
+        return;
+    }
+
+    hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, SC(400), SC(300),
+        NULL, NULL, GetModuleHandle(NULL), NULL);
+    if (hg_g_about_wnd) {
+        ShowWindow(hg_g_about_wnd, SW_SHOW);
+    }
+}
+
+static void close_monitor_window(int idx) {
+    if (idx < 0 || idx >= hg_g_monitor_count) {
+        return;
+    }
+
+    hg_g_monitors[idx].active = FALSE;
+    if (hg_g_monitors[idx].hwnd && IsWindow(hg_g_monitors[idx].hwnd)) {
+        DestroyWindow(hg_g_monitors[idx].hwnd);
+    }
+    hg_g_monitors[idx].hwnd = NULL;
+}
+
+static BOOL open_monitor_window(int idx) {
+    if (idx < 0 || idx >= hg_g_monitor_count) {
+        return FALSE;
+    }
+
+    if (hg_g_monitors[idx].hwnd && IsWindow(hg_g_monitors[idx].hwnd)) {
+        ShowWindow(hg_g_monitors[idx].hwnd, SW_SHOWNORMAL);
+        SetForegroundWindow(hg_g_monitors[idx].hwnd);
+        return TRUE;
+    }
+
+    hg_g_monitors[idx].active = TRUE;
+
+    int x, y, w, h;
+    RECT m_rc = hg_g_monitors[idx].rcMonitor;
+    int mw = m_rc.right - m_rc.left;
+    int mh = m_rc.bottom - m_rc.top;
+
+    int def_w = 640;
+    int def_h = (mw > 0) ? (def_w * mh / mw) : 480;
+
+    WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
+    StringCchPrintfW(key_x, 64, L"monitor%d_x", idx + 1);
+    StringCchPrintfW(key_y, 64, L"monitor%d_y", idx + 1);
+    StringCchPrintfW(key_w, 64, L"monitor%d_w", idx + 1);
+    StringCchPrintfW(key_h, 64, L"monitor%d_h", idx + 1);
+    StringCchPrintfW(key_name, 64, L"monitor%d_name", idx + 1);
+    WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[idx].name, hg_g_config_path);
+
+    x = (int)GetPrivateProfileIntW(L"monitor", key_x, 100, hg_g_config_path);
+    y = (int)GetPrivateProfileIntW(L"monitor", key_y, 100, hg_g_config_path);
+    w = (int)GetPrivateProfileIntW(L"monitor", key_w, def_w, hg_g_config_path);
+    h = (int)GetPrivateProfileIntW(L"monitor", key_h, def_h, hg_g_config_path);
+
+    HWND mwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, hg_g_monitors[idx].name,
+        WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN,
+        x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
+
+    if (mwnd) {
+        apply_dwm_attributes(mwnd);
+        hg_g_monitors[idx].hwnd = mwnd;
+
+        if (hg_g_tooltip_wnd) {
+            TOOLINFOW ti = { 0 };
+            ti.cbSize = TOOLINFO_V1_SIZE;
+            ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
+            ti.hwnd = mwnd;
+            ti.uId = (UINT_PTR)mwnd;
+            ti.lpszText = hg_g_monitors[idx].name;
+            SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti);
+        }
+        return TRUE;
+    }
+
+    hg_g_monitors[idx].active = FALSE;
+    return FALSE;
+}
+
+static void toggle_monitor_window(int idx) {
+    if (idx < 0 || idx >= hg_g_monitor_count) {
+        return;
+    }
+
+    if (hg_g_monitors[idx].active && hg_g_monitors[idx].hwnd && IsWindow(hg_g_monitors[idx].hwnd)) {
+        close_monitor_window(idx);
+    } else {
+        open_monitor_window(idx);
+    }
+}
+
 void update_size(int delta) {
     int old_size = ABS(hg_g_current_font_size);
     if (old_size < SC(16)) old_size = SC(16);
@@ -2808,61 +2915,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             } else if (LOWORD(w_param) >= HG_IDM_MONITOR_BASE && LOWORD(w_param) < HG_IDM_MONITOR_BASE + HG_MAX_MONITORS) {
                 int idx = LOWORD(w_param) - HG_IDM_MONITOR_BASE;
                 if (idx >= 0 && idx < hg_g_monitor_count) {
-                    if (hg_g_monitors[idx].active) {
-                        /* Close it */
-                        hg_g_monitors[idx].active = FALSE;
-                        if (hg_g_monitors[idx].hwnd) {
-                            DestroyWindow(hg_g_monitors[idx].hwnd);
-                            hg_g_monitors[idx].hwnd = NULL;
-                        }
-                    } else {
-                        /* Open it */
-                        hg_g_monitors[idx].active = TRUE;
-                        int x, y, w, h;
-                        RECT m_rc = hg_g_monitors[idx].rcMonitor;
-                        int mw = m_rc.right - m_rc.left;
-                        int mh = m_rc.bottom - m_rc.top;
-
-                        /* Default size */
-                        int def_w = 640;
-                        int def_h = (mw > 0) ? (def_w * mh / mw) : 480;
-
-                        WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
-                        StringCchPrintfW(key_x, 64, L"monitor%d_x", idx + 1);
-                        StringCchPrintfW(key_y, 64, L"monitor%d_y", idx + 1);
-                        StringCchPrintfW(key_w, 64, L"monitor%d_w", idx + 1);
-                        StringCchPrintfW(key_h, 64, L"monitor%d_h", idx + 1);
-                        StringCchPrintfW(key_name, 64, L"monitor%d_name", idx + 1);
-                        WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[idx].name, hg_g_config_path);
-
-                        x = (int)GetPrivateProfileIntW(L"monitor", key_x, 100, hg_g_config_path);
-                        y = (int)GetPrivateProfileIntW(L"monitor", key_y, 100, hg_g_config_path);
-                        w = (int)GetPrivateProfileIntW(L"monitor", key_w, def_w, hg_g_config_path);
-                        h = (int)GetPrivateProfileIntW(L"monitor", key_h, def_h, hg_g_config_path);
-
-                        /* Create window */
-                        HWND mwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, hg_g_monitors[idx].name,
-                                                    WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN,
-                                                    x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
-
-                        if (mwnd) {
-                            apply_dwm_attributes(mwnd);
-                            hg_g_monitors[idx].hwnd = mwnd;
-
-                            /* Add tooltip */
-                            if (hg_g_tooltip_wnd) {
-                                TOOLINFOW ti = { 0 };
-                                ti.cbSize = TOOLINFO_V1_SIZE;
-                                ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
-                                ti.hwnd = mwnd;
-                                ti.uId = (UINT_PTR)mwnd;
-                                ti.lpszText = hg_g_monitors[idx].name;
-                                SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti);
-                            }
-                        } else {
-                            hg_g_monitors[idx].active = FALSE;
-                        }
-                    }
+                    toggle_monitor_window(idx);
                 }
             } else if (LOWORD(w_param) >= HG_IDM_AUDIO_DEVICE_BASE && LOWORD(w_param) < HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES) {
                 int idx = LOWORD(w_param) - HG_IDM_AUDIO_DEVICE_BASE;
@@ -2884,16 +2937,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             } else if (LOWORD(w_param) == HG_IDM_OPEN_CONTROLBOX) {
                 show_controlbox_window();
             } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
-                if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
-                    ShowWindow(hg_g_about_wnd, SW_SHOWNORMAL);
-                    SetForegroundWindow(hg_g_about_wnd);
-                } else {
-                    hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater",
-                                               WS_OVERLAPPEDWINDOW,
-                                               CW_USEDEFAULT, CW_USEDEFAULT, SC(400), SC(300),
-                                               NULL, NULL, GetModuleHandle(NULL), NULL);
-                    if (hg_g_about_wnd) ShowWindow(hg_g_about_wnd, SW_SHOW);
-                }
+                show_about_window();
             } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
                 update_floater_font_size(1);
             } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
@@ -3447,8 +3491,7 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
             return 0;
         }
         case WM_CLOSE: {
-            DestroyWindow(hwnd);
-            hg_g_about_wnd = NULL;
+            close_about_window(hwnd);
             return 0;
         }
     }
@@ -4817,10 +4860,10 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         }
         case WM_CLOSE: {
             if (monitor_idx >= 0) {
-                hg_g_monitors[monitor_idx].active = FALSE;
-                hg_g_monitors[monitor_idx].hwnd = NULL;
+                close_monitor_window(monitor_idx);
+            } else {
+                DestroyWindow(hwnd);
             }
-            DestroyWindow(hwnd);
             return 0;
         }
         case WM_NCHITTEST: {
