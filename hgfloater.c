@@ -377,10 +377,30 @@ void update_focus_message(int override_type, int override_index);
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass, DWORD_PTR dw_ref_data);
 LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 void save_config(const WCHAR* section, int x, int y, int w, int h);
 void save_floater_font_config(void);
 void save_taskbox_font_config(void);
 static int get_controlbox_required_height(void);
+
+static const WCHAR HG_CLASS_FLOATER_WIDGET[] = L"hgfloater_widget_class";
+static const WCHAR HG_CLASS_CONTROLBOX[] = L"hgcontrolbox_class";
+static const WCHAR HG_CLASS_ABOUT[] = L"hgabout_class";
+static const WCHAR HG_CLASS_TASKBOX[] = L"hgfloater_class";
+static const WCHAR HG_CLASS_MONITOR[] = L"hgmonitor_class";
+
+typedef struct WindowClassSpec {
+    const WCHAR* class_name;
+    WNDPROC wnd_proc;
+    HBRUSH background;
+    const WCHAR* fail_message;
+} WindowClassSpec;
+
+static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HICON icon_small);
+static void unregister_app_window_classes(HINSTANCE instance);
 
 typedef struct ToolbarControllerState {
     int hovered_type;
@@ -727,6 +747,66 @@ static void refresh_theme_surfaces(HWND hwnd)
     }
     if (hg_g_toolbar_wnd && IsWindow(hg_g_toolbar_wnd)) {
         InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
+    }
+}
+
+static BOOL register_app_window_class(HINSTANCE instance, const WindowClassSpec* spec, HICON icon_large, HICON icon_small)
+{
+    WNDCLASSEXW wc = {0};
+    wc.cbSize = sizeof(WNDCLASSEXW);
+    wc.lpfnWndProc = spec->wnd_proc;
+    wc.hInstance = instance;
+    wc.lpszClassName = spec->class_name;
+    wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
+    wc.hbrBackground = spec->background;
+    wc.hIcon = icon_large;
+    wc.hIconSm = icon_small;
+
+    if (!RegisterClassExW(&wc)) {
+        DWORD err = GetLastError();
+        if (err != ERROR_CLASS_ALREADY_EXISTS) {
+            MessageBoxW(NULL, spec->fail_message, L"hgfloater", MB_ICONERROR);
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HICON icon_small)
+{
+    const WindowClassSpec specs[] = {
+        { HG_CLASS_FLOATER_WIDGET, floater_proc, hg_g_main_bg_brush, L"Failed to register floater class." },
+        { HG_CLASS_CONTROLBOX, controlbox_proc, hg_g_main_bg_brush, L"Failed to register controlbox class." },
+        { HG_CLASS_ABOUT, about_proc, hg_g_main_bg_brush, L"Failed to register about class." },
+        { HG_CLASS_TASKBOX, window_proc, hg_g_main_bg_brush, L"Failed to register taskbox class." },
+        { HG_CLASS_MONITOR, monitor_wnd_proc, (HBRUSH)GetStockObject(BLACK_BRUSH), L"Failed to register monitor class." },
+    };
+
+    for (int i = 0; i < (int)HG_ARRAYSIZE(specs); ++i) {
+        if (!register_app_window_class(instance, &specs[i], icon_large, icon_small)) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+static void unregister_app_window_classes(HINSTANCE instance)
+{
+    const WCHAR* classes[] = {
+        HG_CLASS_FLOATER_WIDGET,
+        HG_CLASS_CONTROLBOX,
+        HG_CLASS_ABOUT,
+        HG_CLASS_TASKBOX,
+        HG_CLASS_MONITOR,
+    };
+
+    for (int i = 0; i < (int)HG_ARRAYSIZE(classes); ++i) {
+        if (!UnregisterClassW(classes[i], instance)) {
+            DWORD err = GetLastError();
+            if (err != ERROR_CLASS_DOES_NOT_EXIST) {
+                /* Ignore cleanup noise; class teardown happens at process exit anyway. */
+            }
+        }
     }
 }
 
@@ -2331,7 +2411,7 @@ static void show_controlbox_window(void) {
 
     if (!IsWindow(hg_g_controlbox_wnd)) {
         hg_g_controlbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-            L"hgcontrolbox_class", L"controlbox", WS_POPUP,
+            HG_CLASS_CONTROLBOX, L"controlbox", WS_POPUP,
             x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
         if (!hg_g_controlbox_wnd) return;
     }
@@ -2761,7 +2841,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                         h = (int)GetPrivateProfileIntW(L"monitor", key_h, def_h, hg_g_config_path);
 
                         /* Create window */
-                        HWND mwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, L"hgmonitor_class", hg_g_monitors[idx].name,
+                        HWND mwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, hg_g_monitors[idx].name,
                                                     WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN,
                                                     x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
 
@@ -2808,7 +2888,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                     ShowWindow(hg_g_about_wnd, SW_SHOWNORMAL);
                     SetForegroundWindow(hg_g_about_wnd);
                 } else {
-                    hg_g_about_wnd = CreateWindowExW(0, L"hgabout_class", L"about hgfloater",
+                    hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater",
                                                WS_OVERLAPPEDWINDOW,
                                                CW_USEDEFAULT, CW_USEDEFAULT, SC(400), SC(300),
                                                NULL, NULL, GetModuleHandle(NULL), NULL);
@@ -5549,7 +5629,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         goto cleanup_finish;
     }
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        HWND existing_wnd = FindWindowW(L"hgfloater_widget_class", NULL);
+        HWND existing_wnd = FindWindowW(HG_CLASS_FLOATER_WIDGET, NULL);
         if (existing_wnd) {
             SetForegroundWindow(existing_wnd);
             PostMessageW(existing_wnd, WM_HOTKEY, 1, 0);
@@ -5582,82 +5662,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     icon_small = (HICON)LoadImageW(instance, MAKEINTRESOURCE(1), IMAGE_ICON,
                                    GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
 
-    /* 위젯 클래스 등록 */
-    WNDCLASSEXW wwc = {0};
-    wwc.cbSize = sizeof(WNDCLASSEXW);
-    wwc.lpfnWndProc = floater_proc;
-    wwc.hInstance = instance;
-    wwc.lpszClassName = L"hgfloater_widget_class";
-    wwc.hCursor = LoadCursorW(NULL, IDC_ARROW);
-    wwc.hIcon = icon_large;
-    wwc.hIconSm = icon_small;
-    if (!RegisterClassExW(&wwc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-        MessageBoxW(NULL, L"Failed to register floater class.", L"hgfloater", MB_ICONERROR);
-        exit_code = 1;
-        goto cleanup_finish;
-    }
-
     if (!hg_g_main_bg_brush) hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
-
-    WNDCLASSEXW cwc = {0};
-    cwc.cbSize = sizeof(WNDCLASSEXW);
-    cwc.lpfnWndProc = controlbox_proc;
-    cwc.hInstance = instance;
-    cwc.lpszClassName = L"hgcontrolbox_class";
-    cwc.hCursor = LoadCursorW(NULL, IDC_ARROW);
-    cwc.hbrBackground = hg_g_main_bg_brush;
-    cwc.hIcon = icon_large;
-    cwc.hIconSm = icon_small;
-    if (!RegisterClassExW(&cwc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-        MessageBoxW(NULL, L"Failed to register controlbox class.", L"hgfloater", MB_ICONERROR);
+    if (!register_app_window_classes(instance, icon_large, icon_small)) {
         exit_code = 1;
         goto cleanup_finish;
     }
-
-    WNDCLASSEXW awc = {0};
-    awc.cbSize = sizeof(WNDCLASSEXW);
-    awc.lpfnWndProc = about_proc;
-    awc.hInstance = instance;
-    awc.lpszClassName = L"hgabout_class";
-    awc.hCursor = LoadCursorW(NULL, IDC_ARROW);
-    awc.hbrBackground = hg_g_main_bg_brush;
-    awc.hIcon = icon_large;
-    awc.hIconSm = icon_small;
-    if (!RegisterClassExW(&awc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-        MessageBoxW(NULL, L"Failed to register about class.", L"hgfloater", MB_ICONERROR);
-        exit_code = 1;
-        goto cleanup_finish;
-    }
-
-    /* 메인 대시보드 클래스 등록 */
-    const WCHAR CLASS_NAME[] = L"hgfloater_class";
-    WNDCLASSEXW wc = {0};
-    wc.cbSize = sizeof(WNDCLASSEXW);
-    wc.lpfnWndProc = window_proc;
-    wc.hInstance = instance;
-    wc.lpszClassName = CLASS_NAME;
-    wc.hbrBackground = hg_g_main_bg_brush;
-    wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
-    wc.hIcon = icon_large;
-    wc.hIconSm = icon_small;
-    if (!RegisterClassExW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-        MessageBoxW(NULL, L"Failed to register taskbox class.", L"hgfloater", MB_ICONERROR);
-        exit_code = 1;
-        goto cleanup_finish;
-    }
-
-    /* 모니터 클래스 등록 */
-    extern LRESULT CALLBACK monitor_wnd_proc(HWND, UINT, WPARAM, LPARAM);
-    WNDCLASSEXW mwc = {0};
-    mwc.cbSize = sizeof(WNDCLASSEXW);
-    mwc.lpfnWndProc = monitor_wnd_proc;
-    mwc.hInstance = instance;
-    mwc.lpszClassName = L"hgmonitor_class";
-    mwc.hCursor = LoadCursorW(NULL, IDC_ARROW);
-    mwc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    mwc.hIcon = icon_large;
-    mwc.hIconSm = icon_small;
-    RegisterClassExW(&mwc);
 
     int fx, fy, fw, fh, tx, ty, tw, th;
     load_config(L"floater", &fx, &fy, &fw, &fh, 100, 100, SC(80), SC(55));
@@ -5670,7 +5679,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     load_taskbox_font_config();
 
     hg_g_floater_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_APPWINDOW,
-        L"hgfloater_widget_class", L"floater", WS_POPUP | WS_VISIBLE,
+        HG_CLASS_FLOATER_WIDGET, L"floater", WS_POPUP | WS_VISIBLE,
         fx, fy, fw, fh, NULL, NULL, instance, NULL);
     if (!hg_g_floater_wnd) {
         MessageBoxW(NULL, L"Failed to create floater window.", L"hgfloater", MB_ICONERROR);
@@ -5687,7 +5696,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     }
 
     hg_g_taskbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-        CLASS_NAME, L"taskbox", WS_POPUP,
+        HG_CLASS_TASKBOX, L"taskbox", WS_POPUP,
         tx, ty, tw, th, NULL, NULL, instance, NULL);
     if (!hg_g_taskbox_wnd) {
         MessageBoxW(NULL, L"Failed to create taskbox window.", L"hgfloater", MB_ICONERROR);
@@ -5761,6 +5770,8 @@ cleanup_finish:
         DestroyWindow(hg_g_floater_wnd);
         hg_g_floater_wnd = NULL;
     }
+
+    unregister_app_window_classes(instance);
 
     if (mutex) {
         CloseHandle(mutex);
