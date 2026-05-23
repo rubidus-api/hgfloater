@@ -2448,6 +2448,8 @@ static void disable_window_ime(HWND hwnd) {
         return;
     }
 
+    ImmAssociateContextEx(hwnd, NULL, IACE_DEFAULT);
+
     HIMC himc = ImmGetContext(hwnd);
     if (!himc) {
         return;
@@ -2455,6 +2457,23 @@ static void disable_window_ime(HWND hwnd) {
 
     ImmSetOpenStatus(himc, FALSE);
     ImmReleaseContext(hwnd, himc);
+}
+
+static BOOL readonly_edit_handle_ime_messages(HWND hwnd, UINT msg, WPARAM w_param) {
+    switch (msg) {
+        case WM_IME_SETCONTEXT:
+            if (w_param) {
+                disable_window_ime(hwnd);
+                return TRUE;
+            }
+            break;
+        case WM_INPUTLANGCHANGE:
+        case WM_INPUTLANGCHANGEREQUEST:
+            disable_window_ime(hwnd);
+            return TRUE;
+    }
+
+    return FALSE;
 }
 
 static void show_about_window(void) {
@@ -3472,6 +3491,9 @@ static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
     if (msg == WM_SETFOCUS) {
         disable_window_ime(hwnd);
     }
+    if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
+        return 0;
+    }
     if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
         PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
         return 0;
@@ -4470,6 +4492,13 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
             disable_window_ime(hwnd);
             break;
         }
+        case WM_IME_SETCONTEXT:
+        case WM_INPUTLANGCHANGE:
+        case WM_INPUTLANGCHANGEREQUEST:
+            if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
+                return 0;
+            }
+            break;
         case WM_LBUTTONDOWN: {
             ReleaseCapture();
             SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
@@ -4583,6 +4612,13 @@ static LRESULT CALLBACK monitor_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w
     switch (msg) {
         case WM_SETFOCUS:
             disable_window_ime(hwnd);
+            break;
+        case WM_IME_SETCONTEXT:
+        case WM_INPUTLANGCHANGE:
+        case WM_INPUTLANGCHANGEREQUEST:
+            if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
+                return 0;
+            }
             break;
         case WM_LBUTTONDOWN:
             SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
