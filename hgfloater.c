@@ -393,6 +393,7 @@ static const WCHAR HG_CLASS_CONTROLBOX[] = L"hgcontrolbox_class";
 static const WCHAR HG_CLASS_ABOUT[] = L"hgabout_class";
 static const WCHAR HG_CLASS_TASKBOX[] = L"hgfloater_class";
 static const WCHAR HG_CLASS_MONITOR[] = L"hgmonitor_class";
+static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";
 
 typedef struct WindowClassSpec {
     const WCHAR* class_name;
@@ -810,6 +811,21 @@ static void unregister_app_window_classes(HINSTANCE instance)
             }
         }
     }
+}
+
+static void request_existing_instance_activation(void)
+{
+    HWND existing_wnd = FindWindowW(HG_CLASS_FLOATER_WIDGET, NULL);
+    if (!existing_wnd) {
+        return;
+    }
+
+    if (IsIconic(existing_wnd)) {
+        ShowWindow(existing_wnd, SW_RESTORE);
+    }
+
+    SetForegroundWindow(existing_wnd);
+    PostMessageW(existing_wnd, WM_HOTKEY, 1, 0);
 }
 
 void apply_dwm_attributes(HWND hwnd) {
@@ -5740,17 +5756,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     com_initialized = SUCCEEDED(co_hr);
 
     /* 단일 인스턴스 실행 보장 (Mutex 사용) */
-    mutex = CreateMutexW(NULL, TRUE, L"Local\\hgfloater_single_instance_mutex");
+    mutex = CreateMutexW(NULL, TRUE, HG_SINGLE_INSTANCE_MUTEX_NAME);
     if (!mutex) {
         exit_code = 1;
         goto cleanup_finish;
     }
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        HWND existing_wnd = FindWindowW(HG_CLASS_FLOATER_WIDGET, NULL);
-        if (existing_wnd) {
-            SetForegroundWindow(existing_wnd);
-            PostMessageW(existing_wnd, WM_HOTKEY, 1, 0);
-        }
+        request_existing_instance_activation();
         goto cleanup_finish;
     }
 
