@@ -82,7 +82,7 @@ if exist gen_about.ps1 del gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command
 windres hgfloater.rc -O coff -o hgfloater_res.o
-gcc hgfloater.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys 
+gcc hgfloater.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
 if exist hgfloater_res.o del hgfloater_res.o
 
 if %errorlevel% equ 0 (
@@ -105,7 +105,7 @@ if not exist tests\bin mkdir tests\bin
 set TEST_FAILED=0
 for %%f in (tests\*.c) do (
     echo Compiling %%f...
-    gcc %%f -o tests\bin\%%~nf.exe %WARNING_FLAGS% -Wno-overlength-strings -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -lshcore -lpropsys
+    gcc %%f -o tests\bin\%%~nf.exe %WARNING_FLAGS% -Wno-overlength-strings -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -lshcore -lpropsys -limm32
     if !errorlevel! neq 0 (
         echo [Error] Failed to compile %%f
         set TEST_FAILED=1

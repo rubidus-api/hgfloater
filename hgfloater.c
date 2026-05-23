@@ -26,6 +26,7 @@
 #include <shellscalingapi.h>
 #include <exdisp.h>
 #include <shlwapi.h>
+#include <imm.h>
 #include <wctype.h>
 
 /* 라이브러리 명시적 링크 - MSVC 전용 */
@@ -41,6 +42,7 @@
 #pragma comment(lib, "uuid.lib")
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "propsys.lib")
+#pragma comment(lib, "imm32.lib")
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
 
@@ -2432,6 +2434,20 @@ static void close_about_window(HWND hwnd) {
     }
 }
 
+static void disable_window_ime(HWND hwnd) {
+    if (!hwnd) {
+        return;
+    }
+
+    HIMC himc = ImmGetContext(hwnd);
+    if (!himc) {
+        return;
+    }
+
+    ImmSetOpenStatus(himc, FALSE);
+    ImmReleaseContext(hwnd, himc);
+}
+
 static void show_about_window(void) {
     if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
         ShowWindow(hg_g_about_wnd, SW_SHOWNORMAL);
@@ -3444,6 +3460,9 @@ void activate_taskbar_item(int index) {
 }
 
 static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    if (msg == WM_SETFOCUS) {
+        disable_window_ime(hwnd);
+    }
     if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
         PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
         return 0;
@@ -3462,6 +3481,7 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
             if (edit_wnd) {
                 SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
                 SetWindowSubclass(edit_wnd, about_edit_subclass_proc, 1, 0);
+                disable_window_ime(edit_wnd);
             }
             return 0;
         }
@@ -4437,6 +4457,10 @@ void refresh_window_list(BOOL force) {
 
 LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass, DWORD_PTR dw_ref_data) {
     switch (msg) {
+        case WM_SETFOCUS: {
+            disable_window_ime(hwnd);
+            break;
+        }
         case WM_LBUTTONDOWN: {
             ReleaseCapture();
             SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
@@ -4548,6 +4572,9 @@ void update_layout(HWND hwnd) {
 
 static LRESULT CALLBACK monitor_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR uid, DWORD_PTR dw_ref) {
     switch (msg) {
+        case WM_SETFOCUS:
+            disable_window_ime(hwnd);
+            break;
         case WM_LBUTTONDOWN:
             SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
             return 0;
@@ -4653,6 +4680,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             if (edit_wnd) {
                 SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
                 SetWindowSubclass(edit_wnd, monitor_edit_subclass_proc, 1, 0);
+                disable_window_ime(edit_wnd);
             }
             SetTimer(hwnd, 2, 100, NULL);
             return 0;
@@ -4971,6 +4999,7 @@ static LRESULT taskbox_controller_on_create(HWND hwnd) {
                 SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
                 SetWindowTextW(hg_g_edit_msg_wnd, L"RClick: Settings | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
                 SetWindowSubclass(hg_g_edit_msg_wnd, edit_subclass_proc, 0, 0);
+                disable_window_ime(hg_g_edit_msg_wnd);
             }
 
             /* 툴팁 생성: 메인 윈도우를 소유자로 지정하되 TOPMOST 유지 */
