@@ -39,7 +39,7 @@
 
 ### 2. Window Manager 정리
 - [x] 창 등록/해제용 중앙 관리 구조 정리
-- [ ] controlbox / about / monitor 류 보조 창 전환 로직 정리
+- [x] controlbox / about / monitor 류 보조 창 전환 로직 정리
 
 ### 2026-05-23
 - 창 클래스 등록/해제용 중앙 관리 헬퍼를 도입하고, 관련 클래스명을 상수로 묶음
