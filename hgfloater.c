@@ -2280,13 +2280,22 @@ void load_font_name_config() {
 
 void load_hotkey_config() {
     /* 새로운 섹션과 키 이름으로 로드 시도 */
-    hg_g_hotkey_modifiers = GetPrivateProfileIntW(L"hotkeys", L"global_focus_modifiers", 0, hg_g_config_path);
-    hg_g_hotkey_key = GetPrivateProfileIntW(L"hotkeys", L"global_focus_key", 0, hg_g_config_path);
+    BOOL needs_save = FALSE;
 
-    /* 만약 값이 없거나 0이면(초기 상태), 디폴트 값을 설정하고 파일에 저장하여 자동 생성 효과 부여 */
-    if (hg_g_hotkey_modifiers == 0 && hg_g_hotkey_key == 0) {
+    hg_g_hotkey_modifiers = GetPrivateProfileIntW(L"hotkeys", L"global_focus_modifiers", 0, hg_g_config_path);
+    if (hg_g_hotkey_modifiers == 0) {
         hg_g_hotkey_modifiers = MOD_WIN | MOD_ALT;
+        needs_save = TRUE;
+    }
+
+    hg_g_hotkey_key = GetPrivateProfileIntW(L"hotkeys", L"global_focus_key", 0, hg_g_config_path);
+    if (hg_g_hotkey_key == 0) {
         hg_g_hotkey_key = VK_SPACE;
+        needs_save = TRUE;
+    }
+
+    /* 초기 상태이거나 일부 키가 비어 있는 경우도 기본값으로 보정 */
+    if (needs_save) {
         save_hotkey_config();
     }
 }
