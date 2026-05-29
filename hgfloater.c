@@ -391,6 +391,8 @@ void save_config(const WCHAR* section, int x, int y, int w, int h);
 void save_floater_font_config(void);
 void save_taskbox_font_config(void);
 static int get_controlbox_required_height(void);
+static void show_about_window(void);
+void hide_taskbox(HWND hwnd);
 
 static const WCHAR HG_CLASS_FLOATER_WIDGET[] = L"hgfloater_widget_class";
 static const WCHAR HG_CLASS_CONTROLBOX[] = L"hgcontrolbox_class";
@@ -405,6 +407,16 @@ typedef struct WindowClassSpec {
     HBRUSH background;
     const WCHAR* fail_message;
 } WindowClassSpec;
+
+typedef enum HgCliAction {
+    HG_CLI_ACTION_DEFAULT = 0,
+    HG_CLI_ACTION_SHOW,
+    HG_CLI_ACTION_HIDE,
+    HG_CLI_ACTION_TOGGLE,
+    HG_CLI_ACTION_ABOUT,
+    HG_CLI_ACTION_EXIT,
+    HG_CLI_ACTION_HELP
+} HgCliAction;
 
 static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HICON icon_small);
 static void unregister_app_window_classes(HINSTANCE instance);
@@ -832,6 +844,125 @@ static void store_pending_command_line(LPCWSTR cmd_line)
     hg_g_has_pending_command_line = TRUE;
 }
 
+static BOOL cli_arg_equals(LPCWSTR arg, LPCWSTR long_name, LPCWSTR short_name)
+{
+    return arg && ((long_name && lstrcmpiW(arg, long_name) == 0) ||
+                   (short_name && lstrcmpiW(arg, short_name) == 0));
+}
+
+static HgCliAction parse_cli_action(LPCWSTR cmd_line)
+{
+    int argc = 0;
+    LPWSTR* argv = NULL;
+    HgCliAction action = HG_CLI_ACTION_DEFAULT;
+
+    if (!cmd_line || !cmd_line[0]) {
+        return HG_CLI_ACTION_DEFAULT;
+    }
+
+    argv = CommandLineToArgvW(cmd_line, &argc);
+    if (!argv) {
+        return HG_CLI_ACTION_DEFAULT;
+    }
+
+    for (int i = 0; i < argc; ++i) {
+        LPCWSTR arg = argv[i];
+        if (cli_arg_equals(arg, L"--show", L"/show")) {
+            action = HG_CLI_ACTION_SHOW;
+            break;
+        }
+        if (cli_arg_equals(arg, L"--hide", L"/hide")) {
+            action = HG_CLI_ACTION_HIDE;
+            break;
+        }
+        if (cli_arg_equals(arg, L"--toggle", L"/toggle")) {
+            action = HG_CLI_ACTION_TOGGLE;
+            break;
+        }
+        if (cli_arg_equals(arg, L"--about", L"/about")) {
+            action = HG_CLI_ACTION_ABOUT;
+            break;
+        }
+        if (cli_arg_equals(arg, L"--exit", L"/exit") ||
+            cli_arg_equals(arg, L"--quit", L"/quit")) {
+            action = HG_CLI_ACTION_EXIT;
+            break;
+        }
+        if (cli_arg_equals(arg, L"--help", L"/help") ||
+            cli_arg_equals(arg, L"-h", L"/?")) {
+            action = HG_CLI_ACTION_HELP;
+            break;
+        }
+    }
+
+    LocalFree(argv);
+    return action;
+}
+
+static void show_taskbox_from_cli(void)
+{
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        SendMessageW(hg_g_floater_wnd, WM_HOTKEY, 1, 0);
+    }
+}
+
+static BOOL dispatch_cli_action(HgCliAction action)
+{
+    switch (action) {
+        case HG_CLI_ACTION_SHOW:
+            show_taskbox_from_cli();
+            return TRUE;
+        case HG_CLI_ACTION_HIDE:
+            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+                hide_taskbox(hg_g_taskbox_wnd);
+            }
+            return TRUE;
+        case HG_CLI_ACTION_TOGGLE:
+            if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+                hide_taskbox(hg_g_taskbox_wnd);
+            } else {
+                show_taskbox_from_cli();
+            }
+            return TRUE;
+        case HG_CLI_ACTION_ABOUT:
+            show_about_window();
+            return TRUE;
+        case HG_CLI_ACTION_EXIT:
+            if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+                PostMessageW(hg_g_floater_wnd, WM_COMMAND, HG_IDM_CLOSE_APP, 0);
+            }
+            return TRUE;
+        case HG_CLI_ACTION_HELP:
+            MessageBoxW(NULL,
+                L"hgfloater command line options:\r\n\r\n"
+                L"  --show     Show the taskbox\r\n"
+                L"  --hide     Hide the taskbox\r\n"
+                L"  --toggle   Toggle the taskbox\r\n"
+                L"  --about    Show the About window\r\n"
+                L"  --exit     Exit the running instance\r\n"
+                L"  --help     Show this help",
+                L"hgfloater", MB_OK | MB_ICONINFORMATION);
+            return TRUE;
+        case HG_CLI_ACTION_DEFAULT:
+        default:
+            return FALSE;
+    }
+}
+
+static BOOL dispatch_pending_command_line(void)
+{
+    HgCliAction action;
+
+    if (!hg_g_has_pending_command_line || !hg_g_pending_command_line[0]) {
+        return FALSE;
+    }
+
+    action = parse_cli_action(hg_g_pending_command_line);
+    hg_g_pending_command_line[0] = L'\0';
+    hg_g_has_pending_command_line = FALSE;
+    return dispatch_cli_action(action);
+}
+
 static BOOL forward_command_line_to_instance(HWND existing_wnd, LPCWSTR cmd_line)
 {
     COPYDATASTRUCT cds;
@@ -859,18 +990,23 @@ static LRESULT handle_copydata_command_line(const COPYDATASTRUCT* cds)
     }
 
     hg_g_has_pending_command_line = TRUE;
-    return TRUE;
+    return dispatch_pending_command_line();
 }
 
 static void request_existing_instance_activation(LPCWSTR cmd_line)
 {
     HWND existing_wnd = FindWindowW(HG_CLASS_FLOATER_WIDGET, NULL);
+    HgCliAction action = parse_cli_action(cmd_line);
     if (!existing_wnd) {
         return;
     }
 
     if (cmd_line && cmd_line[0]) {
         forward_command_line_to_instance(existing_wnd, cmd_line);
+    }
+
+    if (action != HG_CLI_ACTION_DEFAULT) {
+        return;
     }
 
     if (IsIconic(existing_wnd)) {
@@ -5891,6 +6027,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     }
 
     update_monitor_enum();
+    dispatch_pending_command_line();
 
     ACCEL accel[] = {
         { FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP },
@@ -5972,4 +6109,3 @@ cleanup_finish:
     if (com_initialized) CoUninitialize();
     return exit_code;
 }
-
