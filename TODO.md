@@ -107,15 +107,17 @@
 - taskbox_controller_on_destroy 내부에서 전역 HFONT, HBRUSH, 툴팁 윈도우를 소거하던 중복 삭제 구문을 완전히 거두어내고 wWinMain의 단일 리소스 관리 지점으로 일임하여 모니터 뷰어 및 다른 보조 창들이 리소스 유실 없이 영구히 잘 생성되도록 조치 완료.
 - controlbox_proc에 WM_RBUTTONUP 라우트를 정상 탑재하여 컨트롤박스 빈 영역 우클릭 감지 즉시 파괴(close)되도록 사용자 요구사항 완수함.
 
-### 10. 실동작 버그 3종 수정 (추가 요구사항)
+### 10. 실동작 버그 4종 수정 (추가 요구사항)
 - [x] 컨트롤박스 상단의 제목(캡션) 우클릭 시 창 닫히지 않는 문제 해결 (controlbox_proc에 WM_NCRBUTTONUP 및 HTCAPTION 처리기 추가)
 - [x] F5키 누를 시 컨트롤박스 위치가 0,0으로 초기화되지 않는 문제 해결 (메시지 루프에서 controlbox 및 그 자식 포커스 시 VK_F5 강제 전달 및 controlbox_proc에 VK_F5 핸들러 바인딩)
 - [x] 모니터박스 최초 기동 시 컨트롤 에디트 글꼴이 기본 시스템 글꼴로 폴백되는 문제 해결 (monitor_wnd_proc의 WM_CREATE 및 WM_SIZE에 hg_g_main_font 레이지 로드 방어 코드 구축)
+- [x] taskbox의 에디트 글꼴 크기 변경 시 controlbox 라벨 글꼴 크기도 실시간 연동하도록 버그 수정 (`update_edit_font_size` 내부에서 `hg_g_controlbox_value_wnd`에 `WM_SETFONT` 전송)
 
 ### 2026-05-30
 - `controlbox_proc`에 `WM_NCRBUTTONUP` 메시지 라우트를 추가하고 `w_param == HTCAPTION`일 때 창을 닫도록 구현하여, 컨트롤박스 상단 제목 영역 우클릭 시 즉각 닫히도록 완수함.
 - `GetMessage` 메시지 루프에서 포커스가 `controlbox` 또는 그 자식 윈도우에 있고 `VK_F5`가 눌렸을 때 직접 `WM_KEYDOWN` 메시지를 전달하도록 라우팅 필터를 설계하여, 자식 트랙바에 포커스가 묶인 상황이나 액셀러레이터 테이블 간섭 상황에서도 0,0 좌표로 리셋되도록 완수함.
 - `monitor_wnd_proc`의 `WM_CREATE` 및 `WM_SIZE` 진입부에 lazy-initialization 구조를 더해 `hg_g_main_font`가 미처 준비되지 않은 시점에 모니터 뷰어가 열려도 깨끗한 전역 폰트 자원을 직접 빌드 및 로드하도록 구현하여 시스템 기본 폰트 폴백 버그를 완벽히 예방하고 완수함.
+- `update_edit_font_size` 함수 내에 컨트롤박스가 켜져 있을 때 라벨 컨트롤인 `hg_g_controlbox_value_wnd` 에도 새로 생성된 `hg_g_main_font` 를 적용하는 `WM_SETFONT` 메시지 전송 로직을 삽입하여, 태스크박스 폰트 크기 변경 시 실시간으로 컨트롤박스의 글꼴 크기 역시 정확히 동기화되어 스케일링되도록 완수함.
 
 ## 비고
 - 문서는 실제 코드 상태와 맞지 않으면 즉시 수정한다.
