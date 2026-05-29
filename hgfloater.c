@@ -47,7 +47,9 @@
 #pragma comment(lib, "oleaut32.lib")
 
 /* 비주얼 스타일(Common Controls 6.0) 사용을 위한 매니페스트 설정 */
-#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#pragma comment(                                                                                                       \
+    linker,                                                                                                            \
+    "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
 
 /* 툴팁 구조체 호환 크기 정의 */
@@ -79,15 +81,15 @@
 #define HG_ABOUT_README_W L"(Additional information from README.md could not be loaded.)"
 #endif
 
-#define HG_ABOUT_FIXED_W \
-    L"hgfloater " HG_VERSION_W L"\r\n" \
-    L"A lightweight WinAPI-based floating widget & task switcher.\r\n\r\n" \
-    L"Homepage:\r\n" \
-    L"https://github.com/rubidus-api/hgfloater\r\n\r\n" \
-    L"Developer: rubidus-api (rubidus@gmail.com)\r\n\r\n" \
-    L"License: MIT License\r\n\r\n" \
-    L"--- How to use Link ---\r\n" \
-    L"You can select and copy the URL/Email above using context menu or Ctrl+C.\r\n" \
+#define HG_ABOUT_FIXED_W                                                                                               \
+    L"hgfloater " HG_VERSION_W L"\r\n"                                                                                 \
+    L"A lightweight WinAPI-based floating widget & task switcher.\r\n\r\n"                                             \
+    L"Homepage:\r\n"                                                                                                   \
+    L"https://github.com/rubidus-api/hgfloater\r\n\r\n"                                                                \
+    L"Developer: rubidus-api (rubidus@gmail.com)\r\n\r\n"                                                              \
+    L"License: MIT License\r\n\r\n"                                                                                    \
+    L"--- How to use Link ---\r\n"                                                                                     \
+    L"You can select and copy the URL/Email above using context menu or Ctrl+C.\r\n"                                   \
     L"------------------------------\r\n\r\n"
 
 #define HG_ABOUT_TEXT_W HG_ABOUT_FIXED_W HG_ABOUT_README_W
@@ -103,7 +105,6 @@
  * - Memory: Shortcut icons are destroyed before reload; GDI objects in WM_PAINT are properly released.
  * - Performance: Double buffering prevents flickering; incremental window list updates reduce CPU load.
  */
-
 
 #ifndef HG_ARRAYSIZE
 #define HG_ARRAYSIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -134,7 +135,7 @@
 #define HG_CONTROLBOX_DEFAULT_WIDTH 260
 
 #define HG_MAX_PATH 32768
-#define HG_MAX_STR  1024
+#define HG_MAX_STR 1024
 
 #define HG_MAX_TITLE_LEN HG_MAX_STR
 #define HG_MAX_WINDOW_ITEMS 1024
@@ -143,26 +144,26 @@
 #define HG_NUM_BASIC_ICONS 5
 
 #define HG_IDM_MINIMIZE 201
-#define HG_IDM_CLOSE    202
-#define HG_IDM_MOVE     203
-#define HG_IDM_SIZE     204
+#define HG_IDM_CLOSE 202
+#define HG_IDM_MOVE 203
+#define HG_IDM_SIZE 204
 #define HG_IDM_CLOSE_APP 205
 #define HG_IDM_CLEAR_EDIT 206
 #define HG_IDM_EDIT_COPYALL 207
-#define HG_IDM_ABOUT        208
-#define HG_IDM_RESET_ALL    209
-#define HG_IDM_FONT_UP      210
-#define HG_IDM_FONT_DOWN    211
-#define HG_IDM_POWER_OFF    212
+#define HG_IDM_ABOUT 208
+#define HG_IDM_RESET_ALL 209
+#define HG_IDM_FONT_UP 210
+#define HG_IDM_FONT_DOWN 211
+#define HG_IDM_POWER_OFF 212
 #define HG_IDM_OPEN_CONTROLBOX 213
 
 #define HG_COPYDATA_COMMAND_LINE 0x4847434CU
 
-#define HG_IDM_TASK_MOVETO_0_0    300
-#define HG_IDM_TASK_CLOSE         301
-#define HG_IDM_TASK_RESIZE_4_3_1  302
-#define HG_IDM_TASK_RESIZE_4_3_2  303
-#define HG_IDM_TASK_RESIZE_4_3_3  304
+#define HG_IDM_TASK_MOVETO_0_0 300
+#define HG_IDM_TASK_CLOSE 301
+#define HG_IDM_TASK_RESIZE_4_3_1 302
+#define HG_IDM_TASK_RESIZE_4_3_2 303
+#define HG_IDM_TASK_RESIZE_4_3_3 304
 #define HG_IDM_TASK_RESIZE_16_9_1 305
 #define HG_IDM_TASK_RESIZE_16_9_2 306
 #define HG_IDM_TASK_RESIZE_16_9_3 307
@@ -171,39 +172,39 @@
 #define HG_IDM_TASK_RESIZE_9_16_2 310
 #define HG_IDM_TASK_RESIZE_9_16_3 311
 #define HG_IDM_TASK_RESIZE_9_16_4 312
-#define HG_IDM_TASK_RESTORE       313
+#define HG_IDM_TASK_RESTORE 313
 
-#define HG_IDM_VOLUME_PERCENT       400
-#define HG_IDM_VOLUME_SET_0         401
-#define HG_IDM_VOLUME_SET_25        402
-#define HG_IDM_VOLUME_SET_50        403
-#define HG_IDM_VOLUME_SET_75        404
-#define HG_IDM_VOLUME_SET_100       405
-#define HG_IDM_AUDIO_DEVICE_BASE    5000
-#define HG_IDM_MONITOR_BASE       6000
+#define HG_IDM_VOLUME_PERCENT 400
+#define HG_IDM_VOLUME_SET_0 401
+#define HG_IDM_VOLUME_SET_25 402
+#define HG_IDM_VOLUME_SET_50 403
+#define HG_IDM_VOLUME_SET_75 404
+#define HG_IDM_VOLUME_SET_100 405
+#define HG_IDM_AUDIO_DEVICE_BASE 5000
+#define HG_IDM_MONITOR_BASE 6000
 
 #define HG_MAX_MONITORS 10
 
-#define HG_IDM_SHORTCUT_RUN       (UINT_MAX - 100)
-#define HG_IDM_SHORTCUT_OPEN_DIR  (UINT_MAX - 101)
+#define HG_IDM_SHORTCUT_RUN (UINT_MAX - 100)
+#define HG_IDM_SHORTCUT_OPEN_DIR (UINT_MAX - 101)
 
 #define HG_TASKBOX_EDIT_CONTROL_TRIM_THRESHOLD 64
-#define HG_TASKBOX_EDIT_CONTROL_RETAIN_COUNT   32
+#define HG_TASKBOX_EDIT_CONTROL_RETAIN_COUNT 32
 
 #define HG_TIMER_HIGHLIGHT 1001
 #define HG_HIGHLIGHT_TICKS 6 /* 3번 깜빡임 (On/Off) */
 
 #define HG_TRANSPARENT_KEY RGB(1, 2, 3)
-#define HG_BORDER_THICKNESS   5
+#define HG_BORDER_THICKNESS 5
 #define HG_FLOATER_MIN_FONT_SIZE 12
 #define HG_FLOATER_MAX_FONT_SIZE 96
 
 /* 색 조합 (Color Scheme) 매직넘버 설정 */
-#define HG_THEME_CUSTOM_BG        RGB(20, 20, 20)
-#define HG_THEME_CUSTOM_BORDER    RGB(160, 160, 160)
-#define HG_THEME_CUSTOM_TEXT      RGB(255, 255, 255)
-#define HG_THEME_CUSTOM_FLASH     RGB(180, 130, 240)
-#define HG_THEME_CUSTOM_SELECTED  RGB(80, 80, 80)
+#define HG_THEME_CUSTOM_BG RGB(20, 20, 20)
+#define HG_THEME_CUSTOM_BORDER RGB(160, 160, 160)
+#define HG_THEME_CUSTOM_TEXT RGB(255, 255, 255)
+#define HG_THEME_CUSTOM_FLASH RGB(180, 130, 240)
+#define HG_THEME_CUSTOM_SELECTED RGB(80, 80, 80)
 
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
@@ -226,13 +227,13 @@
 #define WM_DWMCOLORIZATIONCOLORCHANGED 0x0320
 #endif
 
-#define HG_COLOR_BG_DEFAULT    hg_g_color_scheme_selected.bg
-#define HG_COLOR_BG_TOOLBAR    hg_g_color_scheme_selected.border
-#define HG_COLOR_BG_FLASH      hg_g_color_scheme_selected.flash
-#define HG_COLOR_BG_SELECTED   hg_g_color_scheme_selected.selected
+#define HG_COLOR_BG_DEFAULT hg_g_color_scheme_selected.bg
+#define HG_COLOR_BG_TOOLBAR hg_g_color_scheme_selected.border
+#define HG_COLOR_BG_FLASH hg_g_color_scheme_selected.flash
+#define HG_COLOR_BG_SELECTED hg_g_color_scheme_selected.selected
 #define HG_COLOR_BORDER_SELECTED hg_g_color_scheme_selected.flash
-#define HG_COLOR_TEXT_DEFAULT  hg_g_color_scheme_selected.text
-#define HG_CLICKABLE_BG        hg_g_color_scheme_selected.bg
+#define HG_COLOR_TEXT_DEFAULT hg_g_color_scheme_selected.text
+#define HG_CLICKABLE_BG hg_g_color_scheme_selected.bg
 
 #define HG_MIN_ALPHA ((int)(255 * (100 - 70) / 100)) /* 70% transparency limit */
 #define HG_MAX_ALPHA 255
@@ -242,14 +243,13 @@
 #endif
 
 #define HG_UWP_MAX_MANIFEST_BYTES (1024u * 1024u)
-#define HG_UWP_MIN_ICON_PX        16
-#define HG_UWP_MAX_ICON_PX        256
+#define HG_UWP_MIN_ICON_PX 16
+#define HG_UWP_MAX_ICON_PX 256
 
 /* =========================================================================
  * 데이터 구조체 (Data Structures)
  * ========================================================================= */
-typedef struct
-{
+typedef struct {
     COLORREF bg, border, text, flash, selected;
 } color_scheme_t;
 
@@ -326,7 +326,7 @@ HBRUSH hg_g_edit_bg_brush = NULL;
 HBRUSH hg_g_hbr_highlight = NULL;
 int hg_g_floater_font_size = 28;
 int hg_g_current_font_size = -22; /* 초기 아이콘 크기 (기존 32의 약 2/3) */
-int hg_g_edit_font_size = -16; /* Edit text font size */
+int hg_g_edit_font_size = -16;    /* Edit text font size */
 BYTE hg_g_floater_alpha = 204;
 BYTE hg_g_taskbox_alpha = 204;
 int hg_g_floater_highlight_ticks = 0;
@@ -367,12 +367,14 @@ int hg_g_drag_target_index = -1;
 /* =========================================================================
  * 함수 포워드 선언 & 유틸리티 (Function Prototypes & Util Macros)
  * ========================================================================= */
-static inline int sc(int x) {
+static inline int sc(int x)
+{
     return (int)(x * hg_g_scale_factor + (x >= 0 ? 0.5 : -0.5));
 }
 #define SC(x) sc(x)
 
-static inline int hellgates_abs(int x) {
+static inline int hellgates_abs(int x)
+{
     return (x < 0) ? -x : x;
 }
 #define ABS(x) hellgates_abs(x)
@@ -382,13 +384,14 @@ void update_layout(HWND hwnd);
 void update_floater_layout(HWND hwnd);
 void update_focus_message(int override_type, int override_index);
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
-LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass, DWORD_PTR dw_ref_data);
+LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass,
+                                    DWORD_PTR dw_ref_data);
 LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
-void save_config(const WCHAR* section, int x, int y, int w, int h);
+void save_config(const WCHAR *section, int x, int y, int w, int h);
 void save_floater_font_config(void);
 void save_taskbox_font_config(void);
 void hg_config_reset_all(HWND hwnd);
@@ -404,10 +407,10 @@ static const WCHAR HG_CLASS_MONITOR[] = L"hgmonitor_class";
 static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";
 
 typedef struct WindowClassSpec {
-    const WCHAR* class_name;
+    const WCHAR *class_name;
     WNDPROC wnd_proc;
     HBRUSH background;
-    const WCHAR* fail_message;
+    const WCHAR *fail_message;
 } WindowClassSpec;
 
 typedef enum HgCliAction {
@@ -441,67 +444,62 @@ typedef struct ToolbarControllerState {
 
 /* Manual GUID definitions for Core Audio to avoid including initguid.h which clashes with uuid.lib */
 #ifndef CLSID_MMDeviceEnumerator
-const GUID CLSID_MMDeviceEnumerator = { 0xbcde0395, 0xe52f, 0x467c, { 0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e } };
+const GUID CLSID_MMDeviceEnumerator = {0xbcde0395, 0xe52f, 0x467c, {0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e}};
 #endif
 #ifndef IID_IMMDeviceEnumerator
-const GUID IID_IMMDeviceEnumerator = { 0xa95664d2, 0x9614, 0x4f35, { 0xa7, 0x46, 0xde, 0x8d, 0xb6, 0x36, 0x17, 0xe6 } };
+const GUID IID_IMMDeviceEnumerator = {0xa95664d2, 0x9614, 0x4f35, {0xa7, 0x46, 0xde, 0x8d, 0xb6, 0x36, 0x17, 0xe6}};
 #endif
 #ifndef IID_IAudioEndpointVolume
-const GUID IID_IAudioEndpointVolume = { 0x5cdf2c82, 0x841e, 0x4546, { 0x97, 0x22, 0x0c, 0xf7, 0x40, 0x78, 0x22, 0x9a } };
+const GUID IID_IAudioEndpointVolume = {0x5cdf2c82, 0x841e, 0x4546, {0x97, 0x22, 0x0c, 0xf7, 0x40, 0x78, 0x22, 0x9a}};
 #endif
 
 /* Undocumented IPolicyConfig interface for setting default audio endpoint */
-static const GUID CLSID_CPolicyConfigClient =
-    { 0x870af99c, 0x171d, 0x4f9e,
-      { 0xaf, 0x0d, 0xe6, 0x3d, 0xf4, 0x0c, 0x2b, 0xc9 } };
+static const GUID CLSID_CPolicyConfigClient = {
+    0x870af99c, 0x171d, 0x4f9e, {0xaf, 0x0d, 0xe6, 0x3d, 0xf4, 0x0c, 0x2b, 0xc9}};
 
-static const GUID IID_IPolicyConfig =
-    { 0xf8679f50, 0x850a, 0x41cf,
-      { 0x9c, 0x72, 0x43, 0x0f, 0x29, 0x02, 0x90, 0xc8 } };
+static const GUID IID_IPolicyConfig = {0xf8679f50, 0x850a, 0x41cf, {0x9c, 0x72, 0x43, 0x0f, 0x29, 0x02, 0x90, 0xc8}};
 
 typedef struct IPolicyConfigVtbl {
-    HRESULT (STDMETHODCALLTYPE *QueryInterface)(void* This, REFIID riid, void** ppvObject);
-    ULONG   (STDMETHODCALLTYPE *AddRef)(void* This);
-    ULONG   (STDMETHODCALLTYPE *Release)(void* This);
+    HRESULT(STDMETHODCALLTYPE *QueryInterface)(void *This, REFIID riid, void **ppvObject);
+    ULONG(STDMETHODCALLTYPE *AddRef)(void *This);
+    ULONG(STDMETHODCALLTYPE *Release)(void *This);
 
-    HRESULT (STDMETHODCALLTYPE *GetMixFormat)(void* This, PCWSTR pszDeviceName, WAVEFORMATEX** ppFormat);
-    HRESULT (STDMETHODCALLTYPE *GetDeviceFormat)(void* This, PCWSTR pszDeviceName, INT bDefault, WAVEFORMATEX** ppFormat);
-    HRESULT (STDMETHODCALLTYPE *ResetDeviceFormat)(void* This, PCWSTR pszDeviceName);
+    HRESULT(STDMETHODCALLTYPE *GetMixFormat)(void *This, PCWSTR pszDeviceName, WAVEFORMATEX **ppFormat);
+    HRESULT(STDMETHODCALLTYPE *GetDeviceFormat)(void *This, PCWSTR pszDeviceName, INT bDefault,
+                                                WAVEFORMATEX **ppFormat);
+    HRESULT(STDMETHODCALLTYPE *ResetDeviceFormat)(void *This, PCWSTR pszDeviceName);
 
-    HRESULT (STDMETHODCALLTYPE *SetDeviceFormat)(void* This, PCWSTR pszDeviceName,
-                                                 WAVEFORMATEX* pEndpointFormat,
-                                                 WAVEFORMATEX* pMixFormat);
-    HRESULT (STDMETHODCALLTYPE *GetProcessingPeriod)(void* This, PCWSTR pszDeviceName,
-                                                     INT bDefault,
-                                                     INT64* pmnPeriod,
-                                                     INT64* pmxPeriod);
-    HRESULT (STDMETHODCALLTYPE *SetProcessingPeriod)(void* This, PCWSTR pszDeviceName,
-                                                     INT64* pPeriod);
-    HRESULT (STDMETHODCALLTYPE *GetShareMode)(void* This, PCWSTR pszDeviceName, void* pMode);
-    HRESULT (STDMETHODCALLTYPE *SetShareMode)(void* This, PCWSTR pszDeviceName, void* pMode);
-    HRESULT (STDMETHODCALLTYPE *GetPropertyValue)(void* This, PCWSTR pszDeviceName,
-                                                  const PROPERTYKEY* pKey,
-                                                  PROPVARIANT* pv);
-    HRESULT (STDMETHODCALLTYPE *SetPropertyValue)(void* This, PCWSTR pszDeviceName,
-                                                  const PROPERTYKEY* pKey,
-                                                  PROPVARIANT* pv);
-    HRESULT (STDMETHODCALLTYPE *SetDefaultEndpoint)(void* This, PCWSTR pszDeviceName, ERole role);
-    HRESULT (STDMETHODCALLTYPE *SetEndpointVisibility)(void* This, PCWSTR pszDeviceName, INT bVisible);
+    HRESULT(STDMETHODCALLTYPE *SetDeviceFormat)(void *This, PCWSTR pszDeviceName, WAVEFORMATEX *pEndpointFormat,
+                                                WAVEFORMATEX *pMixFormat);
+    HRESULT(STDMETHODCALLTYPE *GetProcessingPeriod)(void *This, PCWSTR pszDeviceName, INT bDefault, INT64 *pmnPeriod,
+                                                    INT64 *pmxPeriod);
+    HRESULT(STDMETHODCALLTYPE *SetProcessingPeriod)(void *This, PCWSTR pszDeviceName, INT64 *pPeriod);
+    HRESULT(STDMETHODCALLTYPE *GetShareMode)(void *This, PCWSTR pszDeviceName, void *pMode);
+    HRESULT(STDMETHODCALLTYPE *SetShareMode)(void *This, PCWSTR pszDeviceName, void *pMode);
+    HRESULT(STDMETHODCALLTYPE *GetPropertyValue)(void *This, PCWSTR pszDeviceName, const PROPERTYKEY *pKey,
+                                                 PROPVARIANT *pv);
+    HRESULT(STDMETHODCALLTYPE *SetPropertyValue)(void *This, PCWSTR pszDeviceName, const PROPERTYKEY *pKey,
+                                                 PROPVARIANT *pv);
+    HRESULT(STDMETHODCALLTYPE *SetDefaultEndpoint)(void *This, PCWSTR pszDeviceName, ERole role);
+    HRESULT(STDMETHODCALLTYPE *SetEndpointVisibility)(void *This, PCWSTR pszDeviceName, INT bVisible);
 } IPolicyConfigVtbl;
 
 typedef struct IPolicyConfig {
-    IPolicyConfigVtbl* lpVtbl;
+    IPolicyConfigVtbl *lpVtbl;
 } IPolicyConfig;
 
-int get_system_volume() {
+int get_system_volume()
+{
     float volume = 0.0f;
-    IMMDeviceEnumerator* enumerator = NULL;
-    IMMDevice* device = NULL;
-    IAudioEndpointVolume* endpointVolume = NULL;
+    IMMDeviceEnumerator *enumerator = NULL;
+    IMMDevice *device = NULL;
+    IAudioEndpointVolume *endpointVolume = NULL;
 
-    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&enumerator))) {
+    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
+                                   (void **)&enumerator))) {
         if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device))) {
-            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL, (void**)&endpointVolume))) {
+            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL,
+                                                   (void **)&endpointVolume))) {
                 endpointVolume->lpVtbl->GetMasterVolumeLevelScalar(endpointVolume, &volume);
                 endpointVolume->lpVtbl->Release(endpointVolume);
             }
@@ -512,18 +510,23 @@ int get_system_volume() {
     return (int)(volume * 100.0f + 0.5f);
 }
 
-void set_system_volume(int percent) {
-    if (percent < 0) percent = 0;
-    if (percent > 100) percent = 100;
+void set_system_volume(int percent)
+{
+    if (percent < 0)
+        percent = 0;
+    if (percent > 100)
+        percent = 100;
     float volume = (float)percent / 100.0f;
 
-    IMMDeviceEnumerator* enumerator = NULL;
-    IMMDevice* device = NULL;
-    IAudioEndpointVolume* endpointVolume = NULL;
+    IMMDeviceEnumerator *enumerator = NULL;
+    IMMDevice *device = NULL;
+    IAudioEndpointVolume *endpointVolume = NULL;
 
-    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&enumerator))) {
+    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
+                                   (void **)&enumerator))) {
         if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device))) {
-            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL, (void**)&endpointVolume))) {
+            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL,
+                                                   (void **)&endpointVolume))) {
                 endpointVolume->lpVtbl->SetMasterVolumeLevelScalar(endpointVolume, volume, NULL);
                 if (percent > 0) {
                     /* Unmute if volume is non-zero */
@@ -537,14 +540,16 @@ void set_system_volume(int percent) {
     }
 }
 
-void update_audio_device_list() {
+void update_audio_device_list()
+{
     hg_g_audio_device_count = 0;
-    IMMDeviceEnumerator* enumerator = NULL;
-    IMMDeviceCollection* collection = NULL;
-    IMMDevice* default_dev = NULL;
+    IMMDeviceEnumerator *enumerator = NULL;
+    IMMDeviceCollection *collection = NULL;
+    IMMDevice *default_dev = NULL;
     LPWSTR default_id = NULL;
 
-    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&enumerator))) {
+    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
+                                   (void **)&enumerator))) {
         if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &default_dev))) {
             default_dev->lpVtbl->GetId(default_dev, &default_id);
             default_dev->lpVtbl->Release(default_dev);
@@ -554,22 +559,21 @@ void update_audio_device_list() {
             UINT count = 0;
             collection->lpVtbl->GetCount(collection, &count);
             for (UINT i = 0; i < count && hg_g_audio_device_count < HG_MAX_AUDIO_DEVICES; i++) {
-                IMMDevice* device = NULL;
+                IMMDevice *device = NULL;
                 if (SUCCEEDED(collection->lpVtbl->Item(collection, i, &device))) {
                     LPWSTR id = NULL;
                     if (SUCCEEDED(device->lpVtbl->GetId(device, &id))) {
-                        IPropertyStore* props = NULL;
+                        IPropertyStore *props = NULL;
                         if (SUCCEEDED(device->lpVtbl->OpenPropertyStore(device, STGM_READ, &props))) {
                             PROPVARIANT var;
                             PropVariantInit(&var);
                             if (SUCCEEDED(props->lpVtbl->GetValue(props, &PKEY_Device_FriendlyName, &var)) &&
-                                var.vt == VT_LPWSTR &&
-                                var.pwszVal) {
+                                var.vt == VT_LPWSTR && var.pwszVal) {
 
                                 if (SUCCEEDED(StringCchCopyW(hg_g_audio_devices[hg_g_audio_device_count].name,
                                                              HG_MAX_STR, var.pwszVal)) &&
-                                    SUCCEEDED(StringCchCopyW(hg_g_audio_devices[hg_g_audio_device_count].id,
-                                                             HG_MAX_STR, id))) {
+                                    SUCCEEDED(StringCchCopyW(hg_g_audio_devices[hg_g_audio_device_count].id, HG_MAX_STR,
+                                                             id))) {
 
                                     hg_g_audio_devices[hg_g_audio_device_count].is_default =
                                         (default_id && wcscmp(id, default_id) == 0);
@@ -586,22 +590,19 @@ void update_audio_device_list() {
             }
             collection->lpVtbl->Release(collection);
         }
-        if (default_id) CoTaskMemFree(default_id);
+        if (default_id)
+            CoTaskMemFree(default_id);
         enumerator->lpVtbl->Release(enumerator);
     }
 }
 
-BOOL set_default_audio_device(const WCHAR* device_id) {
-    if (!device_id || !*device_id) return FALSE;
+BOOL set_default_audio_device(const WCHAR *device_id)
+{
+    if (!device_id || !*device_id)
+        return FALSE;
 
-    IPolicyConfig* policy = NULL;
-    HRESULT hr = CoCreateInstance(
-        &CLSID_CPolicyConfigClient,
-        NULL,
-        CLSCTX_ALL,
-        &IID_IPolicyConfig,
-        (void**)&policy
-    );
+    IPolicyConfig *policy = NULL;
+    HRESULT hr = CoCreateInstance(&CLSID_CPolicyConfigClient, NULL, CLSCTX_ALL, &IID_IPolicyConfig, (void **)&policy);
 
     if (FAILED(hr) || !policy) {
         return FALSE;
@@ -657,12 +658,14 @@ void init_color_scheme(void)
     };
 }
 
-void update_theme_colors() {
+void update_theme_colors()
+{
     HIGHCONTRASTW hc = {0};
     hc.cbSize = sizeof(HIGHCONTRASTW);
     BOOL is_hc = FALSE;
     if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(HIGHCONTRASTW), &hc, 0)) {
-        if (hc.dwFlags & HCF_HIGHCONTRASTON) is_hc = TRUE;
+        if (hc.dwFlags & HCF_HIGHCONTRASTON)
+            is_hc = TRUE;
     }
 
     hg_g_is_high_contrast = is_hc;
@@ -672,11 +675,13 @@ void update_theme_colors() {
     DWORD use_light_theme = 1;
     DWORD cbData = sizeof(use_light_theme);
     HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0,
+                      KEY_READ, &hKey) == ERROR_SUCCESS) {
         RegQueryValueExW(hKey, L"AppsUseLightTheme", NULL, NULL, (LPBYTE)&use_light_theme, &cbData);
         RegCloseKey(hKey);
     }
-    if (!hg_g_is_high_contrast && use_light_theme == 0) hg_g_is_dark_mode = 1;
+    if (!hg_g_is_high_contrast && use_light_theme == 0)
+        hg_g_is_dark_mode = 1;
 
     init_color_scheme();
 
@@ -685,7 +690,7 @@ void update_theme_colors() {
     }
 
     if (hg_g_is_high_contrast) {
-        hg_g_color_scheme_selected = (color_scheme_t) {
+        hg_g_color_scheme_selected = (color_scheme_t){
             .bg = GetSysColor(COLOR_BTNFACE),
             .border = GetSysColor(COLOR_WINDOWFRAME),
             .text = GetSysColor(COLOR_BTNTEXT),
@@ -703,16 +708,14 @@ void apply_dwm_attributes(HWND hwnd);
 
 static BOOL should_refresh_theme_on_setting_change(LPARAM l_param)
 {
-    const WCHAR* setting = (const WCHAR*)l_param;
+    const WCHAR *setting = (const WCHAR *)l_param;
 
     if (!setting || !*setting) {
         return TRUE;
     }
 
-    return lstrcmpiW(setting, L"ImmersiveColorSet") == 0
-        || lstrcmpiW(setting, L"AppsUseLightTheme") == 0
-        || lstrcmpiW(setting, L"WindowsThemeElement") == 0
-        || lstrcmpiW(setting, L"HighContrast") == 0;
+    return lstrcmpiW(setting, L"ImmersiveColorSet") == 0 || lstrcmpiW(setting, L"AppsUseLightTheme") == 0 ||
+           lstrcmpiW(setting, L"WindowsThemeElement") == 0 || lstrcmpiW(setting, L"HighContrast") == 0;
 }
 
 static void refresh_theme_surfaces(HWND hwnd)
@@ -771,7 +774,8 @@ static void refresh_theme_surfaces(HWND hwnd)
     }
 }
 
-static BOOL register_app_window_class(HINSTANCE instance, const WindowClassSpec* spec, HICON icon_large, HICON icon_small)
+static BOOL register_app_window_class(HINSTANCE instance, const WindowClassSpec *spec, HICON icon_large,
+                                      HICON icon_small)
 {
     WNDCLASSEXW wc = {0};
     wc.cbSize = sizeof(WNDCLASSEXW);
@@ -796,11 +800,11 @@ static BOOL register_app_window_class(HINSTANCE instance, const WindowClassSpec*
 static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HICON icon_small)
 {
     const WindowClassSpec specs[] = {
-        { HG_CLASS_FLOATER_WIDGET, floater_proc, hg_g_main_bg_brush, L"Failed to register floater class." },
-        { HG_CLASS_CONTROLBOX, controlbox_proc, hg_g_main_bg_brush, L"Failed to register controlbox class." },
-        { HG_CLASS_ABOUT, about_proc, hg_g_main_bg_brush, L"Failed to register about class." },
-        { HG_CLASS_TASKBOX, window_proc, hg_g_main_bg_brush, L"Failed to register taskbox class." },
-        { HG_CLASS_MONITOR, monitor_wnd_proc, (HBRUSH)GetStockObject(BLACK_BRUSH), L"Failed to register monitor class." },
+        {HG_CLASS_FLOATER_WIDGET, floater_proc, hg_g_main_bg_brush, L"Failed to register floater class."},
+        {HG_CLASS_CONTROLBOX, controlbox_proc, hg_g_main_bg_brush, L"Failed to register controlbox class."},
+        {HG_CLASS_ABOUT, about_proc, hg_g_main_bg_brush, L"Failed to register about class."},
+        {HG_CLASS_TASKBOX, window_proc, hg_g_main_bg_brush, L"Failed to register taskbox class."},
+        {HG_CLASS_MONITOR, monitor_wnd_proc, (HBRUSH)GetStockObject(BLACK_BRUSH), L"Failed to register monitor class."},
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(specs); ++i) {
@@ -813,12 +817,8 @@ static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HI
 
 static void unregister_app_window_classes(HINSTANCE instance)
 {
-    const WCHAR* classes[] = {
-        HG_CLASS_FLOATER_WIDGET,
-        HG_CLASS_CONTROLBOX,
-        HG_CLASS_ABOUT,
-        HG_CLASS_TASKBOX,
-        HG_CLASS_MONITOR,
+    const WCHAR *classes[] = {
+        HG_CLASS_FLOATER_WIDGET, HG_CLASS_CONTROLBOX, HG_CLASS_ABOUT, HG_CLASS_TASKBOX, HG_CLASS_MONITOR,
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(classes); ++i) {
@@ -848,14 +848,13 @@ static void store_pending_command_line(LPCWSTR cmd_line)
 
 static BOOL cli_arg_equals(LPCWSTR arg, LPCWSTR long_name, LPCWSTR short_name)
 {
-    return arg && ((long_name && lstrcmpiW(arg, long_name) == 0) ||
-                   (short_name && lstrcmpiW(arg, short_name) == 0));
+    return arg && ((long_name && lstrcmpiW(arg, long_name) == 0) || (short_name && lstrcmpiW(arg, short_name) == 0));
 }
 
 static HgCliAction parse_cli_action(LPCWSTR cmd_line)
 {
     int argc = 0;
-    LPWSTR* argv = NULL;
+    LPWSTR *argv = NULL;
     HgCliAction action = HG_CLI_ACTION_DEFAULT;
 
     if (!cmd_line || !cmd_line[0]) {
@@ -885,13 +884,11 @@ static HgCliAction parse_cli_action(LPCWSTR cmd_line)
             action = HG_CLI_ACTION_ABOUT;
             break;
         }
-        if (cli_arg_equals(arg, L"--exit", L"/exit") ||
-            cli_arg_equals(arg, L"--quit", L"/quit")) {
+        if (cli_arg_equals(arg, L"--exit", L"/exit") || cli_arg_equals(arg, L"--quit", L"/quit")) {
             action = HG_CLI_ACTION_EXIT;
             break;
         }
-        if (cli_arg_equals(arg, L"--help", L"/help") ||
-            cli_arg_equals(arg, L"-h", L"/?")) {
+        if (cli_arg_equals(arg, L"--help", L"/help") || cli_arg_equals(arg, L"-h", L"/?")) {
             action = HG_CLI_ACTION_HELP;
             break;
         }
@@ -911,43 +908,43 @@ static void show_taskbox_from_cli(void)
 static BOOL dispatch_cli_action(HgCliAction action)
 {
     switch (action) {
-        case HG_CLI_ACTION_SHOW:
+    case HG_CLI_ACTION_SHOW:
+        show_taskbox_from_cli();
+        return TRUE;
+    case HG_CLI_ACTION_HIDE:
+        if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+            hide_taskbox(hg_g_taskbox_wnd);
+        }
+        return TRUE;
+    case HG_CLI_ACTION_TOGGLE:
+        if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+            hide_taskbox(hg_g_taskbox_wnd);
+        } else {
             show_taskbox_from_cli();
-            return TRUE;
-        case HG_CLI_ACTION_HIDE:
-            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
-                hide_taskbox(hg_g_taskbox_wnd);
-            }
-            return TRUE;
-        case HG_CLI_ACTION_TOGGLE:
-            if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
-                hide_taskbox(hg_g_taskbox_wnd);
-            } else {
-                show_taskbox_from_cli();
-            }
-            return TRUE;
-        case HG_CLI_ACTION_ABOUT:
-            show_about_window();
-            return TRUE;
-        case HG_CLI_ACTION_EXIT:
-            if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
-                PostMessageW(hg_g_floater_wnd, WM_COMMAND, HG_IDM_CLOSE_APP, 0);
-            }
-            return TRUE;
-        case HG_CLI_ACTION_HELP:
-            MessageBoxW(NULL,
-                L"hgfloater command line options:\r\n\r\n"
-                L"  --show     Show the taskbox\r\n"
-                L"  --hide     Hide the taskbox\r\n"
-                L"  --toggle   Toggle the taskbox\r\n"
-                L"  --about    Show the About window\r\n"
-                L"  --exit     Exit the running instance\r\n"
-                L"  --help     Show this help",
-                L"hgfloater", MB_OK | MB_ICONINFORMATION);
-            return TRUE;
-        case HG_CLI_ACTION_DEFAULT:
-        default:
-            return FALSE;
+        }
+        return TRUE;
+    case HG_CLI_ACTION_ABOUT:
+        show_about_window();
+        return TRUE;
+    case HG_CLI_ACTION_EXIT:
+        if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+            PostMessageW(hg_g_floater_wnd, WM_COMMAND, HG_IDM_CLOSE_APP, 0);
+        }
+        return TRUE;
+    case HG_CLI_ACTION_HELP:
+        MessageBoxW(NULL,
+                    L"hgfloater command line options:\r\n\r\n"
+                    L"  --show     Show the taskbox\r\n"
+                    L"  --hide     Hide the taskbox\r\n"
+                    L"  --toggle   Toggle the taskbox\r\n"
+                    L"  --about    Show the About window\r\n"
+                    L"  --exit     Exit the running instance\r\n"
+                    L"  --help     Show this help",
+                    L"hgfloater", MB_OK | MB_ICONINFORMATION);
+        return TRUE;
+    case HG_CLI_ACTION_DEFAULT:
+    default:
+        return FALSE;
     }
 }
 
@@ -979,13 +976,14 @@ static BOOL forward_command_line_to_instance(HWND existing_wnd, LPCWSTR cmd_line
     return SendMessageW(existing_wnd, WM_COPYDATA, 0, (LPARAM)&cds) != 0;
 }
 
-static LRESULT handle_copydata_command_line(const COPYDATASTRUCT* cds)
+static LRESULT handle_copydata_command_line(const COPYDATASTRUCT *cds)
 {
     if (!cds || cds->dwData != HG_COPYDATA_COMMAND_LINE || !cds->lpData || cds->cbData < sizeof(WCHAR)) {
         return FALSE;
     }
 
-    if (FAILED(StringCchCopyW(hg_g_pending_command_line, HG_ARRAYSIZE(hg_g_pending_command_line), (LPCWSTR)cds->lpData))) {
+    if (FAILED(
+            StringCchCopyW(hg_g_pending_command_line, HG_ARRAYSIZE(hg_g_pending_command_line), (LPCWSTR)cds->lpData))) {
         hg_g_pending_command_line[0] = L'\0';
         hg_g_has_pending_command_line = FALSE;
         return FALSE;
@@ -1019,23 +1017,31 @@ static void request_existing_instance_activation(LPCWSTR cmd_line)
     PostMessageW(existing_wnd, WM_HOTKEY, 1, 0);
 }
 
-void apply_dwm_attributes(HWND hwnd) {
-    if (!hwnd || !IsWindow(hwnd)) return;
+void apply_dwm_attributes(HWND hwnd)
+{
+    if (!hwnd || !IsWindow(hwnd))
+        return;
     BOOL use_immersive_dark_mode = hg_g_is_dark_mode && !hg_g_is_high_contrast;
-    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &use_immersive_dark_mode, sizeof(use_immersive_dark_mode));
-    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &hg_g_color_scheme_selected.border, sizeof(hg_g_color_scheme_selected.border));
-    DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &hg_g_color_scheme_selected.bg, sizeof(hg_g_color_scheme_selected.bg));
-    DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &hg_g_color_scheme_selected.text, sizeof(hg_g_color_scheme_selected.text));
+    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &use_immersive_dark_mode,
+                          sizeof(use_immersive_dark_mode));
+    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &hg_g_color_scheme_selected.border,
+                          sizeof(hg_g_color_scheme_selected.border));
+    DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &hg_g_color_scheme_selected.bg,
+                          sizeof(hg_g_color_scheme_selected.bg));
+    DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &hg_g_color_scheme_selected.text,
+                          sizeof(hg_g_color_scheme_selected.text));
 
     int corner_pref = DWMWCP_DONOTROUND;
     DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
 }
 
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-    if (hg_g_monitor_count >= HG_MAX_MONITORS) return FALSE;
+BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+    if (hg_g_monitor_count >= HG_MAX_MONITORS)
+        return FALSE;
     MONITORINFOEXW mi;
     mi.cbSize = sizeof(mi);
-    if (GetMonitorInfoW(hMonitor, (MONITORINFO*)&mi)) {
+    if (GetMonitorInfoW(hMonitor, (MONITORINFO *)&mi)) {
         hg_g_monitors[hg_g_monitor_count].hMonitor = hMonitor;
         hg_g_monitors[hg_g_monitor_count].rcMonitor = mi.rcMonitor;
         StringCchCopyW(hg_g_monitors[hg_g_monitor_count].name, 64, mi.szDevice);
@@ -1045,7 +1051,8 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
     return TRUE;
 }
 
-void update_monitor_enum() {
+void update_monitor_enum()
+{
     /* Preserve existing active windows */
     MonitorInfo saved_monitors[HG_MAX_MONITORS];
     int saved_count = hg_g_monitor_count;
@@ -1077,7 +1084,8 @@ void update_monitor_enum() {
     }
 }
 
-HRESULT hellgates_wsprintf(LPWSTR dest, size_t dest_size, LPCWSTR format, ...) {
+HRESULT hellgates_wsprintf(LPWSTR dest, size_t dest_size, LPCWSTR format, ...)
+{
     va_list arg_list;
     va_start(arg_list, format);
     HRESULT hr = StringCchVPrintfW(dest, dest_size, format, arg_list);
@@ -1091,8 +1099,10 @@ HRESULT hellgates_wsprintf(LPWSTR dest, size_t dest_size, LPCWSTR format, ...) {
  * Note: shell functions like ShellExecute don't like \\?\, but
  * basic file APIs like GetFileAttributesW/CreateFileW love it.
  */
-void normalize_path_for_api(const WCHAR* input, WCHAR* output, size_t output_size) {
-    if (!input || !output || output_size == 0) return;
+void normalize_path_for_api(const WCHAR *input, WCHAR *output, size_t output_size)
+{
+    if (!input || !output || output_size == 0)
+        return;
 
     /* Resolve relative paths to absolute first */
     WCHAR full[HG_MAX_PATH];
@@ -1118,8 +1128,9 @@ void normalize_path_for_api(const WCHAR* input, WCHAR* output, size_t output_siz
     }
 }
 
-void init_paths() {
-    WCHAR profile[HG_MAX_PATH] = { 0 };
+void init_paths()
+{
+    WCHAR profile[HG_MAX_PATH] = {0};
     if (GetEnvironmentVariableW(L"USERPROFILE", profile, HG_MAX_PATH) == 0) {
         StringCchCopyW(profile, HG_MAX_PATH, L"C:\\");
     }
@@ -1138,42 +1149,53 @@ void init_paths() {
     normalize_path_for_api(legacy_config_path, norm_legacy, HG_MAX_PATH);
     normalize_path_for_api(hg_g_config_path, norm_config, HG_MAX_PATH);
 
-    if (GetFileAttributesW(norm_legacy) != INVALID_FILE_ATTRIBUTES && GetFileAttributesW(norm_config) == INVALID_FILE_ATTRIBUTES) {
+    if (GetFileAttributesW(norm_legacy) != INVALID_FILE_ATTRIBUTES &&
+        GetFileAttributesW(norm_config) == INVALID_FILE_ATTRIBUTES) {
         MoveFileW(norm_legacy, norm_config);
     }
 }
 
 /* 창 필터링: 윈도우 11 작업 표시줄과 유사한 로직 */
-BOOL is_alt_tab_window(HWND hwnd) {
-    if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd || hwnd == hg_g_about_wnd) return FALSE;
-    if (!IsWindow(hwnd)) return FALSE;
-    if (!IsWindowVisible(hwnd)) return FALSE;
+BOOL is_alt_tab_window(HWND hwnd)
+{
+    if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd || hwnd == hg_g_about_wnd)
+        return FALSE;
+    if (!IsWindow(hwnd))
+        return FALSE;
+    if (!IsWindowVisible(hwnd))
+        return FALSE;
 
     /* 텍스트가 없는 창은 제외 */
-    if (GetWindowTextLengthW(hwnd) == 0) return FALSE;
+    if (GetWindowTextLengthW(hwnd) == 0)
+        return FALSE;
 
     /* 도구 창 제외 */
     LONG_PTR ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-    if (ex_style & WS_EX_TOOLWINDOW) return FALSE;
+    if (ex_style & WS_EX_TOOLWINDOW)
+        return FALSE;
 
     /* 소유자가 있는 창은 기본적으로 제외 (단, 앱 윈도우 스타일이 있으면 포함) */
     HWND owner_hwnd = GetWindow(hwnd, GW_OWNER);
-    if (owner_hwnd != NULL && !(ex_style & WS_EX_APPWINDOW)) return FALSE;
+    if (owner_hwnd != NULL && !(ex_style & WS_EX_APPWINDOW))
+        return FALSE;
 
     /* Cloaked 상태 체크 (가상 데스크톱 등 숨겨진 창 제외) */
     int cloaked = 0;
     if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked)))) {
-        if (cloaked != 0) return FALSE;
+        if (cloaked != 0)
+            return FALSE;
     }
 
     return TRUE;
 }
 
 /* 프로세스 이름 가져오기 */
-void get_process_name_by_hwnd(HWND hwnd, WCHAR* out_name, size_t out_size, DWORD* out_pid) {
+void get_process_name_by_hwnd(HWND hwnd, WCHAR *out_name, size_t out_size, DWORD *out_pid)
+{
     DWORD pid = 0;
     GetWindowThreadProcessId(hwnd, &pid);
-    if (out_pid) *out_pid = pid;
+    if (out_pid)
+        *out_pid = pid;
 
     if (out_name && out_size > 0) {
         out_name[0] = L'\0';
@@ -1192,7 +1214,8 @@ void get_process_name_by_hwnd(HWND hwnd, WCHAR* out_name, size_t out_size, DWORD
     DWORD q_size = HG_ARRAYSIZE(path);
     if (QueryFullProcessImageNameW(process_handle, 0, path, &q_size)) {
         LPCWSTR exe_name = PathFindFileNameW(path);
-        if (!exe_name || !*exe_name) exe_name = path;
+        if (!exe_name || !*exe_name)
+            exe_name = path;
         StringCchCopyW(out_name, out_size, exe_name);
     } else {
         StringCchCopyW(out_name, out_size, L"Unknown");
@@ -1202,10 +1225,12 @@ void get_process_name_by_hwnd(HWND hwnd, WCHAR* out_name, size_t out_size, DWORD
 }
 
 /* get full path by hwnd */
-void get_process_path_by_hwnd(HWND hwnd, WCHAR* out_path, size_t out_size, DWORD* out_pid) {
+void get_process_path_by_hwnd(HWND hwnd, WCHAR *out_path, size_t out_size, DWORD *out_pid)
+{
     DWORD pid = 0;
     GetWindowThreadProcessId(hwnd, &pid);
-    if (out_pid) *out_pid = pid;
+    if (out_pid)
+        *out_pid = pid;
 
     if (out_path && out_size > 0) {
         out_path[0] = L'\0';
@@ -1246,15 +1271,18 @@ void get_process_path_by_hwnd(HWND hwnd, WCHAR* out_path, size_t out_size, DWORD
 
 static int hg_clamp_icon_size_px(int size_px)
 {
-    if (size_px < HG_UWP_MIN_ICON_PX) return HG_UWP_MIN_ICON_PX;
-    if (size_px > HG_UWP_MAX_ICON_PX) return HG_UWP_MAX_ICON_PX;
+    if (size_px < HG_UWP_MIN_ICON_PX)
+        return HG_UWP_MIN_ICON_PX;
+    if (size_px > HG_UWP_MAX_ICON_PX)
+        return HG_UWP_MAX_ICON_PX;
     return size_px;
 }
 
 static BOOL CALLBACK find_uwp_child_window(HWND hwnd, LPARAM lParam)
 {
-    FindUWPChildData* data = (FindUWPChildData*)lParam;
-    if (!data || !IsWindow(hwnd)) return TRUE;
+    FindUWPChildData *data = (FindUWPChildData *)lParam;
+    if (!data || !IsWindow(hwnd))
+        return TRUE;
 
     DWORD pid = 0;
     GetWindowThreadProcessId(hwnd, &pid);
@@ -1282,15 +1310,19 @@ static BOOL CALLBACK find_uwp_child_window(HWND hwnd, LPARAM lParam)
     return TRUE;
 }
 
-static BOOL get_real_uwp_child(HWND frame_hwnd, HWND* out_hwnd, DWORD* out_pid)
+static BOOL get_real_uwp_child(HWND frame_hwnd, HWND *out_hwnd, DWORD *out_pid)
 {
-    if (out_hwnd) *out_hwnd = NULL;
-    if (out_pid) *out_pid = 0;
-    if (!IsWindow(frame_hwnd)) return FALSE;
+    if (out_hwnd)
+        *out_hwnd = NULL;
+    if (out_pid)
+        *out_pid = 0;
+    if (!IsWindow(frame_hwnd))
+        return FALSE;
 
     DWORD frame_pid = 0;
     GetWindowThreadProcessId(frame_hwnd, &frame_pid);
-    if (!frame_pid) return FALSE;
+    if (!frame_pid)
+        return FALSE;
 
     FindUWPChildData data;
     ZeroMemory(&data, sizeof(data));
@@ -1302,32 +1334,30 @@ static BOOL get_real_uwp_child(HWND frame_hwnd, HWND* out_hwnd, DWORD* out_pid)
         return FALSE;
     }
 
-    if (out_hwnd) *out_hwnd = data.best_hwnd;
-    if (out_pid) *out_pid = data.best_pid;
+    if (out_hwnd)
+        *out_hwnd = data.best_hwnd;
+    if (out_pid)
+        *out_pid = data.best_pid;
     return TRUE;
 }
 
 static HICON get_icon_from_hwnd_msg(HWND hwnd)
 {
-    if (!IsWindow(hwnd)) return NULL;
+    if (!IsWindow(hwnd))
+        return NULL;
 
     HICON h_icon = NULL;
     DWORD_PTR res = 0;
 
-    if (SendMessageTimeoutW(hwnd, WM_GETICON, ICON_BIG, 0,
-                            SMTO_ABORTIFHUNG | SMTO_BLOCK, 50, &res)) {
+    if (SendMessageTimeoutW(hwnd, WM_GETICON, ICON_BIG, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 50, &res)) {
         h_icon = (HICON)res;
     }
 
-    if (!h_icon &&
-        SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0,
-                            SMTO_ABORTIFHUNG | SMTO_BLOCK, 50, &res)) {
+    if (!h_icon && SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 50, &res)) {
         h_icon = (HICON)res;
     }
 
-    if (!h_icon &&
-        SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL2, 0,
-                            SMTO_ABORTIFHUNG | SMTO_BLOCK, 50, &res)) {
+    if (!h_icon && SendMessageTimeoutW(hwnd, WM_GETICON, ICON_SMALL2, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 50, &res)) {
         h_icon = (HICON)res;
     }
 
@@ -1336,22 +1366,26 @@ static HICON get_icon_from_hwnd_msg(HWND hwnd)
 
 static HICON get_icon_from_hwnd_class(HWND hwnd)
 {
-    if (!IsWindow(hwnd)) return NULL;
+    if (!IsWindow(hwnd))
+        return NULL;
 
     HICON h_icon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICON);
-    if (!h_icon) h_icon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
+    if (!h_icon)
+        h_icon = (HICON)GetClassLongPtrW(hwnd, GCLP_HICONSM);
 
     return h_icon; /* Borrowed icon. */
 }
 
-
-static HICON get_icon_from_process_exe(DWORD pid, BOOL* own_icon)
+static HICON get_icon_from_process_exe(DWORD pid, BOOL *own_icon)
 {
-    if (own_icon) *own_icon = FALSE;
-    if (pid == 0) return NULL;
+    if (own_icon)
+        *own_icon = FALSE;
+    if (pid == 0)
+        return NULL;
 
     HANDLE h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
-    if (!h_proc) return NULL;
+    if (!h_proc)
+        return NULL;
 
     WCHAR path[HG_MAX_PATH] = {0};
     DWORD size = HG_ARRAYSIZE(path);
@@ -1361,9 +1395,11 @@ static HICON get_icon_from_process_exe(DWORD pid, BOOL* own_icon)
         SHFILEINFOW sfi = {0};
         if (SHGetFileInfoW(path, 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_LARGEICON)) {
             icon = sfi.hIcon;
-            if (own_icon) *own_icon = TRUE;
+            if (own_icon)
+                *own_icon = TRUE;
         } else if (ExtractIconExW(path, 0, &icon, NULL, 1) > 0 && icon) {
-            if (own_icon) *own_icon = TRUE;
+            if (own_icon)
+                *own_icon = TRUE;
         }
     }
 
@@ -1371,19 +1407,20 @@ static HICON get_icon_from_process_exe(DWORD pid, BOOL* own_icon)
     return icon;
 }
 
-static WCHAR* get_aumid_from_hwnd(HWND hwnd)
+static WCHAR *get_aumid_from_hwnd(HWND hwnd)
 {
-    if (!hwnd) return NULL;
-    IPropertyStore* pps = NULL;
-    HRESULT hr = SHGetPropertyStoreForWindow(hwnd, &IID_IPropertyStore, (void**)&pps);
+    if (!hwnd)
+        return NULL;
+    IPropertyStore *pps = NULL;
+    HRESULT hr = SHGetPropertyStoreForWindow(hwnd, &IID_IPropertyStore, (void **)&pps);
     if (SUCCEEDED(hr) && pps) {
         PROPVARIANT pv;
         PropVariantInit(&pv);
         hr = pps->lpVtbl->GetValue(pps, &PKEY_AppUserModel_ID, &pv);
-        WCHAR* aumid = NULL;
+        WCHAR *aumid = NULL;
         if (SUCCEEDED(hr) && pv.vt == VT_LPWSTR && pv.pwszVal) {
             size_t len = wcslen(pv.pwszVal) + 1;
-            aumid = (WCHAR*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, len * sizeof(WCHAR));
+            aumid = (WCHAR *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, len * sizeof(WCHAR));
             if (aumid) {
                 StringCchCopyW(aumid, len, pv.pwszVal);
             }
@@ -1395,12 +1432,14 @@ static WCHAR* get_aumid_from_hwnd(HWND hwnd)
     return NULL;
 }
 
-static WCHAR* get_app_user_model_id_alloc(DWORD pid)
+static WCHAR *get_app_user_model_id_alloc(DWORD pid)
 {
-    if (pid == 0) return NULL;
+    if (pid == 0)
+        return NULL;
 
     HANDLE h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
-    if (!h_proc) return NULL;
+    if (!h_proc)
+        return NULL;
 
     UINT32 len = 0;
     LONG rc = GetApplicationUserModelId(h_proc, &len, NULL);
@@ -1410,7 +1449,7 @@ static WCHAR* get_app_user_model_id_alloc(DWORD pid)
         return NULL;
     }
 
-    WCHAR* aumid = (WCHAR*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)len * sizeof(WCHAR));
+    WCHAR *aumid = (WCHAR *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)len * sizeof(WCHAR));
     if (!aumid) {
         CloseHandle(h_proc);
         return NULL;
@@ -1427,9 +1466,10 @@ static WCHAR* get_app_user_model_id_alloc(DWORD pid)
     return aumid;
 }
 
-static WCHAR* get_package_full_name_alloc(DWORD pid)
+static WCHAR *get_package_full_name_alloc(DWORD pid)
 {
-    if (pid == 0) return NULL;
+    if (pid == 0)
+        return NULL;
 
     HANDLE h_proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!h_proc) {
@@ -1445,7 +1485,7 @@ static WCHAR* get_package_full_name_alloc(DWORD pid)
         return NULL;
     }
 
-    WCHAR* full = (WCHAR*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)len * sizeof(WCHAR));
+    WCHAR *full = (WCHAR *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)len * sizeof(WCHAR));
     if (!full) {
         CloseHandle(h_proc);
         return NULL;
@@ -1463,9 +1503,10 @@ static WCHAR* get_package_full_name_alloc(DWORD pid)
     return full;
 }
 
-static WCHAR* get_package_path_alloc(const WCHAR* full_name)
+static WCHAR *get_package_path_alloc(const WCHAR *full_name)
 {
-    if (!full_name || !*full_name) return NULL;
+    if (!full_name || !*full_name)
+        return NULL;
 
     UINT32 len = 0;
     LONG rc = GetPackagePathByFullName(full_name, &len, NULL);
@@ -1475,8 +1516,9 @@ static WCHAR* get_package_path_alloc(const WCHAR* full_name)
         return NULL;
     }
 
-    WCHAR* path = (WCHAR*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)len * sizeof(WCHAR));
-    if (!path) return NULL;
+    WCHAR *path = (WCHAR *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)len * sizeof(WCHAR));
+    if (!path)
+        return NULL;
 
     rc = GetPackagePathByFullName(full_name, &len, path);
     if (rc != ERROR_SUCCESS) {
@@ -1490,39 +1532,41 @@ static WCHAR* get_package_path_alloc(const WCHAR* full_name)
 
 static BOOL is_xml_name_char(WCHAR ch)
 {
-    return (ch >= L'a' && ch <= L'z') ||
-           (ch >= L'A' && ch <= L'Z') ||
-           (ch >= L'0' && ch <= L'9') ||
-           ch == L'_' || ch == L'-' || ch == L':' || ch == L'.';
+    return (ch >= L'a' && ch <= L'z') || (ch >= L'A' && ch <= L'Z') || (ch >= L'0' && ch <= L'9') || ch == L'_' ||
+           ch == L'-' || ch == L':' || ch == L'.';
 }
 
-static BOOL find_xml_attr_value_safe(const WCHAR* text, const WCHAR* attr, WCHAR* out, size_t out_cch)
+static BOOL find_xml_attr_value_safe(const WCHAR *text, const WCHAR *attr, WCHAR *out, size_t out_cch)
 {
-    if (!text || !attr || !*attr || !out || out_cch == 0) return FALSE;
+    if (!text || !attr || !*attr || !out || out_cch == 0)
+        return FALSE;
     out[0] = L'\0';
 
     size_t attr_len = wcslen(attr);
-    const WCHAR* p = text;
+    const WCHAR *p = text;
 
     while ((p = wcsstr(p, attr)) != NULL) {
         BOOL valid_prev = (p == text) || (!is_xml_name_char(*(p - 1)));
         BOOL valid_next = (!is_xml_name_char(*(p + attr_len)));
 
         if (valid_prev && valid_next) {
-            const WCHAR* cur = p + attr_len;
-            while (*cur == L' ' || *cur == L'\t' || *cur == L'\r' || *cur == L'\n') cur++;
+            const WCHAR *cur = p + attr_len;
+            while (*cur == L' ' || *cur == L'\t' || *cur == L'\r' || *cur == L'\n')
+                cur++;
 
             if (*cur == L'=') {
                 cur++;
-                while (*cur == L' ' || *cur == L'\t' || *cur == L'\r' || *cur == L'\n') cur++;
+                while (*cur == L' ' || *cur == L'\t' || *cur == L'\r' || *cur == L'\n')
+                    cur++;
 
                 WCHAR quote = *cur;
                 if (quote == L'\'' || quote == L'"') {
                     cur++;
-                    const WCHAR* q = wcschr(cur, quote);
+                    const WCHAR *q = wcschr(cur, quote);
                     if (q) {
                         size_t n = (size_t)(q - cur);
-                        if (n >= out_cch) n = out_cch - 1;
+                        if (n >= out_cch)
+                            n = out_cch - 1;
                         if (FAILED(StringCchCopyNW(out, out_cch, cur, n))) {
                             out[0] = L'\0';
                             return FALSE;
@@ -1540,18 +1584,20 @@ static BOOL find_xml_attr_value_safe(const WCHAR* text, const WCHAR* attr, WCHAR
     return FALSE;
 }
 
-static BOOL read_utf8_file_to_wide(const WCHAR* path, WCHAR** out_text)
+static BOOL read_utf8_file_to_wide(const WCHAR *path, WCHAR **out_text)
 {
-    if (!out_text) return FALSE;
+    if (!out_text)
+        return FALSE;
     *out_text = NULL;
-    if (!path || !*path) return FALSE;
+    if (!path || !*path)
+        return FALSE;
 
     WCHAR norm[HG_MAX_PATH];
     normalize_path_for_api(path, norm, HG_MAX_PATH);
 
-    HANDLE h = CreateFileW(norm, GENERIC_READ, FILE_SHARE_READ, NULL,
-                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (h == INVALID_HANDLE_VALUE) return FALSE;
+    HANDLE h = CreateFileW(norm, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return FALSE;
 
     LARGE_INTEGER li;
     if (!GetFileSizeEx(h, &li) || li.QuadPart <= 0 || li.QuadPart > HG_UWP_MAX_MANIFEST_BYTES) {
@@ -1560,7 +1606,7 @@ static BOOL read_utf8_file_to_wide(const WCHAR* path, WCHAR** out_text)
     }
 
     DWORD bytes = (DWORD)li.QuadPart;
-    BYTE* buf = (BYTE*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)bytes + 1u);
+    BYTE *buf = (BYTE *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)bytes + 1u);
     if (!buf) {
         CloseHandle(h);
         return FALSE;
@@ -1591,8 +1637,7 @@ static BOOL read_utf8_file_to_wide(const WCHAR* path, WCHAR** out_text)
         return FALSE;
     }
 
-    WCHAR* wbuf = (WCHAR*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-                                    ((SIZE_T)wlen + 1u) * sizeof(WCHAR));
+    WCHAR *wbuf = (WCHAR *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((SIZE_T)wlen + 1u) * sizeof(WCHAR));
     if (!wbuf) {
         HeapFree(GetProcessHeap(), 0, buf);
         return FALSE;
@@ -1611,33 +1656,34 @@ static BOOL read_utf8_file_to_wide(const WCHAR* path, WCHAR** out_text)
     return TRUE;
 }
 
-static BOOL get_logo_relpath_from_manifest(const WCHAR* package_path, WCHAR* out_rel, size_t out_cch)
+static BOOL get_logo_relpath_from_manifest(const WCHAR *package_path, WCHAR *out_rel, size_t out_cch)
 {
-    if (!package_path || !out_rel || out_cch == 0) return FALSE;
+    if (!package_path || !out_rel || out_cch == 0)
+        return FALSE;
     out_rel[0] = L'\0';
 
     WCHAR manifest_path[HG_MAX_PATH];
-    HRESULT hr = StringCchPrintfW(manifest_path, HG_ARRAYSIZE(manifest_path),
-                                  L"%ls\\AppxManifest.xml", package_path);
-    if (FAILED(hr)) return FALSE;
+    HRESULT hr = StringCchPrintfW(manifest_path, HG_ARRAYSIZE(manifest_path), L"%ls\\AppxManifest.xml", package_path);
+    if (FAILED(hr))
+        return FALSE;
 
-    WCHAR* manifest = NULL;
+    WCHAR *manifest = NULL;
     if (!read_utf8_file_to_wide(manifest_path, &manifest)) {
         uwp_debug_log(L"UWP icon: Failed to read AppxManifest.xml");
         return FALSE;
     }
 
-    BOOL ok =
-        find_xml_attr_value_safe(manifest, L"Square44x44Logo", out_rel, out_cch) ||
-        find_xml_attr_value_safe(manifest, L"Square150x150Logo", out_rel, out_cch) ||
-        find_xml_attr_value_safe(manifest, L"Logo", out_rel, out_cch);
+    BOOL ok = find_xml_attr_value_safe(manifest, L"Square44x44Logo", out_rel, out_cch) ||
+              find_xml_attr_value_safe(manifest, L"Square150x150Logo", out_rel, out_cch) ||
+              find_xml_attr_value_safe(manifest, L"Logo", out_rel, out_cch);
 
-    if (!ok) uwp_debug_log(L"UWP icon: Could not find logo attribute");
+    if (!ok)
+        uwp_debug_log(L"UWP icon: Could not find logo attribute");
     HeapFree(GetProcessHeap(), 0, manifest);
     return ok;
 }
 
-static BOOL file_exists_w(const WCHAR* path)
+static BOOL file_exists_w(const WCHAR *path)
 {
     WCHAR norm[HG_MAX_PATH];
     normalize_path_for_api(path, norm, HG_MAX_PATH);
@@ -1645,26 +1691,27 @@ static BOOL file_exists_w(const WCHAR* path)
     return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-static void normalize_slashes(WCHAR* s)
+static void normalize_slashes(WCHAR *s)
 {
-    if (!s) return;
+    if (!s)
+        return;
     for (; *s; s++) {
-        if (*s == L'/') *s = L'\\';
+        if (*s == L'/')
+            *s = L'\\';
     }
 }
 
-static BOOL resolve_logo_asset_file(const WCHAR* package_path,
-                                    const WCHAR* rel_logo,
-                                    int size_px,
-                                    WCHAR* out_file,
+static BOOL resolve_logo_asset_file(const WCHAR *package_path, const WCHAR *rel_logo, int size_px, WCHAR *out_file,
                                     size_t out_cch)
 {
-    if (!package_path || !rel_logo || !out_file || out_cch == 0) return FALSE;
+    if (!package_path || !rel_logo || !out_file || out_cch == 0)
+        return FALSE;
     out_file[0] = L'\0';
     size_px = hg_clamp_icon_size_px(size_px);
 
     WCHAR rel[HG_MAX_PATH];
-    if (FAILED(StringCchCopyW(rel, HG_ARRAYSIZE(rel), rel_logo))) return FALSE;
+    if (FAILED(StringCchCopyW(rel, HG_ARRAYSIZE(rel), rel_logo)))
+        return FALSE;
     normalize_slashes(rel);
 
     WCHAR base[HG_MAX_PATH];
@@ -1677,63 +1724,61 @@ static BOOL resolve_logo_asset_file(const WCHAR* package_path,
     }
 
     WCHAR dir[HG_MAX_PATH];
-    if (FAILED(StringCchCopyW(dir, HG_ARRAYSIZE(dir), base))) return FALSE;
+    if (FAILED(StringCchCopyW(dir, HG_ARRAYSIZE(dir), base)))
+        return FALSE;
 
-    WCHAR* slash = wcsrchr(dir, L'\\');
-    const WCHAR* filename = base;
+    WCHAR *slash = wcsrchr(dir, L'\\');
+    const WCHAR *filename = base;
     if (slash) {
         *slash = L'\0';
         filename = slash + 1;
     } else {
-        if (FAILED(StringCchCopyW(dir, HG_ARRAYSIZE(dir), package_path))) return FALSE;
+        if (FAILED(StringCchCopyW(dir, HG_ARRAYSIZE(dir), package_path)))
+            return FALSE;
     }
 
     WCHAR stem[HG_MAX_PATH];
-    if (FAILED(StringCchCopyW(stem, HG_ARRAYSIZE(stem), filename))) return FALSE;
+    if (FAILED(StringCchCopyW(stem, HG_ARRAYSIZE(stem), filename)))
+        return FALSE;
 
-    WCHAR* dot = wcsrchr(stem, L'.');
+    WCHAR *dot = wcsrchr(stem, L'.');
     WCHAR ext[16] = L".png";
     if (dot) {
-        if (FAILED(StringCchCopyW(ext, HG_ARRAYSIZE(ext), dot))) return FALSE;
+        if (FAILED(StringCchCopyW(ext, HG_ARRAYSIZE(ext), dot)))
+            return FALSE;
         *dot = L'\0';
     }
 
     WCHAR candidate[HG_MAX_PATH];
 
-    const WCHAR* dyn_patterns[] = {
-        L"%ls\\%ls.targetsize-%d_altform-unplated%ls",
-        L"%ls\\%ls.targetsize-%d%ls"
-    };
+    const WCHAR *dyn_patterns[] = {L"%ls\\%ls.targetsize-%d_altform-unplated%ls", L"%ls\\%ls.targetsize-%d%ls"};
 
     for (size_t i = 0; i < HG_ARRAYSIZE(dyn_patterns); i++) {
-        if (SUCCEEDED(StringCchPrintfW(candidate, HG_ARRAYSIZE(candidate),
-                                      dyn_patterns[i], dir, stem, size_px, ext)) &&
+        if (SUCCEEDED(StringCchPrintfW(candidate, HG_ARRAYSIZE(candidate), dyn_patterns[i], dir, stem, size_px, ext)) &&
             file_exists_w(candidate)) {
             return SUCCEEDED(StringCchCopyW(out_file, out_cch, candidate));
         }
     }
 
-    const WCHAR* suffixes[] = {
-        L".targetsize-16_altform-unplated",
-        L".targetsize-24_altform-unplated",
-        L".targetsize-32_altform-unplated",
-        L".targetsize-48_altform-unplated",
-        L".targetsize-256_altform-unplated",
-        L".targetsize-16",
-        L".targetsize-24",
-        L".targetsize-32",
-        L".targetsize-48",
-        L".targetsize-256",
-        L".scale-100",
-        L".scale-125",
-        L".scale-150",
-        L".scale-200",
-        L".scale-400"
-    };
+    const WCHAR *suffixes[] = {L".targetsize-16_altform-unplated",
+                               L".targetsize-24_altform-unplated",
+                               L".targetsize-32_altform-unplated",
+                               L".targetsize-48_altform-unplated",
+                               L".targetsize-256_altform-unplated",
+                               L".targetsize-16",
+                               L".targetsize-24",
+                               L".targetsize-32",
+                               L".targetsize-48",
+                               L".targetsize-256",
+                               L".scale-100",
+                               L".scale-125",
+                               L".scale-150",
+                               L".scale-200",
+                               L".scale-400"};
 
     for (size_t i = 0; i < HG_ARRAYSIZE(suffixes); i++) {
-        if (SUCCEEDED(StringCchPrintfW(candidate, HG_ARRAYSIZE(candidate),
-                                      L"%ls\\%ls%ls%ls", dir, stem, suffixes[i], ext)) &&
+        if (SUCCEEDED(
+                StringCchPrintfW(candidate, HG_ARRAYSIZE(candidate), L"%ls\\%ls%ls%ls", dir, stem, suffixes[i], ext)) &&
             file_exists_w(candidate)) {
             return SUCCEEDED(StringCchCopyW(out_file, out_cch, candidate));
         }
@@ -1765,7 +1810,8 @@ static BOOL resolve_logo_asset_file(const WCHAR* package_path,
 
 static HICON create_icon_from_bitmap(HBITMAP hbmp)
 {
-    if (!hbmp) return NULL;
+    if (!hbmp)
+        return NULL;
 
     BITMAP bm;
     if (!GetObjectW(hbmp, sizeof(bm), &bm)) {
@@ -1785,13 +1831,15 @@ static HICON create_icon_from_bitmap(HBITMAP hbmp)
     size_t stride_bytes = stride_bits / 8u;
     size_t mask_size = stride_bytes * (size_t)bm.bmHeight;
 
-    BYTE* mask_bits = (BYTE*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, mask_size);
-    if (!mask_bits) return NULL;
+    BYTE *mask_bits = (BYTE *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, mask_size);
+    if (!mask_bits)
+        return NULL;
 
     HBITMAP hmask = CreateBitmap(bm.bmWidth, bm.bmHeight, 1, 1, mask_bits);
     HeapFree(GetProcessHeap(), 0, mask_bits);
 
-    if (!hmask) return NULL;
+    if (!hmask)
+        return NULL;
 
     ICONINFO ii;
     ZeroMemory(&ii, sizeof(ii));
@@ -1805,51 +1853,38 @@ static HICON create_icon_from_bitmap(HBITMAP hbmp)
     return icon;
 }
 
-static HRESULT hg_get_shell_image_bitmap(IShellItemImageFactory* factory, SIZE sz, HBITMAP* out_bmp)
+static HRESULT hg_get_shell_image_bitmap(IShellItemImageFactory *factory, SIZE sz, HBITMAP *out_bmp)
 {
     HRESULT hr;
-    if (!out_bmp) return E_POINTER;
+    if (!out_bmp)
+        return E_POINTER;
     *out_bmp = NULL;
-    if (!factory) return E_POINTER;
+    if (!factory)
+        return E_POINTER;
 
-    hr = factory->lpVtbl->GetImage(
-        factory,
-        sz,
-        SIIGBF_BIGGERSIZEOK | SIIGBF_RESIZETOFIT | SIIGBF_THUMBNAILONLY,
-        out_bmp
-    );
-    if (SUCCEEDED(hr) && *out_bmp) return hr;
+    hr = factory->lpVtbl->GetImage(factory, sz, SIIGBF_BIGGERSIZEOK | SIIGBF_RESIZETOFIT | SIIGBF_THUMBNAILONLY,
+                                   out_bmp);
+    if (SUCCEEDED(hr) && *out_bmp)
+        return hr;
 
-    hr = factory->lpVtbl->GetImage(
-        factory,
-        sz,
-        SIIGBF_BIGGERSIZEOK | SIIGBF_RESIZETOFIT,
-        out_bmp
-    );
-    if (SUCCEEDED(hr) && *out_bmp) return hr;
+    hr = factory->lpVtbl->GetImage(factory, sz, SIIGBF_BIGGERSIZEOK | SIIGBF_RESIZETOFIT, out_bmp);
+    if (SUCCEEDED(hr) && *out_bmp)
+        return hr;
 
-    return factory->lpVtbl->GetImage(
-        factory,
-        sz,
-        SIIGBF_BIGGERSIZEOK | SIIGBF_ICONONLY,
-        out_bmp
-    );
+    return factory->lpVtbl->GetImage(factory, sz, SIIGBF_BIGGERSIZEOK | SIIGBF_ICONONLY, out_bmp);
 }
 
-static HICON load_icon_from_image_file(const WCHAR* file, int size_px, BOOL* own_icon)
+static HICON load_icon_from_image_file(const WCHAR *file, int size_px, BOOL *own_icon)
 {
-    if (own_icon) *own_icon = FALSE;
-    if (!file || !*file) return NULL;
+    if (own_icon)
+        *own_icon = FALSE;
+    if (!file || !*file)
+        return NULL;
 
     size_px = hg_clamp_icon_size_px(size_px);
 
-    IShellItemImageFactory* factory = NULL;
-    HRESULT hr = SHCreateItemFromParsingName(
-        file,
-        NULL,
-        &IID_IShellItemImageFactory,
-        (void**)&factory
-    );
+    IShellItemImageFactory *factory = NULL;
+    HRESULT hr = SHCreateItemFromParsingName(file, NULL, &IID_IShellItemImageFactory, (void **)&factory);
 
     if (FAILED(hr) || !factory) {
         uwp_debug_log(L"UWP icon: SHCreateItemFromParsingName failed");
@@ -1881,23 +1916,28 @@ static HICON load_icon_from_image_file(const WCHAR* file, int size_px, BOOL* own
 
 #include <knownfolders.h>
 
-static HICON load_icon_from_aumid(const WCHAR* aumid, int size_px, BOOL* own_icon)
+static HICON load_icon_from_aumid(const WCHAR *aumid, int size_px, BOOL *own_icon)
 {
-    if (own_icon) *own_icon = FALSE;
-    if (!aumid || !*aumid) return NULL;
+    if (own_icon)
+        *own_icon = FALSE;
+    if (!aumid || !*aumid)
+        return NULL;
 
     WCHAR parsing_name[HG_MAX_PATH];
     HRESULT hr = StringCchPrintfW(parsing_name, HG_ARRAYSIZE(parsing_name), L"shell:AppsFolder\\%ls", aumid);
-    if (FAILED(hr)) return NULL;
+    if (FAILED(hr))
+        return NULL;
 
-    IShellItem* psi = NULL;
-    hr = SHCreateItemFromParsingName(parsing_name, NULL, &IID_IShellItem, (void**)&psi);
-    if (FAILED(hr) || !psi) return NULL;
+    IShellItem *psi = NULL;
+    hr = SHCreateItemFromParsingName(parsing_name, NULL, &IID_IShellItem, (void **)&psi);
+    if (FAILED(hr) || !psi)
+        return NULL;
 
-    IShellItemImageFactory* factory = NULL;
-    hr = psi->lpVtbl->QueryInterface(psi, &IID_IShellItemImageFactory, (void**)&factory);
+    IShellItemImageFactory *factory = NULL;
+    hr = psi->lpVtbl->QueryInterface(psi, &IID_IShellItemImageFactory, (void **)&factory);
     psi->lpVtbl->Release(psi);
-    if (FAILED(hr) || !factory) return NULL;
+    if (FAILED(hr) || !factory)
+        return NULL;
 
     SIZE sz;
     sz.cx = hg_clamp_icon_size_px(size_px);
@@ -1907,7 +1947,8 @@ static HICON load_icon_from_aumid(const WCHAR* aumid, int size_px, BOOL* own_ico
     hr = hg_get_shell_image_bitmap(factory, sz, &hbmp);
     factory->lpVtbl->Release(factory);
 
-    if (FAILED(hr) || !hbmp) return NULL;
+    if (FAILED(hr) || !hbmp)
+        return NULL;
 
     HICON icon = create_icon_from_bitmap(hbmp);
     DeleteObject(hbmp);
@@ -1919,24 +1960,28 @@ static HICON load_icon_from_aumid(const WCHAR* aumid, int size_px, BOOL* own_ico
     return icon;
 }
 
-static HICON get_icon_from_package_pid(DWORD pid, int size_px, BOOL* own_icon)
+static HICON get_icon_from_package_pid(DWORD pid, int size_px, BOOL *own_icon)
 {
-    if (own_icon) *own_icon = FALSE;
+    if (own_icon)
+        *own_icon = FALSE;
     size_px = hg_clamp_icon_size_px(size_px);
 
-    WCHAR* aumid = get_app_user_model_id_alloc(pid);
+    WCHAR *aumid = get_app_user_model_id_alloc(pid);
     if (aumid) {
         HICON icon = load_icon_from_aumid(aumid, size_px, own_icon);
         HeapFree(GetProcessHeap(), 0, aumid);
-        if (icon) return icon;
+        if (icon)
+            return icon;
     }
 
-    WCHAR* full_name = get_package_full_name_alloc(pid);
-    if (!full_name) return NULL;
+    WCHAR *full_name = get_package_full_name_alloc(pid);
+    if (!full_name)
+        return NULL;
 
-    WCHAR* package_path = get_package_path_alloc(full_name);
+    WCHAR *package_path = get_package_path_alloc(full_name);
     HeapFree(GetProcessHeap(), 0, full_name);
-    if (!package_path) return NULL;
+    if (!package_path)
+        return NULL;
 
     WCHAR rel_logo[HG_MAX_PATH] = {0};
     if (!get_logo_relpath_from_manifest(package_path, rel_logo, HG_ARRAYSIZE(rel_logo))) {
@@ -1954,10 +1999,12 @@ static HICON get_icon_from_package_pid(DWORD pid, int size_px, BOOL* own_icon)
     return load_icon_from_image_file(logo_file, size_px, own_icon);
 }
 
-HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
+HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon)
 {
-    if (own_icon) *own_icon = FALSE;
-    if (!IsWindow(hwnd)) return NULL;
+    if (own_icon)
+        *own_icon = FALSE;
+    if (!IsWindow(hwnd))
+        return NULL;
 
     size_px = hg_clamp_icon_size_px(size_px);
 
@@ -1973,11 +2020,12 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
         /* ApplicationFrameHost specific logic */
 
         /* Frame AUMID */
-        WCHAR* frame_aumid = get_aumid_from_hwnd(hwnd);
+        WCHAR *frame_aumid = get_aumid_from_hwnd(hwnd);
         if (frame_aumid) {
             h_icon = load_icon_from_aumid(frame_aumid, size_px, own_icon);
             HeapFree(GetProcessHeap(), 0, frame_aumid);
-            if (h_icon) return h_icon;
+            if (h_icon)
+                return h_icon;
         }
 
         HWND child_hwnd = NULL;
@@ -1985,26 +2033,30 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
 
         if (get_real_uwp_child(hwnd, &child_hwnd, &child_pid)) {
             /* Child's AUMID */
-            WCHAR* child_aumid = get_aumid_from_hwnd(child_hwnd);
+            WCHAR *child_aumid = get_aumid_from_hwnd(child_hwnd);
             if (child_aumid) {
                 h_icon = load_icon_from_aumid(child_aumid, size_px, own_icon);
                 HeapFree(GetProcessHeap(), 0, child_aumid);
-                if (h_icon) return h_icon;
+                if (h_icon)
+                    return h_icon;
             }
 
             /* Child's package/AUMID icon */
             h_icon = get_icon_from_package_pid(child_pid, size_px, own_icon);
-            if (h_icon) return h_icon;
+            if (h_icon)
+                return h_icon;
 
             /* Child's WM_GETICON */
             h_icon = get_icon_from_hwnd_msg(child_hwnd);
             if (h_icon) {
                 HICON h_copy = CopyIcon(h_icon);
                 if (h_copy) {
-                    if (own_icon) *own_icon = TRUE;
+                    if (own_icon)
+                        *own_icon = TRUE;
                     return h_copy;
                 }
-                if (own_icon) *own_icon = FALSE;
+                if (own_icon)
+                    *own_icon = FALSE;
                 return h_icon;
             }
 
@@ -2013,16 +2065,19 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
             if (h_icon) {
                 HICON h_copy = CopyIcon(h_icon);
                 if (h_copy) {
-                    if (own_icon) *own_icon = TRUE;
+                    if (own_icon)
+                        *own_icon = TRUE;
                     return h_copy;
                 }
-                if (own_icon) *own_icon = FALSE;
+                if (own_icon)
+                    *own_icon = FALSE;
                 return h_icon;
             }
 
             /* Child's executable icon */
             h_icon = get_icon_from_process_exe(child_pid, own_icon);
-            if (h_icon) return h_icon;
+            if (h_icon)
+                return h_icon;
         }
 
         /* Fallback to frame WM_GETICON */
@@ -2030,10 +2085,12 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
         if (h_icon) {
             HICON h_copy = CopyIcon(h_icon);
             if (h_copy) {
-                if (own_icon) *own_icon = TRUE;
+                if (own_icon)
+                    *own_icon = TRUE;
                 return h_copy;
             }
-            if (own_icon) *own_icon = FALSE;
+            if (own_icon)
+                *own_icon = FALSE;
             return h_icon;
         }
 
@@ -2045,24 +2102,28 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
         if (h_icon) {
             HICON h_copy = CopyIcon(h_icon);
             if (h_copy) {
-                if (own_icon) *own_icon = TRUE;
+                if (own_icon)
+                    *own_icon = TRUE;
                 return h_copy;
             }
-            if (own_icon) *own_icon = FALSE;
+            if (own_icon)
+                *own_icon = FALSE;
             return h_icon;
         }
 
         /* 2. HWND AUMID */
-        WCHAR* frame_aumid = get_aumid_from_hwnd(hwnd);
+        WCHAR *frame_aumid = get_aumid_from_hwnd(hwnd);
         if (frame_aumid) {
             h_icon = load_icon_from_aumid(frame_aumid, size_px, own_icon);
             HeapFree(GetProcessHeap(), 0, frame_aumid);
-            if (h_icon) return h_icon;
+            if (h_icon)
+                return h_icon;
         }
 
         /* 3. Package/AUMID icon */
         h_icon = get_icon_from_package_pid(pid, size_px, own_icon);
-        if (h_icon) return h_icon;
+        if (h_icon)
+            return h_icon;
     }
 
     /* Fallback to original window class icon */
@@ -2070,10 +2131,12 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
     if (h_icon) {
         HICON h_copy = CopyIcon(h_icon);
         if (h_copy) {
-            if (own_icon) *own_icon = TRUE;
+            if (own_icon)
+                *own_icon = TRUE;
             return h_copy;
         }
-        if (own_icon) *own_icon = FALSE;
+        if (own_icon)
+            *own_icon = FALSE;
         return h_icon;
     }
 
@@ -2084,14 +2147,16 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL* own_icon)
 /* 창 목록 정렬 제거 (사용자 순서 유지) */
 
 /* 단축아이콘 정렬을 위한 비교 함수 */
-int compare_shortcuts(const void* a, const void* b) {
-    ShortcutItem* item_a = (ShortcutItem*)a;
-    ShortcutItem* item_b = (ShortcutItem*)b;
+int compare_shortcuts(const void *a, const void *b)
+{
+    ShortcutItem *item_a = (ShortcutItem *)a;
+    ShortcutItem *item_b = (ShortcutItem *)b;
     return lstrcmpiW(item_a->name, item_b->name);
 }
 
 /* 단축아이콘 로드 */
-void load_shortcuts() {
+void load_shortcuts()
+{
     for (int i = 0; i < hg_g_shortcut_count; i++) {
         if (hg_g_shortcuts[i].icon) {
             DestroyIcon(hg_g_shortcuts[i].icon);
@@ -2101,7 +2166,8 @@ void load_shortcuts() {
     ZeroMemory(hg_g_shortcuts, sizeof(hg_g_shortcuts));
     hg_g_shortcut_count = 0;
 
-    if (!hg_g_shortcuts_path[0]) return;
+    if (!hg_g_shortcuts_path[0])
+        return;
 
     WCHAR search_path[HG_MAX_PATH] = {0};
     if (FAILED(StringCchPrintfW(search_path, HG_ARRAYSIZE(search_path), L"%ls\\*", hg_g_shortcuts_path))) {
@@ -2113,51 +2179,60 @@ void load_shortcuts() {
 
     WIN32_FIND_DATAW ffd = {0};
     HANDLE find_handle = FindFirstFileW(norm_search, &ffd);
-    if (find_handle == INVALID_HANDLE_VALUE) return;
+    if (find_handle == INVALID_HANDLE_VALUE)
+        return;
 
     do {
-        if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-        if (hg_g_shortcut_count >= HG_MAX_SHORTCUTS) break;
+        if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            continue;
+        if (hg_g_shortcut_count >= HG_MAX_SHORTCUTS)
+            break;
 
         int raw_len = lstrlenW(ffd.cFileName);
-        if (raw_len <= 4) continue;
+        if (raw_len <= 4)
+            continue;
 
         size_t len = (size_t)raw_len;
         BOOL is_lnk = (lstrcmpiW(ffd.cFileName + len - 4, L".lnk") == 0);
         BOOL is_url = (lstrcmpiW(ffd.cFileName + len - 4, L".url") == 0);
-        if (!is_lnk && !is_url) continue;
+        if (!is_lnk && !is_url)
+            continue;
 
-        ShortcutItem* item = &hg_g_shortcuts[hg_g_shortcut_count];
+        ShortcutItem *item = &hg_g_shortcuts[hg_g_shortcut_count];
         ZeroMemory(item, sizeof(*item));
 
-        if (FAILED(StringCchPrintfW(item->path, HG_ARRAYSIZE(item->path), L"%ls\\%ls", hg_g_shortcuts_path, ffd.cFileName))) {
+        if (FAILED(StringCchPrintfW(item->path, HG_ARRAYSIZE(item->path), L"%ls\\%ls", hg_g_shortcuts_path,
+                                    ffd.cFileName))) {
             continue;
         }
 
         if (FAILED(StringCchCopyW(item->name, HG_ARRAYSIZE(item->name), ffd.cFileName))) {
             continue;
         }
-        WCHAR* dot = wcsrchr(item->name, L'.');
-        if (dot) *dot = L'\0';
+        WCHAR *dot = wcsrchr(item->name, L'.');
+        if (dot)
+            *dot = L'\0';
 
         int icon_size = ABS(hg_g_current_font_size);
-        if (icon_size < SC(32)) icon_size = SC(32);
+        if (icon_size < SC(32))
+            icon_size = SC(32);
 
         if (is_lnk) {
-            IShellLinkW* psl = NULL;
-            HRESULT hr = CoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
-                                          &IID_IShellLinkW, (void**)&psl);
+            IShellLinkW *psl = NULL;
+            HRESULT hr =
+                CoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, &IID_IShellLinkW, (void **)&psl);
             if (SUCCEEDED(hr) && psl) {
-                IPersistFile* ppf = NULL;
-                if (SUCCEEDED(psl->lpVtbl->QueryInterface(psl, &IID_IPersistFile, (void**)&ppf)) && ppf) {
+                IPersistFile *ppf = NULL;
+                if (SUCCEEDED(psl->lpVtbl->QueryInterface(psl, &IID_IPersistFile, (void **)&ppf)) && ppf) {
                     if (SUCCEEDED(ppf->lpVtbl->Load(ppf, item->path, STGM_READ))) {
                         WCHAR target_path[HG_MAX_PATH] = {0};
                         if (SUCCEEDED(psl->lpVtbl->GetPath(psl, target_path, HG_ARRAYSIZE(target_path), NULL, 0)) &&
                             target_path[0] != L'\0') {
                             HICON ext_icon = NULL;
                             UINT icon_id = 0;
-                            if (PrivateExtractIconsW(target_path, 0, icon_size, icon_size,
-                                                     &ext_icon, &icon_id, 1, LR_LOADFROMFILE) > 0 && ext_icon) {
+                            if (PrivateExtractIconsW(target_path, 0, icon_size, icon_size, &ext_icon, &icon_id, 1,
+                                                     LR_LOADFROMFILE) > 0 &&
+                                ext_icon) {
                                 item->icon = ext_icon;
                             }
                         }
@@ -2186,8 +2261,10 @@ void load_shortcuts() {
 }
 
 /* 메시지 에디트 컨트롤에 텍스트 추가 및 스크롤 (효율적인 행 관리) */
-void append_message(const WCHAR* msg) {
-    if (!hg_g_edit_msg_wnd || !msg) return;
+void append_message(const WCHAR *msg)
+{
+    if (!hg_g_edit_msg_wnd || !msg)
+        return;
 
     int line_count = (int)SendMessageW(hg_g_edit_msg_wnd, EM_GETLINECOUNT, 0, 0);
     if (line_count > HG_TASKBOX_EDIT_CONTROL_TRIM_THRESHOLD) {
@@ -2201,7 +2278,8 @@ void append_message(const WCHAR* msg) {
 
     int len = GetWindowTextLengthW(hg_g_edit_msg_wnd);
     SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
-    if (len > 0) SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
+    if (len > 0)
+        SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
     int new_line_start = GetWindowTextLengthW(hg_g_edit_msg_wnd);
     SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, (WPARAM)new_line_start, (LPARAM)new_line_start);
     SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)msg);
@@ -2211,8 +2289,11 @@ void append_message(const WCHAR* msg) {
 }
 
 /* 외곽선 있는 텍스트 그리기 헬퍼 */
-void draw_outlined_text(HDC hdc, const WCHAR* text, int len, RECT* rc, UINT format, COLORREF text_color, COLORREF outline_color) {
-    if (!hdc || !text || !rc || len <= 0) return;
+void draw_outlined_text(HDC hdc, const WCHAR *text, int len, RECT *rc, UINT format, COLORREF text_color,
+                        COLORREF outline_color)
+{
+    if (!hdc || !text || !rc || len <= 0)
+        return;
     int old_bk_mode = SetBkMode(hdc, TRANSPARENT);
     COLORREF old_text_color = GetTextColor(hdc);
 
@@ -2220,7 +2301,8 @@ void draw_outlined_text(HDC hdc, const WCHAR* text, int len, RECT* rc, UINT form
     RECT temp_rc;
     /* 8방향 외곽선으로 가독성 극대화 (DPI 배율에 맞춰 두께 조절) */
     int offset = SC(1);
-    if (offset < 1) offset = 1;
+    if (offset < 1)
+        offset = 1;
 
     int dx[] = {-offset, 0, offset, -offset, offset, -offset, 0, offset};
     int dy[] = {-offset, -offset, -offset, 0, 0, offset, offset, offset};
@@ -2239,32 +2321,40 @@ void draw_outlined_text(HDC hdc, const WCHAR* text, int len, RECT* rc, UINT form
 }
 
 /* 개별 툴바 아이템의 위치 계산 (통합 레이아웃 엔진) */
-int get_items_per_row(int width, int icon_size) {
-    if (width <= 0) return 1;
+int get_items_per_row(int width, int icon_size)
+{
+    if (width <= 0)
+        return 1;
     int denom = icon_size + SC(15);
-    if (denom <= 0) return 1;
+    if (denom <= 0)
+        return 1;
     int n = (width - icon_size - SC(20)) / denom + 1;
     return (n > 0) ? n : 1;
 }
 
-void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT* out_rect) {
+void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect)
+{
     if (width <= 0 || !out_rect) {
-        if (out_rect) SetRectEmpty(out_rect);
+        if (out_rect)
+            SetRectEmpty(out_rect);
         return;
     }
 
     int cols = get_items_per_row(width, icon_size);
-    if (cols <= 0) cols = 1;
+    if (cols <= 0)
+        cols = 1;
     int row_height = icon_size + SC(10);
 
     int total_tasks = hg_g_window_count;
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
 
     int min_required_rows = (total_tasks + total_shortcuts + cols - 1) / cols;
-    if (min_required_rows <= 0) min_required_rows = 1;
+    if (min_required_rows <= 0)
+        min_required_rows = 1;
 
     int visible_rows = (height - SC(20) + SC(10)) / row_height;
-    if (visible_rows <= 0) visible_rows = 1;
+    if (visible_rows <= 0)
+        visible_rows = 1;
 
     int rows = (visible_rows > min_required_rows) ? visible_rows : min_required_rows;
 
@@ -2287,12 +2377,14 @@ void get_toolbar_item_rect(int item_type, int item_index, int width, int height,
 }
 
 /* 툴바 툴팁 업데이트 (통합 레이아웃 사용) */
-void update_toolbar_tooltips(HWND hwnd) {
-    if (!hg_g_tooltip_wnd || !hwnd) return;
+void update_toolbar_tooltips(HWND hwnd)
+{
+    if (!hg_g_tooltip_wnd || !hwnd)
+        return;
     static int last_total_count = 0;
 
     for (int i = 0; i < last_total_count; i++) {
-        TOOLINFOW ti = { 0 };
+        TOOLINFOW ti = {0};
         ti.cbSize = TOOLINFO_V1_SIZE;
         ti.hwnd = hwnd;
         ti.uId = (UINT_PTR)i;
@@ -2302,10 +2394,12 @@ void update_toolbar_tooltips(HWND hwnd) {
 
     RECT client_rc;
     GetClientRect(hwnd, &client_rc);
-    if (client_rc.right <= 0 || client_rc.bottom <= 0) return;
+    if (client_rc.right <= 0 || client_rc.bottom <= 0)
+        return;
 
     int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16)) icon_size = SC(16);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
 
     int total_tasks = hg_g_window_count;
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
@@ -2315,7 +2409,7 @@ void update_toolbar_tooltips(HWND hwnd) {
         RECT item_rc;
         get_toolbar_item_rect(0, i, client_rc.right, client_rc.bottom, icon_size, &item_rc);
 
-        TOOLINFOW ti_tool = { 0 };
+        TOOLINFOW ti_tool = {0};
         ti_tool.cbSize = TOOLINFO_V1_SIZE;
         ti_tool.uFlags = TTF_SUBCLASS;
         ti_tool.hwnd = hwnd;
@@ -2330,17 +2424,23 @@ void update_toolbar_tooltips(HWND hwnd) {
         RECT item_rc;
         get_toolbar_item_rect(1, i, client_rc.right, client_rc.bottom, icon_size, &item_rc);
 
-        TOOLINFOW ti_tool = { 0 };
+        TOOLINFOW ti_tool = {0};
         ti_tool.cbSize = TOOLINFO_V1_SIZE;
         ti_tool.uFlags = TTF_SUBCLASS;
         ti_tool.hwnd = hwnd;
         ti_tool.uId = (UINT_PTR)id_counter++;
-        if (i == 0) ti_tool.lpszText = L"Drag to Resize Window";
-        else if (i == 1) ti_tool.lpszText = L"Drag to Move Window";
-        else if (i == 2) ti_tool.lpszText = L"Hide Dashboard (Reload Shortcuts)";
-        else if (i == 3) ti_tool.lpszText = L"Show Desktop";
-        else if (i == 4) ti_tool.lpszText = L"Settings";
-        else ti_tool.lpszText = hg_g_shortcuts[i - HG_NUM_BASIC_ICONS].name;
+        if (i == 0)
+            ti_tool.lpszText = L"Drag to Resize Window";
+        else if (i == 1)
+            ti_tool.lpszText = L"Drag to Move Window";
+        else if (i == 2)
+            ti_tool.lpszText = L"Hide Dashboard (Reload Shortcuts)";
+        else if (i == 3)
+            ti_tool.lpszText = L"Show Desktop";
+        else if (i == 4)
+            ti_tool.lpszText = L"Settings";
+        else
+            ti_tool.lpszText = hg_g_shortcuts[i - HG_NUM_BASIC_ICONS].name;
 
         ti_tool.rect = item_rc;
         InflateRect(&ti_tool.rect, SC(4), SC(4));
@@ -2352,10 +2452,13 @@ void update_toolbar_tooltips(HWND hwnd) {
 }
 
 /* 바탕화면 보기 토글을 위한 EnumWindows 콜백 */
-BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param) {
+BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param)
+{
     BOOL is_minimize = (BOOL)l_param;
-    if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd) return TRUE;
-    if (!IsWindowVisible(hwnd)) return TRUE;
+    if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd)
+        return TRUE;
+    if (!IsWindowVisible(hwnd))
+        return TRUE;
 
     /* 소유자가 없는 최상위 창이거나 작업 표시줄에 나타나는 창 스타일인 경우 */
     HWND owner = GetWindow(hwnd, GW_OWNER);
@@ -2365,32 +2468,38 @@ BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param) {
         /* Cloaked 상태 체크 (가상 데스크톱 등 숨겨진 창 제외) */
         int cloaked = 0;
         if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked)))) {
-            if (cloaked != 0) return TRUE;
+            if (cloaked != 0)
+                return TRUE;
         }
 
         if (is_minimize) {
-            if (!IsIconic(hwnd)) ShowWindowAsync(hwnd, SW_MINIMIZE);
+            if (!IsIconic(hwnd))
+                ShowWindowAsync(hwnd, SW_MINIMIZE);
         } else {
-            if (IsIconic(hwnd)) ShowWindowAsync(hwnd, SW_RESTORE);
+            if (IsIconic(hwnd))
+                ShowWindowAsync(hwnd, SW_RESTORE);
         }
     }
     return TRUE;
 }
 
 /* INI 설정 로드/저장 */
-void load_config(const WCHAR* section, int* x, int* y, int* w, int* h, int def_x, int def_y, int def_w, int def_h) {
+void load_config(const WCHAR *section, int *x, int *y, int *w, int *h, int def_x, int def_y, int def_w, int def_h)
+{
     WCHAR buf[32] = {0};
     WCHAR def_buf[32] = {0};
-    WCHAR* endptr;
+    WCHAR *endptr;
     hellgates_wsprintf(def_buf, 32, L"%d", def_x);
     GetPrivateProfileStringW(section, L"x", def_buf, buf, 32, hg_g_config_path);
     *x = (int)wcstol(buf, &endptr, 10);
-    if (endptr == buf) *x = def_x;
+    if (endptr == buf)
+        *x = def_x;
 
     hellgates_wsprintf(def_buf, 32, L"%d", def_y);
     GetPrivateProfileStringW(section, L"y", def_buf, buf, 32, hg_g_config_path);
     *y = (int)wcstol(buf, &endptr, 10);
-    if (endptr == buf) *y = def_y;
+    if (endptr == buf)
+        *y = def_y;
 
     UINT uw = GetPrivateProfileIntW(section, L"w", def_w, hg_g_config_path);
     *w = (uw == 0 || uw > 30000) ? def_w : (int)uw;
@@ -2402,7 +2511,8 @@ void load_config(const WCHAR* section, int* x, int* y, int* w, int* h, int def_x
     save_config(section, *x, *y, *w, *h);
 }
 
-void save_config(const WCHAR* section, int x, int y, int w, int h) {
+void save_config(const WCHAR *section, int x, int y, int w, int h)
+{
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%d", x);
     WritePrivateProfileStringW(section, L"x", buf, hg_g_config_path);
@@ -2414,38 +2524,48 @@ void save_config(const WCHAR* section, int x, int y, int w, int h) {
     WritePrivateProfileStringW(section, L"h", buf, hg_g_config_path);
 }
 
-void load_floater_font_config() {
+void load_floater_font_config()
+{
     UINT fs = GetPrivateProfileIntW(L"floater", L"font_size", 28, hg_g_config_path);
-    if (fs < HG_FLOATER_MIN_FONT_SIZE) fs = HG_FLOATER_MIN_FONT_SIZE;
-    if (fs > HG_FLOATER_MAX_FONT_SIZE) fs = HG_FLOATER_MAX_FONT_SIZE;
+    if (fs < HG_FLOATER_MIN_FONT_SIZE)
+        fs = HG_FLOATER_MIN_FONT_SIZE;
+    if (fs > HG_FLOATER_MAX_FONT_SIZE)
+        fs = HG_FLOATER_MAX_FONT_SIZE;
     hg_g_floater_font_size = (int)fs;
 
     /* Write back to ensure structural initialization of config.ini */
     save_floater_font_config();
 }
 
-void save_floater_font_config() {
+void save_floater_font_config()
+{
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%d", hg_g_floater_font_size);
     WritePrivateProfileStringW(L"floater", L"font_size", buf, hg_g_config_path);
 }
 
-void load_taskbox_font_config() {
+void load_taskbox_font_config()
+{
     UINT fs = GetPrivateProfileIntW(L"taskbox", L"font_size", 16, hg_g_config_path);
-    if (fs < 12) fs = 12;
-    if (fs > 128) fs = 128;
+    if (fs < 12)
+        fs = 12;
+    if (fs > 128)
+        fs = 128;
     hg_g_edit_font_size = -SC((int)fs);
 
     UINT is = GetPrivateProfileIntW(L"taskbox", L"icon_size", 22, hg_g_config_path);
-    if (is < 16) is = 16;
-    if (is > 128) is = 128;
+    if (is < 16)
+        is = 16;
+    if (is > 128)
+        is = 128;
     hg_g_current_font_size = -SC((int)is);
 
     /* Write back to ensure structural initialization of config.ini */
     save_taskbox_font_config();
 }
 
-void save_taskbox_font_config() {
+void save_taskbox_font_config()
+{
     WCHAR buf[32];
     int unscaled = (int)(ABS(hg_g_edit_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
     hellgates_wsprintf(buf, 32, L"%d", unscaled);
@@ -2456,7 +2576,8 @@ void save_taskbox_font_config() {
     WritePrivateProfileStringW(L"taskbox", L"icon_size", buf, hg_g_config_path);
 }
 
-void save_hotkey_config() {
+void save_hotkey_config()
+{
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%u", hg_g_hotkey_modifiers);
     WritePrivateProfileStringW(L"hotkeys", L"global_focus_modifiers", buf, hg_g_config_path);
@@ -2464,10 +2585,13 @@ void save_hotkey_config() {
     WritePrivateProfileStringW(L"hotkeys", L"global_focus_key", buf, hg_g_config_path);
 }
 
-int get_alpha_config(const WCHAR* section, int def_alpha) {
+int get_alpha_config(const WCHAR *section, int def_alpha)
+{
     int a = (int)GetPrivateProfileIntW(section, L"alpha", def_alpha, hg_g_config_path);
-    if (a < 128) a = 128;
-    if (a > 255) a = 255;
+    if (a < 128)
+        a = 128;
+    if (a > 255)
+        a = 255;
 
     /* Auto-initialize / format the alpha value inside config.ini */
     WCHAR buf[32];
@@ -2477,7 +2601,8 @@ int get_alpha_config(const WCHAR* section, int def_alpha) {
     return a;
 }
 
-void load_font_name_config() {
+void load_font_name_config()
+{
     GetPrivateProfileStringW(L"etc", L"font_name", L"Segoe UI", hg_g_font_name, 64, hg_g_config_path);
     if (wcslen(hg_g_font_name) == 0) {
         wcscpy(hg_g_font_name, L"Segoe UI");
@@ -2485,7 +2610,8 @@ void load_font_name_config() {
     WritePrivateProfileStringW(L"etc", L"font_name", hg_g_font_name, hg_g_config_path);
 }
 
-void load_hotkey_config() {
+void load_hotkey_config()
+{
     /* 새로운 섹션과 키 이름으로 로드 시도 */
     BOOL needs_save = FALSE;
 
@@ -2507,27 +2633,38 @@ void load_hotkey_config() {
     }
 }
 
-void move_window_by_offset(HWND hwnd, int dx, int dy) {
-    if (!IsWindow(hwnd)) return;
+void move_window_by_offset(HWND hwnd, int dx, int dy)
+{
+    if (!IsWindow(hwnd))
+        return;
     RECT rc = {0};
-    if (!GetWindowRect(hwnd, &rc)) return;
+    if (!GetWindowRect(hwnd, &rc))
+        return;
     SetWindowPos(hwnd, NULL, rc.left + dx, rc.top + dy, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     /* Save position and size after movement */
-    if (hwnd == hg_g_floater_wnd) save_config(L"floater", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
-    else if (hwnd == hg_g_taskbox_wnd) save_config(L"taskbox", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
-    else if (hwnd == hg_g_controlbox_wnd) save_config(L"controlbox", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
+    if (hwnd == hg_g_floater_wnd)
+        save_config(L"floater", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
+    else if (hwnd == hg_g_taskbox_wnd)
+        save_config(L"taskbox", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
+    else if (hwnd == hg_g_controlbox_wnd)
+        save_config(L"controlbox", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
 }
 
-void resize_window_by_offset(HWND hwnd, int dw, int dh) {
-    if (!IsWindow(hwnd)) return;
+void resize_window_by_offset(HWND hwnd, int dw, int dh)
+{
+    if (!IsWindow(hwnd))
+        return;
     RECT rc = {0};
-    if (!GetWindowRect(hwnd, &rc)) return;
+    if (!GetWindowRect(hwnd, &rc))
+        return;
 
     if (hwnd == hg_g_controlbox_wnd) {
         int new_w = (rc.right - rc.left) + dw;
         int new_h = get_controlbox_required_height();
-        if (new_w < SC(HG_CONTROLBOX_MIN_WIDTH)) new_w = SC(HG_CONTROLBOX_MIN_WIDTH);
-        if (new_w > SC(HG_CONTROLBOX_MAX_WIDTH)) new_w = SC(HG_CONTROLBOX_MAX_WIDTH);
+        if (new_w < SC(HG_CONTROLBOX_MIN_WIDTH))
+            new_w = SC(HG_CONTROLBOX_MIN_WIDTH);
+        if (new_w > SC(HG_CONTROLBOX_MAX_WIDTH))
+            new_w = SC(HG_CONTROLBOX_MAX_WIDTH);
         SetWindowPos(hwnd, NULL, 0, 0, new_w, new_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
         save_config(L"controlbox", rc.left, rc.top, new_w, new_h);
         return;
@@ -2535,15 +2672,20 @@ void resize_window_by_offset(HWND hwnd, int dw, int dh) {
 
     int new_w = (rc.right - rc.left) + dw;
     int new_h = (rc.bottom - rc.top) + dh;
-    if (new_w < SC(HG_MIN_WINDOW_WIDTH)) new_w = SC(HG_MIN_WINDOW_WIDTH);
-    if (new_h < SC(HG_MIN_WINDOW_HEIGHT)) new_h = SC(HG_MIN_WINDOW_HEIGHT);
+    if (new_w < SC(HG_MIN_WINDOW_WIDTH))
+        new_w = SC(HG_MIN_WINDOW_WIDTH);
+    if (new_h < SC(HG_MIN_WINDOW_HEIGHT))
+        new_h = SC(HG_MIN_WINDOW_HEIGHT);
     SetWindowPos(hwnd, NULL, 0, 0, new_w, new_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     /* Save position and size after resizing */
-    if (hwnd == hg_g_floater_wnd) save_config(L"floater", rc.left, rc.top, new_w, new_h);
-    else if (hwnd == hg_g_taskbox_wnd) save_config(L"taskbox", rc.left, rc.top, new_w, new_h);
+    if (hwnd == hg_g_floater_wnd)
+        save_config(L"floater", rc.left, rc.top, new_w, new_h);
+    else if (hwnd == hg_g_taskbox_wnd)
+        save_config(L"taskbox", rc.left, rc.top, new_w, new_h);
 }
 
-static int get_controlbox_required_height(void) {
+static int get_controlbox_required_height(void)
+{
     int border = SC(HG_BORDER_THICKNESS);
     int label_height = SC(18);
 
@@ -2555,7 +2697,8 @@ static int get_controlbox_required_height(void) {
             if (GetTextMetricsW(hdc, &tm)) {
                 label_height = tm.tmHeight + tm.tmExternalLeading + SC(4);
             }
-            if (old_font) SelectObject(hdc, old_font);
+            if (old_font)
+                SelectObject(hdc, old_font);
             ReleaseDC(NULL, hdc);
         }
     }
@@ -2563,8 +2706,10 @@ static int get_controlbox_required_height(void) {
     return border * 2 + label_height + SC(HG_CONTROLBOX_LABEL_GAP) + SC(HG_CONTROLBOX_TRACKBAR_HEIGHT) + SC(8);
 }
 
-static void controlbox_sync_volume_ui(void) {
-    if (!hg_g_controlbox_wnd || !IsWindow(hg_g_controlbox_wnd)) return;
+static void controlbox_sync_volume_ui(void)
+{
+    if (!hg_g_controlbox_wnd || !IsWindow(hg_g_controlbox_wnd))
+        return;
 
     int cur_vol = get_system_volume();
     WCHAR vol_str[64];
@@ -2578,8 +2723,10 @@ static void controlbox_sync_volume_ui(void) {
     }
 }
 
-static void update_controlbox_layout(HWND hwnd) {
-    if (!IsWindow(hwnd)) return;
+static void update_controlbox_layout(HWND hwnd)
+{
+    if (!IsWindow(hwnd))
+        return;
 
     RECT rc = {0};
     GetClientRect(hwnd, &rc);
@@ -2594,7 +2741,8 @@ static void update_controlbox_layout(HWND hwnd) {
             if (GetTextMetricsW(hdc, &tm)) {
                 label_height = tm.tmHeight + tm.tmExternalLeading + SC(4);
             }
-            if (old_font) SelectObject(hdc, old_font);
+            if (old_font)
+                SelectObject(hdc, old_font);
             ReleaseDC(hwnd, hdc);
         }
     }
@@ -2610,28 +2758,34 @@ static void update_controlbox_layout(HWND hwnd) {
     }
 
     int inner_w = current_width - border * 2;
-    if (inner_w < 0) inner_w = 0;
+    if (inner_w < 0)
+        inner_w = 0;
 
     if (hg_g_controlbox_value_wnd && IsWindow(hg_g_controlbox_value_wnd)) {
         MoveWindow(hg_g_controlbox_value_wnd, border, border, inner_w, label_height, TRUE);
     }
     if (hg_g_controlbox_slider_wnd && IsWindow(hg_g_controlbox_slider_wnd)) {
-        MoveWindow(hg_g_controlbox_slider_wnd, border, border + label_height + SC(HG_CONTROLBOX_LABEL_GAP), inner_w, slider_height, TRUE);
+        MoveWindow(hg_g_controlbox_slider_wnd, border, border + label_height + SC(HG_CONTROLBOX_LABEL_GAP), inner_w,
+                   slider_height, TRUE);
     }
 }
 
-static void show_controlbox_window(void) {
+static void show_controlbox_window(void)
+{
     int x = 240, y = 240, w = SC(HG_CONTROLBOX_DEFAULT_WIDTH), h = get_controlbox_required_height();
     load_config(L"controlbox", &x, &y, &w, &h, 240, 240, SC(HG_CONTROLBOX_DEFAULT_WIDTH), h);
-    if (w < SC(HG_CONTROLBOX_MIN_WIDTH)) w = SC(HG_CONTROLBOX_MIN_WIDTH);
-    if (w > SC(HG_CONTROLBOX_MAX_WIDTH)) w = SC(HG_CONTROLBOX_MAX_WIDTH);
+    if (w < SC(HG_CONTROLBOX_MIN_WIDTH))
+        w = SC(HG_CONTROLBOX_MIN_WIDTH);
+    if (w > SC(HG_CONTROLBOX_MAX_WIDTH))
+        w = SC(HG_CONTROLBOX_MAX_WIDTH);
     h = get_controlbox_required_height();
 
     if (!IsWindow(hg_g_controlbox_wnd)) {
-        hg_g_controlbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-            HG_CLASS_CONTROLBOX, L"controlbox", WS_POPUP,
-            x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
-        if (!hg_g_controlbox_wnd) return;
+        hg_g_controlbox_wnd =
+            CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, HG_CLASS_CONTROLBOX, L"controlbox",
+                            WS_POPUP, x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
+        if (!hg_g_controlbox_wnd)
+            return;
     }
 
     SetWindowPos(hg_g_controlbox_wnd, HWND_TOPMOST, x, y, w, h, SWP_NOACTIVATE | SWP_SHOWWINDOW);
@@ -2641,7 +2795,8 @@ static void show_controlbox_window(void) {
     controlbox_sync_volume_ui();
 }
 
-static void close_about_window(HWND hwnd) {
+static void close_about_window(HWND hwnd)
+{
     if (hg_g_about_wnd == hwnd) {
         hg_g_about_wnd = NULL;
     }
@@ -2650,7 +2805,8 @@ static void close_about_window(HWND hwnd) {
     }
 }
 
-static void disable_window_ime(HWND hwnd) {
+static void disable_window_ime(HWND hwnd)
+{
     if (!hwnd) {
         return;
     }
@@ -2666,40 +2822,41 @@ static void disable_window_ime(HWND hwnd) {
     ImmReleaseContext(hwnd, himc);
 }
 
-static BOOL readonly_edit_handle_ime_messages(HWND hwnd, UINT msg, WPARAM w_param) {
+static BOOL readonly_edit_handle_ime_messages(HWND hwnd, UINT msg, WPARAM w_param)
+{
     switch (msg) {
-        case WM_IME_SETCONTEXT:
-            if (w_param) {
-                disable_window_ime(hwnd);
-                return TRUE;
-            }
-            break;
-        case WM_INPUTLANGCHANGE:
-        case WM_INPUTLANGCHANGEREQUEST:
+    case WM_IME_SETCONTEXT:
+        if (w_param) {
             disable_window_ime(hwnd);
             return TRUE;
+        }
+        break;
+    case WM_INPUTLANGCHANGE:
+    case WM_INPUTLANGCHANGEREQUEST:
+        disable_window_ime(hwnd);
+        return TRUE;
     }
 
     return FALSE;
 }
 
-static void show_about_window(void) {
+static void show_about_window(void)
+{
     if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
         ShowWindow(hg_g_about_wnd, SW_SHOWNORMAL);
         SetForegroundWindow(hg_g_about_wnd);
         return;
     }
 
-    hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, SC(400), SC(300),
-        NULL, NULL, GetModuleHandle(NULL), NULL);
+    hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                                     CW_USEDEFAULT, SC(400), SC(300), NULL, NULL, GetModuleHandle(NULL), NULL);
     if (hg_g_about_wnd) {
         ShowWindow(hg_g_about_wnd, SW_SHOW);
     }
 }
 
-static void close_monitor_window(int idx) {
+static void close_monitor_window(int idx)
+{
     if (idx < 0 || idx >= hg_g_monitor_count) {
         return;
     }
@@ -2711,7 +2868,8 @@ static void close_monitor_window(int idx) {
     hg_g_monitors[idx].hwnd = NULL;
 }
 
-static BOOL open_monitor_window(int idx) {
+static BOOL open_monitor_window(int idx)
+{
     if (idx < 0 || idx >= hg_g_monitor_count) {
         return FALSE;
     }
@@ -2745,16 +2903,16 @@ static BOOL open_monitor_window(int idx) {
     w = (int)GetPrivateProfileIntW(L"monitor", key_w, def_w, hg_g_config_path);
     h = (int)GetPrivateProfileIntW(L"monitor", key_h, def_h, hg_g_config_path);
 
-    HWND mwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, hg_g_monitors[idx].name,
-        WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN,
-        x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
+    HWND mwnd =
+        CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, hg_g_monitors[idx].name,
+                        WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN, x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
 
     if (mwnd) {
         apply_dwm_attributes(mwnd);
         hg_g_monitors[idx].hwnd = mwnd;
 
         if (hg_g_tooltip_wnd) {
-            TOOLINFOW ti = { 0 };
+            TOOLINFOW ti = {0};
             ti.cbSize = TOOLINFO_V1_SIZE;
             ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
             ti.hwnd = mwnd;
@@ -2769,7 +2927,8 @@ static BOOL open_monitor_window(int idx) {
     return FALSE;
 }
 
-static void toggle_monitor_window(int idx) {
+static void toggle_monitor_window(int idx)
+{
     if (idx < 0 || idx >= hg_g_monitor_count) {
         return;
     }
@@ -2781,32 +2940,42 @@ static void toggle_monitor_window(int idx) {
     }
 }
 
-void update_size(int delta) {
+void update_size(int delta)
+{
     int old_size = ABS(hg_g_current_font_size);
-    if (old_size < SC(16)) old_size = SC(16);
+    if (old_size < SC(16))
+        old_size = SC(16);
 
     int new_size = old_size + (delta > 0 ? SC(2) : -SC(2));
-    if (new_size < SC(16)) new_size = SC(16);
-    if (new_size > SC(128)) new_size = SC(128);
+    if (new_size < SC(16))
+        new_size = SC(16);
+    if (new_size > SC(128))
+        new_size = SC(128);
     hg_g_current_font_size = -new_size;
     save_taskbox_font_config();
-    if (hg_g_toolbar_btn_font) { DeleteObject(hg_g_toolbar_btn_font); hg_g_toolbar_btn_font = NULL; }
+    if (hg_g_toolbar_btn_font) {
+        DeleteObject(hg_g_toolbar_btn_font);
+        hg_g_toolbar_btn_font = NULL;
+    }
 
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         RECT rc;
         GetWindowRect(hg_g_taskbox_wnd, &rc);
         int border = SC(HG_BORDER_THICKNESS);
         int tb_width = (rc.right - rc.left) - border * 2;
-        if (tb_width <= 0) tb_width = 1;
+        if (tb_width <= 0)
+            tb_width = 1;
 
         int cols = get_items_per_row(tb_width, old_size);
-        if (cols <= 0) cols = 1;
+        if (cols <= 0)
+            cols = 1;
 
         /* Calculate exact width required for the SAME number of columns but NEW icon size */
         int exact_tb_width = (cols - 1) * (new_size + SC(15)) + new_size + SC(20);
         int new_w = exact_tb_width + border * 2;
 
-        SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top,
+                     SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 
         load_shortcuts();
         update_layout(hg_g_taskbox_wnd);
@@ -2815,13 +2984,17 @@ void update_size(int delta) {
     refresh_window_list(TRUE);
 }
 
-void update_edit_font_size(int delta) {
+void update_edit_font_size(int delta)
+{
     int old_size = ABS(hg_g_edit_font_size);
-    if (old_size < SC(12)) old_size = SC(12);
+    if (old_size < SC(12))
+        old_size = SC(12);
 
     int new_size = old_size + (delta > 0 ? SC(2) : -SC(2));
-    if (new_size < SC(12)) new_size = SC(12);
-    if (new_size > SC(128)) new_size = SC(128);
+    if (new_size < SC(12))
+        new_size = SC(12);
+    if (new_size > SC(128))
+        new_size = SC(128);
     hg_g_edit_font_size = -new_size;
     save_taskbox_font_config();
 
@@ -2830,8 +3003,11 @@ void update_edit_font_size(int delta) {
         hg_g_main_font = NULL;
     }
 
-    hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
-    if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    hg_g_main_font =
+        CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                    CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+    if (!hg_g_main_font)
+        hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
     if (hg_g_edit_msg_wnd) {
         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
@@ -2869,37 +3045,53 @@ void update_edit_font_size(int delta) {
     }
 }
 
-void update_floater_font_size(int delta) {
+void update_floater_font_size(int delta)
+{
     int new_size = hg_g_floater_font_size + (delta > 0 ? 2 : -2);
-    if (new_size < HG_FLOATER_MIN_FONT_SIZE) new_size = HG_FLOATER_MIN_FONT_SIZE;
-    if (new_size > HG_FLOATER_MAX_FONT_SIZE) new_size = HG_FLOATER_MAX_FONT_SIZE;
+    if (new_size < HG_FLOATER_MIN_FONT_SIZE)
+        new_size = HG_FLOATER_MIN_FONT_SIZE;
+    if (new_size > HG_FLOATER_MAX_FONT_SIZE)
+        new_size = HG_FLOATER_MAX_FONT_SIZE;
     if (hg_g_floater_font_size != new_size) {
         hg_g_floater_font_size = new_size;
-        if (hg_g_floater_time_font) { DeleteObject(hg_g_floater_time_font); hg_g_floater_time_font = NULL; }
-        if (hg_g_floater_date_font) { DeleteObject(hg_g_floater_date_font); hg_g_floater_date_font = NULL; }
+        if (hg_g_floater_time_font) {
+            DeleteObject(hg_g_floater_time_font);
+            hg_g_floater_time_font = NULL;
+        }
+        if (hg_g_floater_date_font) {
+            DeleteObject(hg_g_floater_date_font);
+            hg_g_floater_date_font = NULL;
+        }
         update_floater_layout(hg_g_floater_wnd);
         InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
         save_floater_font_config();
     }
 }
 
-void update_floater_alpha(int delta) {
+void update_floater_alpha(int delta)
+{
     int new_alpha = (int)hg_g_floater_alpha + (delta > 0 ? 15 : -15);
-    if (new_alpha > HG_MAX_ALPHA) new_alpha = HG_MAX_ALPHA;
-    if (new_alpha < HG_MIN_ALPHA) new_alpha = HG_MIN_ALPHA;
+    if (new_alpha > HG_MAX_ALPHA)
+        new_alpha = HG_MAX_ALPHA;
+    if (new_alpha < HG_MIN_ALPHA)
+        new_alpha = HG_MIN_ALPHA;
     hg_g_floater_alpha = (BYTE)new_alpha;
     SetLayeredWindowAttributes(hg_g_floater_wnd, 0, hg_g_floater_alpha, LWA_ALPHA);
 }
 
-void update_taskbox_alpha(int delta) {
+void update_taskbox_alpha(int delta)
+{
     int new_alpha = (int)hg_g_taskbox_alpha + (delta > 0 ? 15 : -15);
-    if (new_alpha > HG_MAX_ALPHA) new_alpha = HG_MAX_ALPHA;
-    if (new_alpha < HG_MIN_ALPHA) new_alpha = HG_MIN_ALPHA;
+    if (new_alpha > HG_MAX_ALPHA)
+        new_alpha = HG_MAX_ALPHA;
+    if (new_alpha < HG_MIN_ALPHA)
+        new_alpha = HG_MIN_ALPHA;
     hg_g_taskbox_alpha = (BYTE)new_alpha;
     SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
 }
 
-void save_alpha_config() {
+void save_alpha_config()
+{
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%u", (UINT)hg_g_floater_alpha);
     WritePrivateProfileStringW(L"floater", L"alpha", buf, hg_g_config_path);
@@ -2907,34 +3099,46 @@ void save_alpha_config() {
     WritePrivateProfileStringW(L"taskbox", L"alpha", buf, hg_g_config_path);
 }
 
-void hide_taskbox(HWND hwnd) {
-    if (hwnd == NULL) return;
+void hide_taskbox(HWND hwnd)
+{
+    if (hwnd == NULL)
+        return;
     ShowWindow(hwnd, SW_HIDE);
     load_shortcuts();
     update_toolbar_tooltips(hg_g_toolbar_wnd);
     InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
-    if (hg_g_floater_wnd) SetForegroundWindow(hg_g_floater_wnd);
+    if (hg_g_floater_wnd)
+        SetForegroundWindow(hg_g_floater_wnd);
 }
 
-void update_floater_layout(HWND hwnd) {
+void update_floater_layout(HWND hwnd)
+{
     SYSTEMTIME st;
     GetLocalTime(&st);
     WCHAR time_str[16], date_str[32];
     hellgates_wsprintf(time_str, 16, L"%02d:%02d", st.wHour, st.wMinute);
-    const WCHAR* months[] = { L"", L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec" };
-    const WCHAR* days[] = { L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat" };
+    const WCHAR *months[] = {L"",    L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
+                             L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
+    const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
     hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
 
     int time_size = hg_g_floater_font_size;
     int date_size = hg_g_floater_font_size * 16 / 28;
-    if (date_size < 10) date_size = 10;
-    if (!hg_g_floater_time_font) hg_g_floater_time_font = CreateFontW(SC(time_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
-    if (!hg_g_floater_date_font) hg_g_floater_date_font = CreateFontW(SC(date_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+    if (date_size < 10)
+        date_size = 10;
+    if (!hg_g_floater_time_font)
+        hg_g_floater_time_font = CreateFontW(SC(time_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0,
+                                             0, 0, 0, hg_g_font_name);
+    if (!hg_g_floater_date_font)
+        hg_g_floater_date_font = CreateFontW(SC(date_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0,
+                                             0, 0, 0, hg_g_font_name);
     // hg_g_floater_time_font가 NULL이면 NULL을 SelectObject에 전달 → UB
-    if (!hg_g_floater_time_font || !hg_g_floater_date_font) return;  // 안전 가드 추가
+    if (!hg_g_floater_time_font || !hg_g_floater_date_font)
+        return; // 안전 가드 추가
 
     HDC hdc = GetDC(hwnd);
-    if (!hdc) return;
+    if (!hdc)
+        return;
 
     SIZE sz_time = {0}, sz_date = {0};
     HFONT old_font = (HFONT)SelectObject(hdc, hg_g_floater_time_font);
@@ -2960,10 +3164,13 @@ void update_floater_layout(HWND hwnd) {
 }
 
 /* 창이 화면을 벗어났는지 확인하고 0,0으로 복구 */
-void ensure_window_visible(HWND hwnd, const WCHAR* section) {
-    if (!IsWindow(hwnd) || !section) return;
+void ensure_window_visible(HWND hwnd, const WCHAR *section)
+{
+    if (!IsWindow(hwnd) || !section)
+        return;
     RECT rc = {0};
-    if (!GetWindowRect(hwnd, &rc)) return;
+    if (!GetWindowRect(hwnd, &rc))
+        return;
 
     HMONITOR monitor_handle = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
     MONITORINFO mi;
@@ -2971,139 +3178,158 @@ void ensure_window_visible(HWND hwnd, const WCHAR* section) {
     mi.cbSize = sizeof(mi);
     if (GetMonitorInfoW(monitor_handle, &mi)) {
         /* 창의 일부라도 작업 영역(Work Area)을 벗어나면 0,0으로 이동 */
-        if (rc.left < mi.rcWork.left || rc.top < mi.rcWork.top ||
-            rc.right > mi.rcWork.right || rc.bottom > mi.rcWork.bottom) {
+        if (rc.left < mi.rcWork.left || rc.top < mi.rcWork.top || rc.right > mi.rcWork.right ||
+            rc.bottom > mi.rcWork.bottom) {
             SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
             save_config(section, 0, 0, rc.right - rc.left, rc.bottom - rc.top);
         }
     }
 }
 
-static LRESULT floater_controller_on_create(HWND hwnd) {
-            hg_g_shellhook_msg = RegisterWindowMessageW(L"SHELLHOOK");
-            RegisterShellHookWindow(hwnd);
+static LRESULT floater_controller_on_create(HWND hwnd)
+{
+    hg_g_shellhook_msg = RegisterWindowMessageW(L"SHELLHOOK");
+    RegisterShellHookWindow(hwnd);
 
-            SetLayeredWindowAttributes(hwnd, 0, hg_g_floater_alpha, LWA_ALPHA);
+    SetLayeredWindowAttributes(hwnd, 0, hg_g_floater_alpha, LWA_ALPHA);
 
-            /* 창 모서리 및 DWM 속성 설정 */
-            apply_dwm_attributes(hwnd);
+    /* 창 모서리 및 DWM 속성 설정 */
+    apply_dwm_attributes(hwnd);
 
-            update_floater_layout(hwnd);
-            SetTimer(hwnd, 1, 1000, NULL);
-            return 0;
+    update_floater_layout(hwnd);
+    SetTimer(hwnd, 1, 1000, NULL);
+    return 0;
 }
 
-static LRESULT floater_controller_on_paint(HWND hwnd) {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            RECT rc; GetClientRect(hwnd, &rc);
+static LRESULT floater_controller_on_paint(HWND hwnd)
+{
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    RECT rc;
+    GetClientRect(hwnd, &rc);
 
-            if (rc.right > 0 && rc.bottom > 0) {
-                HDC mem_dc = CreateCompatibleDC(hdc);
-                HBITMAP mem_bm = NULL, old_bm = NULL;
+    if (rc.right > 0 && rc.bottom > 0) {
+        HDC mem_dc = CreateCompatibleDC(hdc);
+        HBITMAP mem_bm = NULL, old_bm = NULL;
 
-                if (mem_dc) {
-                    mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-                    if (mem_bm) {
-                        old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
-                        if (!old_bm) {
-                            DeleteObject(mem_bm);
-                            DeleteDC(mem_dc);
-                            EndPaint(hwnd, &ps);
-                            return 0;
-                        }
-
-                        int time_size = hg_g_floater_font_size;
-                        int date_size = hg_g_floater_font_size * 16 / 28;
-                        if (date_size < 10) date_size = 10;
-                        if (!hg_g_floater_time_font) hg_g_floater_time_font = CreateFontW(SC(time_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
-                        if (!hg_g_floater_date_font) hg_g_floater_date_font = CreateFontW(SC(date_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
-
-                        if (hg_g_floater_time_font && hg_g_floater_date_font) {
-                            /* 하이라이트 효과 (깜빡임) - 배경색 변경 */
-                            COLORREF bg_color = HG_COLOR_BG_DEFAULT;
-                            if (hg_g_floater_highlight_ticks > 0 && (hg_g_floater_highlight_ticks % 2 != 0)) {
-                                bg_color = HG_COLOR_BG_FLASH; /* 밝은 노란색 */
-                            }
-                            HBRUSH bg_brush = CreateSolidBrush(bg_color);
-                            int pen_width = SC(HG_BORDER_THICKNESS);
-
-                            COLORREF border_color = HG_COLOR_BG_TOOLBAR;
-                            HPEN border_pen = CreatePen(PS_SOLID, pen_width, border_color);
-
-                            HBRUSH old_brush = NULL;
-                            HPEN old_pen = NULL;
-                            if (bg_brush) old_brush = (HBRUSH)SelectObject(mem_dc, bg_brush);
-                            if (border_pen) old_pen = (HPEN)SelectObject(mem_dc, border_pen);
-
-                            /* 백그라운드 지우기 */
-                            FillRect(mem_dc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH)); // Not actually needed but good practice before drawing
-
-                            /* 외곽선 두께를 고려하여 내부로 수축 */
-                            RECT draw_rc = rc;
-                            InflateRect(&draw_rc, -pen_width/2, -pen_width/2);
-                            if (bg_brush && border_pen) {
-                                Rectangle(mem_dc, draw_rc.left, draw_rc.top, draw_rc.right, draw_rc.bottom);
-                            }
-
-                            /* 텍스트 그리기 */
-                            SYSTEMTIME st;
-                            GetLocalTime(&st);
-                            WCHAR time_str[16], date_str[32];
-                            hellgates_wsprintf(time_str, 16, L"%02d:%02d", st.wHour, st.wMinute);
-                            const WCHAR* months[] = { L"", L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec" };
-                            const WCHAR* days[] = { L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat" };
-                            hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
-
-                            SetBkMode(mem_dc, TRANSPARENT);
-                            SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
-
-                            /* 텍스트 크기 측정하여 수직 중앙 정렬 */
-                            SIZE sz_time = {0}, sz_date = {0};
-                            HFONT old_font_in_paint = (HFONT)SelectObject(mem_dc, hg_g_floater_time_font);
-                            GetTextExtentPoint32W(mem_dc, time_str, (int)lstrlenW(time_str), &sz_time);
-                            SelectObject(mem_dc, hg_g_floater_date_font);
-                            GetTextExtentPoint32W(mem_dc, date_str, (int)lstrlenW(date_str), &sz_date);
-
-                            int total_text_height = sz_time.cy + sz_date.cy;
-                            int start_y = (rc.bottom - rc.top - total_text_height) / 2;
-                            if (start_y < 0) start_y = 0;
-
-                            RECT time_rc = rc;
-                            time_rc.top = start_y;
-                            time_rc.bottom = time_rc.top + sz_time.cy;
-
-                            RECT date_rc = rc;
-                            date_rc.top = time_rc.bottom;
-                            date_rc.bottom = date_rc.top + sz_date.cy;
-
-                            SelectObject(mem_dc, hg_g_floater_time_font);
-                            DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-                            SelectObject(mem_dc, hg_g_floater_date_font);
-                            DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
-
-                            SelectObject(mem_dc, old_font_in_paint);
-
-                            if (old_brush) SelectObject(mem_dc, old_brush);
-                            if (old_pen) SelectObject(mem_dc, old_pen);
-                            if (bg_brush) DeleteObject(bg_brush);
-                            if (border_pen) DeleteObject(border_pen);
-                        }
-
-                        BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
-                        SelectObject(mem_dc, old_bm);
-                        DeleteObject(mem_bm);
-                    }
+        if (mem_dc) {
+            mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            if (mem_bm) {
+                old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
+                if (!old_bm) {
+                    DeleteObject(mem_bm);
                     DeleteDC(mem_dc);
+                    EndPaint(hwnd, &ps);
+                    return 0;
                 }
-            }
 
-            EndPaint(hwnd, &ps);
-            return 0;
+                int time_size = hg_g_floater_font_size;
+                int date_size = hg_g_floater_font_size * 16 / 28;
+                if (date_size < 10)
+                    date_size = 10;
+                if (!hg_g_floater_time_font)
+                    hg_g_floater_time_font = CreateFontW(SC(time_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                                         DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                if (!hg_g_floater_date_font)
+                    hg_g_floater_date_font = CreateFontW(SC(date_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                                         DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+
+                if (hg_g_floater_time_font && hg_g_floater_date_font) {
+                    /* 하이라이트 효과 (깜빡임) - 배경색 변경 */
+                    COLORREF bg_color = HG_COLOR_BG_DEFAULT;
+                    if (hg_g_floater_highlight_ticks > 0 && (hg_g_floater_highlight_ticks % 2 != 0)) {
+                        bg_color = HG_COLOR_BG_FLASH; /* 밝은 노란색 */
+                    }
+                    HBRUSH bg_brush = CreateSolidBrush(bg_color);
+                    int pen_width = SC(HG_BORDER_THICKNESS);
+
+                    COLORREF border_color = HG_COLOR_BG_TOOLBAR;
+                    HPEN border_pen = CreatePen(PS_SOLID, pen_width, border_color);
+
+                    HBRUSH old_brush = NULL;
+                    HPEN old_pen = NULL;
+                    if (bg_brush)
+                        old_brush = (HBRUSH)SelectObject(mem_dc, bg_brush);
+                    if (border_pen)
+                        old_pen = (HPEN)SelectObject(mem_dc, border_pen);
+
+                    /* 백그라운드 지우기 */
+                    FillRect(
+                        mem_dc, &rc,
+                        (HBRUSH)GetStockObject(BLACK_BRUSH)); // Not actually needed but good practice before drawing
+
+                    /* 외곽선 두께를 고려하여 내부로 수축 */
+                    RECT draw_rc = rc;
+                    InflateRect(&draw_rc, -pen_width / 2, -pen_width / 2);
+                    if (bg_brush && border_pen) {
+                        Rectangle(mem_dc, draw_rc.left, draw_rc.top, draw_rc.right, draw_rc.bottom);
+                    }
+
+                    /* 텍스트 그리기 */
+                    SYSTEMTIME st;
+                    GetLocalTime(&st);
+                    WCHAR time_str[16], date_str[32];
+                    hellgates_wsprintf(time_str, 16, L"%02d:%02d", st.wHour, st.wMinute);
+                    const WCHAR *months[] = {L"",    L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
+                                             L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
+                    const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
+                    hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
+
+                    SetBkMode(mem_dc, TRANSPARENT);
+                    SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
+
+                    /* 텍스트 크기 측정하여 수직 중앙 정렬 */
+                    SIZE sz_time = {0}, sz_date = {0};
+                    HFONT old_font_in_paint = (HFONT)SelectObject(mem_dc, hg_g_floater_time_font);
+                    GetTextExtentPoint32W(mem_dc, time_str, (int)lstrlenW(time_str), &sz_time);
+                    SelectObject(mem_dc, hg_g_floater_date_font);
+                    GetTextExtentPoint32W(mem_dc, date_str, (int)lstrlenW(date_str), &sz_date);
+
+                    int total_text_height = sz_time.cy + sz_date.cy;
+                    int start_y = (rc.bottom - rc.top - total_text_height) / 2;
+                    if (start_y < 0)
+                        start_y = 0;
+
+                    RECT time_rc = rc;
+                    time_rc.top = start_y;
+                    time_rc.bottom = time_rc.top + sz_time.cy;
+
+                    RECT date_rc = rc;
+                    date_rc.top = time_rc.bottom;
+                    date_rc.bottom = date_rc.top + sz_date.cy;
+
+                    SelectObject(mem_dc, hg_g_floater_time_font);
+                    DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+                    SelectObject(mem_dc, hg_g_floater_date_font);
+                    DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
+
+                    SelectObject(mem_dc, old_font_in_paint);
+
+                    if (old_brush)
+                        SelectObject(mem_dc, old_brush);
+                    if (old_pen)
+                        SelectObject(mem_dc, old_pen);
+                    if (bg_brush)
+                        DeleteObject(bg_brush);
+                    if (border_pen)
+                        DeleteObject(border_pen);
+                }
+
+                BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
+                SelectObject(mem_dc, old_bm);
+                DeleteObject(mem_bm);
+            }
+            DeleteDC(mem_dc);
+        }
+    }
+
+    EndPaint(hwnd, &ps);
+    return 0;
 }
 
-static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
     int dx = 0, dy = 0;
     int move_step = SC(20);
     BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
@@ -3111,10 +3337,14 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
 
     /* Alt + 방향키/wasd: 현재 창 이동 (플로팅 박스) */
     if (is_alt) {
-        if (w_param == VK_LEFT || w_param == 'A') dx = -move_step;
-        else if (w_param == VK_RIGHT || w_param == 'D') dx = move_step;
-        else if (w_param == VK_UP || w_param == 'W') dy = -move_step;
-        else if (w_param == VK_DOWN || w_param == 'S') dy = move_step;
+        if (w_param == VK_LEFT || w_param == 'A')
+            dx = -move_step;
+        else if (w_param == VK_RIGHT || w_param == 'D')
+            dx = move_step;
+        else if (w_param == VK_UP || w_param == 'W')
+            dy = -move_step;
+        else if (w_param == VK_DOWN || w_param == 'S')
+            dy = move_step;
 
         if (dx != 0 || dy != 0) {
             move_window_by_offset(hwnd, dx, dy);
@@ -3159,77 +3389,89 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             }
         }
     }
-    if (msg == WM_SYSKEYDOWN) return DefWindowProcW(hwnd, msg, w_param, l_param);
+    if (msg == WM_SYSKEYDOWN)
+        return DefWindowProcW(hwnd, msg, w_param, l_param);
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param) {
-            if (LOWORD(w_param) == HG_IDM_CLOSE_APP) {
-                DestroyWindow(hwnd);
-            } else if (LOWORD(w_param) >= HG_IDM_MONITOR_BASE && LOWORD(w_param) < HG_IDM_MONITOR_BASE + HG_MAX_MONITORS) {
-                int idx = LOWORD(w_param) - HG_IDM_MONITOR_BASE;
-                if (idx >= 0 && idx < hg_g_monitor_count) {
-                    toggle_monitor_window(idx);
-                }
-            } else if (LOWORD(w_param) >= HG_IDM_AUDIO_DEVICE_BASE && LOWORD(w_param) < HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES) {
-                int idx = LOWORD(w_param) - HG_IDM_AUDIO_DEVICE_BASE;
-                if (idx >= 0 && idx < hg_g_audio_device_count) {
-                    if (set_default_audio_device(hg_g_audio_devices[idx].id)) {
-                        update_audio_device_list();
-                    }
-                }
-            } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_0) {
-                set_system_volume(0);
-            } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_25) {
-                set_system_volume(25);
-            } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_50) {
-                set_system_volume(50);
-            } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_75) {
-                set_system_volume(75);
-            } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_100) {
-                set_system_volume(100);
-            } else if (LOWORD(w_param) == HG_IDM_OPEN_CONTROLBOX) {
-                show_controlbox_window();
-            } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
-                show_about_window();
-            } else if (LOWORD(w_param) == HG_IDM_RESET_ALL) {
-                hg_config_reset_all(hwnd);
-            } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
-                update_floater_font_size(1);
-            } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
-                update_floater_font_size(-1);
-            } else if (LOWORD(w_param) == HG_IDM_POWER_OFF) {
-                HWND h_shell = FindWindowW(L"Shell_TrayWnd", NULL);
-                if (h_shell) PostMessageW(h_shell, WM_COMMAND, 506, 0);
+static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param)
+{
+    if (LOWORD(w_param) == HG_IDM_CLOSE_APP) {
+        DestroyWindow(hwnd);
+    } else if (LOWORD(w_param) >= HG_IDM_MONITOR_BASE && LOWORD(w_param) < HG_IDM_MONITOR_BASE + HG_MAX_MONITORS) {
+        int idx = LOWORD(w_param) - HG_IDM_MONITOR_BASE;
+        if (idx >= 0 && idx < hg_g_monitor_count) {
+            toggle_monitor_window(idx);
+        }
+    } else if (LOWORD(w_param) >= HG_IDM_AUDIO_DEVICE_BASE &&
+               LOWORD(w_param) < HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES) {
+        int idx = LOWORD(w_param) - HG_IDM_AUDIO_DEVICE_BASE;
+        if (idx >= 0 && idx < hg_g_audio_device_count) {
+            if (set_default_audio_device(hg_g_audio_devices[idx].id)) {
+                update_audio_device_list();
             }
+        }
+    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_0) {
+        set_system_volume(0);
+    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_25) {
+        set_system_volume(25);
+    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_50) {
+        set_system_volume(50);
+    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_75) {
+        set_system_volume(75);
+    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_100) {
+        set_system_volume(100);
+    } else if (LOWORD(w_param) == HG_IDM_OPEN_CONTROLBOX) {
+        show_controlbox_window();
+    } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
+        show_about_window();
+    } else if (LOWORD(w_param) == HG_IDM_RESET_ALL) {
+        hg_config_reset_all(hwnd);
+    } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
+        update_floater_font_size(1);
+    } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
+        update_floater_font_size(-1);
+    } else if (LOWORD(w_param) == HG_IDM_POWER_OFF) {
+        HWND h_shell = FindWindowW(L"Shell_TrayWnd", NULL);
+        if (h_shell)
+            PostMessageW(h_shell, WM_COMMAND, 506, 0);
+    }
 
     return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
 }
 
-static LRESULT floater_controller_on_destroy(HWND hwnd) {
-            DeregisterShellHookWindow(hwnd);
-            KillTimer(hwnd, 1);
-            KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-            if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
-                DestroyWindow(hg_g_about_wnd);
-                hg_g_about_wnd = NULL;
-            }
-            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
-                DestroyWindow(hg_g_taskbox_wnd);
-                hg_g_taskbox_wnd = NULL;
-            }
-            if (hg_g_hotkey_registered) {
-                UnregisterHotKey(hwnd, 1);
-                hg_g_hotkey_registered = FALSE;
-            }
-            if (hg_g_floater_time_font) { DeleteObject(hg_g_floater_time_font); hg_g_floater_time_font = NULL; }
-            if (hg_g_floater_date_font) { DeleteObject(hg_g_floater_date_font); hg_g_floater_date_font = NULL; }
-            hg_g_floater_wnd = NULL;
-            PostQuitMessage(0);
-            return 0;
+static LRESULT floater_controller_on_destroy(HWND hwnd)
+{
+    DeregisterShellHookWindow(hwnd);
+    KillTimer(hwnd, 1);
+    KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
+    if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
+        DestroyWindow(hg_g_about_wnd);
+        hg_g_about_wnd = NULL;
+    }
+    if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+        DestroyWindow(hg_g_taskbox_wnd);
+        hg_g_taskbox_wnd = NULL;
+    }
+    if (hg_g_hotkey_registered) {
+        UnregisterHotKey(hwnd, 1);
+        hg_g_hotkey_registered = FALSE;
+    }
+    if (hg_g_floater_time_font) {
+        DeleteObject(hg_g_floater_time_font);
+        hg_g_floater_time_font = NULL;
+    }
+    if (hg_g_floater_date_font) {
+        DeleteObject(hg_g_floater_date_font);
+        hg_g_floater_date_font = NULL;
+    }
+    hg_g_floater_wnd = NULL;
+    PostQuitMessage(0);
+    return 0;
 }
 
-void hg_config_reset_all(HWND hwnd) {
+void hg_config_reset_all(HWND hwnd)
+{
     (void)hwnd;
     /* 1. Reset all global setting variables to defaults */
     hg_g_floater_alpha = 204;
@@ -3248,8 +3490,8 @@ void hg_config_reset_all(HWND hwnd) {
             UnregisterHotKey(hg_g_floater_wnd, 1);
             hg_g_hotkey_registered = FALSE;
         }
-        hg_g_hotkey_registered = RegisterHotKey(hg_g_floater_wnd, 1,
-            hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
+        hg_g_hotkey_registered =
+            RegisterHotKey(hg_g_floater_wnd, 1, hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
     }
 
     /* 3. Save all default settings back to config.ini */
@@ -3265,8 +3507,14 @@ void hg_config_reset_all(HWND hwnd) {
     /* Floater Window */
     if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
         SetLayeredWindowAttributes(hg_g_floater_wnd, 0, hg_g_floater_alpha, LWA_ALPHA);
-        if (hg_g_floater_time_font) { DeleteObject(hg_g_floater_time_font); hg_g_floater_time_font = NULL; }
-        if (hg_g_floater_date_font) { DeleteObject(hg_g_floater_date_font); hg_g_floater_date_font = NULL; }
+        if (hg_g_floater_time_font) {
+            DeleteObject(hg_g_floater_time_font);
+            hg_g_floater_time_font = NULL;
+        }
+        if (hg_g_floater_date_font) {
+            DeleteObject(hg_g_floater_date_font);
+            hg_g_floater_date_font = NULL;
+        }
         SetWindowPos(hg_g_floater_wnd, NULL, 100, 100, SC(80), SC(55), SWP_NOZORDER | SWP_NOACTIVATE);
         update_floater_layout(hg_g_floater_wnd);
         InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
@@ -3275,16 +3523,26 @@ void hg_config_reset_all(HWND hwnd) {
     /* Taskbox Window */
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
-        
-        if (hg_g_toolbar_btn_font) { DeleteObject(hg_g_toolbar_btn_font); hg_g_toolbar_btn_font = NULL; }
-        if (hg_g_main_font) { DeleteObject(hg_g_main_font); hg_g_main_font = NULL; }
 
-        SetWindowPos(hg_g_taskbox_wnd, NULL, 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT), SWP_NOZORDER | SWP_NOACTIVATE);
+        if (hg_g_toolbar_btn_font) {
+            DeleteObject(hg_g_toolbar_btn_font);
+            hg_g_toolbar_btn_font = NULL;
+        }
+        if (hg_g_main_font) {
+            DeleteObject(hg_g_main_font);
+            hg_g_main_font = NULL;
+        }
+
+        SetWindowPos(hg_g_taskbox_wnd, NULL, 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT),
+                     SWP_NOZORDER | SWP_NOACTIVATE);
         update_layout(hg_g_taskbox_wnd);
 
         if (hg_g_edit_msg_wnd) {
-            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
-            if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                                         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                         DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+            if (!hg_g_main_font)
+                hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
             SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
         }
 
@@ -3297,14 +3555,17 @@ void hg_config_reset_all(HWND hwnd) {
         GetWindowRect(hg_g_taskbox_wnd, &rc);
         int border = SC(HG_BORDER_THICKNESS);
         int tb_width = (rc.right - rc.left) - border * 2;
-        if (tb_width <= 0) tb_width = 1;
+        if (tb_width <= 0)
+            tb_width = 1;
         int cols = get_items_per_row(tb_width, target_icon_size);
-        if (cols <= 0) cols = 1;
+        if (cols <= 0)
+            cols = 1;
         int exact_tb_width = (cols - 1) * (target_icon_size + SC(15)) + target_icon_size + SC(20);
         int new_w = exact_tb_width + border * 2;
 
         if ((rc.right - rc.left) != new_w) {
-            SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top,
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             GetWindowRect(hg_g_taskbox_wnd, &rc);
             save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
@@ -3347,317 +3608,345 @@ void hg_config_reset_all(HWND hwnd) {
             hellgates_wsprintf(buf, 32, L"%d", m_h);
             WritePrivateProfileStringW(L"monitor", key_h, buf, hg_g_config_path);
 
-            mx += SC(50); my += SC(50);
+            mx += SC(50);
+            my += SC(50);
         }
     }
 }
 
-LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
     static BOOL floater_moved = FALSE;
     static int initial_floater_font_size = 0;
     switch (msg) {
-        case WM_DISPLAYCHANGE: {
-            update_monitor_enum();
-            return 0;
-        }
-        case WM_MOUSEACTIVATE: {
-            /* 태스크 박스가 떠 있을 때는 클릭해도 포커스를 뺏어오지 않음 (드래그/우클릭 가능하게) */
-            if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) return MA_NOACTIVATE;
-            return MA_ACTIVATE;
-        }
-        case WM_ACTIVATE: {
-            if (LOWORD(w_param) != WA_INACTIVE) {
-                if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
-                    SetForegroundWindow(hg_g_taskbox_wnd);
-                }
+    case WM_DISPLAYCHANGE: {
+        update_monitor_enum();
+        return 0;
+    }
+    case WM_MOUSEACTIVATE: {
+        /* 태스크 박스가 떠 있을 때는 클릭해도 포커스를 뺏어오지 않음 (드래그/우클릭 가능하게) */
+        if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd))
+            return MA_NOACTIVATE;
+        return MA_ACTIVATE;
+    }
+    case WM_ACTIVATE: {
+        if (LOWORD(w_param) != WA_INACTIVE) {
+            if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+                SetForegroundWindow(hg_g_taskbox_wnd);
             }
-            return 0;
         }
-        case WM_CREATE:
-            return floater_controller_on_create(hwnd);
-        case WM_PAINT:
-            return floater_controller_on_paint(hwnd);
-        case WM_SYSKEYDOWN:
-        case WM_KEYDOWN:
-            return floater_controller_on_keydown(hwnd, msg, w_param, l_param);
-        case WM_LBUTTONDOWN: {
-            floater_moved = FALSE;
-            hg_g_drag_start_pt.x = GET_X_LPARAM(l_param);
-            hg_g_drag_start_pt.y = GET_Y_LPARAM(l_param);
+        return 0;
+    }
+    case WM_CREATE:
+        return floater_controller_on_create(hwnd);
+    case WM_PAINT:
+        return floater_controller_on_paint(hwnd);
+    case WM_SYSKEYDOWN:
+    case WM_KEYDOWN:
+        return floater_controller_on_keydown(hwnd, msg, w_param, l_param);
+    case WM_LBUTTONDOWN: {
+        floater_moved = FALSE;
+        hg_g_drag_start_pt.x = GET_X_LPARAM(l_param);
+        hg_g_drag_start_pt.y = GET_Y_LPARAM(l_param);
+        if (GetKeyState(VK_CONTROL) < 0) {
+            initial_floater_font_size = hg_g_floater_font_size;
+        }
+        SetCapture(hwnd);
+        return 0;
+    }
+    case WM_MOUSEMOVE: {
+        if (w_param & MK_LBUTTON && GetCapture() == hwnd) {
+            POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             if (GetKeyState(VK_CONTROL) < 0) {
-                initial_floater_font_size = hg_g_floater_font_size;
-            }
-            SetCapture(hwnd);
-            return 0;
-        }
-        case WM_MOUSEMOVE: {
-            if (w_param & MK_LBUTTON && GetCapture() == hwnd) {
-                POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-                if (GetKeyState(VK_CONTROL) < 0) {
-                    int delta = (pt.x - hg_g_drag_start_pt.x) / 5; /* 1 size unit per 5 pixels */
-                    int new_size = initial_floater_font_size + delta;
-                    if (new_size < HG_FLOATER_MIN_FONT_SIZE) new_size = HG_FLOATER_MIN_FONT_SIZE;
-                    if (new_size > HG_FLOATER_MAX_FONT_SIZE) new_size = HG_FLOATER_MAX_FONT_SIZE;
+                int delta = (pt.x - hg_g_drag_start_pt.x) / 5; /* 1 size unit per 5 pixels */
+                int new_size = initial_floater_font_size + delta;
+                if (new_size < HG_FLOATER_MIN_FONT_SIZE)
+                    new_size = HG_FLOATER_MIN_FONT_SIZE;
+                if (new_size > HG_FLOATER_MAX_FONT_SIZE)
+                    new_size = HG_FLOATER_MAX_FONT_SIZE;
 
-                    if (hg_g_floater_font_size != new_size) {
-                        hg_g_floater_font_size = new_size;
-                        floater_moved = TRUE;
-                        if (hg_g_floater_time_font) { DeleteObject(hg_g_floater_time_font); hg_g_floater_time_font = NULL; }
-                        if (hg_g_floater_date_font) { DeleteObject(hg_g_floater_date_font); hg_g_floater_date_font = NULL; }
-                        update_floater_layout(hwnd);
-                        InvalidateRect(hwnd, NULL, TRUE);
+                if (hg_g_floater_font_size != new_size) {
+                    hg_g_floater_font_size = new_size;
+                    floater_moved = TRUE;
+                    if (hg_g_floater_time_font) {
+                        DeleteObject(hg_g_floater_time_font);
+                        hg_g_floater_time_font = NULL;
                     }
-                } else {
-                    if (ABS(pt.x - hg_g_drag_start_pt.x) > GetSystemMetrics(SM_CXDRAG) ||
-                        ABS(pt.y - hg_g_drag_start_pt.y) > GetSystemMetrics(SM_CYDRAG)) {
-                        floater_moved = TRUE;
-                        ReleaseCapture();
-                        SendMessageW(hwnd, WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
+                    if (hg_g_floater_date_font) {
+                        DeleteObject(hg_g_floater_date_font);
+                        hg_g_floater_date_font = NULL;
                     }
-                }
-            }
-            return 0;
-        }
-        case WM_LBUTTONUP: {
-            if (GetCapture() == hwnd) {
-                ReleaseCapture();
-                BOOL was_moved = floater_moved;
-                floater_moved = FALSE;
-                if (was_moved) {
-                    save_floater_font_config();
-                } else {
-                    /* 드래그가 아니었을 때만 토글 */
-                    if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
-                        hide_taskbox(hg_g_taskbox_wnd);
-                    } else if (hg_g_taskbox_wnd) {
-                        refresh_window_list(TRUE);
-                        ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
-                        SetForegroundWindow(hg_g_taskbox_wnd);
-                        if (hg_g_edit_msg_wnd) append_message(L"RClick: Settings | Ctrl+Wheel: Size | Alt+Wheel: Alpha");
-                    }
-                }
-            }
-            return 0;
-        }
-        case WM_RBUTTONUP: {
-            HMENU hMenu = CreatePopupMenu();
-            if (!hMenu) return 0;
-
-            /* Volume Controls */
-            int cur_vol = get_system_volume();
-            WCHAR vol_str[64];
-            StringCchPrintfW(vol_str, 64, L"System Volume: %d%%", cur_vol);
-            AppendMenuW(hMenu, MF_STRING | MF_DISABLED | MF_GRAYED, HG_IDM_VOLUME_PERCENT, vol_str);
-
-            HMENU hVolMenu = CreatePopupMenu();
-            AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_0,   L"0%");
-            AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_25,  L"25%");
-            AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_50,  L"50%");
-            AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_75,  L"75%");
-            AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_100, L"100%");
-            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hVolMenu, L"Set Volume (&V)");
-            AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_CONTROLBOX, L"Open Controlbox (&C)");
-
-            /* Audio Devices - Placeholder sub-menu */
-            hg_g_h_audio_submenu = CreatePopupMenu();
-            if (hg_g_h_audio_submenu) {
-                /* Add a dummy item so the pop-up will trigger */
-                AppendMenuW(hg_g_h_audio_submenu, MF_STRING | MF_GRAYED, 0, L"(Loading...)");
-                AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hg_g_h_audio_submenu, L"Audio Output (&O)");
-            }
-
-            /* Monitors Submenu */
-            HMENU hMonMenu = CreatePopupMenu();
-            update_monitor_enum();
-            for (int i = 0; i < hg_g_monitor_count; i++) {
-                UINT flags = MF_STRING;
-                if (hg_g_monitors[i].active) flags |= MF_CHECKED;
-                AppendMenuW(hMonMenu, flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + i), hg_g_monitors[i].name);
-            }
-            if (hg_g_monitor_count > 0) {
-                AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hMonMenu, L"Monitors (&M)");
-            } else {
-                DestroyMenu(hMonMenu);
-            }
-
-            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(hMenu, MF_STRING, HG_IDM_ABOUT, L"About (&A)");
-            AppendMenuW(hMenu, MF_STRING, HG_IDM_POWER_OFF, L"System Shutdown(&S)");
-            AppendMenuW(hMenu, MF_STRING, HG_IDM_CLOSE_APP, L"Exit (&X)");
-            POINT pt;
-            if (msg == WM_RBUTTONUP && l_param == 0) {
-                /* Triggered by F2 */
-                RECT rc_floater; GetWindowRect(hwnd, &rc_floater);
-                pt.x = rc_floater.left; pt.y = rc_floater.top;
-            } else {
-                GetCursorPos(&pt);
-            }
-            TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
-            DestroyMenu(hMenu);
-            hg_g_h_audio_submenu = NULL;
-            return 0;
-        }
-        case WM_INITMENUPOPUP: {
-            if (hg_g_h_audio_submenu && (HMENU)w_param == hg_g_h_audio_submenu) {
-                /* Clear placeholder items */
-                while (GetMenuItemCount(hg_g_h_audio_submenu) > 0)
-                    DeleteMenu(hg_g_h_audio_submenu, 0, MF_BYPOSITION);
-
-                update_audio_device_list();
-                if (hg_g_audio_device_count <= 0) {
-                    AppendMenuW(hg_g_h_audio_submenu, MF_STRING | MF_DISABLED | MF_GRAYED, 0, L"No devices found");
-                } else {
-                    for (int i = 0; i < hg_g_audio_device_count; i++) {
-                        UINT flags = MF_STRING;
-                        if (hg_g_audio_devices[i].is_default) flags |= MF_CHECKED;
-                        AppendMenuW(hg_g_h_audio_submenu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + i), hg_g_audio_devices[i].name);
-                    }
-                }
-            }
-            return 0;
-        }
-        case WM_COMMAND:
-            return floater_controller_on_command(hwnd, w_param, l_param);
-        case WM_MOUSEWHEEL: {
-            if (GetKeyState(VK_MENU) < 0) {
-                short delta = (short)HIWORD(w_param);
-                update_floater_alpha(delta > 0 ? 1 : -1);
-            } else if (GetKeyState(VK_CONTROL) < 0) {
-                short delta = (short)HIWORD(w_param);
-                update_floater_font_size(delta > 0 ? 1 : -1);
-            }
-            return 0;
-        }
-        case WM_NCHITTEST: {
-            return HTCLIENT; /* 직접 드래그 구현을 위해 HTCLIENT 반환 */
-        }
-        case WM_ENTERSIZEMOVE: { hg_g_in_sizemove = TRUE; return DefWindowProcW(hwnd, msg, w_param, l_param); } case WM_EXITSIZEMOVE: { hg_g_in_sizemove = FALSE;
-            RECT rc = {0};
-            GetWindowRect(hwnd, &rc);
-            save_config(L"floater", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
-            return 0;
-        }
-        case WM_TIMER: {
-            if (w_param == 1) {
-                static SYSTEMTIME last_st = {0};
-                SYSTEMTIME st;
-                GetLocalTime(&st);
-                if (st.wMinute != last_st.wMinute || st.wHour != last_st.wHour ||
-                    st.wDay != last_st.wDay || st.wMonth != last_st.wMonth || st.wYear != last_st.wYear) {
-                    last_st = st;
                     update_floater_layout(hwnd);
-                    InvalidateRect(hwnd, NULL, FALSE);
+                    InvalidateRect(hwnd, NULL, TRUE);
                 }
-                /* Periodically checked */
-                for (int i = 0; i < hg_g_monitor_count; i++) {
-                    if (hg_g_monitors[i].active && hg_g_monitors[i].hwnd) {
-                        InvalidateRect(hg_g_monitors[i].hwnd, NULL, FALSE);
-                    }
+            } else {
+                if (ABS(pt.x - hg_g_drag_start_pt.x) > GetSystemMetrics(SM_CXDRAG) ||
+                    ABS(pt.y - hg_g_drag_start_pt.y) > GetSystemMetrics(SM_CYDRAG)) {
+                    floater_moved = TRUE;
+                    ReleaseCapture();
+                    SendMessageW(hwnd, WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
                 }
-            } else if (w_param == HG_TIMER_HIGHLIGHT) {
-                hg_g_floater_highlight_ticks--;
-                if (hg_g_floater_highlight_ticks <= 0) {
-                    KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-                }
-                InvalidateRect(hwnd, NULL, FALSE);
             }
-            return 0;
         }
-        case WM_HOTKEY: {
-            if (w_param == 1) {
-                /* Store the current foreground window before showing taskbox */
-                HWND fg_wnd = GetForegroundWindow();
-                if (fg_wnd && fg_wnd != hg_g_taskbox_wnd && fg_wnd != hg_g_floater_wnd &&
-                    fg_wnd != hg_g_controlbox_wnd && fg_wnd != hg_g_about_wnd) {
-                    hg_g_prev_active_hwnd = fg_wnd;
-                }
-
-                /* 화면 이탈 여부 자동 체크 및 복구 (0,0) */
-                ensure_window_visible(hg_g_floater_wnd, L"floater");
-                ensure_window_visible(hg_g_taskbox_wnd, L"taskbox");
-
-                /* 플로팅 박스와 태스크 박스를 최상위로 올림 */
-                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-
-                /* 플로팅 박스 하이라이트 효과 시작 */
-                hg_g_floater_highlight_ticks = HG_HIGHLIGHT_TICKS;
-                if (!SetTimer(hwnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
-                    hg_g_floater_highlight_ticks = 0;
-                }
-                InvalidateRect(hwnd, NULL, FALSE);
-
-                /* 태스크 박스 표시 및 최상위 포커스 */
-                if (hg_g_taskbox_wnd) {
-                    if (!IsWindowVisible(hg_g_taskbox_wnd)) {
-                        refresh_window_list(TRUE);
-                        ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
-                    } else {
-                        refresh_window_list(FALSE);
-                    }
-                    SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        return 0;
+    }
+    case WM_LBUTTONUP: {
+        if (GetCapture() == hwnd) {
+            ReleaseCapture();
+            BOOL was_moved = floater_moved;
+            floater_moved = FALSE;
+            if (was_moved) {
+                save_floater_font_config();
+            } else {
+                /* 드래그가 아니었을 때만 토글 */
+                if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+                    hide_taskbox(hg_g_taskbox_wnd);
+                } else if (hg_g_taskbox_wnd) {
+                    refresh_window_list(TRUE);
+                    ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
                     SetForegroundWindow(hg_g_taskbox_wnd);
+                    if (hg_g_edit_msg_wnd)
+                        append_message(L"RClick: Settings | Ctrl+Wheel: Size | Alt+Wheel: Alpha");
+                }
+            }
+        }
+        return 0;
+    }
+    case WM_RBUTTONUP: {
+        HMENU hMenu = CreatePopupMenu();
+        if (!hMenu)
+            return 0;
 
-                    /* 하이라이트 효과 */
-                    hg_g_taskbox_highlight_ticks = HG_HIGHLIGHT_TICKS;
-                    if (!SetTimer(hg_g_taskbox_wnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
-                        hg_g_taskbox_highlight_ticks = 0;
-                    }
-                    InvalidateRect(hg_g_taskbox_wnd, NULL, FALSE);
+        /* Volume Controls */
+        int cur_vol = get_system_volume();
+        WCHAR vol_str[64];
+        StringCchPrintfW(vol_str, 64, L"System Volume: %d%%", cur_vol);
+        AppendMenuW(hMenu, MF_STRING | MF_DISABLED | MF_GRAYED, HG_IDM_VOLUME_PERCENT, vol_str);
 
-                    /* 태스크 리스트 첫 번째 아이콘에 포커스 (Unified Toolbar) */
-                    hg_g_focus_area = 0;
-                    SetFocus(hg_g_toolbar_wnd);
-                    if (hg_g_window_count > 0) {
-                        hg_g_toolbar_focus_index = 0;
-                    }
-                    update_focus_message(-2, -2);
+        HMENU hVolMenu = CreatePopupMenu();
+        AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_0, L"0%");
+        AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_25, L"25%");
+        AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_50, L"50%");
+        AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_75, L"75%");
+        AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_100, L"100%");
+        AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hVolMenu, L"Set Volume (&V)");
+        AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_CONTROLBOX, L"Open Controlbox (&C)");
 
-                    InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+        /* Audio Devices - Placeholder sub-menu */
+        hg_g_h_audio_submenu = CreatePopupMenu();
+        if (hg_g_h_audio_submenu) {
+            /* Add a dummy item so the pop-up will trigger */
+            AppendMenuW(hg_g_h_audio_submenu, MF_STRING | MF_GRAYED, 0, L"(Loading...)");
+            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hg_g_h_audio_submenu, L"Audio Output (&O)");
+        }
+
+        /* Monitors Submenu */
+        HMENU hMonMenu = CreatePopupMenu();
+        update_monitor_enum();
+        for (int i = 0; i < hg_g_monitor_count; i++) {
+            UINT flags = MF_STRING;
+            if (hg_g_monitors[i].active)
+                flags |= MF_CHECKED;
+            AppendMenuW(hMonMenu, flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + i), hg_g_monitors[i].name);
+        }
+        if (hg_g_monitor_count > 0) {
+            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hMonMenu, L"Monitors (&M)");
+        } else {
+            DestroyMenu(hMonMenu);
+        }
+
+        AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+        AppendMenuW(hMenu, MF_STRING, HG_IDM_ABOUT, L"About (&A)");
+        AppendMenuW(hMenu, MF_STRING, HG_IDM_POWER_OFF, L"System Shutdown(&S)");
+        AppendMenuW(hMenu, MF_STRING, HG_IDM_CLOSE_APP, L"Exit (&X)");
+        POINT pt;
+        if (msg == WM_RBUTTONUP && l_param == 0) {
+            /* Triggered by F2 */
+            RECT rc_floater;
+            GetWindowRect(hwnd, &rc_floater);
+            pt.x = rc_floater.left;
+            pt.y = rc_floater.top;
+        } else {
+            GetCursorPos(&pt);
+        }
+        TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
+        DestroyMenu(hMenu);
+        hg_g_h_audio_submenu = NULL;
+        return 0;
+    }
+    case WM_INITMENUPOPUP: {
+        if (hg_g_h_audio_submenu && (HMENU)w_param == hg_g_h_audio_submenu) {
+            /* Clear placeholder items */
+            while (GetMenuItemCount(hg_g_h_audio_submenu) > 0)
+                DeleteMenu(hg_g_h_audio_submenu, 0, MF_BYPOSITION);
+
+            update_audio_device_list();
+            if (hg_g_audio_device_count <= 0) {
+                AppendMenuW(hg_g_h_audio_submenu, MF_STRING | MF_DISABLED | MF_GRAYED, 0, L"No devices found");
+            } else {
+                for (int i = 0; i < hg_g_audio_device_count; i++) {
+                    UINT flags = MF_STRING;
+                    if (hg_g_audio_devices[i].is_default)
+                        flags |= MF_CHECKED;
+                    AppendMenuW(hg_g_h_audio_submenu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + i),
+                                hg_g_audio_devices[i].name);
+                }
+            }
+        }
+        return 0;
+    }
+    case WM_COMMAND:
+        return floater_controller_on_command(hwnd, w_param, l_param);
+    case WM_MOUSEWHEEL: {
+        if (GetKeyState(VK_MENU) < 0) {
+            short delta = (short)HIWORD(w_param);
+            update_floater_alpha(delta > 0 ? 1 : -1);
+        } else if (GetKeyState(VK_CONTROL) < 0) {
+            short delta = (short)HIWORD(w_param);
+            update_floater_font_size(delta > 0 ? 1 : -1);
+        }
+        return 0;
+    }
+    case WM_NCHITTEST: {
+        return HTCLIENT; /* 직접 드래그 구현을 위해 HTCLIENT 반환 */
+    }
+    case WM_ENTERSIZEMOVE: {
+        hg_g_in_sizemove = TRUE;
+        return DefWindowProcW(hwnd, msg, w_param, l_param);
+    }
+    case WM_EXITSIZEMOVE: {
+        hg_g_in_sizemove = FALSE;
+        RECT rc = {0};
+        GetWindowRect(hwnd, &rc);
+        save_config(L"floater", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        return 0;
+    }
+    case WM_TIMER: {
+        if (w_param == 1) {
+            static SYSTEMTIME last_st = {0};
+            SYSTEMTIME st;
+            GetLocalTime(&st);
+            if (st.wMinute != last_st.wMinute || st.wHour != last_st.wHour || st.wDay != last_st.wDay ||
+                st.wMonth != last_st.wMonth || st.wYear != last_st.wYear) {
+                last_st = st;
+                update_floater_layout(hwnd);
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            /* Periodically checked */
+            for (int i = 0; i < hg_g_monitor_count; i++) {
+                if (hg_g_monitors[i].active && hg_g_monitors[i].hwnd) {
+                    InvalidateRect(hg_g_monitors[i].hwnd, NULL, FALSE);
+                }
+            }
+        } else if (w_param == HG_TIMER_HIGHLIGHT) {
+            hg_g_floater_highlight_ticks--;
+            if (hg_g_floater_highlight_ticks <= 0) {
+                KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
+            }
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+        return 0;
+    }
+    case WM_HOTKEY: {
+        if (w_param == 1) {
+            /* Store the current foreground window before showing taskbox */
+            HWND fg_wnd = GetForegroundWindow();
+            if (fg_wnd && fg_wnd != hg_g_taskbox_wnd && fg_wnd != hg_g_floater_wnd && fg_wnd != hg_g_controlbox_wnd &&
+                fg_wnd != hg_g_about_wnd) {
+                hg_g_prev_active_hwnd = fg_wnd;
+            }
+
+            /* 화면 이탈 여부 자동 체크 및 복구 (0,0) */
+            ensure_window_visible(hg_g_floater_wnd, L"floater");
+            ensure_window_visible(hg_g_taskbox_wnd, L"taskbox");
+
+            /* 플로팅 박스와 태스크 박스를 최상위로 올림 */
+            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+            /* 플로팅 박스 하이라이트 효과 시작 */
+            hg_g_floater_highlight_ticks = HG_HIGHLIGHT_TICKS;
+            if (!SetTimer(hwnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
+                hg_g_floater_highlight_ticks = 0;
+            }
+            InvalidateRect(hwnd, NULL, FALSE);
+
+            /* 태스크 박스 표시 및 최상위 포커스 */
+            if (hg_g_taskbox_wnd) {
+                if (!IsWindowVisible(hg_g_taskbox_wnd)) {
+                    refresh_window_list(TRUE);
+                    ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
                 } else {
-                    /* 태스크 박스가 없거나 숨겨진 상태라면 플로팅 박스를 포커스 */
-                    SetForegroundWindow(hwnd);
+                    refresh_window_list(FALSE);
+                }
+                SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+                SetForegroundWindow(hg_g_taskbox_wnd);
+
+                /* 하이라이트 효과 */
+                hg_g_taskbox_highlight_ticks = HG_HIGHLIGHT_TICKS;
+                if (!SetTimer(hg_g_taskbox_wnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
+                    hg_g_taskbox_highlight_ticks = 0;
+                }
+                InvalidateRect(hg_g_taskbox_wnd, NULL, FALSE);
+
+                /* 태스크 리스트 첫 번째 아이콘에 포커스 (Unified Toolbar) */
+                hg_g_focus_area = 0;
+                SetFocus(hg_g_toolbar_wnd);
+                if (hg_g_window_count > 0) {
+                    hg_g_toolbar_focus_index = 0;
+                }
+                update_focus_message(-2, -2);
+
+                InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+            } else {
+                /* 태스크 박스가 없거나 숨겨진 상태라면 플로팅 박스를 포커스 */
+                SetForegroundWindow(hwnd);
+            }
+        }
+        return 0;
+    }
+    case WM_COPYDATA:
+        return handle_copydata_command_line((const COPYDATASTRUCT *)l_param);
+    case WM_DESTROY:
+        return floater_controller_on_destroy(hwnd);
+    default: {
+        if (hg_g_shellhook_msg && msg == hg_g_shellhook_msg) {
+            if (w_param == HSHELL_REDRAW) {
+                HWND target_hwnd = (HWND)l_param;
+                BOOL found = FALSE;
+                for (int i = 0; i < hg_g_window_count; i++) {
+                    if (hg_g_window_items[i].hwnd == target_hwnd) {
+                        if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
+                            DestroyIcon(hg_g_window_items[i].icon);
+                        }
+                        hg_g_window_items[i].icon =
+                            get_window_icon(target_hwnd, ABS(hg_g_current_font_size), &hg_g_window_items[i].own_icon);
+                        found = TRUE;
+                        break;
+                    }
+                }
+                if (found && hg_g_toolbar_wnd && hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+                    InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+                }
+            } else if (w_param == HSHELL_WINDOWCREATED || w_param == HSHELL_WINDOWDESTROYED ||
+                       w_param == HSHELL_WINDOWREPLACED) {
+                /* Only trigger expensive refresh immediately if taskbox is visible, otherwise let the 1sec timer lazily
+                 * handle it */
+                if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+                    refresh_window_list(FALSE);
                 }
             }
             return 0;
         }
-        case WM_COPYDATA:
-            return handle_copydata_command_line((const COPYDATASTRUCT*)l_param);
-        case WM_DESTROY:
-            return floater_controller_on_destroy(hwnd);
-        default: {
-            if (hg_g_shellhook_msg && msg == hg_g_shellhook_msg) {
-                if (w_param == HSHELL_REDRAW) {
-                    HWND target_hwnd = (HWND)l_param;
-                    BOOL found = FALSE;
-                    for (int i = 0; i < hg_g_window_count; i++) {
-                        if (hg_g_window_items[i].hwnd == target_hwnd) {
-                            if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-                                DestroyIcon(hg_g_window_items[i].icon);
-                            }
-                            hg_g_window_items[i].icon = get_window_icon(target_hwnd, ABS(hg_g_current_font_size), &hg_g_window_items[i].own_icon);
-                            found = TRUE;
-                            break;
-                        }
-                    }
-                    if (found && hg_g_toolbar_wnd && hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
-                        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-                    }
-                } else if (w_param == HSHELL_WINDOWCREATED || w_param == HSHELL_WINDOWDESTROYED || w_param == HSHELL_WINDOWREPLACED) {
-                    /* Only trigger expensive refresh immediately if taskbox is visible, otherwise let the 1sec timer lazily handle it */
-                    if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
-                        refresh_window_list(FALSE);
-                    }
-                }
-                return 0;
-            }
-            break;
-        }
+        break;
+    }
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-void activate_toolbar_item(int index) {
-    if (index < 0) return;
+void activate_toolbar_item(int index)
+{
+    if (index < 0)
+        return;
     if (index == 0) {
         /* R button - handled by drag, no click action needed or could be a toggle?
            User said "이 버튼을 드래그하면 그것에 맞춰 창 크기를 변경하게 해 줘".
@@ -3696,16 +3985,21 @@ void activate_toolbar_item(int index) {
     }
 }
 
-void activate_taskbar_item(int index) {
-    if (index < 0 || index >= hg_g_window_count) return;
+void activate_taskbar_item(int index)
+{
+    if (index < 0 || index >= hg_g_window_count)
+        return;
     HWND target = hg_g_window_items[index].hwnd;
     if (IsWindow(target)) {
-        if (IsIconic(target)) ShowWindow(target, SW_RESTORE);
+        if (IsIconic(target))
+            ShowWindow(target, SW_RESTORE);
         SetForegroundWindow(target);
     }
 }
 
-static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
+                                                 UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
     if (msg == WM_SETFOCUS) {
         disable_window_ime(hwnd);
     }
@@ -3719,55 +4013,59 @@ static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
-LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
     switch (msg) {
-        case WM_CREATE: {
-            apply_dwm_attributes(hwnd);
-            HWND edit_wnd = CreateWindowExW(0, L"EDIT",
-                HG_ABOUT_TEXT_W,
-                WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
-                SC(10), SC(10), SC(364), SC(240), hwnd, (HMENU)100, GetModuleHandle(NULL), NULL);
-            if (edit_wnd) {
-                SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-                SetWindowSubclass(edit_wnd, about_edit_subclass_proc, 1, 0);
-                disable_window_ime(edit_wnd);
-            }
-            return 0;
+    case WM_CREATE: {
+        apply_dwm_attributes(hwnd);
+        HWND edit_wnd =
+            CreateWindowExW(0, L"EDIT", HG_ABOUT_TEXT_W,
+                            WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
+                            SC(10), SC(10), SC(364), SC(240), hwnd, (HMENU)100, GetModuleHandle(NULL), NULL);
+        if (edit_wnd) {
+            SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+            SetWindowSubclass(edit_wnd, about_edit_subclass_proc, 1, 0);
+            disable_window_ime(edit_wnd);
         }
-        case WM_SIZE: {
-            HWND edit_wnd = GetDlgItem(hwnd, 100);
-            if (edit_wnd) {
-                int w = (int)LOWORD(l_param) - SC(20);
-                int h = (int)HIWORD(l_param) - SC(20);
-                if (w < 0) w = 0;
-                if (h < 0) h = 0;
-                MoveWindow(edit_wnd, SC(10), SC(10), w, h, TRUE);
-            }
-            return 0;
+        return 0;
+    }
+    case WM_SIZE: {
+        HWND edit_wnd = GetDlgItem(hwnd, 100);
+        if (edit_wnd) {
+            int w = (int)LOWORD(l_param) - SC(20);
+            int h = (int)HIWORD(l_param) - SC(20);
+            if (w < 0)
+                w = 0;
+            if (h < 0)
+                h = 0;
+            MoveWindow(edit_wnd, SC(10), SC(10), w, h, TRUE);
         }
-        case WM_CTLCOLORSTATIC:
-        case WM_CTLCOLOREDIT: {
-            HDC hdc = (HDC)w_param;
-            SetTextColor(hdc, hg_g_color_scheme_selected.text);
-            SetBkMode(hdc, OPAQUE);
-            SetBkColor(hdc, hg_g_color_scheme_selected.bg);
-            return (LRESULT)GetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND);
+        return 0;
+    }
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLOREDIT: {
+        HDC hdc = (HDC)w_param;
+        SetTextColor(hdc, hg_g_color_scheme_selected.text);
+        SetBkMode(hdc, OPAQUE);
+        SetBkColor(hdc, hg_g_color_scheme_selected.bg);
+        return (LRESULT)GetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND);
+    }
+    case WM_KEYDOWN: {
+        if (w_param == VK_ESCAPE) {
+            PostMessageW(hwnd, WM_CLOSE, 0, 0);
         }
-        case WM_KEYDOWN: {
-            if (w_param == VK_ESCAPE) {
-                PostMessageW(hwnd, WM_CLOSE, 0, 0);
-            }
-            return 0;
-        }
-        case WM_CLOSE: {
-            close_about_window(hwnd);
-            return 0;
-        }
+        return 0;
+    }
+    case WM_CLOSE: {
+        close_about_window(hwnd);
+        return 0;
+    }
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-void update_focus_message(int override_type, int override_index) {
+void update_focus_message(int override_type, int override_index)
+{
     if (override_type == -1 && override_index == -1) {
         return;
     }
@@ -3782,46 +4080,61 @@ void update_focus_message(int override_type, int override_index) {
     } else if (type == 1) {
         int total_items = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
         if (index >= 0 && index < total_items) {
-            if (index == 0) append_message(L"Drag to Resize Window");
-            else if (index == 1) append_message(L"Drag to Move Window");
-            else if (index == 2) append_message(L"Hide Dashboard");
-            else if (index == 3) append_message(L"Show Desktop");
-            else if (index == 4) append_message(L"Settings");
-            else append_message(hg_g_shortcuts[index - HG_NUM_BASIC_ICONS].name);
+            if (index == 0)
+                append_message(L"Drag to Resize Window");
+            else if (index == 1)
+                append_message(L"Drag to Move Window");
+            else if (index == 2)
+                append_message(L"Hide Dashboard");
+            else if (index == 3)
+                append_message(L"Show Desktop");
+            else if (index == 4)
+                append_message(L"Settings");
+            else
+                append_message(hg_g_shortcuts[index - HG_NUM_BASIC_ICONS].name);
         }
     }
 }
 
-int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type, int *out_index) {
-    for(int i = 0; i < hg_g_window_count; i++) {
+int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type, int *out_index)
+{
+    for (int i = 0; i < hg_g_window_count; i++) {
         RECT rc_item, rc_btn;
         get_toolbar_item_rect(0, i, width, height, icon_size, &rc_item);
-        rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
+        rc_btn = rc_item;
+        InflateRect(&rc_btn, SC(4), SC(4));
         if (PtInRect(&rc_btn, pt)) {
-            if (out_type) *out_type = 0;
-            if (out_index) *out_index = i;
+            if (out_type)
+                *out_type = 0;
+            if (out_index)
+                *out_index = i;
             return 1;
         }
     }
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-    for(int i = 0; i < total_shortcuts; i++) {
+    for (int i = 0; i < total_shortcuts; i++) {
         RECT rc_item, rc_btn;
         get_toolbar_item_rect(1, i, width, height, icon_size, &rc_item);
-        rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
+        rc_btn = rc_item;
+        InflateRect(&rc_btn, SC(4), SC(4));
         if (PtInRect(&rc_btn, pt)) {
-            if (out_type) *out_type = 1;
-            if (out_index) *out_index = i;
+            if (out_type)
+                *out_type = 1;
+            if (out_index)
+                *out_index = i;
             return 1;
         }
     }
     return 0;
 }
 
-
-static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type, int pressed_index, int *cached_icon_size) {
+static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type,
+                                           int pressed_index, int *cached_icon_size)
+{
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
-    RECT rc; GetClientRect(hwnd, &rc);
+    RECT rc;
+    GetClientRect(hwnd, &rc);
 
     if (rc.right > 0 && rc.bottom > 0) {
         HDC mem_dc = CreateCompatibleDC(hdc);
@@ -3843,21 +4156,27 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     bg_color = HG_COLOR_BG_FLASH;
                 }
                 HBRUSH hbr_bg = CreateSolidBrush(bg_color);
-                if (hbr_bg) { FillRect(mem_dc, &rc, hbr_bg); DeleteObject(hbr_bg); }
+                if (hbr_bg) {
+                    FillRect(mem_dc, &rc, hbr_bg);
+                    DeleteObject(hbr_bg);
+                }
 
                 int icon_size = ABS(hg_g_current_font_size);
-                if (icon_size < SC(16)) icon_size = SC(16);
+                if (icon_size < SC(16))
+                    icon_size = SC(16);
 
                 if (icon_size != *cached_icon_size || !hg_g_toolbar_btn_font) {
-                    if (hg_g_toolbar_btn_font) DeleteObject(hg_g_toolbar_btn_font);
+                    if (hg_g_toolbar_btn_font)
+                        DeleteObject(hg_g_toolbar_btn_font);
                     hg_g_toolbar_btn_font = CreateFontW(icon_size, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                                       DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                                       CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                                                        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                                        CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
                     *cached_icon_size = icon_size;
                 }
 
                 int visual_order[HG_MAX_WINDOW_ITEMS];
-                for(int i=0; i<hg_g_window_count; i++) visual_order[i] = i;
+                for (int i = 0; i < hg_g_window_count; i++)
+                    visual_order[i] = i;
 
                 if (hg_g_is_dragging && hg_g_drag_source_index != -1) {
                     int src = hg_g_drag_source_index;
@@ -3865,9 +4184,11 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     if (dst != -1 && dst != src) {
                         int temp = visual_order[src];
                         if (src < dst) {
-                            for(int i=src; i<dst; i++) visual_order[i] = visual_order[i+1];
+                            for (int i = src; i < dst; i++)
+                                visual_order[i] = visual_order[i + 1];
                         } else {
-                            for(int i=src; i>dst; i--) visual_order[i] = visual_order[i-1];
+                            for (int i = src; i > dst; i--)
+                                visual_order[i] = visual_order[i - 1];
                         }
                         visual_order[dst] = temp;
                     }
@@ -3878,40 +4199,57 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     int r_idx = visual_order[pos];
                     RECT rc_item, rc_btn;
                     get_toolbar_item_rect(0, pos, rc.right, rc.bottom, icon_size, &rc_item);
-                    rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
+                    rc_btn = rc_item;
+                    InflateRect(&rc_btn, SC(4), SC(4));
 
                     if (hg_g_is_dragging && hg_g_drag_source_index != -1 && r_idx == hg_g_drag_source_index) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                        if (hbr) { FrameRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        if (hbr) {
+                            FrameRect(mem_dc, &rc_btn, hbr);
+                            DeleteObject(hbr);
+                        }
                         continue;
                     }
 
                     if (pressed_type == 0 && pressed_index == r_idx && !hg_g_is_dragging) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        if (hbr) {
+                            FillRect(mem_dc, &rc_btn, hbr);
+                            DeleteObject(hbr);
+                        }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
-                    } else if ((hovered_type == 0 && hovered_index == pos && !hg_g_is_dragging) || (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx)) {
+                    } else if ((hovered_type == 0 && hovered_index == pos && !hg_g_is_dragging) ||
+                               (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx)) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        if (hbr) {
+                            FillRect(mem_dc, &rc_btn, hbr);
+                            DeleteObject(hbr);
+                        }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                         if (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx) {
                             HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
-                            if (hbr_focus) { FrameRect(mem_dc, &rc_btn, hbr_focus); DeleteObject(hbr_focus); }
+                            if (hbr_focus) {
+                                FrameRect(mem_dc, &rc_btn, hbr_focus);
+                                DeleteObject(hbr_focus);
+                            }
                         }
                     }
                     if (hg_g_window_items[r_idx].icon) {
-                        DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
+                        DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size,
+                                   icon_size, 0, NULL, DI_NORMAL);
                     }
 
                     /* Draw active status indicator (elegant pill/dot under the active task's icon) */
                     if (hg_g_window_items[r_idx].hwnd == hg_g_prev_active_hwnd) {
                         int dot_w = SC(6);
-                        if (dot_w < 4) dot_w = 4;
+                        if (dot_w < 4)
+                            dot_w = 4;
                         int dot_h = SC(3);
-                        if (dot_h < 2) dot_h = 2;
+                        if (dot_h < 2)
+                            dot_h = 2;
                         int dot_x = rc_item.left + (icon_size - dot_w) / 2;
                         int dot_y = rc_item.bottom + SC(1);
-                        RECT dot_rc = { dot_x, dot_y, dot_x + dot_w, dot_y + dot_h };
+                        RECT dot_rc = {dot_x, dot_y, dot_x + dot_w, dot_y + dot_h};
                         HBRUSH hbr_dot = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
                         if (hbr_dot) {
                             FillRect(mem_dc, &dot_rc, hbr_dot);
@@ -3925,42 +4263,63 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                 for (int i = 0; i < total_shortcuts; i++) {
                     RECT rc_item, rc_btn;
                     get_toolbar_item_rect(1, i, rc.right, rc.bottom, icon_size, &rc_item);
-                    rc_btn = rc_item; InflateRect(&rc_btn, SC(4), SC(4));
+                    rc_btn = rc_item;
+                    InflateRect(&rc_btn, SC(4), SC(4));
 
                     COLORREF opp_bg = ~bg_color & 0x00FFFFFF;
                     HBRUSH hbr_opp = CreateSolidBrush(opp_bg);
-                    if (hbr_opp) { FillRect(mem_dc, &rc_btn, hbr_opp); DeleteObject(hbr_opp); }
+                    if (hbr_opp) {
+                        FillRect(mem_dc, &rc_btn, hbr_opp);
+                        DeleteObject(hbr_opp);
+                    }
 
                     if (pressed_type == 1 && pressed_index == i) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        if (hbr) {
+                            FillRect(mem_dc, &rc_btn, hbr);
+                            DeleteObject(hbr);
+                        }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
-                    } else if ((hovered_type == 1 && hovered_index == i) || (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i)) {
+                    } else if ((hovered_type == 1 && hovered_index == i) ||
+                               (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i)) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                        if (hbr) { FillRect(mem_dc, &rc_btn, hbr); DeleteObject(hbr); }
+                        if (hbr) {
+                            FillRect(mem_dc, &rc_btn, hbr);
+                            DeleteObject(hbr);
+                        }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                         if (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i) {
                             HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
-                            if (hbr_focus) { FrameRect(mem_dc, &rc_btn, hbr_focus); DeleteObject(hbr_focus); }
+                            if (hbr_focus) {
+                                FrameRect(mem_dc, &rc_btn, hbr_focus);
+                                DeleteObject(hbr_focus);
+                            }
                         }
                     }
 
                     if (i >= HG_NUM_BASIC_ICONS) {
                         int s_idx = i - HG_NUM_BASIC_ICONS;
                         if (hg_g_shortcuts[s_idx].icon) {
-                            DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_shortcuts[s_idx].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
+                            DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_shortcuts[s_idx].icon, icon_size,
+                                       icon_size, 0, NULL, DI_NORMAL);
                         }
                     } else if (hg_g_toolbar_btn_font) {
                         SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
                         SetBkMode(mem_dc, TRANSPARENT);
                         HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
                         WCHAR btn_text[2] = {0};
-                        if (i == 0) btn_text[0] = L'R';
-                        else if (i == 1) btn_text[0] = L'M';
-                        else if (i == 2) btn_text[0] = L'X';
-                        else if (i == 3) btn_text[0] = L'D';
-                        else if (i == 4) btn_text[0] = L'S';
-                        draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE, HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
+                        if (i == 0)
+                            btn_text[0] = L'R';
+                        else if (i == 1)
+                            btn_text[0] = L'M';
+                        else if (i == 2)
+                            btn_text[0] = L'X';
+                        else if (i == 3)
+                            btn_text[0] = L'D';
+                        else if (i == 4)
+                            btn_text[0] = L'S';
+                        draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
+                                           HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
                         SelectObject(mem_dc, old_font);
                     }
                 }
@@ -3968,12 +4327,16 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                 if (hg_g_is_dragging && hg_g_drag_source_index != -1 && hg_g_drag_source_index < hg_g_window_count) {
                     int cx = hg_g_drag_current_pt.x - icon_size / 2;
                     int cy = hg_g_drag_current_pt.y - icon_size / 2;
-                    RECT drag_rc = { cx - SC(4), cy - SC(4), cx + icon_size + SC(4), cy + icon_size + SC(4) };
+                    RECT drag_rc = {cx - SC(4), cy - SC(4), cx + icon_size + SC(4), cy + icon_size + SC(4)};
                     HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                    if (hbr) { FillRect(mem_dc, &drag_rc, hbr); DeleteObject(hbr); }
+                    if (hbr) {
+                        FillRect(mem_dc, &drag_rc, hbr);
+                        DeleteObject(hbr);
+                    }
                     DrawEdge(mem_dc, &drag_rc, BDR_RAISEDINNER, BF_RECT);
                     if (hg_g_window_items[hg_g_drag_source_index].icon) {
-                        DrawIconEx(mem_dc, cx, cy, hg_g_window_items[hg_g_drag_source_index].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
+                        DrawIconEx(mem_dc, cx, cy, hg_g_window_items[hg_g_drag_source_index].icon, icon_size, icon_size,
+                                   0, NULL, DI_NORMAL);
                     }
                 }
 
@@ -3988,14 +4351,18 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
     return 0;
 }
 
-static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerState *state, LPARAM l_param) {
-    POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-    RECT rc; GetClientRect(hwnd, &rc);
+static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerState *state, LPARAM l_param)
+{
+    POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+    RECT rc;
+    GetClientRect(hwnd, &rc);
     int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16)) icon_size = SC(16);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
 
     if (state->is_resizing && GetCapture() == hwnd) {
-        POINT cur_mouse; GetCursorPos(&cur_mouse);
+        POINT cur_mouse;
+        GetCursorPos(&cur_mouse);
         int dw = cur_mouse.x - state->start_mouse.x;
         int dh = cur_mouse.y - state->start_mouse.y;
         int border = SC(HG_BORDER_THICKNESS);
@@ -4003,12 +4370,14 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         int total_tasks = hg_g_window_count;
         int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
         int total_items = total_tasks + total_shortcuts;
-        if (total_items <= 0) total_items = 1;
+        if (total_items <= 0)
+            total_items = 1;
 
         int cols = 1;
         if (ABS(dh) > ABS(dw)) {
             int new_height = (state->start_rect.bottom - state->start_rect.top) + dh;
-            if (new_height < SC(HG_MIN_WINDOW_HEIGHT)) new_height = SC(HG_MIN_WINDOW_HEIGHT);
+            if (new_height < SC(HG_MIN_WINDOW_HEIGHT))
+                new_height = SC(HG_MIN_WINDOW_HEIGHT);
 
             int edit_height = SC(20);
             if (hg_g_edit_msg_wnd && hg_g_main_font) {
@@ -4025,23 +4394,29 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
             int row_height = icon_size + SC(10);
             int available_toolbar_h = new_height - (border * 2 + edit_height);
             int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
-            if (target_rows < 1) target_rows = 1;
-            if (target_rows > total_items) target_rows = total_items;
+            if (target_rows < 1)
+                target_rows = 1;
+            if (target_rows > total_items)
+                target_rows = total_items;
             cols = (total_items + target_rows - 1) / target_rows;
         } else {
             int new_width = (state->start_rect.right - state->start_rect.left) + dw;
-            if (new_width < SC(HG_MIN_WINDOW_WIDTH)) new_width = SC(HG_MIN_WINDOW_WIDTH);
+            if (new_width < SC(HG_MIN_WINDOW_WIDTH))
+                new_width = SC(HG_MIN_WINDOW_WIDTH);
             int tb_width = new_width - (border * 2);
-            if (tb_width <= 0) tb_width = 1;
+            if (tb_width <= 0)
+                tb_width = 1;
             cols = get_items_per_row(tb_width, icon_size);
         }
-        if (cols <= 0) cols = 1;
+        if (cols <= 0)
+            cols = 1;
 
         int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
         int req_w = exact_tb_width + border * 2;
 
         int rows = (total_items + cols - 1) / cols;
-        if (rows <= 0) rows = 1;
+        if (rows <= 0)
+            rows = 1;
         int row_height = icon_size + SC(10);
         int req_toolbar_height = SC(10) + rows * row_height;
 
@@ -4069,10 +4444,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         int dx = cur_mouse.x - state->start_mouse.x;
         int dy = cur_mouse.y - state->start_mouse.y;
         if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
-            SetWindowPos(hg_g_taskbox_wnd, NULL,
-                         state->start_rect.left + dx,
-                         state->start_rect.top + dy,
-                         0, 0,
+            SetWindowPos(hg_g_taskbox_wnd, NULL, state->start_rect.left + dx, state->start_rect.top + dy, 0, 0,
                          SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         }
         return 0;
@@ -4103,12 +4475,13 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         InvalidateRect(hwnd, NULL, FALSE);
     }
 
-    TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, hwnd, 0 };
+    TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};
     TrackMouseEvent(&tme);
     return 0;
 }
 
-static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerState *state, LPARAM l_param) {
+static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerState *state, LPARAM l_param)
+{
     if (state->is_resizing) {
         state->is_resizing = FALSE;
         state->pressed_type = -1;
@@ -4117,15 +4490,18 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
         InvalidateRect(hwnd, NULL, FALSE);
 
         /* 크기 조절 완료 시 불필요한 우측 여백을 제거하고 정확하게 스냅되도록 함 */
-        RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
+        RECT rc;
+        GetWindowRect(hg_g_taskbox_wnd, &rc);
         int icon_size = ABS(hg_g_current_font_size);
-        if (icon_size < SC(16)) icon_size = SC(16);
+        if (icon_size < SC(16))
+            icon_size = SC(16);
         int border = SC(HG_BORDER_THICKNESS);
         int tb_width = (rc.right - rc.left) - border * 2;
         int cols = get_items_per_row(tb_width, icon_size);
         int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
         int new_w = exact_tb_width + border * 2;
-        SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top,
+                     SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 
         GetWindowRect(hg_g_taskbox_wnd, &rc);
         save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
@@ -4136,7 +4512,8 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
         ReleaseCapture();
         InvalidateRect(hwnd, NULL, FALSE);
 
-        RECT rc; GetWindowRect(hg_g_taskbox_wnd, &rc);
+        RECT rc;
+        GetWindowRect(hg_g_taskbox_wnd, &rc);
         save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
     } else if (hg_g_drag_source_index != -1) {
         BOOL was_dragging = hg_g_is_dragging;
@@ -4151,10 +4528,12 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
         InvalidateRect(hwnd, NULL, FALSE);
 
         if (!was_dragging) {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            RECT rc; GetClientRect(hwnd, &rc);
+            POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+            RECT rc;
+            GetClientRect(hwnd, &rc);
             int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
+            if (icon_size < SC(16))
+                icon_size = SC(16);
             int cur_type = -1, cur_index = -1;
             if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
                 if (cur_type == 0 && cur_index == final_source) {
@@ -4163,19 +4542,19 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
             }
         } else {
             if (final_target != -1 && final_target != final_source) {
-                 WindowItem temp = hg_g_window_items[final_source];
-                 if (final_source < final_target) {
-                     for (int i = final_source; i < final_target; i++) {
-                         hg_g_window_items[i] = hg_g_window_items[i + 1];
-                     }
-                 } else {
-                     for (int i = final_source; i > final_target; i--) {
-                         hg_g_window_items[i] = hg_g_window_items[i - 1];
-                     }
-                 }
-                 hg_g_window_items[final_target] = temp;
-                 hg_g_toolbar_focus_index = final_target;
-                 update_toolbar_tooltips(hwnd);
+                WindowItem temp = hg_g_window_items[final_source];
+                if (final_source < final_target) {
+                    for (int i = final_source; i < final_target; i++) {
+                        hg_g_window_items[i] = hg_g_window_items[i + 1];
+                    }
+                } else {
+                    for (int i = final_source; i > final_target; i--) {
+                        hg_g_window_items[i] = hg_g_window_items[i - 1];
+                    }
+                }
+                hg_g_window_items[final_target] = temp;
+                hg_g_toolbar_focus_index = final_target;
+                update_toolbar_tooltips(hwnd);
             }
         }
     } else if (state->pressed_type == 1 && state->pressed_index != -1) {
@@ -4194,8 +4573,11 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
     return 0;
 }
 
-static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, int cur_index, int icon_size, LPARAM l_param, POINT *screen_pt) {
-    if (!screen_pt) return FALSE;
+static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, int cur_index, int icon_size,
+                                                      LPARAM l_param, POINT *screen_pt)
+{
+    if (!screen_pt)
+        return FALSE;
 
     if (l_param == 0) {
         RECT rc;
@@ -4212,10 +4594,12 @@ static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, i
     return TRUE;
 }
 
-static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param) {
+static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
     HWND target = hg_g_window_items[cur_index].hwnd;
     HMENU h_menu = CreatePopupMenu();
-    if (!h_menu) return;
+    if (!h_menu)
+        return;
 
     /* Windows: Focus only (remove Run) */
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESTORE, L"Focus (&F)");
@@ -4258,17 +4642,50 @@ static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, 
     } else if (cmd >= HG_IDM_TASK_RESIZE_4_3_1 && cmd <= HG_IDM_TASK_RESIZE_9_16_4) {
         int cx = 0, cy = 0;
         switch (cmd) {
-            case HG_IDM_TASK_RESIZE_4_3_1: cx = 640; cy = 480; break;
-            case HG_IDM_TASK_RESIZE_4_3_2: cx = 800; cy = 600; break;
-            case HG_IDM_TASK_RESIZE_4_3_3: cx = 1280; cy = 960; break;
-            case HG_IDM_TASK_RESIZE_16_9_1: cx = 640; cy = 360; break;
-            case HG_IDM_TASK_RESIZE_16_9_2: cx = 800; cy = 480; break;
-            case HG_IDM_TASK_RESIZE_16_9_3: cx = 960; cy = 540; break;
-            case HG_IDM_TASK_RESIZE_16_9_4: cx = 1280; cy = 720; break;
-            case HG_IDM_TASK_RESIZE_9_16_1: cx = 360; cy = 640; break;
-            case HG_IDM_TASK_RESIZE_9_16_2: cx = 480; cy = 800; break;
-            case HG_IDM_TASK_RESIZE_9_16_3: cx = 540; cy = 960; break;
-            case HG_IDM_TASK_RESIZE_9_16_4: cx = 720; cy = 1280; break;
+        case HG_IDM_TASK_RESIZE_4_3_1:
+            cx = 640;
+            cy = 480;
+            break;
+        case HG_IDM_TASK_RESIZE_4_3_2:
+            cx = 800;
+            cy = 600;
+            break;
+        case HG_IDM_TASK_RESIZE_4_3_3:
+            cx = 1280;
+            cy = 960;
+            break;
+        case HG_IDM_TASK_RESIZE_16_9_1:
+            cx = 640;
+            cy = 360;
+            break;
+        case HG_IDM_TASK_RESIZE_16_9_2:
+            cx = 800;
+            cy = 480;
+            break;
+        case HG_IDM_TASK_RESIZE_16_9_3:
+            cx = 960;
+            cy = 540;
+            break;
+        case HG_IDM_TASK_RESIZE_16_9_4:
+            cx = 1280;
+            cy = 720;
+            break;
+        case HG_IDM_TASK_RESIZE_9_16_1:
+            cx = 360;
+            cy = 640;
+            break;
+        case HG_IDM_TASK_RESIZE_9_16_2:
+            cx = 480;
+            cy = 800;
+            break;
+        case HG_IDM_TASK_RESIZE_9_16_3:
+            cx = 540;
+            cy = 960;
+            break;
+        case HG_IDM_TASK_RESIZE_9_16_4:
+            cx = 720;
+            cy = 1280;
+            break;
         }
         if (cx > 0 && cy > 0) {
             SetWindowPos(target, NULL, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -4278,9 +4695,11 @@ static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, 
     DestroyMenu(h_menu);
 }
 
-static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param) {
+static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
     HMENU h_menu = CreatePopupMenu();
-    if (!h_menu) return;
+    if (!h_menu)
+        return;
 
     /* Shortcuts: Run only (remove Focus) */
     AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_RUN, L"Run (&R)");
@@ -4313,13 +4732,15 @@ static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_ind
     DestroyMenu(h_menu);
 }
 
-static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerState *state, LPARAM l_param) {
-    POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerState *state, LPARAM l_param)
+{
+    POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     RECT rc;
     GetClientRect(hwnd, &rc);
 
     int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16)) icon_size = SC(16);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
 
     int cur_type = -1, cur_index = -1;
     if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
@@ -4348,19 +4769,21 @@ static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerSt
     return 0;
 }
 
-static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param) {
+static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param)
+{
     RECT rc;
     GetClientRect(hwnd, &rc);
 
     int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16)) icon_size = SC(16);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
 
     int cur_type = -1, cur_index = -1;
     if (l_param == 0) {
         cur_type = hg_g_focus_area;
         cur_index = hg_g_toolbar_focus_index;
     } else {
-        POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+        POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index);
     }
 
@@ -4373,13 +4796,15 @@ static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param) {
     return 0;
 }
 
-static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param) {
-    POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param)
+{
+    POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     RECT rc;
     GetClientRect(hwnd, &rc);
 
     int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16)) icon_size = SC(16);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
 
     int cur_type = -1, cur_index = -1;
     if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
@@ -4393,7 +4818,8 @@ static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param) {
     return 0;
 }
 
-static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerState *state) {
+static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerState *state)
+{
     state->hovered_type = -1;
     state->hovered_index = -1;
     if (!state->is_resizing && !state->is_moving_taskbox && !hg_g_is_dragging) {
@@ -4406,7 +4832,8 @@ static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerSta
     return 0;
 }
 
-static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param) {
+static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param)
+{
     if (LOWORD(w_param) & MK_CONTROL) {
         short delta = (short)HIWORD(w_param);
         update_size(delta > 0 ? 1 : -1);
@@ -4418,7 +4845,8 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
     return 0;
 }
 
-LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
     static int hovered_type = -1, hovered_index = -1;
     static int pressed_type = -1, pressed_index = -1;
     static int cached_icon_size = 0;
@@ -4428,136 +4856,107 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     static RECT start_rect;
 
     switch (msg) {
-        case WM_NCHITTEST: {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            ScreenToClient(hwnd, &pt);
-            RECT rc; GetClientRect(hwnd, &rc);
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
-            if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, NULL, NULL)) return HTCLIENT;
-            return HTTRANSPARENT;
-        }
-        case WM_SIZE: {
-            update_toolbar_tooltips(hwnd);
-            return 0;
-        }
-        case WM_PAINT:
-            return toolbar_controller_on_paint(hwnd, hovered_type, hovered_index, pressed_type, pressed_index, &cached_icon_size);
-        case WM_KEYDOWN: {
-            SendMessage(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
-            return 0;
-        }
-        case WM_LBUTTONDOWN: {
-            ToolbarControllerState state = {
-                hovered_type,
-                hovered_index,
-                pressed_type,
-                pressed_index,
-                cached_icon_size,
-                is_resizing,
-                is_moving_taskbox,
-                start_mouse,
-                start_rect
-            };
-            LRESULT result = toolbar_controller_on_lbutton_down(hwnd, &state, l_param);
-            hovered_type = state.hovered_type;
-            hovered_index = state.hovered_index;
-            pressed_type = state.pressed_type;
-            pressed_index = state.pressed_index;
-            cached_icon_size = state.cached_icon_size;
-            is_resizing = state.is_resizing;
-            is_moving_taskbox = state.is_moving_taskbox;
-            start_mouse = state.start_mouse;
-            start_rect = state.start_rect;
-            return result;
-        }
-        case WM_MOUSEMOVE: {
-            ToolbarControllerState state = {
-                hovered_type,
-                hovered_index,
-                pressed_type,
-                pressed_index,
-                cached_icon_size,
-                is_resizing,
-                is_moving_taskbox,
-                start_mouse,
-                start_rect
-            };
-            LRESULT result = toolbar_controller_on_mouse_move(hwnd, &state, l_param);
-            hovered_type = state.hovered_type;
-            hovered_index = state.hovered_index;
-            pressed_type = state.pressed_type;
-            pressed_index = state.pressed_index;
-            cached_icon_size = state.cached_icon_size;
-            is_resizing = state.is_resizing;
-            is_moving_taskbox = state.is_moving_taskbox;
-            start_mouse = state.start_mouse;
-            start_rect = state.start_rect;
-            return result;
-        }
-        case WM_LBUTTONUP: {
-            ToolbarControllerState state = {
-                hovered_type,
-                hovered_index,
-                pressed_type,
-                pressed_index,
-                cached_icon_size,
-                is_resizing,
-                is_moving_taskbox,
-                start_mouse,
-                start_rect
-            };
-            LRESULT result = toolbar_controller_on_lbutton_up(hwnd, &state, l_param);
-            hovered_type = state.hovered_type;
-            hovered_index = state.hovered_index;
-            pressed_type = state.pressed_type;
-            pressed_index = state.pressed_index;
-            cached_icon_size = state.cached_icon_size;
-            is_resizing = state.is_resizing;
-            is_moving_taskbox = state.is_moving_taskbox;
-            start_mouse = state.start_mouse;
-            start_rect = state.start_rect;
-            return result;
-        }
-        case WM_RBUTTONUP:
-            return toolbar_controller_on_rbutton_up(hwnd, l_param);
-        case WM_MBUTTONUP:
-            return toolbar_controller_on_mbutton_up(hwnd, l_param);
-        case WM_MOUSELEAVE: {
-            ToolbarControllerState state = {
-                hovered_type,
-                hovered_index,
-                pressed_type,
-                pressed_index,
-                cached_icon_size,
-                is_resizing,
-                is_moving_taskbox,
-                start_mouse,
-                start_rect
-            };
-            LRESULT result = toolbar_controller_on_mouse_leave(hwnd, &state);
-            hovered_type = state.hovered_type;
-            hovered_index = state.hovered_index;
-            pressed_type = state.pressed_type;
-            pressed_index = state.pressed_index;
-            cached_icon_size = state.cached_icon_size;
-            is_resizing = state.is_resizing;
-            is_moving_taskbox = state.is_moving_taskbox;
-            start_mouse = state.start_mouse;
-            start_rect = state.start_rect;
-            return result;
-        }
-        case WM_MOUSEWHEEL:
-            return toolbar_controller_on_mouse_wheel(hwnd, w_param, l_param);
+    case WM_NCHITTEST: {
+        POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        ScreenToClient(hwnd, &pt);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        int icon_size = ABS(hg_g_current_font_size);
+        if (icon_size < SC(16))
+            icon_size = SC(16);
+        if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, NULL, NULL))
+            return HTCLIENT;
+        return HTTRANSPARENT;
+    }
+    case WM_SIZE: {
+        update_toolbar_tooltips(hwnd);
+        return 0;
+    }
+    case WM_PAINT:
+        return toolbar_controller_on_paint(hwnd, hovered_type, hovered_index, pressed_type, pressed_index,
+                                           &cached_icon_size);
+    case WM_KEYDOWN: {
+        SendMessage(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
+        return 0;
+    }
+    case WM_LBUTTONDOWN: {
+        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
+                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
+        LRESULT result = toolbar_controller_on_lbutton_down(hwnd, &state, l_param);
+        hovered_type = state.hovered_type;
+        hovered_index = state.hovered_index;
+        pressed_type = state.pressed_type;
+        pressed_index = state.pressed_index;
+        cached_icon_size = state.cached_icon_size;
+        is_resizing = state.is_resizing;
+        is_moving_taskbox = state.is_moving_taskbox;
+        start_mouse = state.start_mouse;
+        start_rect = state.start_rect;
+        return result;
+    }
+    case WM_MOUSEMOVE: {
+        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
+                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
+        LRESULT result = toolbar_controller_on_mouse_move(hwnd, &state, l_param);
+        hovered_type = state.hovered_type;
+        hovered_index = state.hovered_index;
+        pressed_type = state.pressed_type;
+        pressed_index = state.pressed_index;
+        cached_icon_size = state.cached_icon_size;
+        is_resizing = state.is_resizing;
+        is_moving_taskbox = state.is_moving_taskbox;
+        start_mouse = state.start_mouse;
+        start_rect = state.start_rect;
+        return result;
+    }
+    case WM_LBUTTONUP: {
+        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
+                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
+        LRESULT result = toolbar_controller_on_lbutton_up(hwnd, &state, l_param);
+        hovered_type = state.hovered_type;
+        hovered_index = state.hovered_index;
+        pressed_type = state.pressed_type;
+        pressed_index = state.pressed_index;
+        cached_icon_size = state.cached_icon_size;
+        is_resizing = state.is_resizing;
+        is_moving_taskbox = state.is_moving_taskbox;
+        start_mouse = state.start_mouse;
+        start_rect = state.start_rect;
+        return result;
+    }
+    case WM_RBUTTONUP:
+        return toolbar_controller_on_rbutton_up(hwnd, l_param);
+    case WM_MBUTTONUP:
+        return toolbar_controller_on_mbutton_up(hwnd, l_param);
+    case WM_MOUSELEAVE: {
+        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
+                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
+        LRESULT result = toolbar_controller_on_mouse_leave(hwnd, &state);
+        hovered_type = state.hovered_type;
+        hovered_index = state.hovered_index;
+        pressed_type = state.pressed_type;
+        pressed_index = state.pressed_index;
+        cached_icon_size = state.cached_icon_size;
+        is_resizing = state.is_resizing;
+        is_moving_taskbox = state.is_moving_taskbox;
+        start_mouse = state.start_mouse;
+        start_rect = state.start_rect;
+        return result;
+    }
+    case WM_MOUSEWHEEL:
+        return toolbar_controller_on_mouse_wheel(hwnd, w_param, l_param);
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-BOOL get_explorer_path(HWND target_hwnd, WCHAR* out_path, int max_len) {
-    if (!out_path || max_len <= 0) return FALSE;
+BOOL get_explorer_path(HWND target_hwnd, WCHAR *out_path, int max_len)
+{
+    if (!out_path || max_len <= 0)
+        return FALSE;
     out_path[0] = L'\0';
     IShellWindows *psw = NULL;
-    if (FAILED(CoCreateInstance(&CLSID_ShellWindows, NULL, CLSCTX_ALL, &IID_IShellWindows, (void**)&psw))) return FALSE;
+    if (FAILED(CoCreateInstance(&CLSID_ShellWindows, NULL, CLSCTX_ALL, &IID_IShellWindows, (void **)&psw)))
+        return FALSE;
 
     long count = 0;
     if (FAILED(psw->lpVtbl->get_Count(psw, &count))) {
@@ -4574,7 +4973,7 @@ BOOL get_explorer_path(HWND target_hwnd, WCHAR* out_path, int max_len) {
         IDispatch *pdisp = NULL;
         if (SUCCEEDED(psw->lpVtbl->Item(psw, v, &pdisp)) && pdisp) {
             IWebBrowser2 *pwb = NULL;
-            if (SUCCEEDED(pdisp->lpVtbl->QueryInterface(pdisp, &IID_IWebBrowser2, (void**)&pwb)) && pwb) {
+            if (SUCCEEDED(pdisp->lpVtbl->QueryInterface(pdisp, &IID_IWebBrowser2, (void **)&pwb)) && pwb) {
                 /* Try reading hw as long or INT_PTR depending on headers. SHANDLE_PTR is standard */
                 LONG_PTR hw = 0;
                 if (SUCCEEDED(pwb->lpVtbl->get_HWND(pwb, &hw)) && (HWND)hw == target_hwnd) {
@@ -4601,20 +5000,23 @@ BOOL get_explorer_path(HWND target_hwnd, WCHAR* out_path, int max_len) {
             }
             pdisp->lpVtbl->Release(pdisp);
         }
-        if (found) break;
+        if (found)
+            break;
     }
     psw->lpVtbl->Release(psw);
     return found;
 }
 
 /* 증분 업데이트: 순서 고정 및 스마트 리프레시 */
-void refresh_window_list(BOOL force) {
+void refresh_window_list(BOOL force)
+{
     int new_count = 0;
     ZeroMemory(hg_g_new_items, sizeof(hg_g_new_items));
 
     /* 1단계: 기존 창 유효성 체크 및 아이콘 재사용 */
     for (int i = 0; i < hg_g_window_count; i++) {
-        if (new_count >= HG_MAX_WINDOW_ITEMS) break;
+        if (new_count >= HG_MAX_WINDOW_ITEMS)
+            break;
 
         if (IsWindow(hg_g_window_items[i].hwnd) && is_alt_tab_window(hg_g_window_items[i].hwnd)) {
             hg_g_new_items[new_count] = (WindowItem){0};
@@ -4625,7 +5027,8 @@ void refresh_window_list(BOOL force) {
                 }
                 hg_g_window_items[i].icon = NULL;
                 hg_g_window_items[i].own_icon = FALSE;
-                hg_g_new_items[new_count].icon = get_window_icon(hg_g_window_items[i].hwnd, ABS(hg_g_current_font_size), &hg_g_new_items[new_count].own_icon);
+                hg_g_new_items[new_count].icon = get_window_icon(hg_g_window_items[i].hwnd, ABS(hg_g_current_font_size),
+                                                                 &hg_g_new_items[new_count].own_icon);
             } else {
                 hg_g_new_items[new_count].icon = hg_g_window_items[i].icon;
                 hg_g_new_items[new_count].own_icon = hg_g_window_items[i].own_icon;
@@ -4671,24 +5074,27 @@ void refresh_window_list(BOOL force) {
             }
 
             if (!exists) {
-                if (new_count >= HG_MAX_WINDOW_ITEMS) break;
+                if (new_count >= HG_MAX_WINDOW_ITEMS)
+                    break;
 
                 hg_g_new_items[new_count] = (WindowItem){0};
                 hg_g_new_items[new_count].hwnd = hwnd;
-                hg_g_new_items[new_count].icon = get_window_icon(hwnd, ABS(hg_g_current_font_size), &hg_g_new_items[new_count].own_icon);
+                hg_g_new_items[new_count].icon =
+                    get_window_icon(hwnd, ABS(hg_g_current_font_size), &hg_g_new_items[new_count].own_icon);
                 hg_g_new_items[new_count].exists = TRUE;
-                get_process_name_by_hwnd(hwnd, hg_g_new_items[new_count].process_name, HG_MAX_STR, &hg_g_new_items[new_count].process_id);
+                get_process_name_by_hwnd(hwnd, hg_g_new_items[new_count].process_name, HG_MAX_STR,
+                                         &hg_g_new_items[new_count].process_id);
 
                 if (GetWindowTextW(hwnd, hg_g_new_items[new_count].title, HG_MAX_STR) == 0) {
                     hg_g_new_items[new_count].title[0] = L'\0';
                 }
 
-                    if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
-                        WCHAR path[HG_MAX_PATH];
-                        if (get_explorer_path(hwnd, path, HG_MAX_PATH)) {
-                            StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
-                        }
+                if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
+                    WCHAR path[HG_MAX_PATH];
+                    if (get_explorer_path(hwnd, path, HG_MAX_PATH)) {
+                        StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
                     }
+                }
 
                 new_count++;
             }
@@ -4714,80 +5120,89 @@ void refresh_window_list(BOOL force) {
 
     if (changed && hg_g_taskbox_wnd) {
         update_layout(hg_g_taskbox_wnd);
-        if (hg_g_toolbar_wnd) InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+        if (hg_g_toolbar_wnd)
+            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
     }
 }
 
 /* taskbar_proc removed */
 
-LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass, DWORD_PTR dw_ref_data) {
+LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass,
+                                    DWORD_PTR dw_ref_data)
+{
     switch (msg) {
-        case WM_SETFOCUS: {
-            disable_window_ime(hwnd);
-            break;
-        }
-        case WM_IME_SETCONTEXT:
-        case WM_INPUTLANGCHANGE:
-        case WM_INPUTLANGCHANGEREQUEST:
-            if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
-                return 0;
-            }
-            break;
-        case WM_LBUTTONDOWN: {
-            ReleaseCapture();
-            SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
+    case WM_SETFOCUS: {
+        disable_window_ime(hwnd);
+        break;
+    }
+    case WM_IME_SETCONTEXT:
+    case WM_INPUTLANGCHANGE:
+    case WM_INPUTLANGCHANGEREQUEST:
+        if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
             return 0;
         }
-        case WM_KEYDOWN: {
-            if (w_param == VK_F2) {
-                if (hg_g_floater_wnd) PostMessageW(hg_g_floater_wnd, WM_RBUTTONUP, 0, 0);
-                return 0;
-            }
-            break;
-        }
-        case WM_MOUSEWHEEL: {
-            if (LOWORD(w_param) & MK_CONTROL) {
-                short delta = (short)HIWORD(w_param);
-                update_edit_font_size(delta > 0 ? 1 : -1);
-                return 0;
-            } else if (GetKeyState(VK_MENU) < 0) {
-                short delta = (short)HIWORD(w_param);
-                update_taskbox_alpha(delta > 0 ? 1 : -1);
-                return 0;
-            }
-            break;
-        }
-        case WM_CONTEXTMENU: {
-            HMENU h_menu = CreatePopupMenu();
-            if (!h_menu) return 0;
-            AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_COPYALL, L"Copy All (&A)");
-
-            POINT pt;
-            if (l_param == (LPARAM)-1) { /* Keyboard shortcut */
-                RECT rc; GetWindowRect(hwnd, &rc);
-                pt.x = rc.left + 5; pt.y = rc.top + 5;
-            } else {
-                pt.x = GET_X_LPARAM(l_param);
-                pt.y = GET_Y_LPARAM(l_param);
-            }
-
-            int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
-
-            if (cmd == HG_IDM_EDIT_COPYALL) {
-                SendMessageW(hwnd, EM_SETSEL, 0, (LPARAM)-1);
-                SendMessageW(hwnd, WM_COPY, 0, 0);
-                SendMessageW(hwnd, EM_SETSEL, (WPARAM)-1, 0);
-            }
-
-            DestroyMenu(h_menu);
+        break;
+    case WM_LBUTTONDOWN: {
+        ReleaseCapture();
+        SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
+        return 0;
+    }
+    case WM_KEYDOWN: {
+        if (w_param == VK_F2) {
+            if (hg_g_floater_wnd)
+                PostMessageW(hg_g_floater_wnd, WM_RBUTTONUP, 0, 0);
             return 0;
         }
+        break;
+    }
+    case WM_MOUSEWHEEL: {
+        if (LOWORD(w_param) & MK_CONTROL) {
+            short delta = (short)HIWORD(w_param);
+            update_edit_font_size(delta > 0 ? 1 : -1);
+            return 0;
+        } else if (GetKeyState(VK_MENU) < 0) {
+            short delta = (short)HIWORD(w_param);
+            update_taskbox_alpha(delta > 0 ? 1 : -1);
+            return 0;
+        }
+        break;
+    }
+    case WM_CONTEXTMENU: {
+        HMENU h_menu = CreatePopupMenu();
+        if (!h_menu)
+            return 0;
+        AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_COPYALL, L"Copy All (&A)");
+
+        POINT pt;
+        if (l_param == (LPARAM)-1) { /* Keyboard shortcut */
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            pt.x = rc.left + 5;
+            pt.y = rc.top + 5;
+        } else {
+            pt.x = GET_X_LPARAM(l_param);
+            pt.y = GET_Y_LPARAM(l_param);
+        }
+
+        int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
+
+        if (cmd == HG_IDM_EDIT_COPYALL) {
+            SendMessageW(hwnd, EM_SETSEL, 0, (LPARAM)-1);
+            SendMessageW(hwnd, WM_COPY, 0, 0);
+            SendMessageW(hwnd, EM_SETSEL, (WPARAM)-1, 0);
+        }
+
+        DestroyMenu(h_menu);
+        return 0;
+    }
     }
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
-void update_layout(HWND hwnd) {
-    if (!hwnd || !hg_g_edit_msg_wnd || !hg_g_toolbar_wnd || !hg_g_main_font) return;
+void update_layout(HWND hwnd)
+{
+    if (!hwnd || !hg_g_edit_msg_wnd || !hg_g_toolbar_wnd || !hg_g_main_font)
+        return;
     RECT rc;
     GetClientRect(hwnd, &rc);
     int width = rc.right;
@@ -4795,7 +5210,8 @@ void update_layout(HWND hwnd) {
 
     /* Get edit control height */
     HDC hdc = GetDC(hg_g_edit_msg_wnd);
-    if (!hdc) return;
+    if (!hdc)
+        return;
     HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
     TEXTMETRIC tm = {0};
     GetTextMetrics(hdc, &tm);
@@ -4804,17 +5220,21 @@ void update_layout(HWND hwnd) {
     ReleaseDC(hg_g_edit_msg_wnd, hdc);
 
     int tb_width = width - (border * 2);
-    if (tb_width <= 0) tb_width = 1;
+    if (tb_width <= 0)
+        tb_width = 1;
 
     /* Calculate necessary height for the taskbox based on columns and rows */
     int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16)) icon_size = SC(16);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
     int cols = get_items_per_row(tb_width, icon_size);
-    if (cols <= 0) cols = 1;
+    if (cols <= 0)
+        cols = 1;
     int total_tasks = hg_g_window_count;
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
     int rows = (total_tasks + total_shortcuts + cols - 1) / cols;
-    if (rows <= 0) rows = 1;
+    if (rows <= 0)
+        rows = 1;
 
     int row_height = icon_size + SC(10);
 
@@ -4832,7 +5252,8 @@ void update_layout(HWND hwnd) {
     /* If the current window size is different from required, resize it */
     if (!hg_g_in_sizemove) {
         if (current_height != required_total_height || current_width != required_total_width) {
-            SetWindowPos(hwnd, NULL, 0, 0, required_total_width, required_total_height, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            SetWindowPos(hwnd, NULL, 0, 0, required_total_width, required_total_height,
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             return; /* SetWindowPos will trigger WM_SIZE, calling update_layout again */
         }
     }
@@ -4842,30 +5263,34 @@ void update_layout(HWND hwnd) {
     update_toolbar_tooltips(hg_g_toolbar_wnd);
 }
 
-static LRESULT CALLBACK monitor_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR uid, DWORD_PTR dw_ref) {
+static LRESULT CALLBACK monitor_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR uid,
+                                                   DWORD_PTR dw_ref)
+{
     switch (msg) {
-        case WM_SETFOCUS:
-            disable_window_ime(hwnd);
-            break;
-        case WM_IME_SETCONTEXT:
-        case WM_INPUTLANGCHANGE:
-        case WM_INPUTLANGCHANGEREQUEST:
-            if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
-                return 0;
-            }
-            break;
-        case WM_LBUTTONDOWN:
-            SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
+    case WM_SETFOCUS:
+        disable_window_ime(hwnd);
+        break;
+    case WM_IME_SETCONTEXT:
+    case WM_INPUTLANGCHANGE:
+    case WM_INPUTLANGCHANGEREQUEST:
+        if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
             return 0;
-        case WM_RBUTTONDOWN:
-            PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
-            return 0;
+        }
+        break;
+    case WM_LBUTTONDOWN:
+        SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
+        return 0;
+    case WM_RBUTTONDOWN:
+        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+        return 0;
     }
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
-static BOOL monitor_pt_to_screen_pt(HWND hwnd, int monitor_idx, POINT client_pt, POINT* out_screen_pt, BOOL allow_out) {
-    if (monitor_idx < 0 || monitor_idx >= hg_g_monitor_count) return FALSE;
+static BOOL monitor_pt_to_screen_pt(HWND hwnd, int monitor_idx, POINT client_pt, POINT *out_screen_pt, BOOL allow_out)
+{
+    if (monitor_idx < 0 || monitor_idx >= hg_g_monitor_count)
+        return FALSE;
     RECT rc;
     GetClientRect(hwnd, &rc);
     int border = SC(HG_BORDER_THICKNESS);
@@ -4881,14 +5306,15 @@ static BOOL monitor_pt_to_screen_pt(HWND hwnd, int monitor_idx, POINT client_pt,
     int preview_right = rc.right - border;
     int preview_bottom = rc.bottom - border;
 
-    if (!allow_out && (client_pt.x < preview_left || client_pt.x > preview_right ||
-        client_pt.y < preview_top || client_pt.y > preview_bottom)) {
+    if (!allow_out && (client_pt.x < preview_left || client_pt.x > preview_right || client_pt.y < preview_top ||
+                       client_pt.y > preview_bottom)) {
         return FALSE;
     }
 
     int pw = preview_right - preview_left;
     int ph = preview_bottom - preview_top;
-    if (pw <= 0 || ph <= 0) return FALSE;
+    if (pw <= 0 || ph <= 0)
+        return FALSE;
 
     RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
     int mw = m_rc.right - m_rc.left;
@@ -4902,8 +5328,10 @@ static BOOL monitor_pt_to_screen_pt(HWND hwnd, int monitor_idx, POINT client_pt,
     return TRUE;
 }
 
-static BOOL screen_pt_to_monitor_pt(HWND hwnd, int monitor_idx, POINT screen_pt, POINT* out_client_pt) {
-    if (monitor_idx < 0 || monitor_idx >= hg_g_monitor_count) return FALSE;
+static BOOL screen_pt_to_monitor_pt(HWND hwnd, int monitor_idx, POINT screen_pt, POINT *out_client_pt)
+{
+    if (monitor_idx < 0 || monitor_idx >= hg_g_monitor_count)
+        return FALSE;
     RECT rc;
     GetClientRect(hwnd, &rc);
     int border = SC(HG_BORDER_THICKNESS);
@@ -4921,24 +5349,28 @@ static BOOL screen_pt_to_monitor_pt(HWND hwnd, int monitor_idx, POINT screen_pt,
 
     int pw = preview_right - preview_left;
     int ph = preview_bottom - preview_top;
-    if (pw <= 0 || ph <= 0) return FALSE;
+    if (pw <= 0 || ph <= 0)
+        return FALSE;
 
     RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
     int mw = m_rc.right - m_rc.left;
     int mh = m_rc.bottom - m_rc.top;
-    if (mw <= 0 || mh <= 0) return FALSE;
+    if (mw <= 0 || mh <= 0)
+        return FALSE;
 
     double rx = (double)(screen_pt.x - m_rc.left) / mw;
     double ry = (double)(screen_pt.y - m_rc.top) / mh;
 
-    if (rx < 0.0 || rx > 1.0 || ry < 0.0 || ry > 1.0) return FALSE;
+    if (rx < 0.0 || rx > 1.0 || ry < 0.0 || ry > 1.0)
+        return FALSE;
 
     out_client_pt->x = preview_left + (int)(rx * pw);
     out_client_pt->y = preview_top + (int)(ry * ph);
     return TRUE;
 }
 
-LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
     int monitor_idx = -1;
     for (int i = 0; i < hg_g_monitor_count; ++i) {
         if (hg_g_monitors[i].hwnd == hwnd) {
@@ -4948,680 +5380,756 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
     }
 
     switch (msg) {
-        case WM_MOUSEACTIVATE:
-            return MA_NOACTIVATE;
-        case WM_CREATE: {
-            LPCREATESTRUCTW pcs = (LPCREATESTRUCTW)l_param;
-            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-            if (!hg_g_main_font) {
-                hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                                   DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                                   CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
-                if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-            }
-            HWND edit_wnd = CreateWindowExW(0, L"EDIT", pcs->lpszName,
-                WS_CHILD | WS_VISIBLE | ES_CENTER | ES_AUTOHSCROLL | ES_READONLY,
-                0, 0, 0, 0, hwnd, (HMENU)104, GetModuleHandle(NULL), NULL);
-            if (edit_wnd) {
-                SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-                SetWindowSubclass(edit_wnd, monitor_edit_subclass_proc, 1, 0);
-                disable_window_ime(edit_wnd);
-            }
-            SetTimer(hwnd, 2, 100, NULL);
-            return 0;
+    case WM_MOUSEACTIVATE:
+        return MA_NOACTIVATE;
+    case WM_CREATE: {
+        LPCREATESTRUCTW pcs = (LPCREATESTRUCTW)l_param;
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        if (!hg_g_main_font) {
+            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                                         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                         DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+            if (!hg_g_main_font)
+                hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
         }
-        case WM_ERASEBKGND:
-            return 1;
-        case WM_TIMER: {
-            if (w_param == 2) {
-                if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
-                    InvalidateRect(hwnd, NULL, FALSE);
-                }
-            } else if (w_param == 3) {
-                KillTimer(hwnd, 3);
-                POINT screen_pt;
-                screen_pt.x = (int)(INT_PTR)GetPropW(hwnd, L"drop_x");
-                screen_pt.y = (int)(INT_PTR)GetPropW(hwnd, L"drop_y");
-
-                POINT client_pt;
-                if (screen_pt_to_monitor_pt(hwnd, monitor_idx, screen_pt, &client_pt)) {
-                    POINT tb_screen_pt = client_pt;
-                    ClientToScreen(hwnd, &tb_screen_pt);
-                    SetCursorPos(tb_screen_pt.x, tb_screen_pt.y);
-                }
-                RemovePropW(hwnd, L"drop_x");
-                RemovePropW(hwnd, L"drop_y");
-            }
-            return 0;
+        HWND edit_wnd =
+            CreateWindowExW(0, L"EDIT", pcs->lpszName, WS_CHILD | WS_VISIBLE | ES_CENTER | ES_AUTOHSCROLL | ES_READONLY,
+                            0, 0, 0, 0, hwnd, (HMENU)104, GetModuleHandle(NULL), NULL);
+        if (edit_wnd) {
+            SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+            SetWindowSubclass(edit_wnd, monitor_edit_subclass_proc, 1, 0);
+            disable_window_ime(edit_wnd);
         }
-        case WM_SIZE: {
-            HWND edit_wnd = GetDlgItem(hwnd, 104);
-            if (!hg_g_main_font) {
-                hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                                   DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                                   CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
-                if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+        SetTimer(hwnd, 2, 100, NULL);
+        return 0;
+    }
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_TIMER: {
+        if (w_param == 2) {
+            if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
+                InvalidateRect(hwnd, NULL, FALSE);
             }
-            if (edit_wnd && hg_g_main_font) {
-                int border = SC(HG_BORDER_THICKNESS);
-                int w = (int)LOWORD(l_param) - border * 2;
+        } else if (w_param == 3) {
+            KillTimer(hwnd, 3);
+            POINT screen_pt;
+            screen_pt.x = (int)(INT_PTR)GetPropW(hwnd, L"drop_x");
+            screen_pt.y = (int)(INT_PTR)GetPropW(hwnd, L"drop_y");
 
-                HDC hdc = GetDC(edit_wnd);
-                HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                TEXTMETRIC tm = {0};
-                GetTextMetrics(hdc, &tm);
-                int edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
-                SelectObject(hdc, old_font);
-                ReleaseDC(edit_wnd, hdc);
-
-                MoveWindow(edit_wnd, border, border, w, edit_height, TRUE);
+            POINT client_pt;
+            if (screen_pt_to_monitor_pt(hwnd, monitor_idx, screen_pt, &client_pt)) {
+                POINT tb_screen_pt = client_pt;
+                ClientToScreen(hwnd, &tb_screen_pt);
+                SetCursorPos(tb_screen_pt.x, tb_screen_pt.y);
             }
-            InvalidateRect(hwnd, NULL, FALSE);
-            return 0;
+            RemovePropW(hwnd, L"drop_x");
+            RemovePropW(hwnd, L"drop_y");
         }
-        case WM_CTLCOLOREDIT:
-        case WM_CTLCOLORSTATIC: {
-            HDC hdc = (HDC)w_param;
-            SetTextColor(hdc, hg_g_color_scheme_selected.text);
-            SetBkMode(hdc, OPAQUE);
-            SetBkColor(hdc, hg_g_color_scheme_selected.bg);
-            if (!hg_g_edit_bg_brush) hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
-            return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+        return 0;
+    }
+    case WM_SIZE: {
+        HWND edit_wnd = GetDlgItem(hwnd, 104);
+        if (!hg_g_main_font) {
+            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                                         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                         DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+            if (!hg_g_main_font)
+                hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
         }
-        case WM_PAINT: {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            RECT rc;
-            GetClientRect(hwnd, &rc);
+        if (edit_wnd && hg_g_main_font) {
+            int border = SC(HG_BORDER_THICKNESS);
+            int w = (int)LOWORD(l_param) - border * 2;
 
-            if (rc.right > 0 && rc.bottom > 0) {
-                HDC mem_dc = CreateCompatibleDC(hdc);
-                HBITMAP mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-                HBITMAP old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
-                if (!old_bm) {
-                    DeleteObject(mem_bm);
-                    DeleteDC(mem_dc);
-                    EndPaint(hwnd, &ps);
-                    return 0;
-                }
+            HDC hdc = GetDC(edit_wnd);
+            HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
+            TEXTMETRIC tm = {0};
+            GetTextMetrics(hdc, &tm);
+            int edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
+            SelectObject(hdc, old_font);
+            ReleaseDC(edit_wnd, hdc);
 
-                int border = SC(HG_BORDER_THICKNESS);
-                int edit_height = 0;
-                HWND edit_wnd = GetDlgItem(hwnd, 104);
-                if (edit_wnd) {
-                    RECT erc;
-                    GetWindowRect(edit_wnd, &erc);
-                    edit_height = erc.bottom - erc.top;
-                }
+            MoveWindow(edit_wnd, border, border, w, edit_height, TRUE);
+        }
+        InvalidateRect(hwnd, NULL, FALSE);
+        return 0;
+    }
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORSTATIC: {
+        HDC hdc = (HDC)w_param;
+        SetTextColor(hdc, hg_g_color_scheme_selected.text);
+        SetBkMode(hdc, OPAQUE);
+        SetBkColor(hdc, hg_g_color_scheme_selected.bg);
+        if (!hg_g_edit_bg_brush)
+            hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
+        return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+    }
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
 
-                if (monitor_idx >= 0 && hg_g_monitors[monitor_idx].active) {
-                    RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
-                    int mw = m_rc.right - m_rc.left;
-                    int mh = m_rc.bottom - m_rc.top;
-
-                    HDC hdc_screen = GetDC(NULL);
-                    SetStretchBltMode(mem_dc, HALFTONE);
-                    /* Draw preview area below the edit box + border */
-                    int preview_top = border + edit_height;
-                    StretchBlt(mem_dc, border, preview_top, rc.right - 2 * border, rc.bottom - preview_top - border, hdc_screen, m_rc.left, m_rc.top, mw, mh, SRCCOPY);
-                    ReleaseDC(NULL, hdc_screen);
-
-                    /* Draw cursor if needed */
-                    POINT cursor_pt;
-                    if (GetCursorPos(&cursor_pt)) {
-                        POINT client_pt;
-                        if (screen_pt_to_monitor_pt(hwnd, monitor_idx, cursor_pt, &client_pt)) {
-                            COLORREF fill_color = RGB(255, 0, 0); /* red by default */
-                            if (GetAsyncKeyState(VK_MBUTTON) < 0) fill_color = RGB(255, 255, 0); /* yellow */
-                            else if (GetAsyncKeyState(VK_RBUTTON) < 0) fill_color = RGB(0, 0, 255); /* blue */
-                            else if (GetAsyncKeyState(VK_LBUTTON) < 0) fill_color = RGB(0, 255, 0); /* green */
-
-                            int len = SC(8);
-                            /* Draw black crosshair background for contrast */
-                            HPEN hPenBg = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
-                            HPEN oldPen = (HPEN)SelectObject(mem_dc, hPenBg);
-                            MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
-                            LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
-                            MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
-                            LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
-
-                            /* Draw colored crosshair core */
-                            HPEN hPenFg = CreatePen(PS_SOLID, 1, fill_color);
-                            SelectObject(mem_dc, hPenFg);
-                            MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
-                            LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
-                            MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
-                            LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
-
-                            SelectObject(mem_dc, oldPen);
-                            DeleteObject(hPenBg);
-                            DeleteObject(hPenFg);
-                        }
-                    }
-                }
-
-                /* Draw border like taskbox/floater */
-                HWND fg = GetForegroundWindow();
-                BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
-                COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
-                HBRUSH border_brush = CreateSolidBrush(border_color);
-                if (border_brush) {
-                    RECT rc_top = {0, 0, rc.right, border};
-                    RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
-                    RECT rc_left = {0, border, border, rc.bottom - border};
-                    RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
-                    RECT rc_edit_bg = {0, border, rc.right, border + edit_height};
-
-                    FillRect(mem_dc, &rc_top, border_brush);
-                    FillRect(mem_dc, &rc_bottom, border_brush);
-                    FillRect(mem_dc, &rc_left, border_brush);
-                    FillRect(mem_dc, &rc_right, border_brush);
-                    FillRect(mem_dc, &rc_edit_bg, border_brush);
-                    DeleteObject(border_brush);
-                }
-
-                BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
-
-                SelectObject(mem_dc, old_bm);
+        if (rc.right > 0 && rc.bottom > 0) {
+            HDC mem_dc = CreateCompatibleDC(hdc);
+            HBITMAP mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            HBITMAP old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
+            if (!old_bm) {
                 DeleteObject(mem_bm);
                 DeleteDC(mem_dc);
-            }
-            EndPaint(hwnd, &ps);
-            return 0;
-        }
-        case WM_LBUTTONDOWN:
-        case WM_RBUTTONDOWN:
-        case WM_MBUTTONDOWN: {
-            HMONITOR my_phys_mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-            if (monitor_idx >= 0 && my_phys_mon == hg_g_monitors[monitor_idx].hMonitor) {
+                EndPaint(hwnd, &ps);
                 return 0;
             }
 
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            POINT screen_pt;
-            if (monitor_pt_to_screen_pt(hwnd, monitor_idx, pt, &screen_pt, FALSE)) {
-                INPUT inputs[2] = {0};
-
-                inputs[0].type = INPUT_MOUSE;
-                if (msg == WM_LBUTTONDOWN) inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-                else if (msg == WM_RBUTTONDOWN) inputs[0].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-                else if (msg == WM_MBUTTONDOWN) inputs[0].mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
-
-                SetCursorPos(screen_pt.x, screen_pt.y);
-
-                inputs[1].type = INPUT_MOUSE;
-                if (msg == WM_LBUTTONDOWN) inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-                else if (msg == WM_RBUTTONDOWN) inputs[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-                else if (msg == WM_MBUTTONDOWN) inputs[1].mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
-
-                SendInput(2, inputs, sizeof(INPUT));
-            }
-            return 0;
-        }
-        case WM_LBUTTONUP:
-        case WM_RBUTTONUP:
-        case WM_MBUTTONUP: {
-            HMONITOR my_phys_mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-            if (monitor_idx >= 0 && my_phys_mon == hg_g_monitors[monitor_idx].hMonitor) {
-                return 0;
+            int border = SC(HG_BORDER_THICKNESS);
+            int edit_height = 0;
+            HWND edit_wnd = GetDlgItem(hwnd, 104);
+            if (edit_wnd) {
+                RECT erc;
+                GetWindowRect(edit_wnd, &erc);
+                edit_height = erc.bottom - erc.top;
             }
 
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            POINT screen_pt;
-            if (monitor_pt_to_screen_pt(hwnd, monitor_idx, pt, &screen_pt, FALSE)) {
-                INPUT inputs[1] = {0};
-                inputs[0].type = INPUT_MOUSE;
-                if (msg == WM_LBUTTONUP) inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-                else if (msg == WM_RBUTTONUP) inputs[0].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-                else if (msg == WM_MBUTTONUP) inputs[0].mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
-
-                SetCursorPos(screen_pt.x, screen_pt.y);
-                SendInput(1, inputs, sizeof(INPUT));
-            }
-            return 0;
-        }
-        case WM_CLOSE: {
-            if (monitor_idx >= 0) {
-                close_monitor_window(monitor_idx);
-            } else {
-                DestroyWindow(hwnd);
-            }
-            return 0;
-        }
-        case WM_NCHITTEST: {
-            POINT pt;
-            pt.x = GET_X_LPARAM(l_param);
-            pt.y = GET_Y_LPARAM(l_param);
-            RECT rc;
-            GetWindowRect(hwnd, &rc);
-            int border = SC(8);
-            if (pt.x < rc.left + border && pt.y < rc.top + border) return HTTOPLEFT;
-            if (pt.x >= rc.right - border && pt.y < rc.top + border) return HTTOPRIGHT;
-            if (pt.x < rc.left + border && pt.y >= rc.bottom - border) return HTBOTTOMLEFT;
-            if (pt.x >= rc.right - border && pt.y >= rc.bottom - border) return HTBOTTOMRIGHT;
-            if (pt.x < rc.left + border) return HTLEFT;
-            if (pt.x >= rc.right - border) return HTRIGHT;
-            if (pt.y < rc.top + border) return HTTOP;
-            if (pt.y >= rc.bottom - border) return HTBOTTOM;
-
-            return HTCLIENT;
-        }
-        case WM_SIZING: {
-            /* Force Aspect Ratio */
-            if (monitor_idx >= 0) {
-                RECT *prc = (RECT*)l_param;
+            if (monitor_idx >= 0 && hg_g_monitors[monitor_idx].active) {
                 RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
                 int mw = m_rc.right - m_rc.left;
                 int mh = m_rc.bottom - m_rc.top;
-                if (mh > 0 && mw > 0) {
-                    int w = prc->right - prc->left;
-                    int h = prc->bottom - prc->top;
 
-                    /* Depending on sizing edge, adjust width or height */
-                    switch (w_param) {
-                        case WMSZ_LEFT:
-                        case WMSZ_RIGHT:
-                            prc->bottom = prc->top + (w * mh) / mw;
-                            break;
-                        case WMSZ_TOP:
-                        case WMSZ_BOTTOM:
-                            prc->right = prc->left + (h * mw) / mh;
-                            break;
-                        case WMSZ_TOPLEFT:
-                        case WMSZ_TOPRIGHT:
-                        case WMSZ_BOTTOMLEFT:
-                        case WMSZ_BOTTOMRIGHT:
-                            /* just adjust bottom to keep ratio with width */
-                            prc->bottom = prc->top + (w * mh) / mw;
-                            break;
+                HDC hdc_screen = GetDC(NULL);
+                SetStretchBltMode(mem_dc, HALFTONE);
+                /* Draw preview area below the edit box + border */
+                int preview_top = border + edit_height;
+                StretchBlt(mem_dc, border, preview_top, rc.right - 2 * border, rc.bottom - preview_top - border,
+                           hdc_screen, m_rc.left, m_rc.top, mw, mh, SRCCOPY);
+                ReleaseDC(NULL, hdc_screen);
+
+                /* Draw cursor if needed */
+                POINT cursor_pt;
+                if (GetCursorPos(&cursor_pt)) {
+                    POINT client_pt;
+                    if (screen_pt_to_monitor_pt(hwnd, monitor_idx, cursor_pt, &client_pt)) {
+                        COLORREF fill_color = RGB(255, 0, 0); /* red by default */
+                        if (GetAsyncKeyState(VK_MBUTTON) < 0)
+                            fill_color = RGB(255, 255, 0); /* yellow */
+                        else if (GetAsyncKeyState(VK_RBUTTON) < 0)
+                            fill_color = RGB(0, 0, 255); /* blue */
+                        else if (GetAsyncKeyState(VK_LBUTTON) < 0)
+                            fill_color = RGB(0, 255, 0); /* green */
+
+                        int len = SC(8);
+                        /* Draw black crosshair background for contrast */
+                        HPEN hPenBg = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
+                        HPEN oldPen = (HPEN)SelectObject(mem_dc, hPenBg);
+                        MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
+                        LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
+                        MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
+                        LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
+
+                        /* Draw colored crosshair core */
+                        HPEN hPenFg = CreatePen(PS_SOLID, 1, fill_color);
+                        SelectObject(mem_dc, hPenFg);
+                        MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
+                        LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
+                        MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
+                        LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
+
+                        SelectObject(mem_dc, oldPen);
+                        DeleteObject(hPenBg);
+                        DeleteObject(hPenFg);
                     }
                 }
-                return TRUE;
-            }
-            break;
-        }
-        case WM_EXITSIZEMOVE: {
-            if (monitor_idx >= 0) {
-                RECT rc;
-                GetWindowRect(hwnd, &rc);
-                WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
-                StringCchPrintfW(key_x, 64, L"monitor%d_x", monitor_idx + 1);
-                StringCchPrintfW(key_y, 64, L"monitor%d_y", monitor_idx + 1);
-                StringCchPrintfW(key_w, 64, L"monitor%d_w", monitor_idx + 1);
-                StringCchPrintfW(key_h, 64, L"monitor%d_h", monitor_idx + 1);
-                StringCchPrintfW(key_name, 64, L"monitor%d_name", monitor_idx + 1);
-                WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[monitor_idx].name, hg_g_config_path);
-
-                WCHAR buf[32];
-                hellgates_wsprintf(buf, 32, L"%d", rc.left);
-                WritePrivateProfileStringW(L"monitor", key_x, buf, hg_g_config_path);
-                hellgates_wsprintf(buf, 32, L"%d", rc.top);
-                WritePrivateProfileStringW(L"monitor", key_y, buf, hg_g_config_path);
-                hellgates_wsprintf(buf, 32, L"%d", rc.right - rc.left);
-                WritePrivateProfileStringW(L"monitor", key_w, buf, hg_g_config_path);
-                hellgates_wsprintf(buf, 32, L"%d", rc.bottom - rc.top);
-                WritePrivateProfileStringW(L"monitor", key_h, buf, hg_g_config_path);
-            }
-            break;
-        }
-    }
-    return DefWindowProcW(hwnd, msg, w_param, l_param);
-}
-
-static LRESULT taskbox_controller_on_create(HWND hwnd) {
-            /* 툴바 클래스 등록 */
-            WNDCLASSW twc = {0};
-            twc.style = CS_HREDRAW | CS_VREDRAW;
-            twc.lpfnWndProc = toolbar_proc;
-            twc.hInstance = GetModuleHandle(NULL);
-            twc.lpszClassName = L"hgtoolbar_class";
-            twc.hCursor = LoadCursor(NULL, IDC_HAND);
-            RegisterClassW(&twc);
-
-            /* UI용 일반 폰트 생성 (아이콘 크기와 분리) */
-            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                               DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                               CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
-            if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-
-            hg_g_toolbar_wnd = CreateWindowExW(0, L"hgtoolbar_class", NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd, (HMENU)HG_IDC_TOOLBAR, GetModuleHandle(NULL), NULL);
-
-            hg_g_edit_msg_wnd = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL,
-                WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY,
-                0, 0, 0, 0, hwnd, (HMENU)HG_IDC_EDIT_MSG, GetModuleHandle(NULL), NULL);
-            if (hg_g_edit_msg_wnd) {
-                SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-                SetWindowTextW(hg_g_edit_msg_wnd, L"RClick: Settings | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
-                SetWindowSubclass(hg_g_edit_msg_wnd, edit_subclass_proc, 0, 0);
-                disable_window_ime(hg_g_edit_msg_wnd);
             }
 
-            /* 툴팁 생성: 메인 윈도우를 소유자로 지정하되 TOPMOST 유지 */
-            hg_g_tooltip_wnd = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, NULL,
-                                     WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX,
-                                     CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                     hwnd, NULL, GetModuleHandle(NULL), NULL);
-
-            if (hg_g_tooltip_wnd) {
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETMAXTIPWIDTH, 0, SC(1000));
-                /* 툴팁 폰트도 DPI 배율이 적용된 폰트로 설정 */
-                SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-                /* 즉시 표시되도록 설정 (약간의 지연 시간 부여) */
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETDELAYTIME, TTDT_INITIAL, 100);
-                /* 시스템 테마를 해제하여 설정한 폰트와 컬러가 적용되게 함 */
-                SendMessageW(hg_g_tooltip_wnd, CCM_SETWINDOWTHEME, 0, (LPARAM)L"");
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
-                SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
-            }
-
-            /* taskbar_wnd creation removed */
-
-            load_shortcuts();
-            refresh_window_list(TRUE);
-            update_toolbar_tooltips(hg_g_toolbar_wnd);
-
-            /* 창 테두리 및 모서리 등 DWM 속성 설정 */
-            apply_dwm_attributes(hwnd);
-
-            SetLayeredWindowAttributes(hwnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
-            SetTimer(hwnd, 1, 1000, NULL); /* 1초마다 시계 및 목록 갱신 */
-            return 0;
-        }
-
-static LRESULT taskbox_controller_on_paint(HWND hwnd) {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            RECT rc; GetClientRect(hwnd, &rc);
-
-            /* 하이라이트 효과 (깜빡임) */
-            COLORREF bg_color = HG_CLICKABLE_BG;
-            if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
-                bg_color = HG_COLOR_BG_FLASH;
-            }
-            HBRUSH hbr_bg = CreateSolidBrush(bg_color);
-            if (hbr_bg) {
-                FillRect(hdc, &rc, hbr_bg);
-                DeleteObject(hbr_bg);
-            }
-
-            /* 외곽선 그리기 */
-            int border = SC(HG_BORDER_THICKNESS);
+            /* Draw border like taskbox/floater */
             HWND fg = GetForegroundWindow();
             BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
             COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
-            HBRUSH hbr_border = CreateSolidBrush(border_color);
-            if (hbr_border) {
-                /* 상하좌우 사각형으로 채우기 */
+            HBRUSH border_brush = CreateSolidBrush(border_color);
+            if (border_brush) {
                 RECT rc_top = {0, 0, rc.right, border};
                 RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
                 RECT rc_left = {0, border, border, rc.bottom - border};
                 RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
+                RECT rc_edit_bg = {0, border, rc.right, border + edit_height};
 
-                FillRect(hdc, &rc_top, hbr_border);
-                FillRect(hdc, &rc_bottom, hbr_border);
-                FillRect(hdc, &rc_left, hbr_border);
-                FillRect(hdc, &rc_right, hbr_border);
-
-                DeleteObject(hbr_border);
+                FillRect(mem_dc, &rc_top, border_brush);
+                FillRect(mem_dc, &rc_bottom, border_brush);
+                FillRect(mem_dc, &rc_left, border_brush);
+                FillRect(mem_dc, &rc_right, border_brush);
+                FillRect(mem_dc, &rc_edit_bg, border_brush);
+                DeleteObject(border_brush);
             }
-            EndPaint(hwnd, &ps);
+
+            BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
+
+            SelectObject(mem_dc, old_bm);
+            DeleteObject(mem_bm);
+            DeleteDC(mem_dc);
+        }
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN: {
+        HMONITOR my_phys_mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        if (monitor_idx >= 0 && my_phys_mon == hg_g_monitors[monitor_idx].hMonitor) {
             return 0;
         }
-static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
-            int dx = 0, dy = 0;
-            int move_step = SC(20);
-            BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
-            BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
 
-            /* Alt + 방향키/wasd: 현재 창 이동 (태스크 박스) */
-            if (is_alt) {
-                if (w_param == VK_LEFT || w_param == 'A') dx = -move_step;
-                else if (w_param == VK_RIGHT || w_param == 'D') dx = move_step;
-                else if (w_param == VK_UP || w_param == 'W') dy = -move_step;
-                else if (w_param == VK_DOWN || w_param == 'S') dy = move_step;
+        POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT screen_pt;
+        if (monitor_pt_to_screen_pt(hwnd, monitor_idx, pt, &screen_pt, FALSE)) {
+            INPUT inputs[2] = {0};
 
-                if (dx != 0 || dy != 0) {
-                    move_window_by_offset(hwnd, dx, dy);
-                    /* 이동 후에도 최소한 일부는 화면에 보이도록 보호 */
-                    ensure_window_visible(hwnd, L"taskbox");
-                    return 0;
-                }
+            inputs[0].type = INPUT_MOUSE;
+            if (msg == WM_LBUTTONDOWN)
+                inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            else if (msg == WM_RBUTTONDOWN)
+                inputs[0].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+            else if (msg == WM_MBUTTONDOWN)
+                inputs[0].mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
 
-                /* Alt + +/-: 투명도 조절 */
-                if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
-                    update_taskbox_alpha(1);
-                    return 0;
-                } else if (w_param == VK_OEM_MINUS || w_param == VK_SUBTRACT) {
-                    update_taskbox_alpha(-1);
-                    return 0;
-                }
-            }
+            SetCursorPos(screen_pt.x, screen_pt.y);
 
-            /* Ctrl + +/-: 텍스트 글꼴 크기 조절, Ctrl + 방향키/wasd: 창 크기/그리드 조절 */
-            if (is_ctrl) {
-                int icon_size = ABS(hg_g_current_font_size);
-                if (icon_size < SC(16)) icon_size = SC(16);
+            inputs[1].type = INPUT_MOUSE;
+            if (msg == WM_LBUTTONDOWN)
+                inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            else if (msg == WM_RBUTTONDOWN)
+                inputs[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+            else if (msg == WM_MBUTTONDOWN)
+                inputs[1].mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
 
-                if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
-                    update_edit_font_size(1);
-                    return 0;
-                } else if (w_param == VK_OEM_MINUS || w_param == VK_SUBTRACT) {
-                    update_edit_font_size(-1);
-                    return 0;
-                } else if (w_param == VK_LEFT || w_param == 'A') {
-                    RECT rc; GetWindowRect(hwnd, &rc);
-                    int border = SC(HG_BORDER_THICKNESS);
-                    int tb_width = (rc.right - rc.left) - border * 2;
-                    int cols = get_items_per_row(tb_width, icon_size);
-                    int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-
-                    if (tb_width > exact_tb_width + SC(5)) {
-                        /* Right padding exists, snap to current cols */
-                    } else if (cols > 1) {
-                        cols--;
-                        exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-                    }
-
-                    int new_w = exact_tb_width + border * 2;
-                    SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                    return 0;
-                } else if (w_param == VK_RIGHT || w_param == 'D') {
-                    RECT rc; GetWindowRect(hwnd, &rc);
-                    int border = SC(HG_BORDER_THICKNESS);
-                    int tb_width = (rc.right - rc.left) - border * 2;
-                    int cols = get_items_per_row(tb_width, icon_size);
-                    cols++;
-                    int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-                    int new_w = exact_tb_width + border * 2;
-                    SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                    return 0;
-                } else if (w_param == VK_UP || w_param == 'W') {
-                    RECT rc; GetWindowRect(hwnd, &rc);
-                    int border = SC(HG_BORDER_THICKNESS);
-                    int tb_width = (rc.right - rc.left) - border * 2;
-                    int cols = get_items_per_row(tb_width, icon_size);
-                    int total_tasks = hg_g_window_count;
-                    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-                    int total_items = total_tasks + total_shortcuts;
-                    if (total_items <= 0) total_items = 1;
-
-                    int current_rows = (total_items + cols - 1) / cols;
-                    if (current_rows > 1) {
-                        while (cols < total_items) {
-                            cols++;
-                            int new_rows = (total_items + cols - 1) / cols;
-                            if (new_rows < current_rows) break;
-                        }
-                        int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-                        int new_w = exact_tb_width + border * 2;
-                        SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                    }
-                    return 0;
-                } else if (w_param == VK_DOWN || w_param == 'S') {
-                    RECT rc; GetWindowRect(hwnd, &rc);
-                    int border = SC(HG_BORDER_THICKNESS);
-                    int tb_width = (rc.right - rc.left) - border * 2;
-                    int cols = get_items_per_row(tb_width, icon_size);
-                    int total_tasks = hg_g_window_count;
-                    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-                    int total_items = total_tasks + total_shortcuts;
-                    if (total_items <= 0) total_items = 1;
-
-                    int current_rows = (total_items + cols - 1) / cols;
-                    while (cols > 1) {
-                        cols--;
-                        int new_rows = (total_items + cols - 1) / cols;
-                        if (new_rows > current_rows) break;
-                    }
-
-                    int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-                    int new_w = exact_tb_width + border * 2;
-                    SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                    return 0;
-                }
-            }
-
-            /* Esc: 창 닫기 */
-            if (w_param == VK_ESCAPE) {
-                hide_taskbox(hwnd);
-                return 0;
-            }
-            if (msg == WM_SYSKEYDOWN) return DefWindowProcW(hwnd, msg, w_param, l_param);
-
-            /* 탐색 및 선택 */
-            int total_tasks = hg_g_window_count;
-            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-
-            if (total_tasks > 0 || total_shortcuts > 0) {
-                int icon_size = ABS(hg_g_current_font_size);
-                if (icon_size < SC(16)) icon_size = SC(16);
-
-                RECT rc_toolbar;
-                GetClientRect(hg_g_toolbar_wnd, &rc_toolbar);
-
-                int cols = get_items_per_row(rc_toolbar.right, icon_size);
-                int min_required_rows = (total_tasks + total_shortcuts + cols - 1) / cols;
-                if (min_required_rows <= 0) min_required_rows = 1;
-
-                int visible_rows = (rc_toolbar.bottom - SC(20) + SC(10)) / (icon_size + SC(10));
-                if (visible_rows <= 0) visible_rows = 1;
-
-                int rows = (visible_rows > min_required_rows) ? visible_rows : min_required_rows;
-                int total_cells = rows * cols;
-
-                int current_cell = -1;
-                if (hg_g_focus_area == 0) {
-                    current_cell = hg_g_toolbar_focus_index;
-                } else {
-                    current_cell = total_cells - 1 - hg_g_toolbar_focus_index;
-                }
-
-                if (current_cell < 0) current_cell = 0;
-
-                int r = current_cell / cols;
-                int c = current_cell % cols;
-                BOOL changed = FALSE;
-
-                if (w_param == VK_LEFT || w_param == 'A') {
-                    c--; changed = TRUE;
-                } else if (w_param == VK_RIGHT || w_param == 'D') {
-                    c++; changed = TRUE;
-                } else if (w_param == VK_UP || w_param == 'W') {
-                    r--; changed = TRUE;
-                } else if (w_param == VK_DOWN || w_param == 'S') {
-                    r++; changed = TRUE;
-                } else if (w_param == VK_F2) {
-                    if (hg_g_floater_wnd) PostMessageW(hg_g_floater_wnd, WM_RBUTTONUP, 0, 0);
-                } else if (w_param == VK_SPACE) {
-                    if (hg_g_focus_area == 0) activate_taskbar_item(hg_g_toolbar_focus_index);
-                    else activate_toolbar_item(hg_g_toolbar_focus_index);
-                } else if (w_param == VK_RETURN) {
-                    RECT rc_item;
-                    get_toolbar_item_rect(hg_g_focus_area, hg_g_toolbar_focus_index, rc_toolbar.right, rc_toolbar.bottom, icon_size, &rc_item);
-                    PostMessageW(hg_g_toolbar_wnd, WM_RBUTTONUP, 0, 0); // Send 0 for l_param to indicate keyboard trigger
-                }
-
-                if (changed) {
-                    if (c < 0) { c = cols - 1; r--; }
-                    if (c >= cols) { c = 0; r++; }
-                    if (r < 0) r = 0;
-                    if (r >= rows) r = rows - 1;
-
-                    int new_cell = r * cols + c;
-
-                    // 빈 공간이라면 가장 가까운 유효한 셀로 이동 (이 경우는 Task의 마지막이나 Shortcut의 첫번째가 될 것)
-                    if (new_cell >= total_tasks && new_cell < total_cells - total_shortcuts) {
-                        if (new_cell > current_cell) {
-                            new_cell = total_cells - total_shortcuts;
-                        } else {
-                            new_cell = total_tasks - 1;
-                        }
-                    }
-                    if (new_cell < 0) new_cell = 0;
-                    if (new_cell >= total_cells) new_cell = total_cells - 1;
-
-                    // 새로운 cell의 정보를 다시 item_type/index로 매핑
-                    if (new_cell < total_tasks) {
-                        hg_g_focus_area = 0;
-                        hg_g_toolbar_focus_index = new_cell;
-                    } else if (new_cell >= total_cells - total_shortcuts) {
-                        hg_g_focus_area = 1;
-                        hg_g_toolbar_focus_index = total_cells - 1 - new_cell;
-                    }
-                    update_focus_message(-2, -2);
-                }
-
-                InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-            }
+            SendInput(2, inputs, sizeof(INPUT));
+        }
+        return 0;
+    }
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP: {
+        HMONITOR my_phys_mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        if (monitor_idx >= 0 && my_phys_mon == hg_g_monitors[monitor_idx].hMonitor) {
             return 0;
         }
-static LRESULT taskbox_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param) {
-            if (LOWORD(w_param) == HG_IDM_CLOSE_APP) {
-                if (hg_g_floater_wnd) DestroyWindow(hg_g_floater_wnd);
-            } else if (LOWORD(w_param) == HG_IDM_ABOUT || LOWORD(w_param) == HG_IDM_RESET_ALL) {
-                if (hg_g_floater_wnd) SendMessage(hg_g_floater_wnd, WM_COMMAND, w_param, l_param);
-            } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
-                update_edit_font_size(1);
-            } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
-                update_edit_font_size(-1);
-            }
-            return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
+
+        POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT screen_pt;
+        if (monitor_pt_to_screen_pt(hwnd, monitor_idx, pt, &screen_pt, FALSE)) {
+            INPUT inputs[1] = {0};
+            inputs[0].type = INPUT_MOUSE;
+            if (msg == WM_LBUTTONUP)
+                inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            else if (msg == WM_RBUTTONUP)
+                inputs[0].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+            else if (msg == WM_MBUTTONUP)
+                inputs[0].mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
+
+            SetCursorPos(screen_pt.x, screen_pt.y);
+            SendInput(1, inputs, sizeof(INPUT));
         }
-static LRESULT taskbox_controller_on_destroy(HWND hwnd) {
-            hg_g_taskbox_highlight_ticks = 0;
-            KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-            KillTimer(hwnd, 1);
+        return 0;
+    }
+    case WM_CLOSE: {
+        if (monitor_idx >= 0) {
+            close_monitor_window(monitor_idx);
+        } else {
+            DestroyWindow(hwnd);
+        }
+        return 0;
+    }
+    case WM_NCHITTEST: {
+        POINT pt;
+        pt.x = GET_X_LPARAM(l_param);
+        pt.y = GET_Y_LPARAM(l_param);
+        RECT rc;
+        GetWindowRect(hwnd, &rc);
+        int border = SC(8);
+        if (pt.x < rc.left + border && pt.y < rc.top + border)
+            return HTTOPLEFT;
+        if (pt.x >= rc.right - border && pt.y < rc.top + border)
+            return HTTOPRIGHT;
+        if (pt.x < rc.left + border && pt.y >= rc.bottom - border)
+            return HTBOTTOMLEFT;
+        if (pt.x >= rc.right - border && pt.y >= rc.bottom - border)
+            return HTBOTTOMRIGHT;
+        if (pt.x < rc.left + border)
+            return HTLEFT;
+        if (pt.x >= rc.right - border)
+            return HTRIGHT;
+        if (pt.y < rc.top + border)
+            return HTTOP;
+        if (pt.y >= rc.bottom - border)
+            return HTBOTTOM;
 
-            /* GDI 전역 리소스(font, brush) 및 전역 툴팁은 wWinMain의 cleanup_finish에서 안전하게 일괄 해제하므로 여기서 삭제하지 않음 */
+        return HTCLIENT;
+    }
+    case WM_SIZING: {
+        /* Force Aspect Ratio */
+        if (monitor_idx >= 0) {
+            RECT *prc = (RECT *)l_param;
+            RECT m_rc = hg_g_monitors[monitor_idx].rcMonitor;
+            int mw = m_rc.right - m_rc.left;
+            int mh = m_rc.bottom - m_rc.top;
+            if (mh > 0 && mw > 0) {
+                int w = prc->right - prc->left;
+                int h = prc->bottom - prc->top;
 
-            for (int i = 0; i < hg_g_shortcut_count; i++) {
-                if (hg_g_shortcuts[i].icon) { DestroyIcon(hg_g_shortcuts[i].icon); hg_g_shortcuts[i].icon = NULL; }
-            }
-            for (int i = 0; i < hg_g_window_count; i++) {
-                if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-                    DestroyIcon(hg_g_window_items[i].icon);
-                    hg_g_window_items[i].icon = NULL;
+                /* Depending on sizing edge, adjust width or height */
+                switch (w_param) {
+                case WMSZ_LEFT:
+                case WMSZ_RIGHT:
+                    prc->bottom = prc->top + (w * mh) / mw;
+                    break;
+                case WMSZ_TOP:
+                case WMSZ_BOTTOM:
+                    prc->right = prc->left + (h * mw) / mh;
+                    break;
+                case WMSZ_TOPLEFT:
+                case WMSZ_TOPRIGHT:
+                case WMSZ_BOTTOMLEFT:
+                case WMSZ_BOTTOMRIGHT:
+                    /* just adjust bottom to keep ratio with width */
+                    prc->bottom = prc->top + (w * mh) / mw;
+                    break;
                 }
             }
-            /* 전역 종료는 floater_proc에서 처리하므로 주석 처리 */
-            /* PostQuitMessage(0); */
-            return 0;
+            return TRUE;
+        }
+        break;
+    }
+    case WM_EXITSIZEMOVE: {
+        if (monitor_idx >= 0) {
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
+            StringCchPrintfW(key_x, 64, L"monitor%d_x", monitor_idx + 1);
+            StringCchPrintfW(key_y, 64, L"monitor%d_y", monitor_idx + 1);
+            StringCchPrintfW(key_w, 64, L"monitor%d_w", monitor_idx + 1);
+            StringCchPrintfW(key_h, 64, L"monitor%d_h", monitor_idx + 1);
+            StringCchPrintfW(key_name, 64, L"monitor%d_name", monitor_idx + 1);
+            WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[monitor_idx].name, hg_g_config_path);
+
+            WCHAR buf[32];
+            hellgates_wsprintf(buf, 32, L"%d", rc.left);
+            WritePrivateProfileStringW(L"monitor", key_x, buf, hg_g_config_path);
+            hellgates_wsprintf(buf, 32, L"%d", rc.top);
+            WritePrivateProfileStringW(L"monitor", key_y, buf, hg_g_config_path);
+            hellgates_wsprintf(buf, 32, L"%d", rc.right - rc.left);
+            WritePrivateProfileStringW(L"monitor", key_w, buf, hg_g_config_path);
+            hellgates_wsprintf(buf, 32, L"%d", rc.bottom - rc.top);
+            WritePrivateProfileStringW(L"monitor", key_h, buf, hg_g_config_path);
+        }
+        break;
+    }
+    }
+    return DefWindowProcW(hwnd, msg, w_param, l_param);
+}
+
+static LRESULT taskbox_controller_on_create(HWND hwnd)
+{
+    /* 툴바 클래스 등록 */
+    WNDCLASSW twc = {0};
+    twc.style = CS_HREDRAW | CS_VREDRAW;
+    twc.lpfnWndProc = toolbar_proc;
+    twc.hInstance = GetModuleHandle(NULL);
+    twc.lpszClassName = L"hgtoolbar_class";
+    twc.hCursor = LoadCursor(NULL, IDC_HAND);
+    RegisterClassW(&twc);
+
+    /* UI용 일반 폰트 생성 (아이콘 크기와 분리) */
+    hg_g_main_font =
+        CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                    CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+    if (!hg_g_main_font)
+        hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+    hg_g_toolbar_wnd = CreateWindowExW(0, L"hgtoolbar_class", NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd,
+                                       (HMENU)HG_IDC_TOOLBAR, GetModuleHandle(NULL), NULL);
+
+    hg_g_edit_msg_wnd =
+        CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL,
+                        WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY, 0, 0, 0,
+                        0, hwnd, (HMENU)HG_IDC_EDIT_MSG, GetModuleHandle(NULL), NULL);
+    if (hg_g_edit_msg_wnd) {
+        SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        SetWindowTextW(hg_g_edit_msg_wnd,
+                       L"RClick: Settings | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
+        SetWindowSubclass(hg_g_edit_msg_wnd, edit_subclass_proc, 0, 0);
+        disable_window_ime(hg_g_edit_msg_wnd);
     }
 
-static LRESULT controlbox_controller_on_create(HWND hwnd) {
+    /* 툴팁 생성: 메인 윈도우를 소유자로 지정하되 TOPMOST 유지 */
+    hg_g_tooltip_wnd =
+        CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX, CW_USEDEFAULT,
+                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hwnd, NULL, GetModuleHandle(NULL), NULL);
+
+    if (hg_g_tooltip_wnd) {
+        SendMessageW(hg_g_tooltip_wnd, TTM_SETMAXTIPWIDTH, 0, SC(1000));
+        /* 툴팁 폰트도 DPI 배율이 적용된 폰트로 설정 */
+        SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        /* 즉시 표시되도록 설정 (약간의 지연 시간 부여) */
+        SendMessageW(hg_g_tooltip_wnd, TTM_SETDELAYTIME, TTDT_INITIAL, 100);
+        /* 시스템 테마를 해제하여 설정한 폰트와 컬러가 적용되게 함 */
+        SendMessageW(hg_g_tooltip_wnd, CCM_SETWINDOWTHEME, 0, (LPARAM)L"");
+        SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
+        SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
+    }
+
+    /* taskbar_wnd creation removed */
+
+    load_shortcuts();
+    refresh_window_list(TRUE);
+    update_toolbar_tooltips(hg_g_toolbar_wnd);
+
+    /* 창 테두리 및 모서리 등 DWM 속성 설정 */
+    apply_dwm_attributes(hwnd);
+
+    SetLayeredWindowAttributes(hwnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
+    SetTimer(hwnd, 1, 1000, NULL); /* 1초마다 시계 및 목록 갱신 */
+    return 0;
+}
+
+static LRESULT taskbox_controller_on_paint(HWND hwnd)
+{
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+
+    /* 하이라이트 효과 (깜빡임) */
+    COLORREF bg_color = HG_CLICKABLE_BG;
+    if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
+        bg_color = HG_COLOR_BG_FLASH;
+    }
+    HBRUSH hbr_bg = CreateSolidBrush(bg_color);
+    if (hbr_bg) {
+        FillRect(hdc, &rc, hbr_bg);
+        DeleteObject(hbr_bg);
+    }
+
+    /* 외곽선 그리기 */
+    int border = SC(HG_BORDER_THICKNESS);
+    HWND fg = GetForegroundWindow();
+    BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
+    COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
+    HBRUSH hbr_border = CreateSolidBrush(border_color);
+    if (hbr_border) {
+        /* 상하좌우 사각형으로 채우기 */
+        RECT rc_top = {0, 0, rc.right, border};
+        RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
+        RECT rc_left = {0, border, border, rc.bottom - border};
+        RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
+
+        FillRect(hdc, &rc_top, hbr_border);
+        FillRect(hdc, &rc_bottom, hbr_border);
+        FillRect(hdc, &rc_left, hbr_border);
+        FillRect(hdc, &rc_right, hbr_border);
+
+        DeleteObject(hbr_border);
+    }
+    EndPaint(hwnd, &ps);
+    return 0;
+}
+static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
+    int dx = 0, dy = 0;
+    int move_step = SC(20);
+    BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
+    BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+
+    /* Alt + 방향키/wasd: 현재 창 이동 (태스크 박스) */
+    if (is_alt) {
+        if (w_param == VK_LEFT || w_param == 'A')
+            dx = -move_step;
+        else if (w_param == VK_RIGHT || w_param == 'D')
+            dx = move_step;
+        else if (w_param == VK_UP || w_param == 'W')
+            dy = -move_step;
+        else if (w_param == VK_DOWN || w_param == 'S')
+            dy = move_step;
+
+        if (dx != 0 || dy != 0) {
+            move_window_by_offset(hwnd, dx, dy);
+            /* 이동 후에도 최소한 일부는 화면에 보이도록 보호 */
+            ensure_window_visible(hwnd, L"taskbox");
+            return 0;
+        }
+
+        /* Alt + +/-: 투명도 조절 */
+        if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
+            update_taskbox_alpha(1);
+            return 0;
+        } else if (w_param == VK_OEM_MINUS || w_param == VK_SUBTRACT) {
+            update_taskbox_alpha(-1);
+            return 0;
+        }
+    }
+
+    /* Ctrl + +/-: 텍스트 글꼴 크기 조절, Ctrl + 방향키/wasd: 창 크기/그리드 조절 */
+    if (is_ctrl) {
+        int icon_size = ABS(hg_g_current_font_size);
+        if (icon_size < SC(16))
+            icon_size = SC(16);
+
+        if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
+            update_edit_font_size(1);
+            return 0;
+        } else if (w_param == VK_OEM_MINUS || w_param == VK_SUBTRACT) {
+            update_edit_font_size(-1);
+            return 0;
+        } else if (w_param == VK_LEFT || w_param == 'A') {
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            int border = SC(HG_BORDER_THICKNESS);
+            int tb_width = (rc.right - rc.left) - border * 2;
+            int cols = get_items_per_row(tb_width, icon_size);
+            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+
+            if (tb_width > exact_tb_width + SC(5)) {
+                /* Right padding exists, snap to current cols */
+            } else if (cols > 1) {
+                cols--;
+                exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+            }
+
+            int new_w = exact_tb_width + border * 2;
+            SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            return 0;
+        } else if (w_param == VK_RIGHT || w_param == 'D') {
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            int border = SC(HG_BORDER_THICKNESS);
+            int tb_width = (rc.right - rc.left) - border * 2;
+            int cols = get_items_per_row(tb_width, icon_size);
+            cols++;
+            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+            int new_w = exact_tb_width + border * 2;
+            SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            return 0;
+        } else if (w_param == VK_UP || w_param == 'W') {
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            int border = SC(HG_BORDER_THICKNESS);
+            int tb_width = (rc.right - rc.left) - border * 2;
+            int cols = get_items_per_row(tb_width, icon_size);
+            int total_tasks = hg_g_window_count;
+            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+            int total_items = total_tasks + total_shortcuts;
+            if (total_items <= 0)
+                total_items = 1;
+
+            int current_rows = (total_items + cols - 1) / cols;
+            if (current_rows > 1) {
+                while (cols < total_items) {
+                    cols++;
+                    int new_rows = (total_items + cols - 1) / cols;
+                    if (new_rows < current_rows)
+                        break;
+                }
+                int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+                int new_w = exact_tb_width + border * 2;
+                SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+            return 0;
+        } else if (w_param == VK_DOWN || w_param == 'S') {
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            int border = SC(HG_BORDER_THICKNESS);
+            int tb_width = (rc.right - rc.left) - border * 2;
+            int cols = get_items_per_row(tb_width, icon_size);
+            int total_tasks = hg_g_window_count;
+            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+            int total_items = total_tasks + total_shortcuts;
+            if (total_items <= 0)
+                total_items = 1;
+
+            int current_rows = (total_items + cols - 1) / cols;
+            while (cols > 1) {
+                cols--;
+                int new_rows = (total_items + cols - 1) / cols;
+                if (new_rows > current_rows)
+                    break;
+            }
+
+            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+            int new_w = exact_tb_width + border * 2;
+            SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            return 0;
+        }
+    }
+
+    /* Esc: 창 닫기 */
+    if (w_param == VK_ESCAPE) {
+        hide_taskbox(hwnd);
+        return 0;
+    }
+    if (msg == WM_SYSKEYDOWN)
+        return DefWindowProcW(hwnd, msg, w_param, l_param);
+
+    /* 탐색 및 선택 */
+    int total_tasks = hg_g_window_count;
+    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+
+    if (total_tasks > 0 || total_shortcuts > 0) {
+        int icon_size = ABS(hg_g_current_font_size);
+        if (icon_size < SC(16))
+            icon_size = SC(16);
+
+        RECT rc_toolbar;
+        GetClientRect(hg_g_toolbar_wnd, &rc_toolbar);
+
+        int cols = get_items_per_row(rc_toolbar.right, icon_size);
+        int min_required_rows = (total_tasks + total_shortcuts + cols - 1) / cols;
+        if (min_required_rows <= 0)
+            min_required_rows = 1;
+
+        int visible_rows = (rc_toolbar.bottom - SC(20) + SC(10)) / (icon_size + SC(10));
+        if (visible_rows <= 0)
+            visible_rows = 1;
+
+        int rows = (visible_rows > min_required_rows) ? visible_rows : min_required_rows;
+        int total_cells = rows * cols;
+
+        int current_cell = -1;
+        if (hg_g_focus_area == 0) {
+            current_cell = hg_g_toolbar_focus_index;
+        } else {
+            current_cell = total_cells - 1 - hg_g_toolbar_focus_index;
+        }
+
+        if (current_cell < 0)
+            current_cell = 0;
+
+        int r = current_cell / cols;
+        int c = current_cell % cols;
+        BOOL changed = FALSE;
+
+        if (w_param == VK_LEFT || w_param == 'A') {
+            c--;
+            changed = TRUE;
+        } else if (w_param == VK_RIGHT || w_param == 'D') {
+            c++;
+            changed = TRUE;
+        } else if (w_param == VK_UP || w_param == 'W') {
+            r--;
+            changed = TRUE;
+        } else if (w_param == VK_DOWN || w_param == 'S') {
+            r++;
+            changed = TRUE;
+        } else if (w_param == VK_F2) {
+            if (hg_g_floater_wnd)
+                PostMessageW(hg_g_floater_wnd, WM_RBUTTONUP, 0, 0);
+        } else if (w_param == VK_SPACE) {
+            if (hg_g_focus_area == 0)
+                activate_taskbar_item(hg_g_toolbar_focus_index);
+            else
+                activate_toolbar_item(hg_g_toolbar_focus_index);
+        } else if (w_param == VK_RETURN) {
+            RECT rc_item;
+            get_toolbar_item_rect(hg_g_focus_area, hg_g_toolbar_focus_index, rc_toolbar.right, rc_toolbar.bottom,
+                                  icon_size, &rc_item);
+            PostMessageW(hg_g_toolbar_wnd, WM_RBUTTONUP, 0, 0); // Send 0 for l_param to indicate keyboard trigger
+        }
+
+        if (changed) {
+            if (c < 0) {
+                c = cols - 1;
+                r--;
+            }
+            if (c >= cols) {
+                c = 0;
+                r++;
+            }
+            if (r < 0)
+                r = 0;
+            if (r >= rows)
+                r = rows - 1;
+
+            int new_cell = r * cols + c;
+
+            // 빈 공간이라면 가장 가까운 유효한 셀로 이동 (이 경우는 Task의 마지막이나 Shortcut의 첫번째가 될 것)
+            if (new_cell >= total_tasks && new_cell < total_cells - total_shortcuts) {
+                if (new_cell > current_cell) {
+                    new_cell = total_cells - total_shortcuts;
+                } else {
+                    new_cell = total_tasks - 1;
+                }
+            }
+            if (new_cell < 0)
+                new_cell = 0;
+            if (new_cell >= total_cells)
+                new_cell = total_cells - 1;
+
+            // 새로운 cell의 정보를 다시 item_type/index로 매핑
+            if (new_cell < total_tasks) {
+                hg_g_focus_area = 0;
+                hg_g_toolbar_focus_index = new_cell;
+            } else if (new_cell >= total_cells - total_shortcuts) {
+                hg_g_focus_area = 1;
+                hg_g_toolbar_focus_index = total_cells - 1 - new_cell;
+            }
+            update_focus_message(-2, -2);
+        }
+
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    }
+    return 0;
+}
+static LRESULT taskbox_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param)
+{
+    if (LOWORD(w_param) == HG_IDM_CLOSE_APP) {
+        if (hg_g_floater_wnd)
+            DestroyWindow(hg_g_floater_wnd);
+    } else if (LOWORD(w_param) == HG_IDM_ABOUT || LOWORD(w_param) == HG_IDM_RESET_ALL) {
+        if (hg_g_floater_wnd)
+            SendMessage(hg_g_floater_wnd, WM_COMMAND, w_param, l_param);
+    } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
+        update_edit_font_size(1);
+    } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
+        update_edit_font_size(-1);
+    }
+    return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
+}
+static LRESULT taskbox_controller_on_destroy(HWND hwnd)
+{
+    hg_g_taskbox_highlight_ticks = 0;
+    KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
+    KillTimer(hwnd, 1);
+
+    /* GDI 전역 리소스(font, brush) 및 전역 툴팁은 wWinMain의 cleanup_finish에서 안전하게 일괄 해제하므로 여기서
+     * 삭제하지 않음 */
+
+    for (int i = 0; i < hg_g_shortcut_count; i++) {
+        if (hg_g_shortcuts[i].icon) {
+            DestroyIcon(hg_g_shortcuts[i].icon);
+            hg_g_shortcuts[i].icon = NULL;
+        }
+    }
+    for (int i = 0; i < hg_g_window_count; i++) {
+        if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
+            DestroyIcon(hg_g_window_items[i].icon);
+            hg_g_window_items[i].icon = NULL;
+        }
+    }
+    /* 전역 종료는 floater_proc에서 처리하므로 주석 처리 */
+    /* PostQuitMessage(0); */
+    return 0;
+}
+
+static LRESULT controlbox_controller_on_create(HWND hwnd)
+{
     SetLayeredWindowAttributes(hwnd, 0, hg_g_taskbox_alpha, LWA_ALPHA);
     apply_dwm_attributes(hwnd);
 
-    hg_g_controlbox_value_wnd = CreateWindowExW(0, L"STATIC", L"System Volume: 0%",
-        WS_CHILD | WS_VISIBLE | SS_CENTER,
-        0, 0, 0, 0, hwnd, (HMENU)HG_IDC_CONTROLBOX_VALUE, GetModuleHandle(NULL), NULL);
+    hg_g_controlbox_value_wnd =
+        CreateWindowExW(0, L"STATIC", L"System Volume: 0%", WS_CHILD | WS_VISIBLE | SS_CENTER, 0, 0, 0, 0, hwnd,
+                        (HMENU)HG_IDC_CONTROLBOX_VALUE, GetModuleHandle(NULL), NULL);
     if (hg_g_controlbox_value_wnd && hg_g_main_font) {
         SendMessageW(hg_g_controlbox_value_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
     }
 
-    hg_g_controlbox_slider_wnd = CreateWindowExW(0, TRACKBAR_CLASSW, NULL,
-        WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_AUTOTICKS,
-        0, 0, 0, 0, hwnd, (HMENU)HG_IDC_CONTROLBOX_SLIDER, GetModuleHandle(NULL), NULL);
+    hg_g_controlbox_slider_wnd =
+        CreateWindowExW(0, TRACKBAR_CLASSW, NULL, WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_AUTOTICKS, 0, 0, 0, 0, hwnd,
+                        (HMENU)HG_IDC_CONTROLBOX_SLIDER, GetModuleHandle(NULL), NULL);
     if (hg_g_controlbox_slider_wnd) {
         SendMessageW(hg_g_controlbox_slider_wnd, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100));
         SendMessageW(hg_g_controlbox_slider_wnd, TBM_SETTICFREQ, 25, 0);
@@ -5634,7 +6142,8 @@ static LRESULT controlbox_controller_on_create(HWND hwnd) {
     return 0;
 }
 
-static LRESULT controlbox_controller_on_paint(HWND hwnd) {
+static LRESULT controlbox_controller_on_paint(HWND hwnd)
+{
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
     RECT rc;
@@ -5648,8 +6157,10 @@ static LRESULT controlbox_controller_on_paint(HWND hwnd) {
                 HBITMAP old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
                 if (old_bm) {
                     HBRUSH hbr_bg = hg_g_main_bg_brush ? hg_g_main_bg_brush : CreateSolidBrush(HG_COLOR_BG_DEFAULT);
-                    if (hbr_bg) FillRect(mem_dc, &rc, hbr_bg);
-                    if (!hg_g_main_bg_brush && hbr_bg) DeleteObject(hbr_bg);
+                    if (hbr_bg)
+                        FillRect(mem_dc, &rc, hbr_bg);
+                    if (!hg_g_main_bg_brush && hbr_bg)
+                        DeleteObject(hbr_bg);
 
                     int border = SC(HG_BORDER_THICKNESS);
                     HBRUSH hbr_border = CreateSolidBrush(HG_COLOR_BG_TOOLBAR);
@@ -5678,22 +6189,26 @@ static LRESULT controlbox_controller_on_paint(HWND hwnd) {
     return 0;
 }
 
-static LRESULT controlbox_controller_on_scroll(HWND hwnd, HWND slider_hwnd) {
+static LRESULT controlbox_controller_on_scroll(HWND hwnd, HWND slider_hwnd)
+{
     (void)hwnd;
-    if (!slider_hwnd || slider_hwnd != hg_g_controlbox_slider_wnd) return 0;
+    if (!slider_hwnd || slider_hwnd != hg_g_controlbox_slider_wnd)
+        return 0;
     int pos = (int)SendMessageW(slider_hwnd, TBM_GETPOS, 0, 0);
     set_system_volume(pos);
     controlbox_sync_volume_ui();
     return 0;
 }
 
-static LRESULT controlbox_controller_on_command(HWND hwnd, int id) {
+static LRESULT controlbox_controller_on_command(HWND hwnd, int id)
+{
     (void)hwnd;
     (void)id;
     return 0;
 }
 
-static LRESULT controlbox_controller_on_destroy(HWND hwnd) {
+static LRESULT controlbox_controller_on_destroy(HWND hwnd)
+{
     RECT rc = {0};
     if (GetWindowRect(hwnd, &rc)) {
         save_config(L"controlbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
@@ -5704,315 +6219,340 @@ static LRESULT controlbox_controller_on_destroy(HWND hwnd) {
     return 0;
 }
 
-LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
     switch (msg) {
-        case WM_MOUSEACTIVATE:
-            return MA_ACTIVATE;
-        case WM_ACTIVATE: {
-            if (LOWORD(w_param) == WA_INACTIVE) {
-                HWND activated_wnd = (HWND)l_param;
-                DWORD our_pid = GetCurrentProcessId();
-                DWORD activated_pid = 0;
-                if (activated_wnd) {
-                    GetWindowThreadProcessId(activated_wnd, &activated_pid);
-                }
-                if (activated_pid != our_pid) {
-                    DestroyWindow(hwnd);
-                }
+    case WM_MOUSEACTIVATE:
+        return MA_ACTIVATE;
+    case WM_ACTIVATE: {
+        if (LOWORD(w_param) == WA_INACTIVE) {
+            HWND activated_wnd = (HWND)l_param;
+            DWORD our_pid = GetCurrentProcessId();
+            DWORD activated_pid = 0;
+            if (activated_wnd) {
+                GetWindowThreadProcessId(activated_wnd, &activated_pid);
             }
-            InvalidateRect(hwnd, NULL, FALSE);
-            return 0;
+            if (activated_pid != our_pid) {
+                DestroyWindow(hwnd);
+            }
         }
-        case WM_CREATE:
-            return controlbox_controller_on_create(hwnd);
-        case WM_ERASEBKGND:
-            return 1;
-        case WM_PAINT:
-            return controlbox_controller_on_paint(hwnd);
-        case WM_GETMINMAXINFO: {
-            MINMAXINFO* mmi = (MINMAXINFO*)l_param;
-            int required_height = get_controlbox_required_height();
-            mmi->ptMinTrackSize.x = SC(HG_CONTROLBOX_MIN_WIDTH);
-            mmi->ptMaxTrackSize.x = SC(HG_CONTROLBOX_MAX_WIDTH);
-            mmi->ptMinTrackSize.y = required_height;
-            mmi->ptMaxTrackSize.y = required_height;
-            return 0;
-        }
-        case WM_NCHITTEST: {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            ScreenToClient(hwnd, &pt);
-            RECT rc;
-            GetClientRect(hwnd, &rc);
-            int border = SC(HG_BORDER_THICKNESS);
-            if (pt.x < border) return HTLEFT;
-            if (pt.x > rc.right - border) return HTRIGHT;
-            return HTCAPTION;
-        }
-        case WM_SIZE:
-            update_controlbox_layout(hwnd);
-            return 0;
-        case WM_HSCROLL:
-            return controlbox_controller_on_scroll(hwnd, (HWND)l_param);
-        case WM_COMMAND:
-            return controlbox_controller_on_command(hwnd, LOWORD(w_param));
-        case WM_RBUTTONUP:
+        InvalidateRect(hwnd, NULL, FALSE);
+        return 0;
+    }
+    case WM_CREATE:
+        return controlbox_controller_on_create(hwnd);
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_PAINT:
+        return controlbox_controller_on_paint(hwnd);
+    case WM_GETMINMAXINFO: {
+        MINMAXINFO *mmi = (MINMAXINFO *)l_param;
+        int required_height = get_controlbox_required_height();
+        mmi->ptMinTrackSize.x = SC(HG_CONTROLBOX_MIN_WIDTH);
+        mmi->ptMaxTrackSize.x = SC(HG_CONTROLBOX_MAX_WIDTH);
+        mmi->ptMinTrackSize.y = required_height;
+        mmi->ptMaxTrackSize.y = required_height;
+        return 0;
+    }
+    case WM_NCHITTEST: {
+        POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        ScreenToClient(hwnd, &pt);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        int border = SC(HG_BORDER_THICKNESS);
+        if (pt.x < border)
+            return HTLEFT;
+        if (pt.x > rc.right - border)
+            return HTRIGHT;
+        return HTCAPTION;
+    }
+    case WM_SIZE:
+        update_controlbox_layout(hwnd);
+        return 0;
+    case WM_HSCROLL:
+        return controlbox_controller_on_scroll(hwnd, (HWND)l_param);
+    case WM_COMMAND:
+        return controlbox_controller_on_command(hwnd, LOWORD(w_param));
+    case WM_RBUTTONUP:
+        DestroyWindow(hwnd);
+        return 0;
+    case WM_NCRBUTTONUP:
+        if (w_param == HTCAPTION) {
             DestroyWindow(hwnd);
             return 0;
-        case WM_NCRBUTTONUP:
-            if (w_param == HTCAPTION) {
-                DestroyWindow(hwnd);
+        }
+        break;
+    case WM_SYSKEYDOWN:
+    case WM_KEYDOWN: {
+        BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
+        BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+        if (is_alt) {
+            int dx = 0, dy = 0;
+            int move_step = SC(20);
+            if (w_param == VK_LEFT || w_param == 'A')
+                dx = -move_step;
+            else if (w_param == VK_RIGHT || w_param == 'D')
+                dx = move_step;
+            else if (w_param == VK_UP || w_param == 'W')
+                dy = -move_step;
+            else if (w_param == VK_DOWN || w_param == 'S')
+                dy = move_step;
+            if (dx || dy) {
+                move_window_by_offset(hwnd, dx, dy);
+                ensure_window_visible(hwnd, L"controlbox");
                 return 0;
             }
-            break;
-        case WM_SYSKEYDOWN:
-        case WM_KEYDOWN: {
-            BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
-            BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
-            if (is_alt) {
-                int dx = 0, dy = 0;
-                int move_step = SC(20);
-                if (w_param == VK_LEFT || w_param == 'A') dx = -move_step;
-                else if (w_param == VK_RIGHT || w_param == 'D') dx = move_step;
-                else if (w_param == VK_UP || w_param == 'W') dy = -move_step;
-                else if (w_param == VK_DOWN || w_param == 'S') dy = move_step;
-                if (dx || dy) {
-                    move_window_by_offset(hwnd, dx, dy);
-                    ensure_window_visible(hwnd, L"controlbox");
-                    return 0;
-                }
-            }
-            if (is_ctrl) {
-                if (w_param == VK_LEFT || w_param == 'A') {
-                    resize_window_by_offset(hwnd, -SC(20), 0);
-                    return 0;
-                }
-                if (w_param == VK_RIGHT || w_param == 'D') {
-                    resize_window_by_offset(hwnd, SC(20), 0);
-                    return 0;
-                }
-            }
-            if (w_param == VK_F5) {
-                RECT rc_reset = {0};
-                if (GetWindowRect(hwnd, &rc_reset)) {
-                    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-                    save_config(L"controlbox", 0, 0, rc_reset.right - rc_reset.left, rc_reset.bottom - rc_reset.top);
-                    return 0;
-                }
-            }
-            if (w_param == VK_ESCAPE) {
-                DestroyWindow(hwnd);
+        }
+        if (is_ctrl) {
+            if (w_param == VK_LEFT || w_param == 'A') {
+                resize_window_by_offset(hwnd, -SC(20), 0);
                 return 0;
             }
-            return DefWindowProcW(hwnd, msg, w_param, l_param);
-        }
-        case WM_EXITSIZEMOVE: {
-            RECT rc = {0};
-            if (GetWindowRect(hwnd, &rc)) {
-                save_config(L"controlbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+            if (w_param == VK_RIGHT || w_param == 'D') {
+                resize_window_by_offset(hwnd, SC(20), 0);
+                return 0;
             }
-            return 0;
         }
-        case WM_CLOSE:
+        if (w_param == VK_F5) {
+            RECT rc_reset = {0};
+            if (GetWindowRect(hwnd, &rc_reset)) {
+                SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+                save_config(L"controlbox", 0, 0, rc_reset.right - rc_reset.left, rc_reset.bottom - rc_reset.top);
+                return 0;
+            }
+        }
+        if (w_param == VK_ESCAPE) {
             DestroyWindow(hwnd);
             return 0;
-        case WM_DESTROY:
-            return controlbox_controller_on_destroy(hwnd);
+        }
+        return DefWindowProcW(hwnd, msg, w_param, l_param);
+    }
+    case WM_EXITSIZEMOVE: {
+        RECT rc = {0};
+        if (GetWindowRect(hwnd, &rc)) {
+            save_config(L"controlbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        }
+        return 0;
+    }
+    case WM_CLOSE:
+        DestroyWindow(hwnd);
+        return 0;
+    case WM_DESTROY:
+        return controlbox_controller_on_destroy(hwnd);
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
     switch (msg) {
-        case WM_DISPLAYCHANGE: {
-            update_monitor_enum();
-            return 0;
-        }
-        case WM_ACTIVATE: {
-            if (LOWORD(w_param) == WA_INACTIVE) {
-                HWND activated_wnd = (HWND)l_param;
-                DWORD our_pid = GetCurrentProcessId();
-                DWORD activated_pid = 0;
-                if (activated_wnd) {
-                    GetWindowThreadProcessId(activated_wnd, &activated_pid);
-                }
-                if (activated_pid != our_pid) {
-                    hide_taskbox(hwnd);
-                }
+    case WM_DISPLAYCHANGE: {
+        update_monitor_enum();
+        return 0;
+    }
+    case WM_ACTIVATE: {
+        if (LOWORD(w_param) == WA_INACTIVE) {
+            HWND activated_wnd = (HWND)l_param;
+            DWORD our_pid = GetCurrentProcessId();
+            DWORD activated_pid = 0;
+            if (activated_wnd) {
+                GetWindowThreadProcessId(activated_wnd, &activated_pid);
             }
-            InvalidateRect(hwnd, NULL, FALSE);
-            return 0;
-        }
-        case WM_SETTINGCHANGE:
-            if (!should_refresh_theme_on_setting_change(l_param)) {
-                break;
+            if (activated_pid != our_pid) {
+                hide_taskbox(hwnd);
             }
-            /* fallthrough */
-        case WM_THEMECHANGED:
-        case WM_SYSCOLORCHANGE:
-        case WM_DWMCOLORIZATIONCOLORCHANGED: {
-            refresh_theme_surfaces(hwnd);
-            return 0;
         }
-        case WM_GETMINMAXINFO: {
-            MINMAXINFO* mmi = (MINMAXINFO*)l_param;
-            mmi->ptMinTrackSize.x = SC(HG_MIN_WINDOW_WIDTH);
-            mmi->ptMinTrackSize.y = SC(HG_MIN_WINDOW_HEIGHT);
-            return 0;
-        }
-        case WM_CREATE:
-            return taskbox_controller_on_create(hwnd);
-        case WM_MOUSEWHEEL: {
-            if (GetKeyState(VK_MENU) < 0) {
-                /* Alt 키가 눌린 상태에서만 투명도 조절 실행 */
-                short delta = (short)HIWORD(w_param);
-                update_taskbox_alpha(delta > 0 ? 1 : -1);
-            } else {
-                /* Alt 키가 없으면 태스크바 창으로 메시지를 전달하여 창 전체에서 스크롤 가능하게 함 */
-                /* Ctrl+휠(크기조절) 메시지도 태스크바 창에서 처리되도록 전달됨 */
-                SendMessageW(hg_g_toolbar_wnd, WM_MOUSEWHEEL, w_param, l_param);
-            }
-            return 0;
-        }
-        case WM_NOTIFY: {
-            /* ListView 관련 통지 제거됨 */
+        InvalidateRect(hwnd, NULL, FALSE);
+        return 0;
+    }
+    case WM_SETTINGCHANGE:
+        if (!should_refresh_theme_on_setting_change(l_param)) {
             break;
         }
-        case WM_ENTERSIZEMOVE: {
-            hg_g_in_sizemove = TRUE;
-            GetWindowRect(hwnd, &hg_g_drag_start_rect);
-            return DefWindowProcW(hwnd, msg, w_param, l_param);
+        /* fallthrough */
+    case WM_THEMECHANGED:
+    case WM_SYSCOLORCHANGE:
+    case WM_DWMCOLORIZATIONCOLORCHANGED: {
+        refresh_theme_surfaces(hwnd);
+        return 0;
+    }
+    case WM_GETMINMAXINFO: {
+        MINMAXINFO *mmi = (MINMAXINFO *)l_param;
+        mmi->ptMinTrackSize.x = SC(HG_MIN_WINDOW_WIDTH);
+        mmi->ptMinTrackSize.y = SC(HG_MIN_WINDOW_HEIGHT);
+        return 0;
+    }
+    case WM_CREATE:
+        return taskbox_controller_on_create(hwnd);
+    case WM_MOUSEWHEEL: {
+        if (GetKeyState(VK_MENU) < 0) {
+            /* Alt 키가 눌린 상태에서만 투명도 조절 실행 */
+            short delta = (short)HIWORD(w_param);
+            update_taskbox_alpha(delta > 0 ? 1 : -1);
+        } else {
+            /* Alt 키가 없으면 태스크바 창으로 메시지를 전달하여 창 전체에서 스크롤 가능하게 함 */
+            /* Ctrl+휠(크기조절) 메시지도 태스크바 창에서 처리되도록 전달됨 */
+            SendMessageW(hg_g_toolbar_wnd, WM_MOUSEWHEEL, w_param, l_param);
         }
-        case WM_EXITSIZEMOVE: {
-            hg_g_in_sizemove = FALSE;
-            RECT rc = {0};
-            GetWindowRect(hwnd, &rc);
+        return 0;
+    }
+    case WM_NOTIFY: {
+        /* ListView 관련 통지 제거됨 */
+        break;
+    }
+    case WM_ENTERSIZEMOVE: {
+        hg_g_in_sizemove = TRUE;
+        GetWindowRect(hwnd, &hg_g_drag_start_rect);
+        return DefWindowProcW(hwnd, msg, w_param, l_param);
+    }
+    case WM_EXITSIZEMOVE: {
+        hg_g_in_sizemove = FALSE;
+        RECT rc = {0};
+        GetWindowRect(hwnd, &rc);
 
-            int dw = (rc.right - rc.left) - (hg_g_drag_start_rect.right - hg_g_drag_start_rect.left);
-            int dh = (rc.bottom - rc.top) - (hg_g_drag_start_rect.bottom - hg_g_drag_start_rect.top);
+        int dw = (rc.right - rc.left) - (hg_g_drag_start_rect.right - hg_g_drag_start_rect.left);
+        int dh = (rc.bottom - rc.top) - (hg_g_drag_start_rect.bottom - hg_g_drag_start_rect.top);
 
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16)) icon_size = SC(16);
-            int border = SC(HG_BORDER_THICKNESS);
+        int icon_size = ABS(hg_g_current_font_size);
+        if (icon_size < SC(16))
+            icon_size = SC(16);
+        int border = SC(HG_BORDER_THICKNESS);
 
-            int total_tasks = hg_g_window_count;
-            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-            int total_items = total_tasks + total_shortcuts;
-            if (total_items <= 0) total_items = 1;
+        int total_tasks = hg_g_window_count;
+        int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+        int total_items = total_tasks + total_shortcuts;
+        if (total_items <= 0)
+            total_items = 1;
 
-            int cols;
-            if (ABS(dh) > ABS(dw)) {
-                int edit_height = SC(20);
-                if (hg_g_edit_msg_wnd && hg_g_main_font) {
-                    HDC hdc = GetDC(hg_g_edit_msg_wnd);
-                    if (hdc) {
-                        HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                        TEXTMETRIC tm = {0};
-                        if (GetTextMetrics(hdc, &tm)) {
-                            edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
-                        }
-                        if (old_font) SelectObject(hdc, old_font);
-                        ReleaseDC(hg_g_edit_msg_wnd, hdc);
+        int cols;
+        if (ABS(dh) > ABS(dw)) {
+            int edit_height = SC(20);
+            if (hg_g_edit_msg_wnd && hg_g_main_font) {
+                HDC hdc = GetDC(hg_g_edit_msg_wnd);
+                if (hdc) {
+                    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
+                    TEXTMETRIC tm = {0};
+                    if (GetTextMetrics(hdc, &tm)) {
+                        edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
                     }
+                    if (old_font)
+                        SelectObject(hdc, old_font);
+                    ReleaseDC(hg_g_edit_msg_wnd, hdc);
                 }
-
-                int row_height = icon_size + SC(10);
-                int current_h = rc.bottom - rc.top;
-                int available_toolbar_h = current_h - (border * 2 + edit_height);
-                int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
-                if (target_rows < 1) target_rows = 1;
-                if (target_rows > total_items) target_rows = total_items;
-                cols = (total_items + target_rows - 1) / target_rows;
-            } else {
-                int tb_width = (rc.right - rc.left) - border * 2;
-                cols = get_items_per_row(tb_width, icon_size);
-            }
-            if (cols <= 0) cols = 1;
-
-            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
-            int new_w = exact_tb_width + border * 2;
-
-            SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-
-            update_layout(hwnd); /* Will trigger snap exact height */
-            GetWindowRect(hwnd, &rc);
-            save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
-            return 0;
-        }
-        case WM_TIMER:
-            if (w_param == 1) {
-                if (IsWindowVisible(hwnd)) {
-                    refresh_window_list(FALSE);
-                }
-            } else if (w_param == HG_TIMER_HIGHLIGHT) {
-                hg_g_taskbox_highlight_ticks--;
-                if (hg_g_taskbox_highlight_ticks <= 0) {
-                    KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-                }
-                InvalidateRect(hwnd, NULL, FALSE);
-            }
-            return 0;
-        case WM_PAINT:
-            return taskbox_controller_on_paint(hwnd);
-        case WM_NCHITTEST: {
-            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            ScreenToClient(hwnd, &pt);
-            RECT rc; GetClientRect(hwnd, &rc);
-            int border = SC(HG_BORDER_THICKNESS);
-
-            if (pt.x < border && pt.y < border) return HTTOPLEFT;
-            if (pt.x > rc.right - border && pt.y < border) return HTTOPRIGHT;
-            if (pt.x < border && pt.y > rc.bottom - border) return HTBOTTOMLEFT;
-            if (pt.x > rc.right - border && pt.y > rc.bottom - border) return HTBOTTOMRIGHT;
-            if (pt.y < border) return HTTOP;
-            if (pt.y > rc.bottom - border) return HTBOTTOM;
-            if (pt.x < border) return HTLEFT;
-            if (pt.x > rc.right - border) return HTRIGHT;
-
-            return HTCAPTION; /* 그 외 모든 클라이언트 영역은 드래그 가능하게 */
-        }
-        case WM_SYSKEYDOWN:
-        case WM_KEYDOWN:
-            return taskbox_controller_on_keydown(hwnd, msg, w_param, l_param);
-        case WM_COMMAND:
-            return taskbox_controller_on_command(hwnd, w_param, l_param);
-        case WM_SIZE: {
-            update_layout(hwnd);
-            InvalidateRect(hwnd, NULL, TRUE); /* 외곽선 다시 그리기 */
-            return 0;
-        }
-        case WM_CTLCOLORSTATIC:
-        case WM_CTLCOLOREDIT:
-            /* fallthrough */
-        case WM_CTLCOLORLISTBOX: {
-            HDC hdc_static = (HDC)w_param;
-            SetTextColor(hdc_static, hg_g_color_scheme_selected.text);
-            /* 투명 배경 모드 시 글자가 겹쳐 그려지는 문제 방지를 위해 배경을 칠함 */
-            SetBkMode(hdc_static, OPAQUE);
-
-            COLORREF bg_color = hg_g_color_scheme_selected.bg;
-            if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
-                bg_color = HG_COLOR_BG_FLASH;
-            }
-            SetBkColor(hdc_static, bg_color);
-
-            /* 하이라이트 중일 때는 브러시를 캐싱하여 반환 (GDI 누수 방지) */
-            if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
-                if (!hg_g_hbr_highlight) {
-                    hg_g_hbr_highlight = CreateSolidBrush(HG_COLOR_BG_FLASH);
-                }
-                return hg_g_hbr_highlight ? (LRESULT)hg_g_hbr_highlight : (LRESULT)GetStockObject(BLACK_BRUSH);
             }
 
-            if (!hg_g_edit_bg_brush) hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
-            return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+            int row_height = icon_size + SC(10);
+            int current_h = rc.bottom - rc.top;
+            int available_toolbar_h = current_h - (border * 2 + edit_height);
+            int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
+            if (target_rows < 1)
+                target_rows = 1;
+            if (target_rows > total_items)
+                target_rows = total_items;
+            cols = (total_items + target_rows - 1) / target_rows;
+        } else {
+            int tb_width = (rc.right - rc.left) - border * 2;
+            cols = get_items_per_row(tb_width, icon_size);
         }
-        case WM_DESTROY:
-            return taskbox_controller_on_destroy(hwnd);
+        if (cols <= 0)
+            cols = 1;
+
+        int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+        int new_w = exact_tb_width + border * 2;
+
+        SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+        update_layout(hwnd); /* Will trigger snap exact height */
+        GetWindowRect(hwnd, &rc);
+        save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        return 0;
+    }
+    case WM_TIMER:
+        if (w_param == 1) {
+            if (IsWindowVisible(hwnd)) {
+                refresh_window_list(FALSE);
+            }
+        } else if (w_param == HG_TIMER_HIGHLIGHT) {
+            hg_g_taskbox_highlight_ticks--;
+            if (hg_g_taskbox_highlight_ticks <= 0) {
+                KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
+            }
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+        return 0;
+    case WM_PAINT:
+        return taskbox_controller_on_paint(hwnd);
+    case WM_NCHITTEST: {
+        POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        ScreenToClient(hwnd, &pt);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        int border = SC(HG_BORDER_THICKNESS);
+
+        if (pt.x < border && pt.y < border)
+            return HTTOPLEFT;
+        if (pt.x > rc.right - border && pt.y < border)
+            return HTTOPRIGHT;
+        if (pt.x < border && pt.y > rc.bottom - border)
+            return HTBOTTOMLEFT;
+        if (pt.x > rc.right - border && pt.y > rc.bottom - border)
+            return HTBOTTOMRIGHT;
+        if (pt.y < border)
+            return HTTOP;
+        if (pt.y > rc.bottom - border)
+            return HTBOTTOM;
+        if (pt.x < border)
+            return HTLEFT;
+        if (pt.x > rc.right - border)
+            return HTRIGHT;
+
+        return HTCAPTION; /* 그 외 모든 클라이언트 영역은 드래그 가능하게 */
+    }
+    case WM_SYSKEYDOWN:
+    case WM_KEYDOWN:
+        return taskbox_controller_on_keydown(hwnd, msg, w_param, l_param);
+    case WM_COMMAND:
+        return taskbox_controller_on_command(hwnd, w_param, l_param);
+    case WM_SIZE: {
+        update_layout(hwnd);
+        InvalidateRect(hwnd, NULL, TRUE); /* 외곽선 다시 그리기 */
+        return 0;
+    }
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLOREDIT:
+        /* fallthrough */
+    case WM_CTLCOLORLISTBOX: {
+        HDC hdc_static = (HDC)w_param;
+        SetTextColor(hdc_static, hg_g_color_scheme_selected.text);
+        /* 투명 배경 모드 시 글자가 겹쳐 그려지는 문제 방지를 위해 배경을 칠함 */
+        SetBkMode(hdc_static, OPAQUE);
+
+        COLORREF bg_color = hg_g_color_scheme_selected.bg;
+        if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
+            bg_color = HG_COLOR_BG_FLASH;
+        }
+        SetBkColor(hdc_static, bg_color);
+
+        /* 하이라이트 중일 때는 브러시를 캐싱하여 반환 (GDI 누수 방지) */
+        if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
+            if (!hg_g_hbr_highlight) {
+                hg_g_hbr_highlight = CreateSolidBrush(HG_COLOR_BG_FLASH);
+            }
+            return hg_g_hbr_highlight ? (LRESULT)hg_g_hbr_highlight : (LRESULT)GetStockObject(BLACK_BRUSH);
+        }
+
+        if (!hg_g_edit_bg_brush)
+            hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
+        return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+    }
+    case WM_DESTROY:
+        return taskbox_controller_on_destroy(hwnd);
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line, int cmd_show) {
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line, int cmd_show)
+{
     HRESULT co_hr;
     BOOL com_initialized = FALSE;
     HANDLE mutex = NULL;
@@ -6051,7 +6591,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     if (screen_dc) {
         int dpi_x = GetDeviceCaps(screen_dc, LOGPIXELSX);
         ReleaseDC(NULL, screen_dc);
-        if (dpi_x > 0) hg_g_scale_factor = dpi_x / 96.0;
+        if (dpi_x > 0)
+            hg_g_scale_factor = dpi_x / 96.0;
     }
 
     /* 초기 값들에 DPI 배율 적용 */
@@ -6062,12 +6603,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     InitCommonControlsEx(&icex);
 
     /* Extract icons first to share across classes */
-    icon_large = (HICON)LoadImageW(instance, MAKEINTRESOURCE(1), IMAGE_ICON,
-                                   GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
-    icon_small = (HICON)LoadImageW(instance, MAKEINTRESOURCE(1), IMAGE_ICON,
-                                   GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+    icon_large = (HICON)LoadImageW(instance, MAKEINTRESOURCE(1), IMAGE_ICON, GetSystemMetrics(SM_CXICON),
+                                   GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+    icon_small = (HICON)LoadImageW(instance, MAKEINTRESOURCE(1), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
+                                   GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
 
-    if (!hg_g_main_bg_brush) hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
+    if (!hg_g_main_bg_brush)
+        hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
     if (!register_app_window_classes(instance, icon_large, icon_small)) {
         exit_code = 1;
         goto cleanup_finish;
@@ -6085,26 +6627,22 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     load_floater_font_config();
     load_taskbox_font_config();
 
-    hg_g_floater_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_APPWINDOW,
-        HG_CLASS_FLOATER_WIDGET, L"floater", WS_POPUP | WS_VISIBLE,
-        fx, fy, fw, fh, NULL, NULL, instance, NULL);
+    hg_g_floater_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_APPWINDOW, HG_CLASS_FLOATER_WIDGET,
+                                       L"floater", WS_POPUP | WS_VISIBLE, fx, fy, fw, fh, NULL, NULL, instance, NULL);
     if (!hg_g_floater_wnd) {
         MessageBoxW(NULL, L"Failed to create floater window.", L"hgfloater", MB_ICONERROR);
         exit_code = 1;
         goto cleanup_finish;
     }
 
-    hg_g_hotkey_registered = RegisterHotKey(hg_g_floater_wnd, 1,
-        hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
+    hg_g_hotkey_registered = RegisterHotKey(hg_g_floater_wnd, 1, hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
     if (!hg_g_hotkey_registered) {
-        MessageBoxW(NULL,
-            L"Global hotkey registration failed. Another program may be using the assigned hotkey.",
-            L"hgfloater", MB_ICONWARNING);
+        MessageBoxW(NULL, L"Global hotkey registration failed. Another program may be using the assigned hotkey.",
+                    L"hgfloater", MB_ICONWARNING);
     }
 
-    hg_g_taskbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-        HG_CLASS_TASKBOX, L"taskbox", WS_POPUP,
-        tx, ty, tw, th, NULL, NULL, instance, NULL);
+    hg_g_taskbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, HG_CLASS_TASKBOX, L"taskbox",
+                                       WS_POPUP, tx, ty, tw, th, NULL, NULL, instance, NULL);
     if (!hg_g_taskbox_wnd) {
         MessageBoxW(NULL, L"Failed to create taskbox window.", L"hgfloater", MB_ICONERROR);
         exit_code = 1;
@@ -6114,20 +6652,18 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     update_monitor_enum();
     dispatch_pending_command_line();
 
-    ACCEL accel[] = {
-        { FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP },
-        { FCONTROL | FVIRTKEY, 'X', HG_IDM_CLOSE_APP },
-        { FALT     | FVIRTKEY, VK_F4, HG_IDM_CLOSE_APP },
-        { FVIRTKEY, VK_F1, HG_IDM_ABOUT },
-        { FCONTROL | FSHIFT | FVIRTKEY, 'R', HG_IDM_RESET_ALL },
-        { FCONTROL | FVIRTKEY, 'R', HG_IDM_RESET_ALL },
-        { FVIRTKEY, VK_F5, HG_IDM_RESET_ALL },
-        { FCONTROL | FVIRTKEY, '0', HG_IDM_RESET_ALL },
-        { FCONTROL | FVIRTKEY, VK_OEM_PLUS, HG_IDM_FONT_UP },
-        { FCONTROL | FVIRTKEY, VK_OEM_MINUS, HG_IDM_FONT_DOWN },
-        { FCONTROL | FVIRTKEY, VK_ADD, HG_IDM_FONT_UP },
-        { FCONTROL | FVIRTKEY, VK_SUBTRACT, HG_IDM_FONT_DOWN }
-    };
+    ACCEL accel[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP},
+                     {FCONTROL | FVIRTKEY, 'X', HG_IDM_CLOSE_APP},
+                     {FALT | FVIRTKEY, VK_F4, HG_IDM_CLOSE_APP},
+                     {FVIRTKEY, VK_F1, HG_IDM_ABOUT},
+                     {FCONTROL | FSHIFT | FVIRTKEY, 'R', HG_IDM_RESET_ALL},
+                     {FCONTROL | FVIRTKEY, 'R', HG_IDM_RESET_ALL},
+                     {FVIRTKEY, VK_F5, HG_IDM_RESET_ALL},
+                     {FCONTROL | FVIRTKEY, '0', HG_IDM_RESET_ALL},
+                     {FCONTROL | FVIRTKEY, VK_OEM_PLUS, HG_IDM_FONT_UP},
+                     {FCONTROL | FVIRTKEY, VK_OEM_MINUS, HG_IDM_FONT_DOWN},
+                     {FCONTROL | FVIRTKEY, VK_ADD, HG_IDM_FONT_UP},
+                     {FCONTROL | FVIRTKEY, VK_SUBTRACT, HG_IDM_FONT_DOWN}};
     accel_table = CreateAcceleratorTableW(accel, HG_ARRAYSIZE(accel));
 
     MSG msg_struct;
@@ -6140,7 +6676,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
         if (msg_struct.message == WM_KEYDOWN && msg_struct.wParam == VK_F5) {
             if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
-                if (msg_struct.hwnd == hg_g_controlbox_wnd || GetAncestor(msg_struct.hwnd, GA_ROOT) == hg_g_controlbox_wnd) {
+                if (msg_struct.hwnd == hg_g_controlbox_wnd ||
+                    GetAncestor(msg_struct.hwnd, GA_ROOT) == hg_g_controlbox_wnd) {
                     SendMessageW(hg_g_controlbox_wnd, WM_KEYDOWN, VK_F5, 0);
                     continue;
                 }
@@ -6247,8 +6784,11 @@ cleanup_finish:
         }
     }
 
-    if (icon_large) DestroyIcon(icon_large);
-    if (icon_small) DestroyIcon(icon_small);
-    if (com_initialized) CoUninitialize();
+    if (icon_large)
+        DestroyIcon(icon_large);
+    if (icon_small)
+        DestroyIcon(icon_small);
+    if (com_initialized)
+        CoUninitialize();
     return exit_code;
 }
