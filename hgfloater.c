@@ -2847,6 +2847,9 @@ void update_edit_font_size(int delta) {
         InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
     }
     if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+        if (hg_g_controlbox_value_wnd && IsWindow(hg_g_controlbox_value_wnd)) {
+            SendMessageW(hg_g_controlbox_value_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        }
         update_controlbox_layout(hg_g_controlbox_wnd);
         InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
     }
