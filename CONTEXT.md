@@ -66,25 +66,29 @@ hgfloater/
 | CLI 디스패처 | `HgCliAction` 기반 옵션 파싱/디스패치 | `2f4b96d` |
 | 전역 리소스 수명 주기 | wWinMain cleanup_finish 통합 해제 및 소유권 정리 | `2dbd45d` |
 | 활성 포커스 시각 표시기 | WM_ACTIVATE 포커스 분기 및 액센트 도색, 활성 도트 구현 | `07ad611` |
+| 설정 관리자 정리 | hg_config_reset_all() 통합 설정 제어 및 리셋 구현 | 완료 |
+| 레거시 HJKL 제거 | floater/taskbox 내 HJKL 바인딩 완전 제거 및 WASD/방향키 통일 | 완료 |
+| 모니터 로딩 버그 수정 | GDI 리소스 조기 파괴 해결로 모니터 창 로드 실패 해결 | 완료 |
+| 컨트롤박스 우클릭 닫기 | controlbox_proc에 WM_RBUTTONUP 우클릭 닫기 바인딩 완료 | 완료 |
+| 실동작 버그 3종 수정 | 컨트롤박스 캡션 우클릭 종료, F5 좌표 리셋, 모니터 폰트 레이지 로드 | 완료 |
 
 ### 미커밋 변경 (작업 트리)
 
-- 없음 (모든 변경사항이 Git에 커밋 완료됨)
+- `hgfloater.c` (실동작 버그 3종 수정 구현)
+- `TODO.md` / `CONTEXT.md` (진행 상태 기록)
 
 ---
 
 ## Next Actions
 
-1. **7. 설정 관리자 정리**:
-   - 창 위치/크기/테마/IME/볼륨 설정 구조 정리
-   - 저장 및 복원 흐름 정리
+1. **9. 빌드 스크립트 테스트 경로 수정**:
+   - `build.bat`의 테스트 경로를 `tests\`에서 실제 디렉토리인 `test\`로 교정.
 
 ---
 
 ## Known Issues / Notes
 
-- `hgfloater.c`가 6111줄 단일 파일로, 변경 영향 범위가 큼. 장기적으로 모듈 분리 검토 필요.
-- AGENTS.md 기준 `HJKL` 바인딩 제거가 명시되어 있으나, Floater/Taskbox WM_KEYDOWN 경로에 일부 잔존. 추후 정리 필요.
+- `hgfloater.c`가 약 6200줄 단일 파일로, 변경 영향 범위가 큼. 장기적으로 모듈 분리 검토 필요.
 - `build.bat`의 테스트 경로가 `tests\*.c`로 되어 있으나 실제 폴더는 `test/`. 빌드 스크립트 수정 필요.
 - 테스트는 smoke test 수준. 런타임 동작 자동 검증 없음.
 - 빌드 검증은 반드시 arch-dev에서 Windows x64 크로스 컴파일로 수행.

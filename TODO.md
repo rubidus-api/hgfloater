@@ -86,8 +86,36 @@
 - 현재 OS상의 활성(Foreground) 창을 핫키 시점에 감지(`hg_g_prev_active_hwnd`)하여, 태스크 스위처 내 해당 프로세스 아이콘 하단에 테마 기반의 우아한 액센트 닷/필(Pill) 형태의 활성 상태 표시기(Active Status Dot)를 동적으로 그리도록 검토 및 구현 완수함.
 
 ### 7. 설정 관리자 정리
-- [ ] 창 위치/크기/테마/IME/볼륨 관련 설정 구조 정리
-- [ ] 저장 및 복원 흐름 정리
+- [x] 창 위치/크기/테마/IME/볼륨 관련 설정 구조 정리
+- [x] 저장 및 복원 흐름 정리
+
+### 2026-05-29
+- 분산되어 있던 설정 데이터 흐름과 리셋 로직을 단일 인터페이스로 정제하여, 모든 위젯(floater, taskbox, controlbox) 및 시스템 속성(알파, 폰트명, 폰트 크기, 핫키, 모니터 배치 등)을 안전하게 원자적으로 일괄 리셋하고 파일 및 런타임에 동시 적용하는 `hg_config_reset_all()` 설정 관리자 통합 제어 함수를 완벽히 구현 및 바인딩 완료함.
+- `HG_IDM_RESET_ALL` 메시지 처리 시에 기존의 불안정했던 인라인 강제 복구 및 undefined 변수(GDI leak 및 컴파일 에러 유발 가능 코드)를 깔끔하게 걷어내고, 새롭게 추상화된 설정 관리자 단일 함수를 호출하도록 구조 변경을 완료하여 설정 저장 및 복원 흐름의 모듈성을 전폭 향상시킴.
+
+### 8. 레거시 HJKL 바인딩 완전 제거
+- [x] floater 및 taskbox 내 모든 interaction paradigm에서 legacy HJKL 단축키를 완전히 제거하고 Alt + WASD / Alt + Arrow Keys 또는 Ctrl + A/D, Ctrl + W/S 위주로 정리 완료.
+
+### 2026-05-29
+- floater_controller_on_keydown 및 taskbox_controller_on_keydown에 남아 있던 레거시 VI-style HJKL 단축키 매핑을 완전히 걷어내고, SPEC.md 명세에 맞춰 Alt + WASD, Alt + Arrow Keys 또는 Ctrl + A/D, Ctrl + W/S 위주로 키 바인딩을 통일하고 주석도 최신화함.
+
+### 9. 실동작 버그 2종 수정
+- [x] 모니터 창이 로드되지 않던 현상 해결 (태스크박스 Destroy 시 GDI 전역 폰트/브러시 리소스를 무분별하게 조기 파괴하여 이후 창 생성 시 누락되던 버그를 wWinMain cleanup_finish에 단일 일임하여 해결)
+- [x] 컨트롤박스가 빈 영역 마우스 우클릭으로 제거되지 않던 문제 해결 (controlbox_proc에 WM_RBUTTONUP 메시지 핸들러 추가 및 DestroyWindow 바인딩 완료)
+
+### 2026-05-29 (추가)
+- taskbox_controller_on_destroy 내부에서 전역 HFONT, HBRUSH, 툴팁 윈도우를 소거하던 중복 삭제 구문을 완전히 거두어내고 wWinMain의 단일 리소스 관리 지점으로 일임하여 모니터 뷰어 및 다른 보조 창들이 리소스 유실 없이 영구히 잘 생성되도록 조치 완료.
+- controlbox_proc에 WM_RBUTTONUP 라우트를 정상 탑재하여 컨트롤박스 빈 영역 우클릭 감지 즉시 파괴(close)되도록 사용자 요구사항 완수함.
+
+### 10. 실동작 버그 3종 수정 (추가 요구사항)
+- [x] 컨트롤박스 상단의 제목(캡션) 우클릭 시 창 닫히지 않는 문제 해결 (controlbox_proc에 WM_NCRBUTTONUP 및 HTCAPTION 처리기 추가)
+- [x] F5키 누를 시 컨트롤박스 위치가 0,0으로 초기화되지 않는 문제 해결 (메시지 루프에서 controlbox 및 그 자식 포커스 시 VK_F5 강제 전달 및 controlbox_proc에 VK_F5 핸들러 바인딩)
+- [x] 모니터박스 최초 기동 시 컨트롤 에디트 글꼴이 기본 시스템 글꼴로 폴백되는 문제 해결 (monitor_wnd_proc의 WM_CREATE 및 WM_SIZE에 hg_g_main_font 레이지 로드 방어 코드 구축)
+
+### 2026-05-30
+- `controlbox_proc`에 `WM_NCRBUTTONUP` 메시지 라우트를 추가하고 `w_param == HTCAPTION`일 때 창을 닫도록 구현하여, 컨트롤박스 상단 제목 영역 우클릭 시 즉각 닫히도록 완수함.
+- `GetMessage` 메시지 루프에서 포커스가 `controlbox` 또는 그 자식 윈도우에 있고 `VK_F5`가 눌렸을 때 직접 `WM_KEYDOWN` 메시지를 전달하도록 라우팅 필터를 설계하여, 자식 트랙바에 포커스가 묶인 상황이나 액셀러레이터 테이블 간섭 상황에서도 0,0 좌표로 리셋되도록 완수함.
+- `monitor_wnd_proc`의 `WM_CREATE` 및 `WM_SIZE` 진입부에 lazy-initialization 구조를 더해 `hg_g_main_font`가 미처 준비되지 않은 시점에 모니터 뷰어가 열려도 깨끗한 전역 폰트 자원을 직접 빌드 및 로드하도록 구현하여 시스템 기본 폰트 폴백 버그를 완벽히 예방하고 완수함.
 
 ## 비고
 - 문서는 실제 코드 상태와 맞지 않으면 즉시 수정한다.
