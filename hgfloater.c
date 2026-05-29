@@ -5577,15 +5577,8 @@ static LRESULT taskbox_controller_on_destroy(HWND hwnd) {
             KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
             KillTimer(hwnd, 1);
 
-            if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) {
-                DeleteObject(hg_g_main_font);
-            }
-            hg_g_main_font = NULL;
+            /* GDI 전역 리소스(font, brush) 및 전역 툴팁은 wWinMain의 cleanup_finish에서 안전하게 일괄 해제하므로 여기서 삭제하지 않음 */
 
-            if (hg_g_edit_bg_brush) { DeleteObject(hg_g_edit_bg_brush); hg_g_edit_bg_brush = NULL; }
-            if (hg_g_toolbar_btn_font) { DeleteObject(hg_g_toolbar_btn_font); hg_g_toolbar_btn_font = NULL; }
-            if (hg_g_hbr_highlight) { DeleteObject(hg_g_hbr_highlight); hg_g_hbr_highlight = NULL; }
-            if (hg_g_tooltip_wnd && IsWindow(hg_g_tooltip_wnd)) { DestroyWindow(hg_g_tooltip_wnd); hg_g_tooltip_wnd = NULL; }
             for (int i = 0; i < hg_g_shortcut_count; i++) {
                 if (hg_g_shortcuts[i].icon) { DestroyIcon(hg_g_shortcuts[i].icon); hg_g_shortcuts[i].icon = NULL; }
             }
@@ -5747,6 +5740,9 @@ LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
             return controlbox_controller_on_scroll(hwnd, (HWND)l_param);
         case WM_COMMAND:
             return controlbox_controller_on_command(hwnd, LOWORD(w_param));
+        case WM_RBUTTONUP:
+            DestroyWindow(hwnd);
+            return 0;
         case WM_SYSKEYDOWN:
         case WM_KEYDOWN: {
             BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
