@@ -316,6 +316,7 @@ HMENU hg_g_h_audio_submenu = NULL;
 UINT hg_g_shellhook_msg = 0;
 HWND hg_g_floater_wnd;
 HWND hg_g_about_wnd = NULL;
+HWND hg_g_prev_active_hwnd = NULL;
 HFONT hg_g_main_font;
 HFONT hg_g_floater_time_font = NULL;
 HFONT hg_g_floater_date_font = NULL;
@@ -3561,6 +3562,13 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         }
         case WM_HOTKEY: {
             if (w_param == 1) {
+                /* Store the current foreground window before showing taskbox */
+                HWND fg_wnd = GetForegroundWindow();
+                if (fg_wnd && fg_wnd != hg_g_taskbox_wnd && fg_wnd != hg_g_floater_wnd &&
+                    fg_wnd != hg_g_controlbox_wnd && fg_wnd != hg_g_about_wnd) {
+                    hg_g_prev_active_hwnd = fg_wnd;
+                }
+
                 /* 화면 이탈 여부 자동 체크 및 복구 (0,0) */
                 ensure_window_visible(hg_g_floater_wnd, L"floater");
                 ensure_window_visible(hg_g_taskbox_wnd, L"taskbox");
@@ -3890,6 +3898,22 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     }
                     if (hg_g_window_items[r_idx].icon) {
                         DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size, icon_size, 0, NULL, DI_NORMAL);
+                    }
+
+                    /* Draw active status indicator (elegant pill/dot under the active task's icon) */
+                    if (hg_g_window_items[r_idx].hwnd == hg_g_prev_active_hwnd) {
+                        int dot_w = SC(6);
+                        if (dot_w < 4) dot_w = 4;
+                        int dot_h = SC(3);
+                        if (dot_h < 2) dot_h = 2;
+                        int dot_x = rc_item.left + (icon_size - dot_w) / 2;
+                        int dot_y = rc_item.bottom + SC(1);
+                        RECT dot_rc = { dot_x, dot_y, dot_x + dot_w, dot_y + dot_h };
+                        HBRUSH hbr_dot = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+                        if (hbr_dot) {
+                            FillRect(mem_dc, &dot_rc, hbr_dot);
+                            DeleteObject(hbr_dot);
+                        }
                     }
                 }
 
@@ -5062,7 +5086,10 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 }
 
                 /* Draw border like taskbox/floater */
-                HBRUSH border_brush = CreateSolidBrush(HG_COLOR_BG_TOOLBAR);
+                HWND fg = GetForegroundWindow();
+                BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
+                COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
+                HBRUSH border_brush = CreateSolidBrush(border_color);
                 if (border_brush) {
                     RECT rc_top = {0, 0, rc.right, border};
                     RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
@@ -5304,7 +5331,10 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd) {
 
             /* 외곽선 그리기 */
             int border = SC(HG_BORDER_THICKNESS);
-            HBRUSH hbr_border = CreateSolidBrush(HG_COLOR_BG_TOOLBAR);
+            HWND fg = GetForegroundWindow();
+            BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
+            COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
+            HBRUSH hbr_border = CreateSolidBrush(border_color);
             if (hbr_border) {
                 /* 상하좌우 사각형으로 채우기 */
                 RECT rc_top = {0, 0, rc.right, border};
@@ -5670,6 +5700,21 @@ LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     switch (msg) {
         case WM_MOUSEACTIVATE:
             return MA_ACTIVATE;
+        case WM_ACTIVATE: {
+            if (LOWORD(w_param) == WA_INACTIVE) {
+                HWND activated_wnd = (HWND)l_param;
+                DWORD our_pid = GetCurrentProcessId();
+                DWORD activated_pid = 0;
+                if (activated_wnd) {
+                    GetWindowThreadProcessId(activated_wnd, &activated_pid);
+                }
+                if (activated_pid != our_pid) {
+                    DestroyWindow(hwnd);
+                }
+            }
+            InvalidateRect(hwnd, NULL, FALSE);
+            return 0;
+        }
         case WM_CREATE:
             return controlbox_controller_on_create(hwnd);
         case WM_ERASEBKGND:
@@ -5755,6 +5800,21 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     switch (msg) {
         case WM_DISPLAYCHANGE: {
             update_monitor_enum();
+            return 0;
+        }
+        case WM_ACTIVATE: {
+            if (LOWORD(w_param) == WA_INACTIVE) {
+                HWND activated_wnd = (HWND)l_param;
+                DWORD our_pid = GetCurrentProcessId();
+                DWORD activated_pid = 0;
+                if (activated_wnd) {
+                    GetWindowThreadProcessId(activated_wnd, &activated_pid);
+                }
+                if (activated_pid != our_pid) {
+                    hide_taskbox(hwnd);
+                }
+            }
+            InvalidateRect(hwnd, NULL, FALSE);
             return 0;
         }
         case WM_SETTINGCHANGE:
