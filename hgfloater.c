@@ -6089,9 +6089,17 @@ cleanup_finish:
         DestroyWindow(hg_g_controlbox_wnd);
         hg_g_controlbox_wnd = NULL;
     }
+    if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
+        DestroyWindow(hg_g_about_wnd);
+        hg_g_about_wnd = NULL;
+    }
     if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
         DestroyWindow(hg_g_floater_wnd);
         hg_g_floater_wnd = NULL;
+    }
+    if (hg_g_tooltip_wnd && IsWindow(hg_g_tooltip_wnd)) {
+        DestroyWindow(hg_g_tooltip_wnd);
+        hg_g_tooltip_wnd = NULL;
     }
 
     unregister_app_window_classes(instance);
@@ -6100,10 +6108,51 @@ cleanup_finish:
         CloseHandle(mutex);
         mutex = NULL;
     }
+
+    /* Consolidated cleanup for all global GDI resources */
+    if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) {
+        DeleteObject(hg_g_main_font);
+        hg_g_main_font = NULL;
+    }
+    if (hg_g_floater_time_font) {
+        DeleteObject(hg_g_floater_time_font);
+        hg_g_floater_time_font = NULL;
+    }
+    if (hg_g_floater_date_font) {
+        DeleteObject(hg_g_floater_date_font);
+        hg_g_floater_date_font = NULL;
+    }
+    if (hg_g_toolbar_btn_font) {
+        DeleteObject(hg_g_toolbar_btn_font);
+        hg_g_toolbar_btn_font = NULL;
+    }
     if (hg_g_main_bg_brush) {
         DeleteObject(hg_g_main_bg_brush);
         hg_g_main_bg_brush = NULL;
     }
+    if (hg_g_edit_bg_brush) {
+        DeleteObject(hg_g_edit_bg_brush);
+        hg_g_edit_bg_brush = NULL;
+    }
+    if (hg_g_hbr_highlight) {
+        DeleteObject(hg_g_hbr_highlight);
+        hg_g_hbr_highlight = NULL;
+    }
+
+    /* Clean up all shortcut and window item icons safely */
+    for (int i = 0; i < hg_g_shortcut_count; i++) {
+        if (hg_g_shortcuts[i].icon) {
+            DestroyIcon(hg_g_shortcuts[i].icon);
+            hg_g_shortcuts[i].icon = NULL;
+        }
+    }
+    for (int i = 0; i < hg_g_window_count; i++) {
+        if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
+            DestroyIcon(hg_g_window_items[i].icon);
+            hg_g_window_items[i].icon = NULL;
+        }
+    }
+
     if (icon_large) DestroyIcon(icon_large);
     if (icon_small) DestroyIcon(icon_small);
     if (com_initialized) CoUninitialize();

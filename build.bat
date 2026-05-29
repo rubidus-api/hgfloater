@@ -100,18 +100,18 @@ goto menu
 
 :run_tests
 echo.
-echo Running Tests in tests\ directory...
-if not exist tests\bin mkdir tests\bin
+echo Running Tests in test\ directory...
+if not exist test\bin mkdir test\bin
 set TEST_FAILED=0
-for %%f in (tests\*.c) do (
+for %%f in (test\*.c) do (
     echo Compiling %%f...
-    gcc %%f -o tests\bin\%%~nf.exe %WARNING_FLAGS% -Wno-overlength-strings -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -lshcore -lpropsys -limm32
+    gcc %%f -o test\bin\%%~nf.exe %WARNING_FLAGS% -Wno-overlength-strings -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -lshcore -lpropsys -limm32
     if !errorlevel! neq 0 (
         echo [Error] Failed to compile %%f
         set TEST_FAILED=1
     ) else (
-        echo Running tests\bin\%%~nf.exe...
-        tests\bin\%%~nf.exe
+        echo Running test\bin\%%~nf.exe...
+        test\bin\%%~nf.exe
         if !errorlevel! neq 0 (
             echo [Failed] %%f returned !errorlevel!
             set TEST_FAILED=1
