@@ -391,6 +391,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 void save_config(const WCHAR* section, int x, int y, int w, int h);
 void save_floater_font_config(void);
 void save_taskbox_font_config(void);
+void hg_config_reset_all(HWND hwnd);
 static int get_controlbox_required_height(void);
 static void show_about_window(void);
 void hide_taskbox(HWND hwnd);
@@ -3105,12 +3106,12 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
     BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
     BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
 
-    /* Alt + 방향키/hjkl/wasd: 현재 창 이동 (플로팅 박스) */
+    /* Alt + 방향키/wasd: 현재 창 이동 (플로팅 박스) */
     if (is_alt) {
-        if (w_param == VK_LEFT || w_param == 'H' || w_param == 'A') dx = -move_step;
-        else if (w_param == VK_RIGHT || w_param == 'L' || w_param == 'D') dx = move_step;
-        else if (w_param == VK_UP || w_param == 'K' || w_param == 'W') dy = -move_step;
-        else if (w_param == VK_DOWN || w_param == 'J' || w_param == 'S') dy = move_step;
+        if (w_param == VK_LEFT || w_param == 'A') dx = -move_step;
+        else if (w_param == VK_RIGHT || w_param == 'D') dx = move_step;
+        else if (w_param == VK_UP || w_param == 'W') dy = -move_step;
+        else if (w_param == VK_DOWN || w_param == 'S') dy = move_step;
 
         if (dx != 0 || dy != 0) {
             move_window_by_offset(hwnd, dx, dy);
@@ -3188,6 +3189,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                 show_controlbox_window();
             } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
                 show_about_window();
+            } else if (LOWORD(w_param) == HG_IDM_RESET_ALL) {
+                hg_config_reset_all(hwnd);
             } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
                 update_floater_font_size(1);
             } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
@@ -3195,134 +3198,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             } else if (LOWORD(w_param) == HG_IDM_POWER_OFF) {
                 HWND h_shell = FindWindowW(L"Shell_TrayWnd", NULL);
                 if (h_shell) PostMessageW(h_shell, WM_COMMAND, 506, 0);
-            } else if (LOWORD(w_param) == HG_IDM_RESET_ALL) {
-                /* Reset Floater */
-                hg_g_floater_alpha = 204;
-                SetLayeredWindowAttributes(hwnd, 0, hg_g_floater_alpha, LWA_ALPHA);
-                save_alpha_config();
+            }
 
-                hg_g_floater_font_size = 28;
-                if (hg_g_floater_time_font) { DeleteObject(hg_g_floater_time_font); hg_g_floater_time_font = NULL; }
-                if (hg_g_floater_date_font) { DeleteObject(hg_g_floater_date_font); hg_g_floater_date_font = NULL; }
-                save_floater_font_config();
-
-                SetWindowPos(hwnd, NULL, 100, 100, SC(80), SC(55), SWP_NOZORDER | SWP_NOACTIVATE);
-                save_config(L"floater", 100, 100, SC(80), SC(55));
-                update_floater_layout(hwnd);
-                InvalidateRect(hwnd, NULL, TRUE);
-
-                /* Reset Taskbox */
-                if (hg_g_taskbox_wnd) {
-                    hg_g_taskbox_alpha = 204;
-                    SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha,
-                                               LWA_COLORKEY | LWA_ALPHA);
-
-                    int target_icon_size = SC(22);
-                    hg_g_current_font_size = -target_icon_size;
-
-                    hg_g_edit_font_size = -SC(16);
-                    save_taskbox_font_config();
-
-                    if (hg_g_toolbar_btn_font) {
-                        DeleteObject(hg_g_toolbar_btn_font);
-                        hg_g_toolbar_btn_font = NULL;
-                    }
-                    if (hg_g_main_font) {
-                        DeleteObject(hg_g_main_font);
-                        hg_g_main_font = NULL;
-                    }
-
-                    SetWindowPos(hg_g_taskbox_wnd, NULL, 200, 200,
-                                 SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT),
-                                 SWP_NOZORDER | SWP_NOACTIVATE);
-                    save_config(L"taskbox", 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
-
-                    update_layout(hg_g_taskbox_wnd);
-                    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
-                        update_controlbox_layout(hg_g_controlbox_wnd);
-                        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
-                    }
-
-                    if (hg_g_edit_msg_wnd) {
-                        if (!hg_g_main_font) {
-                            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
-                            if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-                        }
-                        SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-                    }
-
-                    if (hg_g_tooltip_wnd && hg_g_main_font) {
-                        SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-                    }
-
-                    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
-                        update_controlbox_layout(hg_g_controlbox_wnd);
-                        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
-                    }
-
-                    InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
-
-                    /* Re-snap Taskbox */
-                    RECT rc = {0};
-                    GetWindowRect(hg_g_taskbox_wnd, &rc);
-
-                    int border = SC(HG_BORDER_THICKNESS);
-                    int tb_width = (rc.right - rc.left) - border * 2;
-                    if (tb_width <= 0) tb_width = 1;
-
-                    int cols = get_items_per_row(tb_width, target_icon_size);
-                    if (cols <= 0) cols = 1;
-
-                    int exact_tb_width =
-                        (cols - 1) * (target_icon_size + SC(15)) +
-                        target_icon_size +
-                        SC(20);
-                    int new_w = exact_tb_width + border * 2;
-
-                    if ((rc.right - rc.left) != new_w) {
-                        SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top,
-                                     SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-                        GetWindowRect(hg_g_taskbox_wnd, &rc);
-                        save_config(L"taskbox", rc.left, rc.top,
-                                    rc.right - rc.left, rc.bottom - rc.top);
-                    }
-                } /* if (hg_g_taskbox_wnd) */
-
-                /* Arrange Monitor Windows */
-                update_monitor_enum();
-                int mx = SC(300), my = SC(300);
-                for (int i = 0; i < hg_g_monitor_count; i++) {
-                    if (hg_g_monitors[i].active && hg_g_monitors[i].hwnd) {
-                        int m_w = SC(640);
-                        int mmw = hg_g_monitors[i].rcMonitor.right - hg_g_monitors[i].rcMonitor.left;
-                        int mmh = hg_g_monitors[i].rcMonitor.bottom - hg_g_monitors[i].rcMonitor.top;
-                        int m_h = (mmw > 0) ? (m_w * mmh / mmw) : SC(480);
-
-                        SetWindowPos(hg_g_monitors[i].hwnd, NULL, mx, my, m_w, m_h, SWP_NOZORDER | SWP_NOACTIVATE);
-
-                        WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
-                        StringCchPrintfW(key_x, 64, L"monitor%d_x", i + 1);
-                        StringCchPrintfW(key_y, 64, L"monitor%d_y", i + 1);
-                        StringCchPrintfW(key_w, 64, L"monitor%d_w", i + 1);
-                        StringCchPrintfW(key_h, 64, L"monitor%d_h", i + 1);
-                        StringCchPrintfW(key_name, 64, L"monitor%d_name", i + 1);
-                        WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[i].name, hg_g_config_path);
-
-                        WCHAR buf[32];
-                        hellgates_wsprintf(buf, 32, L"%d", mx);
-                        WritePrivateProfileStringW(L"monitor", key_x, buf, hg_g_config_path);
-                        hellgates_wsprintf(buf, 32, L"%d", my);
-                        WritePrivateProfileStringW(L"monitor", key_y, buf, hg_g_config_path);
-                        hellgates_wsprintf(buf, 32, L"%d", m_w);
-                        WritePrivateProfileStringW(L"monitor", key_w, buf, hg_g_config_path);
-                        hellgates_wsprintf(buf, 32, L"%d", m_h);
-                        WritePrivateProfileStringW(L"monitor", key_h, buf, hg_g_config_path);
-
-                        mx += SC(50); my += SC(50);
-                    }
-                }
-
-            } /* else if (LOWORD(w_param) == HG_IDM_RESET_ALL) */
     return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
 }
 
@@ -3347,6 +3224,129 @@ static LRESULT floater_controller_on_destroy(HWND hwnd) {
             hg_g_floater_wnd = NULL;
             PostQuitMessage(0);
             return 0;
+}
+
+void hg_config_reset_all(HWND hwnd) {
+    (void)hwnd;
+    /* 1. Reset all global setting variables to defaults */
+    hg_g_floater_alpha = 204;
+    hg_g_taskbox_alpha = 204;
+    hg_g_floater_font_size = 28;
+    int target_icon_size = SC(22);
+    hg_g_current_font_size = -target_icon_size;
+    hg_g_edit_font_size = -SC(16);
+    wcscpy(hg_g_font_name, L"Segoe UI");
+    hg_g_hotkey_modifiers = MOD_WIN | MOD_ALT;
+    hg_g_hotkey_key = VK_SPACE;
+
+    /* 2. Re-register global hotkey with default values */
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        if (hg_g_hotkey_registered) {
+            UnregisterHotKey(hg_g_floater_wnd, 1);
+            hg_g_hotkey_registered = FALSE;
+        }
+        hg_g_hotkey_registered = RegisterHotKey(hg_g_floater_wnd, 1,
+            hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
+    }
+
+    /* 3. Save all default settings back to config.ini */
+    save_alpha_config();
+    save_floater_font_config();
+    save_taskbox_font_config();
+    save_hotkey_config();
+    WritePrivateProfileStringW(L"etc", L"font_name", hg_g_font_name, hg_g_config_path);
+    save_config(L"floater", 100, 100, SC(80), SC(55));
+    save_config(L"taskbox", 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
+
+    /* 4. Apply changes to active windows */
+    /* Floater Window */
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        SetLayeredWindowAttributes(hg_g_floater_wnd, 0, hg_g_floater_alpha, LWA_ALPHA);
+        if (hg_g_floater_time_font) { DeleteObject(hg_g_floater_time_font); hg_g_floater_time_font = NULL; }
+        if (hg_g_floater_date_font) { DeleteObject(hg_g_floater_date_font); hg_g_floater_date_font = NULL; }
+        SetWindowPos(hg_g_floater_wnd, NULL, 100, 100, SC(80), SC(55), SWP_NOZORDER | SWP_NOACTIVATE);
+        update_floater_layout(hg_g_floater_wnd);
+        InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+    }
+
+    /* Taskbox Window */
+    if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+        SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
+        
+        if (hg_g_toolbar_btn_font) { DeleteObject(hg_g_toolbar_btn_font); hg_g_toolbar_btn_font = NULL; }
+        if (hg_g_main_font) { DeleteObject(hg_g_main_font); hg_g_main_font = NULL; }
+
+        SetWindowPos(hg_g_taskbox_wnd, NULL, 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT), SWP_NOZORDER | SWP_NOACTIVATE);
+        update_layout(hg_g_taskbox_wnd);
+
+        if (hg_g_edit_msg_wnd) {
+            hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+            if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        }
+
+        if (hg_g_tooltip_wnd && hg_g_main_font) {
+            SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        }
+
+        /* Re-snap Taskbox width based on new default icon size */
+        RECT rc = {0};
+        GetWindowRect(hg_g_taskbox_wnd, &rc);
+        int border = SC(HG_BORDER_THICKNESS);
+        int tb_width = (rc.right - rc.left) - border * 2;
+        if (tb_width <= 0) tb_width = 1;
+        int cols = get_items_per_row(tb_width, target_icon_size);
+        if (cols <= 0) cols = 1;
+        int exact_tb_width = (cols - 1) * (target_icon_size + SC(15)) + target_icon_size + SC(20);
+        int new_w = exact_tb_width + border * 2;
+
+        if ((rc.right - rc.left) != new_w) {
+            SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            GetWindowRect(hg_g_taskbox_wnd, &rc);
+            save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        }
+
+        InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+    }
+
+    /* Controlbox Window */
+    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+        update_controlbox_layout(hg_g_controlbox_wnd);
+        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
+    }
+
+    /* Arrange Monitor Windows */
+    update_monitor_enum();
+    int mx = SC(300), my = SC(300);
+    for (int i = 0; i < hg_g_monitor_count; i++) {
+        if (hg_g_monitors[i].active && hg_g_monitors[i].hwnd) {
+            int m_w = SC(640);
+            int mmw = hg_g_monitors[i].rcMonitor.right - hg_g_monitors[i].rcMonitor.left;
+            int mmh = hg_g_monitors[i].rcMonitor.bottom - hg_g_monitors[i].rcMonitor.top;
+            int m_h = (mmw > 0) ? (m_w * mmh / mmw) : SC(480);
+
+            SetWindowPos(hg_g_monitors[i].hwnd, NULL, mx, my, m_w, m_h, SWP_NOZORDER | SWP_NOACTIVATE);
+
+            WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
+            StringCchPrintfW(key_x, 64, L"monitor%d_x", i + 1);
+            StringCchPrintfW(key_y, 64, L"monitor%d_y", i + 1);
+            StringCchPrintfW(key_w, 64, L"monitor%d_w", i + 1);
+            StringCchPrintfW(key_h, 64, L"monitor%d_h", i + 1);
+            StringCchPrintfW(key_name, 64, L"monitor%d_name", i + 1);
+            WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[i].name, hg_g_config_path);
+
+            WCHAR buf[32];
+            hellgates_wsprintf(buf, 32, L"%d", mx);
+            WritePrivateProfileStringW(L"monitor", key_x, buf, hg_g_config_path);
+            hellgates_wsprintf(buf, 32, L"%d", my);
+            WritePrivateProfileStringW(L"monitor", key_y, buf, hg_g_config_path);
+            WritePrivateProfileStringW(L"monitor", key_w, L"640", hg_g_config_path);
+            hellgates_wsprintf(buf, 32, L"%d", m_h);
+            WritePrivateProfileStringW(L"monitor", key_h, buf, hg_g_config_path);
+
+            mx += SC(50); my += SC(50);
+        }
+    }
 }
 
 LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
@@ -5358,12 +5358,12 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
             BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
 
-            /* Alt + 방향키/hjkl/wasd: 현재 창 이동 (태스크 박스) */
+            /* Alt + 방향키/wasd: 현재 창 이동 (태스크 박스) */
             if (is_alt) {
-                if (w_param == VK_LEFT || w_param == 'H' || w_param == 'A') dx = -move_step;
-                else if (w_param == VK_RIGHT || w_param == 'L' || w_param == 'D') dx = move_step;
-                else if (w_param == VK_UP || w_param == 'K' || w_param == 'W') dy = -move_step;
-                else if (w_param == VK_DOWN || w_param == 'J' || w_param == 'S') dy = move_step;
+                if (w_param == VK_LEFT || w_param == 'A') dx = -move_step;
+                else if (w_param == VK_RIGHT || w_param == 'D') dx = move_step;
+                else if (w_param == VK_UP || w_param == 'W') dy = -move_step;
+                else if (w_param == VK_DOWN || w_param == 'S') dy = move_step;
 
                 if (dx != 0 || dy != 0) {
                     move_window_by_offset(hwnd, dx, dy);
@@ -5382,7 +5382,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                 }
             }
 
-            /* Ctrl + +/-: 텍스트 글꼴 크기 조절, Ctrl + 방향키/hjkl/wasd: 창 크기/그리드 조절 */
+            /* Ctrl + +/-: 텍스트 글꼴 크기 조절, Ctrl + 방향키/wasd: 창 크기/그리드 조절 */
             if (is_ctrl) {
                 int icon_size = ABS(hg_g_current_font_size);
                 if (icon_size < SC(16)) icon_size = SC(16);
@@ -5393,7 +5393,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                 } else if (w_param == VK_OEM_MINUS || w_param == VK_SUBTRACT) {
                     update_edit_font_size(-1);
                     return 0;
-                } else if (w_param == VK_LEFT || w_param == 'H' || w_param == 'A') {
+                } else if (w_param == VK_LEFT || w_param == 'A') {
                     RECT rc; GetWindowRect(hwnd, &rc);
                     int border = SC(HG_BORDER_THICKNESS);
                     int tb_width = (rc.right - rc.left) - border * 2;
@@ -5410,7 +5410,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                     int new_w = exact_tb_width + border * 2;
                     SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                     return 0;
-                } else if (w_param == VK_RIGHT || w_param == 'L' || w_param == 'D') {
+                } else if (w_param == VK_RIGHT || w_param == 'D') {
                     RECT rc; GetWindowRect(hwnd, &rc);
                     int border = SC(HG_BORDER_THICKNESS);
                     int tb_width = (rc.right - rc.left) - border * 2;
@@ -5420,7 +5420,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                     int new_w = exact_tb_width + border * 2;
                     SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                     return 0;
-                } else if (w_param == VK_UP || w_param == 'K' || w_param == 'W') {
+                } else if (w_param == VK_UP || w_param == 'W') {
                     RECT rc; GetWindowRect(hwnd, &rc);
                     int border = SC(HG_BORDER_THICKNESS);
                     int tb_width = (rc.right - rc.left) - border * 2;
@@ -5442,7 +5442,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                         SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
                     }
                     return 0;
-                } else if (w_param == VK_DOWN || w_param == 'J' || w_param == 'S') {
+                } else if (w_param == VK_DOWN || w_param == 'S') {
                     RECT rc; GetWindowRect(hwnd, &rc);
                     int border = SC(HG_BORDER_THICKNESS);
                     int tb_width = (rc.right - rc.left) - border * 2;
@@ -5507,13 +5507,13 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                 int c = current_cell % cols;
                 BOOL changed = FALSE;
 
-                if (w_param == VK_LEFT || w_param == 'H' || w_param == 'A') {
+                if (w_param == VK_LEFT || w_param == 'A') {
                     c--; changed = TRUE;
-                } else if (w_param == VK_RIGHT || w_param == 'L' || w_param == 'D') {
+                } else if (w_param == VK_RIGHT || w_param == 'D') {
                     c++; changed = TRUE;
-                } else if (w_param == VK_UP || w_param == 'K' || w_param == 'W') {
+                } else if (w_param == VK_UP || w_param == 'W') {
                     r--; changed = TRUE;
-                } else if (w_param == VK_DOWN || w_param == 'J' || w_param == 'S') {
+                } else if (w_param == VK_DOWN || w_param == 'S') {
                     r++; changed = TRUE;
                 } else if (w_param == VK_F2) {
                     if (hg_g_floater_wnd) PostMessageW(hg_g_floater_wnd, WM_RBUTTONUP, 0, 0);
