@@ -4950,6 +4950,12 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         case WM_CREATE: {
             LPCREATESTRUCTW pcs = (LPCREATESTRUCTW)l_param;
             SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            if (!hg_g_main_font) {
+                hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                   DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                   CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            }
             HWND edit_wnd = CreateWindowExW(0, L"EDIT", pcs->lpszName,
                 WS_CHILD | WS_VISIBLE | ES_CENTER | ES_AUTOHSCROLL | ES_READONLY,
                 0, 0, 0, 0, hwnd, (HMENU)104, GetModuleHandle(NULL), NULL);
@@ -4987,6 +4993,12 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         }
         case WM_SIZE: {
             HWND edit_wnd = GetDlgItem(hwnd, 104);
+            if (!hg_g_main_font) {
+                hg_g_main_font = CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                   DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                   CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                if (!hg_g_main_font) hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            }
             if (edit_wnd && hg_g_main_font) {
                 int border = SC(HG_BORDER_THICKNESS);
                 int w = (int)LOWORD(l_param) - border * 2;
@@ -5743,6 +5755,12 @@ LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         case WM_RBUTTONUP:
             DestroyWindow(hwnd);
             return 0;
+        case WM_NCRBUTTONUP:
+            if (w_param == HTCAPTION) {
+                DestroyWindow(hwnd);
+                return 0;
+            }
+            break;
         case WM_SYSKEYDOWN:
         case WM_KEYDOWN: {
             BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
@@ -5767,6 +5785,14 @@ LRESULT CALLBACK controlbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
                 }
                 if (w_param == VK_RIGHT || w_param == 'D') {
                     resize_window_by_offset(hwnd, SC(20), 0);
+                    return 0;
+                }
+            }
+            if (w_param == VK_F5) {
+                RECT rc_reset = {0};
+                if (GetWindowRect(hwnd, &rc_reset)) {
+                    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+                    save_config(L"controlbox", 0, 0, rc_reset.right - rc_reset.left, rc_reset.bottom - rc_reset.top);
                     return 0;
                 }
             }
@@ -6107,6 +6133,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         if (bRet == -1) {
             exit_code = 1;
             break;
+        }
+
+        if (msg_struct.message == WM_KEYDOWN && msg_struct.wParam == VK_F5) {
+            if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
+                if (msg_struct.hwnd == hg_g_controlbox_wnd || GetAncestor(msg_struct.hwnd, GA_ROOT) == hg_g_controlbox_wnd) {
+                    SendMessageW(hg_g_controlbox_wnd, WM_KEYDOWN, VK_F5, 0);
+                    continue;
+                }
+            }
         }
 
         BOOL accel_handled = FALSE;
