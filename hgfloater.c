@@ -141,7 +141,7 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 5
+#define HG_NUM_BASIC_ICONS 6
 
 #define HG_IDM_MINIMIZE 201
 #define HG_IDM_CLOSE 202
@@ -2439,7 +2439,11 @@ void update_toolbar_tooltips(HWND hwnd)
             ti_tool.lpszText = L"Show Desktop";
         else if (i == 4)
             ti_tool.lpszText = L"Settings";
-        else
+        else if (i == 5) {
+            static WCHAR vol_tip[32];
+            hellgates_wsprintf(vol_tip, 32, L"Vol: %d%%", get_system_volume());
+            ti_tool.lpszText = vol_tip;
+        } else
             ti_tool.lpszText = hg_g_shortcuts[i - HG_NUM_BASIC_ICONS].name;
 
         ti_tool.rect = item_rc;
@@ -3022,13 +3026,6 @@ void update_edit_font_size(int delta)
         update_layout(hg_g_taskbox_wnd);
         InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
     }
-    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
-        if (hg_g_controlbox_value_wnd && IsWindow(hg_g_controlbox_value_wnd)) {
-            SendMessageW(hg_g_controlbox_value_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-        }
-        update_controlbox_layout(hg_g_controlbox_wnd);
-        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
-    }
 
     for (int i = 0; i < hg_g_monitor_count; ++i) {
         if (hg_g_monitors[i].hwnd && IsWindow(hg_g_monitors[i].hwnd)) {
@@ -3421,8 +3418,6 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
         set_system_volume(75);
     } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_100) {
         set_system_volume(100);
-    } else if (LOWORD(w_param) == HG_IDM_OPEN_CONTROLBOX) {
-        show_controlbox_window();
     } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
         show_about_window();
     } else if (LOWORD(w_param) == HG_IDM_RESET_ALL) {
@@ -3573,11 +3568,7 @@ void hg_config_reset_all(HWND hwnd)
         InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
     }
 
-    /* Controlbox Window */
-    if (hg_g_controlbox_wnd && IsWindow(hg_g_controlbox_wnd)) {
-        update_controlbox_layout(hg_g_controlbox_wnd);
-        InvalidateRect(hg_g_controlbox_wnd, NULL, TRUE);
-    }
+
 
     /* Arrange Monitor Windows */
     update_monitor_enum();
@@ -3730,7 +3721,6 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_75, L"75%");
         AppendMenuW(hVolMenu, MF_STRING, HG_IDM_VOLUME_SET_100, L"100%");
         AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hVolMenu, L"Set Volume (&V)");
-        AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_CONTROLBOX, L"Open Controlbox (&C)");
 
         /* Audio Devices - Placeholder sub-menu */
         hg_g_h_audio_submenu = CreatePopupMenu();
@@ -3977,6 +3967,8 @@ void activate_toolbar_item(int index)
         } else if (cmd == 1003) {
             PostMessageW(hg_g_taskbox_wnd, WM_COMMAND, HG_IDM_RESET_ALL, 0);
         }
+    } else if (index == 5) {
+        // V button (Volume) - handled by mouse wheel, click does nothing
     } else {
         int s_idx = index - HG_NUM_BASIC_ICONS;
         if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
@@ -4318,6 +4310,8 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                             btn_text[0] = L'D';
                         else if (i == 4)
                             btn_text[0] = L'S';
+                        else if (i == 5)
+                            btn_text[0] = L'V';
                         draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
                                            HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
                         SelectObject(mem_dc, old_font);
@@ -4842,6 +4836,60 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
     if (GetKeyState(VK_MENU) < 0) {
         return SendMessageW(GetParent(hwnd), WM_MOUSEWHEEL, w_param, l_param);
     }
+
+    // V 아이콘 휠 튜닝 볼륨 조절
+    POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+    ScreenToClient(hwnd, &pt);
+
+    RECT rc_client;
+    GetClientRect(hwnd, &rc_client);
+
+    int icon_size = ABS(hg_g_current_font_size);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
+
+    RECT rc_v_icon;
+    get_toolbar_item_rect(1, 5, rc_client.right, rc_client.bottom, icon_size, &rc_v_icon);
+    InflateRect(&rc_v_icon, SC(4), SC(4)); // 버튼 인식 영역
+
+    if (PtInRect(&rc_v_icon, pt)) {
+        short delta = (short)HIWORD(w_param);
+        int cur_vol = get_system_volume();
+        int new_vol = cur_vol;
+        if (delta > 0) {
+            if (cur_vol % 5 == 0) {
+                new_vol = cur_vol + 5;
+            } else {
+                new_vol = ((cur_vol / 5) + 1) * 5;
+            }
+            if (new_vol > 100)
+                new_vol = 100;
+        } else {
+            if (cur_vol % 5 == 0) {
+                new_vol = cur_vol - 5;
+            } else {
+                new_vol = (cur_vol / 5) * 5;
+            }
+            if (new_vol < 0)
+                new_vol = 0;
+        }
+        set_system_volume(new_vol);
+
+        update_toolbar_tooltips(hwnd);
+
+        // 즉각 툴팁 갱신
+        TOOLINFOW ti = {0};
+        ti.cbSize = TOOLINFO_V1_SIZE;
+        ti.hwnd = hwnd;
+        ti.uId = (UINT_PTR)(hg_g_window_count + 5);
+        static WCHAR vol_tip[32];
+        hellgates_wsprintf(vol_tip, 32, L"Vol: %d%%", new_vol);
+        ti.lpszText = vol_tip;
+        SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
+
+        return 0;
+    }
+
     return 0;
 }
 
