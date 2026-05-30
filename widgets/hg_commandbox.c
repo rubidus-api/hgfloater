@@ -14,6 +14,12 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
         BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
         BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+        if (w_param == VK_SPACE && is_ctrl) {
+            SetFocus(hg_g_commandbox_in_wnd);
+            int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
+            SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
+            return 0;
+        }
         if ((is_ctrl || is_alt) && (w_param == VK_LEFT || w_param == VK_RIGHT || w_param == VK_UP || w_param == VK_DOWN)) {
             SendMessageW(parent, msg, w_param, l_param);
             return 0;
@@ -33,6 +39,7 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
     }
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
+
 
 void load_commandbox_font()
 {
@@ -192,6 +199,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         }
         break;
 
+
     case WM_SIZE: {
         int cx = LOWORD(l_param);
         int cy = HIWORD(l_param);
@@ -281,6 +289,12 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     case WM_KEYDOWN: {
         BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
         BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+        if (w_param == VK_SPACE && is_ctrl) {
+            SetFocus(hg_g_commandbox_in_wnd);
+            int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
+            SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
+            return 0;
+        }
         if (is_alt) {
             int dx = 0, dy = 0;
             int move_step = SC(20);
