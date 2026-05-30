@@ -19,3 +19,8 @@ tests/
 *.exe
 *.o
 test/bin/
+TODO.md
+CONTEXT.md
+HERMES_WORKFLOW.md
+CHANGELOGS.md
+*.local.md
