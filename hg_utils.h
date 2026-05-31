@@ -11,6 +11,7 @@ extern const GUID IID_IAudioEndpointVolume;
 /* Utility Functions */
 int get_system_brightness(void);
 void set_system_brightness(int brightness);
+void restore_system_gamma(void);
 int get_system_volume(void);
 void set_system_volume(int percent);
 int get_system_mute(void);
