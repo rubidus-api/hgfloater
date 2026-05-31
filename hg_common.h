@@ -71,7 +71,7 @@
 
 /* Build-time versioning */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v26.05.30"
+#define HG_VERSION_W L"v26.05.31"
 #endif
 
 /* Include generated About text from README.md if available */
