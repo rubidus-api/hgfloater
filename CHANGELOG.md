@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.05.31] - 2026-05-31
+
+### Added
+- **Hybrid Brightness Control**: Integrated a robust fallback mechanism for laptop displays and monitors lacking DDC/CI hardware support. Implemented software-based brightness adjustment using GDI `SetDeviceGammaRamp` while preserving the user's original desktop color profile via a persistent backup-and-restore process at application exit.
+- **Command Box (C Button)**: Added an independent customizable CLI utility window featuring unique dimensions, positions, fonts, and alpha channels stored separately in `config.ini`. Enabled live layout adjustment via keyboard (`Ctrl/Alt + Arrows`) and font scaling (`Ctrl/Alt + Wheel`).
+- **Focus Hotkey (`Ctrl + Space`)**: Implemented a global message routing system to instantly focus the Command Box input field and move the caret dynamically to the rightmost index.
+- **Rich Taskbox Toolbar Icons**:
+  - `B` Icon: Added mouse-wheel 5% step brightness adjustment.
+  - `A` Icon: Added mouse-wheel transparency control.
+  - `V` Icon: Left-click toggles system-wide volume Mute/Unmute state with context tooltip.
+  - Removed redundant `F` icon and adjusted icon indexes cleanly.
+- **Dynamic Context Audio Menu**: Integrated active local audio device scanning natively into the Floater Context sub-menus alongside standard `MF_CHECKED` checkmarks for the system Mute state.
+
+### Changed
+- **Architectural Modularity Refactoring (Phase 1 ~ Phase 3)**: Extracted all widgets and subsystem logic from `hgfloater.c` (formerly ~6,200 lines) into highly modular source files:
+  - Global Configuration: `hg_config.c` / `hg_config.h`
+  - Global State: `hg_globals.c` / `hg_globals.h`
+  - Core Utilities: `hg_utils.c` / `hg_utils.h`
+  - Custom Widgets (`widgets/`): `hg_floater.c`, `hg_taskbox.c`, `hg_controlbox.c`, `hg_monitor.c`, `hg_commandbox.c`, `hg_about.c`
+- **Legacy HJKL Bindings Removal**: Completely removed Vi-style HJKL movement bindings from all window navigations in favor of standard `WASD` / `Arrow Keys` as per specifications.
+
+### Fixed
+- **Monitor Loading Crash**: Resolved GDI object leaks causing layout loading failures of secondary monitor thumbnails by centralizing resource lifetimes inside the `wWinMain` teardown scope.
+- **VK_F5 Reset Invariant**: Forced acceleration table routing to correctly deliver layout reset notifications to the Controlbox even when sub-trackbars retain keyboard focus.
+- **NCRBUTTONUP Caption Destruction**: Added `WM_NCRBUTTONUP` caption hit-test listeners allowing title bar right-clicks to instantly destroy Controlbox dialogs.
+
 ## [v26.05.21] - 2026-05-21
 
 ### Added
