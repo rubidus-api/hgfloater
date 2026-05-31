@@ -74,6 +74,68 @@ static void init_dxva2(void)
     s_dxva2_initialized = TRUE;
 }
 
+static WORD s_original_gamma_ramp[3][256];
+static BOOL s_gamma_backup_valid = FALSE;
+
+void restore_system_gamma(void)
+{
+    if (s_gamma_backup_valid) {
+        HDC hdc = GetDC(NULL);
+        if (hdc) {
+            SetDeviceGammaRamp(hdc, s_original_gamma_ramp);
+            ReleaseDC(NULL, hdc);
+        }
+    }
+}
+
+static void backup_original_gamma(void)
+{
+    if (s_gamma_backup_valid)
+        return;
+    HDC hdc = GetDC(NULL);
+    if (hdc) {
+        if (GetDeviceGammaRamp(hdc, s_original_gamma_ramp)) {
+            s_gamma_backup_valid = TRUE;
+        }
+        ReleaseDC(NULL, hdc);
+    }
+}
+
+static BOOL set_software_brightness(int brightness)
+{
+    backup_original_gamma();
+    HDC hdc = GetDC(NULL);
+    if (!hdc)
+        return FALSE;
+
+    WORD ramp[3][256];
+    double factor = (double)brightness / 100.0;
+    if (factor < 0.1)
+        factor = 0.1; /* Prevent screen from becoming pitch black (min 10%) */
+
+    if (s_gamma_backup_valid) {
+        for (int c = 0; c < 3; c++) {
+            for (int i = 0; i < 256; i++) {
+                double val = (double)s_original_gamma_ramp[c][i] * factor;
+                if (val > 65535.0)
+                    val = 65535.0;
+                ramp[c][i] = (WORD)val;
+            }
+        }
+    } else {
+        for (int i = 0; i < 256; i++) {
+            double val = (double)i * 256.0 * factor;
+            if (val > 65535.0)
+                val = 65535.0;
+            ramp[0][i] = ramp[1][i] = ramp[2][i] = (WORD)val;
+        }
+    }
+
+    BOOL res = SetDeviceGammaRamp(hdc, ramp);
+    ReleaseDC(NULL, hdc);
+    return res;
+}
+
 int get_system_brightness(void)
 {
     init_dxva2();
@@ -111,25 +173,34 @@ void set_system_brightness(int brightness)
     hg_g_global_brightness = brightness;
 
     init_dxva2();
-    if (!s_hDxva2 || !s_pfnGetNum || !s_pfnGetPhys || !s_pfnDestroy || !s_pfnSetBright)
-        return;
+    BOOL hw_success = FALSE;
+    if (s_hDxva2 && s_pfnGetNum && s_pfnGetPhys && s_pfnDestroy && s_pfnSetBright) {
+        POINT ptCursor = {0};
+        GetCursorPos(&ptCursor);
+        HMONITOR hMonitor = MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
 
-    POINT ptCursor = {0};
-    GetCursorPos(&ptCursor);
-    HMONITOR hMonitor = MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
-
-    DWORD numMonitors = 0;
-    if (s_pfnGetNum(hMonitor, &numMonitors) && numMonitors > 0) {
-        HG_PHYSICAL_MONITOR *pPhysicalMonitors = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * numMonitors);
-        if (pPhysicalMonitors) {
-            if (s_pfnGetPhys(hMonitor, numMonitors, pPhysicalMonitors)) {
-                for (DWORD i = 0; i < numMonitors; i++) {
-                    s_pfnSetBright(pPhysicalMonitors[i].hPhysicalMonitor, (DWORD)brightness);
+        DWORD numMonitors = 0;
+        if (s_pfnGetNum(hMonitor, &numMonitors) && numMonitors > 0) {
+            HG_PHYSICAL_MONITOR *pPhysicalMonitors = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * numMonitors);
+            if (pPhysicalMonitors) {
+                if (s_pfnGetPhys(hMonitor, numMonitors, pPhysicalMonitors)) {
+                    hw_success = TRUE;
+                    for (DWORD i = 0; i < numMonitors; i++) {
+                        if (!s_pfnSetBright(pPhysicalMonitors[i].hPhysicalMonitor, (DWORD)brightness)) {
+                            hw_success = FALSE;
+                        }
+                    }
+                    s_pfnDestroy(numMonitors, pPhysicalMonitors);
                 }
-                s_pfnDestroy(numMonitors, pPhysicalMonitors);
+                free(pPhysicalMonitors);
             }
-            free(pPhysicalMonitors);
         }
+    }
+
+    if (!hw_success) {
+        set_software_brightness(brightness);
+    } else {
+        restore_system_gamma();
     }
 }
 

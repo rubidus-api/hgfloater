@@ -447,6 +447,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     save_alpha_config();
 
 cleanup_finish:
+    restore_system_gamma();
     if (accel_table) {
         DestroyAcceleratorTable(accel_table);
         accel_table = NULL;
