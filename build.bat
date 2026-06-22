@@ -31,7 +31,7 @@ if "%choice%"=="1" (
     set FLAGS=%WARNING_FLAGS% -g -O0 -DDEBUG
     set MODE=Debug
 ) else if "%choice%"=="2" (
-    set FLAGS=%WARNING_FLAGS% -O2 -s
+    set FLAGS=%WARNING_FLAGS% -O3 -flto=auto -s -DNDEBUG
     set MODE=Release
 ) else if "%choice%"=="3" (
     goto run_tests
@@ -82,7 +82,7 @@ if exist gen_about.ps1 del gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command
 windres hgfloater.rc -O coff -o hgfloater_res.o
-gcc hgfloater.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
+gcc hgfloater.c hg_globals.c hg_utils.c hg_config.c widgets\hg_floater.c widgets\hg_taskbox.c widgets\hg_monitor.c widgets\hg_commandbox.c widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
 if exist hgfloater_res.o del hgfloater_res.o
 
 if %errorlevel% equ 0 (
