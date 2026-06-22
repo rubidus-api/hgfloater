@@ -373,7 +373,6 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
 
 LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
-    static BOOL floater_moved = FALSE;
     static int initial_floater_font_size = 0;
     switch (msg) {
     case WM_DISPLAYCHANGE: {
@@ -401,7 +400,6 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     case WM_KEYDOWN:
         return floater_controller_on_keydown(hwnd, msg, w_param, l_param);
     case WM_LBUTTONDOWN: {
-        floater_moved = FALSE;
         hg_g_drag_start_pt.x = GET_X_LPARAM(l_param);
         hg_g_drag_start_pt.y = GET_Y_LPARAM(l_param);
         if (GetKeyState(VK_CONTROL) < 0) {
@@ -434,15 +432,6 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     InvalidateRect(hwnd, NULL, TRUE);
                     save_floater_font_config();
                 }
-            } else {
-                RECT rc;
-                GetWindowRect(hwnd, &rc);
-                int dx = pt.x - hg_g_drag_start_pt.x;
-                int dy = pt.y - hg_g_drag_start_pt.y;
-                if (dx != 0 || dy != 0) {
-                    floater_moved = TRUE;
-                    SetWindowPos(hwnd, NULL, rc.left + dx, rc.top + dy, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-                }
             }
         } else {
             // Hover logic
@@ -464,17 +453,11 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     case WM_LBUTTONUP: {
         if (GetCapture() == hwnd) {
             ReleaseCapture();
-            if (floater_moved) {
-                RECT rc;
-                GetWindowRect(hwnd, &rc);
-                save_config(L"floater", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
-            } else {
-                if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
-                    if (IsWindowVisible(hg_g_taskbox_wnd)) {
-                        hide_taskbox(hg_g_taskbox_wnd);
-                    } else {
-                        PostMessageW(hwnd, WM_HOTKEY, 1, 0);
-                    }
+            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+                if (IsWindowVisible(hg_g_taskbox_wnd)) {
+                    hide_taskbox(hg_g_taskbox_wnd);
+                } else {
+                    PostMessageW(hwnd, WM_HOTKEY, 1, 0);
                 }
             }
         }
