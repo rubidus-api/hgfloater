@@ -68,6 +68,8 @@ int hg_g_window_count = 0;
 BOOL hg_g_in_sizemove = FALSE;
 RECT hg_g_drag_start_rect = {0};
 
+/* Drag & Drop states */
+BOOL hg_g_menu_active = FALSE;
 BOOL hg_g_is_dragging = FALSE;
 int hg_g_drag_source_index = -1;
 POINT hg_g_drag_start_pt = {0, 0};

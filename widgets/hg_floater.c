@@ -50,8 +50,8 @@ void update_floater_layout(HWND hwnd)
     const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
     hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
 
-    int time_size = hg_g_floater_font_size;
-    int date_size = hg_g_floater_font_size * 16 / 28;
+    int time_size = hg_g_floater_font_size * 1;
+    int date_size = hg_g_floater_font_size * 1;
     if (date_size < 10)
         date_size = 10;
     if (!hg_g_floater_time_font)
@@ -125,8 +125,8 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     return 0;
                 }
 
-                int time_size = hg_g_floater_font_size;
-                int date_size = hg_g_floater_font_size * 16 / 28;
+                int time_size = hg_g_floater_font_size * 1;
+                int date_size = hg_g_floater_font_size * 1;
                 if (date_size < 10)
                     date_size = 10;
                 if (!hg_g_floater_time_font)
@@ -320,6 +320,10 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
         set_system_volume(75);
     } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_100) {
         set_system_volume(100);
+    } else if (LOWORD(w_param) == HG_IDM_OPEN_SHORTCUTS) {
+        ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
+    } else if (LOWORD(w_param) == HG_IDM_EDIT_CONFIG) {
+        ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
     } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
         show_about_window();
     } else if (LOWORD(w_param) == HG_IDM_RESET_ALL) {
@@ -440,6 +444,18 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     SetWindowPos(hwnd, NULL, rc.left + dx, rc.top + dy, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
                 }
             }
+        } else {
+            // Hover logic
+            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
+                RECT rc;
+                GetWindowRect(hwnd, &rc);
+                ShowWindow(hwnd, SW_HIDE);
+                SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, rc.left, rc.top, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+                refresh_window_list(TRUE);
+                ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
+                SetForegroundWindow(hg_g_taskbox_wnd);
+                SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
+            }
         }
         return 0;
     }
@@ -468,6 +484,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         GetCursorPos(&pt);
         HMENU menu = CreatePopupMenu();
         if (menu) {
+            AppendMenuW(menu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
+            AppendMenuW(menu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
+            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(menu, MF_STRING, HG_IDM_ABOUT, L"About...");
             AppendMenuW(menu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");
             AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
@@ -479,7 +498,8 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     UINT flags = MF_STRING;
                     if (hg_g_audio_devices[i].is_default)
                         flags |= MF_CHECKED;
-                    AppendMenuW(audio_menu, flags, HG_IDM_AUDIO_DEVICE_BASE + i, hg_g_audio_devices[i].name);
+                    AppendMenuW(audio_menu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i),
+                                hg_g_audio_devices[i].name);
                 }
                 if (hg_g_audio_device_count > 0) {
                     AppendMenuW(audio_menu, MF_SEPARATOR, 0, NULL);
@@ -500,7 +520,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     UINT flags = MF_STRING;
                     if (hg_g_monitors[i].active)
                         flags |= MF_CHECKED;
-                    AppendMenuW(monitor_menu, flags, HG_IDM_MONITOR_BASE + i, hg_g_monitors[i].name);
+                    AppendMenuW(monitor_menu, flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + (UINT)i), hg_g_monitors[i].name);
                 }
                 AppendMenuW(menu, MF_POPUP, (UINT_PTR)monitor_menu, L"Arrange Monitors");
             }
@@ -511,7 +531,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             AppendMenuW(menu, MF_STRING, HG_IDM_CLOSE_APP, L"Exit");
 
             SetForegroundWindow(hwnd);
+            hg_g_menu_active = TRUE;
             TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_BOTTOMALIGN, pt.x, pt.y, 0, hwnd, NULL);
+            hg_g_menu_active = FALSE;
             DestroyMenu(menu);
         }
         return 0;

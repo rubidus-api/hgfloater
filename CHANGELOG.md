@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2026-06-22] - Floater to Taskbox Hover UX & UI Adjustments
+
+### Changed
+- Converted the interaction model from clicking the Floater to simply **hovering** over it to spawn the Taskbox in place instantly (`WM_MOUSEMOVE` triggering `ShowWindow(SW_HIDE)` for floater and `SW_SHOW` for taskbox).
+- Added an automatic `HG_TIMER_HOVER_CHECK` timer in Taskbox to automatically close and return to the Floater UI when the mouse leaves the bounds of the Taskbox.
+- Added Taskbox's native settings shortcuts ("Open Shortcuts Folder", "Edit Configuration") to the Floater's right-click context menu alongside "Reset Settings".
+- Unified the Time and Date font sizes in the Floater by aligning their multiplier ratio to `1:1` (while preserving variables separately for future independent scaling).
+
 ## [v26.05.31] - 2026-05-31
 
 ### Added
