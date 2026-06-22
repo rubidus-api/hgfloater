@@ -623,7 +623,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         else if (i == HG_TOOL_ICON_DESKTOP)
                             btn_text[0] = L'D';
                         else if (i == HG_TOOL_ICON_MENU)
-                            btn_text[0] = L'M';
+                            btn_text[0] = L'P';
                         else if (i == HG_TOOL_ICON_COMMAND)
                             btn_text[0] = L'C';
                         else if (i == HG_TOOL_ICON_ALPHA)
@@ -2357,9 +2357,20 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                     }
                 }
                 
-                if (hg_g_hover_check_armed && !PtInRect(&rc, pt)) {
-                    KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
-                    hide_taskbox(hwnd);
+                static int mouse_outside_ticks = 0;
+                if (hg_g_hover_check_armed) {
+                    if (!PtInRect(&rc, pt)) {
+                        mouse_outside_ticks++;
+                        if (mouse_outside_ticks >= 10) {
+                            KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
+                            mouse_outside_ticks = 0;
+                            hide_taskbox(hwnd);
+                        }
+                    } else {
+                        mouse_outside_ticks = 0;
+                    }
+                } else {
+                    mouse_outside_ticks = 0;
                 }
             }
         }
