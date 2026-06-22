@@ -110,20 +110,103 @@ void update_taskbox_alpha(int delta)
         new_alpha = HG_MIN_ALPHA;
     hg_g_taskbox_alpha = (BYTE)new_alpha;
     SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
+    if (hg_g_toolbar_wnd) {
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    }
 }
 
 void set_taskbox_opacity_pct(int pct)
 {
-    if (pct < 30) pct = 30;
-    if (pct > 100) pct = 100;
+    if (pct < 30)
+        pct = 30;
+    if (pct > 100)
+        pct = 100;
     int alpha = (pct * 255 + 50) / 100;
-    if (alpha < HG_MIN_ALPHA) alpha = HG_MIN_ALPHA;
-    if (alpha > HG_MAX_ALPHA) alpha = HG_MAX_ALPHA;
+    if (alpha < HG_MIN_ALPHA)
+        alpha = HG_MIN_ALPHA;
+    if (alpha > HG_MAX_ALPHA)
+        alpha = HG_MAX_ALPHA;
     hg_g_taskbox_alpha = (BYTE)alpha;
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
     }
+    if (hg_g_toolbar_wnd) {
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    }
     save_alpha_config();
+}
+
+static int toolbar_clamp_percent(int pct)
+{
+    if (pct < 0)
+        return 0;
+    if (pct > 100)
+        return 100;
+    return pct;
+}
+
+static BYTE toolbar_scale_color_channel(int min_value, int max_value, int pct)
+{
+    int clamped = toolbar_clamp_percent(pct);
+    int value = min_value + ((max_value - min_value) * clamped + 50) / 100;
+    if (value < 0)
+        value = 0;
+    if (value > 255)
+        value = 255;
+    return (BYTE)value;
+}
+
+static COLORREF toolbar_invert_color(COLORREF color)
+{
+    return RGB(255 - GetRValue(color), 255 - GetGValue(color), 255 - GetBValue(color));
+}
+
+static int toolbar_taskbox_alpha_percent(void)
+{
+    return toolbar_clamp_percent((hg_g_taskbox_alpha * 100 + 127) / 255);
+}
+
+static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
+{
+    if (index == HG_TOOL_ICON_ALPHA) {
+        int pct = toolbar_taskbox_alpha_percent();
+        return RGB(toolbar_scale_color_channel(24, 255, pct), toolbar_scale_color_channel(0, 56, pct),
+                   toolbar_scale_color_channel(0, 56, pct));
+    }
+    if (index == HG_TOOL_ICON_BRIGHTNESS) {
+        int pct = get_system_brightness();
+        return RGB(toolbar_scale_color_channel(0, 72, pct), toolbar_scale_color_channel(24, 255, pct),
+                   toolbar_scale_color_channel(0, 72, pct));
+    }
+    if (index == HG_TOOL_ICON_VOLUME) {
+        int pct = get_system_volume();
+        return RGB(toolbar_scale_color_channel(0, 72, pct), toolbar_scale_color_channel(0, 120, pct),
+                   toolbar_scale_color_channel(24, 255, pct));
+    }
+    return toolbar_invert_color(base_color);
+}
+
+static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
+{
+    if (!hdc || !rc)
+        return;
+
+    HBRUSH hbr = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+    if (!hbr)
+        return;
+
+    RECT border_rc = *rc;
+    int thickness = SC(3);
+    if (thickness < 2)
+        thickness = 2;
+    for (int i = 0; i < thickness; ++i) {
+        FrameRect(hdc, &border_rc, hbr);
+        InflateRect(&border_rc, -1, -1);
+        if (border_rc.left >= border_rc.right || border_rc.top >= border_rc.bottom)
+            break;
+    }
+
+    DeleteObject(hbr);
 }
 
 void hide_taskbox(HWND hwnd)
@@ -142,49 +225,51 @@ void activate_toolbar_item(int index)
 {
     if (index < 0)
         return;
-    if (index == 0) {
+    if (index == HG_TOOL_ICON_RESIZE) {
         /* R button - handled by drag, no click action needed or could be a toggle?
            User said "이 버튼을 드래그하면 그것에 맞춰 창 크기를 변경하게 해 줘".
            Clicking it doesn't have a specified action. */
-    } else if (index == 1) {
+    } else if (index == HG_TOOL_ICON_MOVE) {
         /* Move handle: dragging logic is in toolbar_proc WM_LBUTTONDOWN. Clicking does nothing. */
-    } else if (index == 2) {
+    } else if (index == HG_TOOL_ICON_CLOSE) {
         hide_taskbox(hg_g_taskbox_wnd);
-    } else if (index == 3) {
+    } else if (index == HG_TOOL_ICON_DESKTOP) {
         static BOOL is_desktop_shown = FALSE;
         is_desktop_shown = !is_desktop_shown;
         EnumWindows(minimize_restore_enum_proc, (LPARAM)is_desktop_shown);
-    } else if (index == 4) {
+    } else if (index == HG_TOOL_ICON_MENU) {
         HMENU hMenu = CreatePopupMenu();
-        AppendMenuW(hMenu, MF_STRING, 1001, L"Open Shortcuts Folder");
-        AppendMenuW(hMenu, MF_STRING, 1002, L"Edit Configuration");
-        AppendMenuW(hMenu, MF_STRING, 1003, L"Reset Settings");
+        AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
+        AppendMenuW(hMenu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
+        AppendMenuW(hMenu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");
 
         POINT pt;
         GetCursorPos(&pt);
+        hg_g_menu_active = TRUE;
         int cmd = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, hg_g_taskbox_wnd, NULL);
+        hg_g_menu_active = FALSE;
         DestroyMenu(hMenu);
 
-        if (cmd == 1001) {
+        if (cmd == HG_IDM_OPEN_SHORTCUTS) {
             ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
-        } else if (cmd == 1002) {
+        } else if (cmd == HG_IDM_EDIT_CONFIG) {
             ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
-        } else if (cmd == 1003) {
-            PostMessageW(hg_g_taskbox_wnd, WM_COMMAND, HG_IDM_RESET_ALL, 0);
+        } else if (cmd == HG_IDM_RESET_ALL) {
+            PostMessageW(hg_g_floater_wnd, WM_COMMAND, HG_IDM_RESET_ALL, 0);
         }
-    } else if (index == 5) {
+    } else if (index == HG_TOOL_ICON_COMMAND) {
+        // C button - opens commandbox
+        show_commandbox_window();
+    } else if (index == HG_TOOL_ICON_ALPHA || index == HG_TOOL_ICON_BRIGHTNESS) {
+        // A, B buttons - handled by mouse wheel, click does nothing
+    } else if (index == HG_TOOL_ICON_VOLUME) {
         // V button (Volume) click toggles mute
         set_system_mute(!get_system_mute());
         update_toolbar_tooltips(hg_g_toolbar_wnd);
-        update_focus_message(1, 5);
+        update_focus_message(1, HG_TOOL_ICON_VOLUME);
         if (hg_g_toolbar_wnd) {
             InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
         }
-    } else if (index >= 6 && index <= 7) {
-        // B, A buttons - handled by mouse wheel, click does nothing
-    } else if (index == 8) {
-        // C button - opens commandbox
-        show_commandbox_window();
     } else {
         int s_idx = index - HG_NUM_BASIC_ICONS;
         if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
@@ -221,17 +306,28 @@ void update_focus_message(int override_type, int override_index)
     } else if (type == 1) {
         int total_items = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
         if (index >= 0 && index < total_items) {
-            if (index == 0)
+            if (index == HG_TOOL_ICON_RESIZE)
                 append_message(L"Drag to Resize Window");
-            else if (index == 1)
+            else if (index == HG_TOOL_ICON_MOVE)
                 append_message(L"Drag to Move Window");
-            else if (index == 2)
+            else if (index == HG_TOOL_ICON_CLOSE)
                 append_message(L"Hide Dashboard");
-            else if (index == 3)
+            else if (index == HG_TOOL_ICON_DESKTOP)
                 append_message(L"Show Desktop");
-            else if (index == 4)
+            else if (index == HG_TOOL_ICON_MENU)
                 append_message(L"Menu");
-            else if (index == 5) {
+            else if (index == HG_TOOL_ICON_COMMAND) {
+                append_message(L"Command Box");
+            } else if (index == HG_TOOL_ICON_ALPHA) {
+                static WCHAR alpha_str[64];
+                int cur_pct = toolbar_taskbox_alpha_percent();
+                StringCchPrintfW(alpha_str, 64, L"Alpha: %d%%", cur_pct);
+                append_message(alpha_str);
+            } else if (index == HG_TOOL_ICON_BRIGHTNESS) {
+                static WCHAR bright_str[64];
+                StringCchPrintfW(bright_str, 64, L"Brightness: %d%%", get_system_brightness());
+                append_message(bright_str);
+            } else if (index == HG_TOOL_ICON_VOLUME) {
                 static WCHAR vol_str[64];
                 if (get_system_mute()) {
                     StringCchPrintfW(vol_str, 64, L"System Volume: %d%% (Muted)", get_system_volume());
@@ -239,17 +335,6 @@ void update_focus_message(int override_type, int override_index)
                     StringCchPrintfW(vol_str, 64, L"System Volume: %d%%", get_system_volume());
                 }
                 append_message(vol_str);
-            } else if (index == 6) {
-                static WCHAR bright_str[64];
-                StringCchPrintfW(bright_str, 64, L"Brightness: %d%%", get_system_brightness());
-                append_message(bright_str);
-            } else if (index == 7) {
-                static WCHAR alpha_str[64];
-                int cur_pct = (hg_g_taskbox_alpha * 100 + 127) / 255;
-                StringCchPrintfW(alpha_str, 64, L"Alpha: %d%%", cur_pct);
-                append_message(alpha_str);
-            } else if (index == 8) {
-                append_message(L"Command Box");
             } else
                 append_message(hg_g_shortcuts[index - HG_NUM_BASIC_ICONS].name);
         }
@@ -426,26 +511,33 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     rc_btn = rc_item;
                     InflateRect(&rc_btn, SC(4), SC(4));
 
-                    COLORREF opp_bg = ~bg_color & 0x00FFFFFF;
-                    HBRUSH hbr_opp = CreateSolidBrush(opp_bg);
+                    COLORREF button_bg = (i < HG_NUM_BASIC_ICONS) ? toolbar_basic_icon_bg_color(i, bg_color)
+                                                                  : toolbar_invert_color(bg_color);
+                    BOOL keep_value_bg = (i == HG_TOOL_ICON_ALPHA || i == HG_TOOL_ICON_BRIGHTNESS ||
+                                          i == HG_TOOL_ICON_VOLUME);
+                    HBRUSH hbr_opp = CreateSolidBrush(button_bg);
                     if (hbr_opp) {
                         FillRect(mem_dc, &rc_btn, hbr_opp);
                         DeleteObject(hbr_opp);
                     }
 
                     if (pressed_type == 1 && pressed_index == i) {
-                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                        if (hbr) {
-                            FillRect(mem_dc, &rc_btn, hbr);
-                            DeleteObject(hbr);
+                        if (!keep_value_bg) {
+                            HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                            if (hbr) {
+                                FillRect(mem_dc, &rc_btn, hbr);
+                                DeleteObject(hbr);
+                            }
                         }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
                     } else if ((hovered_type == 1 && hovered_index == i) ||
                                (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i)) {
-                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
-                        if (hbr) {
-                            FillRect(mem_dc, &rc_btn, hbr);
-                            DeleteObject(hbr);
+                        if (!keep_value_bg) {
+                            HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                            if (hbr) {
+                                FillRect(mem_dc, &rc_btn, hbr);
+                                DeleteObject(hbr);
+                            }
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                         if (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i) {
@@ -455,6 +547,10 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                                 DeleteObject(hbr_focus);
                             }
                         }
+                    }
+
+                    if (i == HG_TOOL_ICON_VOLUME && get_system_mute()) {
+                        toolbar_draw_muted_border(mem_dc, &rc_btn);
                     }
 
                     if (i >= HG_NUM_BASIC_ICONS) {
@@ -468,24 +564,24 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         SetBkMode(mem_dc, TRANSPARENT);
                         HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
                         WCHAR btn_text[2] = {0};
-                        if (i == 0)
+                        if (i == HG_TOOL_ICON_RESIZE)
                             btn_text[0] = L'R';
-                        else if (i == 1)
+                        else if (i == HG_TOOL_ICON_MOVE)
                             btn_text[0] = L'M';
-                        else if (i == 2)
+                        else if (i == HG_TOOL_ICON_CLOSE)
                             btn_text[0] = L'X';
-                        else if (i == 3)
+                        else if (i == HG_TOOL_ICON_DESKTOP)
                             btn_text[0] = L'D';
-                        else if (i == 4)
+                        else if (i == HG_TOOL_ICON_MENU)
                             btn_text[0] = L'M';
-                        else if (i == 5)
-                            btn_text[0] = L'V';
-                        else if (i == 6)
-                            btn_text[0] = L'B';
-                        else if (i == 7)
-                            btn_text[0] = L'A';
-                        else if (i == 8)
+                        else if (i == HG_TOOL_ICON_COMMAND)
                             btn_text[0] = L'C';
+                        else if (i == HG_TOOL_ICON_ALPHA)
+                            btn_text[0] = L'A';
+                        else if (i == HG_TOOL_ICON_BRIGHTNESS)
+                            btn_text[0] = L'B';
+                        else if (i == HG_TOOL_ICON_VOLUME)
+                            btn_text[0] = L'V';
                         draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
                                            HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
                         SelectObject(mem_dc, old_font);
@@ -799,7 +895,9 @@ static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, 
     }
 
     SetMenuDefaultItem(h_menu, HG_IDM_TASK_RESTORE, FALSE);
+    hg_g_menu_active = TRUE;
     int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
+    hg_g_menu_active = FALSE;
 
     if (cmd == HG_IDM_TASK_RESTORE) {
         activate_taskbar_item(cur_index);
@@ -882,7 +980,9 @@ static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_ind
     }
 
     SetMenuDefaultItem(h_menu, HG_IDM_SHORTCUT_RUN, FALSE);
+    hg_g_menu_active = TRUE;
     int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
+    hg_g_menu_active = FALSE;
 
     if ((UINT)cmd == HG_IDM_SHORTCUT_RUN) {
         activate_toolbar_item(cur_index);
@@ -895,6 +995,78 @@ static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_ind
                 ILFree(pidl);
             }
         }
+    }
+
+    DestroyMenu(h_menu);
+}
+
+static BOOL taskbox_handle_audio_menu_command(UINT cmd)
+{
+    if (cmd >= HG_IDM_AUDIO_DEVICE_BASE && cmd < HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES) {
+        int idx = (int)(cmd - HG_IDM_AUDIO_DEVICE_BASE);
+        if (idx >= 0 && idx < hg_g_audio_device_count) {
+            if (set_default_audio_device(hg_g_audio_devices[idx].id)) {
+                update_audio_device_list();
+            }
+            update_toolbar_tooltips(hg_g_toolbar_wnd);
+            update_focus_message(1, HG_TOOL_ICON_VOLUME);
+            if (hg_g_toolbar_wnd) {
+                InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+            }
+        }
+        return TRUE;
+    }
+
+    if (cmd == HG_IDM_MUTE) {
+        set_system_mute(!get_system_mute());
+        update_toolbar_tooltips(hg_g_toolbar_wnd);
+        update_focus_message(1, HG_TOOL_ICON_VOLUME);
+        if (hg_g_toolbar_wnd) {
+            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+        }
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static void toolbar_controller_show_audio_context_menu(HWND hwnd, int icon_size, LPARAM l_param)
+{
+    update_audio_device_list();
+
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu)
+        return;
+
+    for (int i = 0; i < hg_g_audio_device_count; i++) {
+        UINT flags = MF_STRING;
+        if (hg_g_audio_devices[i].is_default) {
+            flags |= MF_CHECKED;
+        }
+        AppendMenuW(h_menu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i), hg_g_audio_devices[i].name);
+    }
+    if (hg_g_audio_device_count > 0) {
+        AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+    }
+
+    UINT mute_flags = MF_STRING;
+    if (get_system_mute()) {
+        mute_flags |= MF_CHECKED;
+    }
+    AppendMenuW(h_menu, mute_flags, HG_IDM_MUTE, L"Mute");
+
+    POINT screen_pt;
+    if (!toolbar_controller_get_context_menu_point(hwnd, 1, HG_TOOL_ICON_VOLUME, icon_size, l_param, &screen_pt)) {
+        DestroyMenu(h_menu);
+        return;
+    }
+
+    SetForegroundWindow(hwnd);
+    hg_g_menu_active = TRUE;
+    int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, screen_pt.x, screen_pt.y, hwnd, NULL);
+    hg_g_menu_active = FALSE;
+    if (cmd != 0) {
+        taskbox_handle_audio_menu_command((UINT)cmd);
     }
 
     DestroyMenu(h_menu);
@@ -918,11 +1090,11 @@ static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerSt
         state->pressed_type = cur_type;
         state->pressed_index = cur_index;
 
-        if (cur_type == 1 && cur_index == 0) { // Resize Drag Tool
+        if (cur_type == 1 && cur_index == HG_TOOL_ICON_RESIZE) { // Resize Drag Tool
             state->is_resizing = TRUE;
             GetCursorPos(&state->start_mouse);
             GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
-        } else if (cur_type == 1 && cur_index == 1) { // Move Drag Tool
+        } else if (cur_type == 1 && cur_index == HG_TOOL_ICON_MOVE) { // Move Drag Tool
             state->is_moving_taskbox = TRUE;
             GetCursorPos(&state->start_mouse);
             GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
@@ -958,7 +1130,11 @@ static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param)
     if (cur_type == 0 && cur_index != -1) {
         toolbar_controller_show_task_context_menu(hwnd, cur_index, icon_size, l_param);
     } else if (cur_type == 1 && cur_index != -1) {
-        toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
+        if (cur_index == HG_TOOL_ICON_VOLUME) {
+            toolbar_controller_show_audio_context_menu(hwnd, icon_size, l_param);
+        } else {
+            toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
+        }
     }
 
     return 0;
@@ -1023,7 +1199,7 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
         icon_size = SC(16);
 
     RECT rc_v_icon;
-    get_toolbar_item_rect(1, 5, rc_client.right, rc_client.bottom, icon_size, &rc_v_icon);
+    get_toolbar_item_rect(1, HG_TOOL_ICON_VOLUME, rc_client.right, rc_client.bottom, icon_size, &rc_v_icon);
     InflateRect(&rc_v_icon, SC(4), SC(4)); // 버튼 인식 영역
 
     if (PtInRect(&rc_v_icon, pt)) {
@@ -1055,20 +1231,21 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
         TOOLINFOW ti = {0};
         ti.cbSize = TOOLINFO_V1_SIZE;
         ti.hwnd = hwnd;
-        ti.uId = (UINT_PTR)(hg_g_window_count + 5);
+        ti.uId = (UINT_PTR)(hg_g_window_count + HG_TOOL_ICON_VOLUME);
         static WCHAR vol_tip[32];
         hellgates_wsprintf(vol_tip, 32, L"Vol: %d%%", new_vol);
         ti.lpszText = vol_tip;
         SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
 
         // 에디트박스 즉시 갱신
-        update_focus_message(1, 5);
+        update_focus_message(1, HG_TOOL_ICON_VOLUME);
+        InvalidateRect(hwnd, NULL, FALSE);
 
         return 0;
     }
 
     RECT rc_b_icon;
-    get_toolbar_item_rect(1, 6, rc_client.right, rc_client.bottom, icon_size, &rc_b_icon);
+    get_toolbar_item_rect(1, HG_TOOL_ICON_BRIGHTNESS, rc_client.right, rc_client.bottom, icon_size, &rc_b_icon);
     InflateRect(&rc_b_icon, SC(4), SC(4)); // 버튼 인식 영역
 
     if (PtInRect(&rc_b_icon, pt)) {
@@ -1100,20 +1277,21 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
         TOOLINFOW ti = {0};
         ti.cbSize = TOOLINFO_V1_SIZE;
         ti.hwnd = hwnd;
-        ti.uId = (UINT_PTR)(hg_g_window_count + 6);
+        ti.uId = (UINT_PTR)(hg_g_window_count + HG_TOOL_ICON_BRIGHTNESS);
         static WCHAR bright_tip[32];
         hellgates_wsprintf(bright_tip, 32, L"Brightness: %d%%", new_bright);
         ti.lpszText = bright_tip;
         SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
 
         // 에디트박스 즉시 갱신
-        update_focus_message(1, 6);
+        update_focus_message(1, HG_TOOL_ICON_BRIGHTNESS);
+        InvalidateRect(hwnd, NULL, FALSE);
 
         return 0;
     }
 
     RECT rc_a_icon;
-    get_toolbar_item_rect(1, 7, rc_client.right, rc_client.bottom, icon_size, &rc_a_icon);
+    get_toolbar_item_rect(1, HG_TOOL_ICON_ALPHA, rc_client.right, rc_client.bottom, icon_size, &rc_a_icon);
     InflateRect(&rc_a_icon, SC(4), SC(4)); // 버튼 인식 영역
 
     if (PtInRect(&rc_a_icon, pt)) {
@@ -1146,14 +1324,15 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
         TOOLINFOW ti = {0};
         ti.cbSize = TOOLINFO_V1_SIZE;
         ti.hwnd = hwnd;
-        ti.uId = (UINT_PTR)(hg_g_window_count + 7);
+        ti.uId = (UINT_PTR)(hg_g_window_count + HG_TOOL_ICON_ALPHA);
         static WCHAR alpha_tip[32];
         hellgates_wsprintf(alpha_tip, 32, L"Alpha: %d%%", new_pct);
         ti.lpszText = alpha_tip;
         SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
 
         // 에디트박스 즉시 갱신
-        update_focus_message(1, 7);
+        update_focus_message(1, HG_TOOL_ICON_ALPHA);
+        InvalidateRect(hwnd, NULL, FALSE);
 
         return 0;
     }
@@ -1497,7 +1676,9 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
             pt.y = GET_Y_LPARAM(l_param);
         }
 
+        hg_g_menu_active = TRUE;
         int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
+        hg_g_menu_active = FALSE;
 
         if (cmd == HG_IDM_EDIT_COPYALL) {
             SendMessageW(hwnd, EM_SETSEL, 0, (LPARAM)-1);
@@ -1943,6 +2124,8 @@ static LRESULT taskbox_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
         update_edit_font_size(1);
     } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
         update_edit_font_size(-1);
+    } else if (taskbox_handle_audio_menu_command(LOWORD(w_param))) {
+        return 0;
     }
     return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
 }
@@ -2096,6 +2279,20 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
             }
             InvalidateRect(hwnd, NULL, FALSE);
+        } else if (w_param == HG_TIMER_HOVER_CHECK) {
+            if (IsWindowVisible(hwnd) && !hg_g_menu_active) {
+                POINT pt;
+                GetCursorPos(&pt);
+                RECT rc;
+                GetWindowRect(hwnd, &rc);
+                if (!PtInRect(&rc, pt)) {
+                    KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
+                    ShowWindow(hwnd, SW_HIDE);
+                    if (hg_g_floater_wnd) {
+                        ShowWindow(hg_g_floater_wnd, SW_SHOW);
+                    }
+                }
+            }
         }
         return 0;
     case WM_PAINT:
@@ -2168,4 +2365,3 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
-

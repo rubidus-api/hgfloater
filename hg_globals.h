@@ -71,6 +71,7 @@ extern BOOL hg_g_in_sizemove;
 extern RECT hg_g_drag_start_rect;
 
 /* Drag & Drop states */
+extern BOOL hg_g_menu_active;
 extern BOOL hg_g_is_dragging;
 extern int hg_g_drag_source_index;
 extern POINT hg_g_drag_start_pt;
