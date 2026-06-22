@@ -436,16 +436,22 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         } else {
             // Hover logic
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
-                RECT rc;
-                GetWindowRect(hwnd, &rc);
-                ShowWindow(hwnd, SW_HIDE);
-                SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, rc.left, rc.top, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+                RECT f_rc, t_rc;
+                GetWindowRect(hwnd, &f_rc);
+                GetWindowRect(hg_g_taskbox_wnd, &t_rc);
+                int cx = f_rc.left + (f_rc.right - f_rc.left) / 2;
+                int cy = f_rc.top + (f_rc.bottom - f_rc.top) / 2;
+                int tw = t_rc.right - t_rc.left;
+                int th = t_rc.bottom - t_rc.top;
+                SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, cx - tw / 2, cy - th / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
                 // Make it appear instantly, refresh without forcing icon reload
                 refresh_window_list(FALSE);
                 ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
+                ShowWindow(hwnd, SW_HIDE);
                 SetForegroundWindow(hg_g_taskbox_wnd);
                 hg_g_hover_check_armed = TRUE;
                 SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
+                save_config(L"taskbox", cx - tw / 2, cy - th / 2, tw, th);
             }
         }
         return 0;
@@ -595,12 +601,20 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 
             if (hg_g_taskbox_wnd) {
                 if (!IsWindowVisible(hg_g_taskbox_wnd)) {
+                    RECT f_rc, t_rc;
+                    GetWindowRect(hwnd, &f_rc);
+                    GetWindowRect(hg_g_taskbox_wnd, &t_rc);
+                    int cx = f_rc.left + (f_rc.right - f_rc.left) / 2;
+                    int cy = f_rc.top + (f_rc.bottom - f_rc.top) / 2;
+                    int tw = t_rc.right - t_rc.left;
+                    int th = t_rc.bottom - t_rc.top;
+                    SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, cx - tw / 2, cy - th / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+
                     refresh_window_list(FALSE);
                     ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
                 } else {
                     refresh_window_list(FALSE);
                 }
-                SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
                 SetForegroundWindow(hg_g_taskbox_wnd);
                 
                 ShowWindow(hwnd, SW_HIDE); // Hide floater just like hover
