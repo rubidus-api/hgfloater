@@ -469,66 +469,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         }
         return 0;
     }
-    case WM_RBUTTONUP: {
-        update_audio_device_list();
-        POINT pt;
-        GetCursorPos(&pt);
-        HMENU menu = CreatePopupMenu();
-        if (menu) {
-            AppendMenuW(menu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
-            AppendMenuW(menu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
-            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(menu, MF_STRING, HG_IDM_ABOUT, L"About...");
-            AppendMenuW(menu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");
-            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-
-            /* Audio Endpoint Devices List sub-menu */
-            HMENU audio_menu = CreatePopupMenu();
-            if (audio_menu) {
-                for (int i = 0; i < hg_g_audio_device_count; i++) {
-                    UINT flags = MF_STRING;
-                    if (hg_g_audio_devices[i].is_default)
-                        flags |= MF_CHECKED;
-                    AppendMenuW(audio_menu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i),
-                                hg_g_audio_devices[i].name);
-                }
-                if (hg_g_audio_device_count > 0) {
-                    AppendMenuW(audio_menu, MF_SEPARATOR, 0, NULL);
-                }
-                UINT mute_flags = MF_STRING;
-                if (get_system_mute()) {
-                    mute_flags |= MF_CHECKED;
-                }
-                AppendMenuW(audio_menu, mute_flags, HG_IDM_MUTE, L"Mute");
-
-                AppendMenuW(menu, MF_POPUP, (UINT_PTR)audio_menu, L"Select Audio Device");
-            }
-
-            /* Physical Monitors layout options */
-            HMENU monitor_menu = CreatePopupMenu();
-            if (monitor_menu) {
-                for (int i = 0; i < hg_g_monitor_count; i++) {
-                    UINT flags = MF_STRING;
-                    if (hg_g_monitors[i].active)
-                        flags |= MF_CHECKED;
-                    AppendMenuW(monitor_menu, flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + (UINT)i), hg_g_monitors[i].name);
-                }
-                AppendMenuW(menu, MF_POPUP, (UINT_PTR)monitor_menu, L"Arrange Monitors");
-            }
-
-            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(menu, MF_STRING, HG_IDM_POWER_OFF, L"Lock Screen (Power Off)");
-            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(menu, MF_STRING, HG_IDM_CLOSE_APP, L"Exit");
-
-            SetForegroundWindow(hwnd);
-            hg_g_menu_active = TRUE;
-            TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_BOTTOMALIGN, pt.x, pt.y, 0, hwnd, NULL);
-            hg_g_menu_active = FALSE;
-            DestroyMenu(menu);
-        }
-        return 0;
-    }
+    /* WM_RBUTTONUP removed per user request */
     case WM_COMMAND:
         return floater_controller_on_command(hwnd, w_param, l_param);
     case WM_MOUSEWHEEL: {
