@@ -2280,12 +2280,20 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             }
             InvalidateRect(hwnd, NULL, FALSE);
         } else if (w_param == HG_TIMER_HOVER_CHECK) {
-            if (IsWindowVisible(hwnd) && !hg_g_menu_active) {
+            if (IsWindowVisible(hwnd) && !hg_g_menu_active && GetCapture() == NULL) {
                 POINT pt;
                 GetCursorPos(&pt);
                 RECT rc;
                 GetWindowRect(hwnd, &rc);
-                if (!PtInRect(&rc, pt)) {
+                if (!hg_g_hover_check_armed) {
+                    if (PtInRect(&rc, pt)) {
+                        hg_g_hover_check_armed = TRUE;
+                    } else if (hg_g_last_mouse_pos.x != -1 && (pt.x != hg_g_last_mouse_pos.x || pt.y != hg_g_last_mouse_pos.y)) {
+                        hg_g_hover_check_armed = TRUE;
+                    }
+                }
+                
+                if (hg_g_hover_check_armed && !PtInRect(&rc, pt)) {
                     KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
                     ShowWindow(hwnd, SW_HIDE);
                     if (hg_g_floater_wnd) {

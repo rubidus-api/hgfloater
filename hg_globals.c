@@ -69,6 +69,8 @@ BOOL hg_g_in_sizemove = FALSE;
 RECT hg_g_drag_start_rect = {0};
 
 /* Drag & Drop states */
+POINT hg_g_last_mouse_pos = {-1, -1};
+BOOL hg_g_hover_check_armed = TRUE;
 BOOL hg_g_menu_active = FALSE;
 BOOL hg_g_is_dragging = FALSE;
 int hg_g_drag_source_index = -1;
