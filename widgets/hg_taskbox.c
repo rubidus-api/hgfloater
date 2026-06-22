@@ -213,12 +213,23 @@ void hide_taskbox(HWND hwnd)
 {
     if (hwnd == NULL)
         return;
+    if (hg_g_floater_wnd) {
+        RECT t_rc, f_rc;
+        GetWindowRect(hwnd, &t_rc);
+        GetWindowRect(hg_g_floater_wnd, &f_rc);
+        int cx = t_rc.left + (t_rc.right - t_rc.left) / 2;
+        int cy = t_rc.top + (t_rc.bottom - t_rc.top) / 2;
+        int fw = f_rc.right - f_rc.left;
+        int fh = f_rc.bottom - f_rc.top;
+        SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, cx - fw / 2, cy - fh / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+        ShowWindow(hg_g_floater_wnd, SW_SHOW);
+        SetForegroundWindow(hg_g_floater_wnd);
+        save_config(L"floater", cx - fw / 2, cy - fh / 2, fw, fh);
+    }
     ShowWindow(hwnd, SW_HIDE);
     load_shortcuts();
     update_toolbar_tooltips(hg_g_toolbar_wnd);
     InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
-    if (hg_g_floater_wnd)
-        SetForegroundWindow(hg_g_floater_wnd);
 }
 
 void activate_toolbar_item(int index)
@@ -1931,6 +1942,8 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             move_window_by_offset(hwnd, dx, dy);
             /* 이동 후에도 최소한 일부는 화면에 보이도록 보호 */
             ensure_window_visible(hwnd, L"taskbox");
+            hg_g_hover_check_armed = FALSE;
+            GetCursorPos(&hg_g_last_mouse_pos);
             return 0;
         }
 
@@ -2346,10 +2359,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 
                 if (hg_g_hover_check_armed && !PtInRect(&rc, pt)) {
                     KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
-                    ShowWindow(hwnd, SW_HIDE);
-                    if (hg_g_floater_wnd) {
-                        ShowWindow(hg_g_floater_wnd, SW_SHOW);
-                    }
+                    hide_taskbox(hwnd);
                 }
             }
         }
