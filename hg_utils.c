@@ -50,6 +50,13 @@ typedef BOOL (WINAPI *PFN_DestroyPhysicalMonitors)(DWORD, HG_PHYSICAL_MONITOR*);
 typedef BOOL (WINAPI *PFN_GetMonitorBrightness)(HANDLE, LPDWORD, LPDWORD, LPDWORD);
 typedef BOOL (WINAPI *PFN_SetMonitorBrightness)(HANDLE, DWORD);
 
+static FARPROC hg_get_proc_address(HMODULE module, LPCSTR name)
+{
+    if (!module || !name)
+        return NULL;
+    return GetProcAddress(module, name);
+}
+
 static int hg_g_global_brightness = 55;
 static HMODULE s_hDxva2 = NULL;
 static PFN_GetNumberOfPhysicalMonitorsFromHMONITOR s_pfnGetNum = NULL;
@@ -65,11 +72,25 @@ static void init_dxva2(void)
         return;
     s_hDxva2 = LoadLibraryW(L"dxva2.dll");
     if (s_hDxva2) {
-        s_pfnGetNum = (PFN_GetNumberOfPhysicalMonitorsFromHMONITOR)GetProcAddress(s_hDxva2, "GetNumberOfPhysicalMonitorsFromHMONITOR");
-        s_pfnGetPhys = (PFN_GetPhysicalMonitorsFromHMONITOR)GetProcAddress(s_hDxva2, "GetPhysicalMonitorsFromHMONITOR");
-        s_pfnDestroy = (PFN_DestroyPhysicalMonitors)GetProcAddress(s_hDxva2, "DestroyPhysicalMonitors");
-        s_pfnGetBright = (PFN_GetMonitorBrightness)GetProcAddress(s_hDxva2, "GetMonitorBrightness");
-        s_pfnSetBright = (PFN_SetMonitorBrightness)GetProcAddress(s_hDxva2, "SetMonitorBrightness");
+        union {
+            FARPROC proc;
+            PFN_GetNumberOfPhysicalMonitorsFromHMONITOR get_num;
+            PFN_GetPhysicalMonitorsFromHMONITOR get_phys;
+            PFN_DestroyPhysicalMonitors destroy;
+            PFN_GetMonitorBrightness get_bright;
+            PFN_SetMonitorBrightness set_bright;
+        } loader;
+
+        loader.proc = hg_get_proc_address(s_hDxva2, "GetNumberOfPhysicalMonitorsFromHMONITOR");
+        s_pfnGetNum = loader.get_num;
+        loader.proc = hg_get_proc_address(s_hDxva2, "GetPhysicalMonitorsFromHMONITOR");
+        s_pfnGetPhys = loader.get_phys;
+        loader.proc = hg_get_proc_address(s_hDxva2, "DestroyPhysicalMonitors");
+        s_pfnDestroy = loader.destroy;
+        loader.proc = hg_get_proc_address(s_hDxva2, "GetMonitorBrightness");
+        s_pfnGetBright = loader.get_bright;
+        loader.proc = hg_get_proc_address(s_hDxva2, "SetMonitorBrightness");
+        s_pfnSetBright = loader.set_bright;
     }
     s_dxva2_initialized = TRUE;
 }
@@ -1864,17 +1885,28 @@ void update_toolbar_tooltips(HWND hwnd)
         ti_tool.uFlags = TTF_SUBCLASS;
         ti_tool.hwnd = hwnd;
         ti_tool.uId = (UINT_PTR)id_counter++;
-        if (i == 0)
+        if (i == HG_TOOL_ICON_RESIZE)
             ti_tool.lpszText = L"Drag to Resize Window";
-        else if (i == 1)
+        else if (i == HG_TOOL_ICON_MOVE)
             ti_tool.lpszText = L"Drag to Move Window";
-        else if (i == 2)
+        else if (i == HG_TOOL_ICON_CLOSE)
             ti_tool.lpszText = L"Hide Dashboard (Reload Shortcuts)";
-        else if (i == 3)
+        else if (i == HG_TOOL_ICON_DESKTOP)
             ti_tool.lpszText = L"Show Desktop";
-        else if (i == 4)
+        else if (i == HG_TOOL_ICON_MENU)
             ti_tool.lpszText = L"Menu";
-        else if (i == 5) {
+        else if (i == HG_TOOL_ICON_COMMAND) {
+            ti_tool.lpszText = L"Command Box";
+        } else if (i == HG_TOOL_ICON_ALPHA) {
+            static WCHAR alpha_tip[32];
+            int cur_pct = (hg_g_taskbox_alpha * 100 + 127) / 255;
+            hellgates_wsprintf(alpha_tip, 32, L"Alpha: %d%%", cur_pct);
+            ti_tool.lpszText = alpha_tip;
+        } else if (i == HG_TOOL_ICON_BRIGHTNESS) {
+            static WCHAR bright_tip[32];
+            hellgates_wsprintf(bright_tip, 32, L"Brightness: %d%%", get_system_brightness());
+            ti_tool.lpszText = bright_tip;
+        } else if (i == HG_TOOL_ICON_VOLUME) {
             static WCHAR vol_tip[32];
             if (get_system_mute()) {
                 hellgates_wsprintf(vol_tip, 32, L"Vol: %d%% (Muted)", get_system_volume());
@@ -1882,17 +1914,6 @@ void update_toolbar_tooltips(HWND hwnd)
                 hellgates_wsprintf(vol_tip, 32, L"Vol: %d%%", get_system_volume());
             }
             ti_tool.lpszText = vol_tip;
-        } else if (i == 6) {
-            static WCHAR bright_tip[32];
-            hellgates_wsprintf(bright_tip, 32, L"Brightness: %d%%", get_system_brightness());
-            ti_tool.lpszText = bright_tip;
-        } else if (i == 7) {
-            static WCHAR alpha_tip[32];
-            int cur_pct = (hg_g_taskbox_alpha * 100 + 127) / 255;
-            hellgates_wsprintf(alpha_tip, 32, L"Alpha: %d%%", cur_pct);
-            ti_tool.lpszText = alpha_tip;
-        } else if (i == 8) {
-            ti_tool.lpszText = L"Command Box";
         } else
             ti_tool.lpszText = hg_g_shortcuts[i - HG_NUM_BASIC_ICONS].name;
 
@@ -2008,4 +2029,3 @@ BOOL readonly_edit_handle_ime_messages(HWND hwnd, UINT msg, WPARAM w_param)
 
     return FALSE;
 }
-

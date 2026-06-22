@@ -72,7 +72,8 @@ void commandbox_execute()
     if (in_len <= 0)
         return;
 
-    WCHAR *in_buf = (WCHAR *)malloc(sizeof(WCHAR) * (in_len + 1));
+    size_t in_len_cch = (size_t)in_len;
+    WCHAR *in_buf = (WCHAR *)malloc(sizeof(WCHAR) * (in_len_cch + 1u));
     if (!in_buf)
         return;
     GetWindowTextW(hg_g_commandbox_in_wnd, in_buf, in_len + 1);
@@ -392,4 +393,3 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
-

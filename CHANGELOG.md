@@ -7,10 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [2026-06-22] - Floater to Taskbox Hover UX & UI Adjustments
 
 ### Changed
-- Converted the interaction model from clicking the Floater to simply **hovering** over it to spawn the Taskbox in place instantly (`WM_MOUSEMOVE` triggering `ShowWindow(SW_HIDE)` for floater and `SW_SHOW` for taskbox).
-- Added an automatic `HG_TIMER_HOVER_CHECK` timer in Taskbox to automatically close and return to the Floater UI when the mouse leaves the bounds of the Taskbox.
-- Added Taskbox's native settings shortcuts ("Open Shortcuts Folder", "Edit Configuration") to the Floater's right-click context menu alongside "Reset Settings".
+- Converted the interaction model from clicking the Floater to simply **hovering** over it to spawn the Taskbox in place instantly (`WM_MOUSEMOVE` triggering `ShowWindow(SW_HIDE)` for floater and `SW_SHOW` for taskbox). Left-click on the floater still toggles the taskbox.
+- Added an automatic `HG_TIMER_HOVER_CHECK` timer in Taskbox to automatically close and return to the Floater UI when the mouse leaves the bounds of the Taskbox, with a ~1 second (10 tick) grace delay that aborts the hide if the cursor briefly leaves and re-enters.
+- **Removed the Floater's own right-click context menu** to avoid redundancy. The main context menu (Open Shortcuts Folder, Edit Configuration, About, Reset Settings, Select Audio Device, Arrange Monitors, Lock Screen, Exit) now lives solely on the Taskbox toolbar button.
+- **Renamed the Taskbox `M` (Menu) toolbar button to `P` (PopupMenu)**; left-clicking it opens the main context menu.
 - Unified the Time and Date font sizes in the Floater by aligning their multiplier ratio to `1:1` (while preserving variables separately for future independent scaling).
+
+### Build / Internal
+- Converted `build.bat` to compile the modular split sources (`hg_globals.c`, `hg_utils.c`, `hg_config.c`, `widgets/*.c`) together with `hgfloater.c`, replacing the previous single-translation-unit build. Release builds now use `-O3 -flto=auto -DNDEBUG`.
+- Replaced `dxva2.dll` function-pointer casts with a `union` loader to silence `-Wcast-function-type`, and routed toolbar tooltip indexing through named `HG_TOOL_ICON_*` constants.
 
 ## [v26.05.31] - 2026-05-31
 
