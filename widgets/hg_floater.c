@@ -50,8 +50,8 @@ void update_floater_layout(HWND hwnd)
     const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
     hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
 
-    int time_size = hg_g_floater_font_size * 1;
-    int date_size = hg_g_floater_font_size * 1;
+    int time_size = hg_g_floater_font_size * 12 / 10;
+    int date_size = hg_g_floater_font_size * 8 / 10;
     if (date_size < 10)
         date_size = 10;
     if (!hg_g_floater_time_font)
@@ -125,8 +125,8 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     return 0;
                 }
 
-                int time_size = hg_g_floater_font_size * 1;
-                int date_size = hg_g_floater_font_size * 1;
+                int time_size = hg_g_floater_font_size * 12 / 10;
+                int date_size = hg_g_floater_font_size * 8 / 10;
                 if (date_size < 10)
                     date_size = 10;
                 if (!hg_g_floater_time_font)
@@ -451,9 +451,11 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 GetWindowRect(hwnd, &rc);
                 ShowWindow(hwnd, SW_HIDE);
                 SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, rc.left, rc.top, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
-                refresh_window_list(TRUE);
+                // Make it appear instantly, refresh without forcing icon reload
+                refresh_window_list(FALSE);
                 ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
                 SetForegroundWindow(hg_g_taskbox_wnd);
+                hg_g_hover_check_armed = TRUE;
                 SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
             }
         }
@@ -610,13 +612,19 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 
             if (hg_g_taskbox_wnd) {
                 if (!IsWindowVisible(hg_g_taskbox_wnd)) {
-                    refresh_window_list(TRUE);
+                    refresh_window_list(FALSE);
                     ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
                 } else {
                     refresh_window_list(FALSE);
                 }
                 SetWindowPos(hg_g_taskbox_wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
                 SetForegroundWindow(hg_g_taskbox_wnd);
+                
+                ShowWindow(hwnd, SW_HIDE); // Hide floater just like hover
+                
+                hg_g_hover_check_armed = FALSE;
+                GetCursorPos(&hg_g_last_mouse_pos);
+                SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
 
                 hg_g_taskbox_highlight_ticks = HG_HIGHLIGHT_TICKS;
                 if (!SetTimer(hg_g_taskbox_wnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
