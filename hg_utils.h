@@ -37,9 +37,15 @@ void append_message(const WCHAR *msg);
 void draw_outlined_text(HDC hdc, const WCHAR *text, int len, RECT *rc, UINT format, COLORREF text_color, COLORREF outline_color);
 int get_items_per_row(int width, int icon_size);
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect);
+typedef enum HgToolbarTextMode {
+    HG_TOOLBAR_TEXT_FOCUS = 0,
+    HG_TOOLBAR_TEXT_TOOLTIP = 1
+} HgToolbarTextMode;
 WCHAR hg_toolbar_builtin_label(int index);
 const WCHAR *hg_toolbar_builtin_focus_text(int index);
 const WCHAR *hg_toolbar_builtin_tooltip_text(int index);
+BOOL hg_toolbar_builtin_has_value(int index);
+BOOL hg_toolbar_builtin_value_text(int index, HgToolbarTextMode mode, WCHAR *buffer, size_t buffer_cch);
 void update_toolbar_tooltips(HWND hwnd);
 BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param);
 void move_window_by_offset(HWND hwnd, int dx, int dy);
