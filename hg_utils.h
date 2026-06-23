@@ -41,11 +41,26 @@ typedef enum HgToolbarTextMode {
     HG_TOOLBAR_TEXT_FOCUS = 0,
     HG_TOOLBAR_TEXT_TOOLTIP = 1
 } HgToolbarTextMode;
+typedef enum HgToolbarClickRole {
+    HG_TOOLBAR_CLICK_NONE = 0,
+    HG_TOOLBAR_CLICK_HIDE_TASKBOX,
+    HG_TOOLBAR_CLICK_TOGGLE_DESKTOP,
+    HG_TOOLBAR_CLICK_OPEN_MENU,
+    HG_TOOLBAR_CLICK_SHOW_COMMANDBOX,
+    HG_TOOLBAR_CLICK_TOGGLE_MUTE
+} HgToolbarClickRole;
+typedef enum HgToolbarDragRole {
+    HG_TOOLBAR_DRAG_NONE = 0,
+    HG_TOOLBAR_DRAG_RESIZE_TASKBOX,
+    HG_TOOLBAR_DRAG_MOVE_TASKBOX
+} HgToolbarDragRole;
 WCHAR hg_toolbar_builtin_label(int index);
 const WCHAR *hg_toolbar_builtin_focus_text(int index);
 const WCHAR *hg_toolbar_builtin_tooltip_text(int index);
 BOOL hg_toolbar_builtin_has_value(int index);
 BOOL hg_toolbar_builtin_value_text(int index, HgToolbarTextMode mode, WCHAR *buffer, size_t buffer_cch);
+HgToolbarClickRole hg_toolbar_builtin_click_role(int index);
+HgToolbarDragRole hg_toolbar_builtin_drag_role(int index);
 void update_toolbar_tooltips(HWND hwnd);
 BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param);
 void move_window_by_offset(HWND hwnd, int dx, int dy);

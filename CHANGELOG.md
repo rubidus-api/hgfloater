@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added centralized global hotkey register/unregister helpers.
 - Added a built-in toolbar descriptor table for labels and static focus/tooltip text as the first Phase 2 toolbar-model extraction step.
 - Added toolbar descriptor value roles for alpha, brightness, and volume dynamic focus/tooltip text and wheel dispatch.
+- Added toolbar descriptor click and drag roles for built-in toolbar button dispatch.
 
 ### Fixed
 - Persist floater/taskbox alpha changes made through `Alt + Mouse Wheel` and `Alt +/-` paths by routing both runtime alpha update helpers through `save_alpha_config()`.

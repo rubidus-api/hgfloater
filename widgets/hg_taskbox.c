@@ -245,19 +245,19 @@ void activate_toolbar_item(int index)
 {
     if (index < 0)
         return;
-    if (index == HG_TOOL_ICON_RESIZE) {
-        /* R button - handled by drag, no click action needed or could be a toggle?
-           User said "이 버튼을 드래그하면 그것에 맞춰 창 크기를 변경하게 해 줘".
-           Clicking it doesn't have a specified action. */
-    } else if (index == HG_TOOL_ICON_MOVE) {
-        /* Move handle: dragging logic is in toolbar_proc WM_LBUTTONDOWN. Clicking does nothing. */
-    } else if (index == HG_TOOL_ICON_CLOSE) {
+    switch (hg_toolbar_builtin_click_role(index)) {
+    case HG_TOOLBAR_CLICK_NONE:
+        break;
+    case HG_TOOLBAR_CLICK_HIDE_TASKBOX:
         hide_taskbox(hg_g_taskbox_wnd);
-    } else if (index == HG_TOOL_ICON_DESKTOP) {
+        break;
+    case HG_TOOLBAR_CLICK_TOGGLE_DESKTOP: {
         static BOOL is_desktop_shown = FALSE;
         is_desktop_shown = !is_desktop_shown;
         EnumWindows(minimize_restore_enum_proc, (LPARAM)is_desktop_shown);
-    } else if (index == HG_TOOL_ICON_MENU) {
+        break;
+    }
+    case HG_TOOLBAR_CLICK_OPEN_MENU: {
         update_audio_device_list();
         HMENU hMenu = CreatePopupMenu();
         AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
@@ -316,20 +316,24 @@ void activate_toolbar_item(int index)
         if (cmd != 0) {
             PostMessageW(hg_g_floater_wnd, WM_COMMAND, (WPARAM)(UINT)cmd, 0);
         }
-    } else if (index == HG_TOOL_ICON_COMMAND) {
-        // C button - opens commandbox
+        break;
+    }
+    case HG_TOOLBAR_CLICK_SHOW_COMMANDBOX:
         show_commandbox_window();
-    } else if (index == HG_TOOL_ICON_ALPHA || index == HG_TOOL_ICON_BRIGHTNESS) {
-        // A, B buttons - handled by mouse wheel, click does nothing
-    } else if (index == HG_TOOL_ICON_VOLUME) {
-        // V button (Volume) click toggles mute
+        break;
+    case HG_TOOLBAR_CLICK_TOGGLE_MUTE:
         set_system_mute(!get_system_mute());
         update_toolbar_tooltips(hg_g_toolbar_wnd);
         update_focus_message(1, HG_TOOL_ICON_VOLUME);
         if (hg_g_toolbar_wnd) {
             InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
         }
-    } else {
+        break;
+    default:
+        break;
+    }
+
+    if (index >= HG_NUM_BASIC_ICONS) {
         int s_idx = index - HG_NUM_BASIC_ICONS;
         if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
             ShellExecuteW(NULL, L"open", hg_g_shortcuts[s_idx].path, NULL, NULL, SW_SHOWNORMAL);
@@ -1119,15 +1123,16 @@ static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerSt
         state->pressed_type = cur_type;
         state->pressed_index = cur_index;
 
-        if (cur_type == 1 && cur_index == HG_TOOL_ICON_RESIZE) { // Resize Drag Tool
+        HgToolbarDragRole drag_role = (cur_type == 1) ? hg_toolbar_builtin_drag_role(cur_index) : HG_TOOLBAR_DRAG_NONE;
+        if (drag_role == HG_TOOLBAR_DRAG_RESIZE_TASKBOX) {
             state->is_resizing = TRUE;
             GetCursorPos(&state->start_mouse);
             GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
-        } else if (cur_type == 1 && cur_index == HG_TOOL_ICON_MOVE) { // Move Drag Tool
+        } else if (drag_role == HG_TOOLBAR_DRAG_MOVE_TASKBOX) {
             state->is_moving_taskbox = TRUE;
             GetCursorPos(&state->start_mouse);
             GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
-        } else if (cur_type == 0) { // Task drag start
+        } else if (cur_type == 0) {
             hg_g_is_dragging = FALSE;
             hg_g_drag_source_index = cur_index;
             hg_g_drag_start_pt = pt;

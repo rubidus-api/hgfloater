@@ -78,6 +78,7 @@ Purpose: make toolbar behavior table-driven without changing UI.
 Progress:
 - 2026-06-23: Added a built-in toolbar descriptor table for labels and static focus/tooltip text, with a compile-time descriptor count check against `HG_NUM_BASIC_ICONS`.
 - 2026-06-23: Added descriptor value roles for alpha, brightness, and volume so dynamic focus/tooltip text and wheel dispatch share the built-in toolbar metadata.
+- 2026-06-23: Added descriptor click and drag roles so built-in button activation and resize/move drag startup are routed through toolbar metadata.
 
 Tasks:
 - Define a static descriptor table for built-in toolbar items.
