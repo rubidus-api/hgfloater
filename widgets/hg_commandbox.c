@@ -280,7 +280,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
             RECT rc;
             if (GetWindowRect(hwnd, &rc)) {
-                save_config(L"commandbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+                save_commandbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
             }
         }
         break;
@@ -364,12 +364,11 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
             int new_alpha = (int)hg_g_commandbox_alpha + (delta > 0 ? 15 : -15);
             if (new_alpha > HG_MAX_ALPHA) new_alpha = HG_MAX_ALPHA;
             if (new_alpha < HG_MIN_ALPHA) new_alpha = HG_MIN_ALPHA;
+            if (hg_g_commandbox_alpha == (BYTE)new_alpha)
+                return 0;
             hg_g_commandbox_alpha = (BYTE)new_alpha;
             SetLayeredWindowAttributes(hwnd, 0, hg_g_commandbox_alpha, LWA_ALPHA);
-            
-            WCHAR buf[32];
-            hellgates_wsprintf(buf, 32, L"%u", (UINT)hg_g_commandbox_alpha);
-            WritePrivateProfileStringW(L"commandbox", L"alpha", buf, hg_g_config_path);
+            save_commandbox_alpha_config();
             return 0;
         }
         break;

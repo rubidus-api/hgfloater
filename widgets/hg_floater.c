@@ -456,7 +456,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 SetForegroundWindow(hg_g_taskbox_wnd);
                 hg_g_hover_check_armed = TRUE;
                 SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
-                save_config(L"taskbox", cx - tw / 2, cy - th / 2, tw, th);
+                save_taskbox_geometry_config(cx - tw / 2, cy - th / 2, tw, th);
             }
         }
         return 0;
@@ -498,7 +498,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         hg_g_in_sizemove = FALSE;
         RECT rc = {0};
         GetWindowRect(hwnd, &rc);
-        save_config(L"floater", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        save_floater_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         return 0;
     }
     case WM_TIMER: {
