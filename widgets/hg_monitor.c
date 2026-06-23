@@ -296,7 +296,18 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
 
         if (rc.right > 0 && rc.bottom > 0) {
             HDC mem_dc = CreateCompatibleDC(hdc);
+            if (!mem_dc) {
+                EndPaint(hwnd, &ps);
+                return 0;
+            }
+
             HBITMAP mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+            if (!mem_bm) {
+                DeleteDC(mem_dc);
+                EndPaint(hwnd, &ps);
+                return 0;
+            }
+
             HBITMAP old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
             if (!old_bm) {
                 DeleteObject(mem_bm);
@@ -320,12 +331,14 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 int mh = m_rc.bottom - m_rc.top;
 
                 HDC hdc_screen = GetDC(NULL);
-                SetStretchBltMode(mem_dc, HALFTONE);
-                /* Draw preview area below the edit box + border */
-                int preview_top = border + edit_height;
-                StretchBlt(mem_dc, border, preview_top, rc.right - 2 * border, rc.bottom - preview_top - border,
-                           hdc_screen, m_rc.left, m_rc.top, mw, mh, SRCCOPY);
-                ReleaseDC(NULL, hdc_screen);
+                if (hdc_screen) {
+                    SetStretchBltMode(mem_dc, HALFTONE);
+                    /* Draw preview area below the edit box + border */
+                    int preview_top = border + edit_height;
+                    StretchBlt(mem_dc, border, preview_top, rc.right - 2 * border, rc.bottom - preview_top - border,
+                               hdc_screen, m_rc.left, m_rc.top, mw, mh, SRCCOPY);
+                    ReleaseDC(NULL, hdc_screen);
+                }
 
                 /* Draw cursor if needed */
                 POINT cursor_pt;
@@ -343,23 +356,33 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                         int len = SC(8);
                         /* Draw black crosshair background for contrast */
                         HPEN hPenBg = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
-                        HPEN oldPen = (HPEN)SelectObject(mem_dc, hPenBg);
-                        MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
-                        LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
-                        MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
-                        LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
+                        HPEN restore_pen = NULL;
+                        if (hPenBg) {
+                            restore_pen = (HPEN)SelectObject(mem_dc, hPenBg);
+                            MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
+                            LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
+                            MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
+                            LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
+                        }
 
                         /* Draw colored crosshair core */
                         HPEN hPenFg = CreatePen(PS_SOLID, 1, fill_color);
-                        SelectObject(mem_dc, hPenFg);
-                        MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
-                        LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
-                        MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
-                        LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
+                        if (hPenFg) {
+                            HPEN old_pen = (HPEN)SelectObject(mem_dc, hPenFg);
+                            if (!restore_pen)
+                                restore_pen = old_pen;
+                            MoveToEx(mem_dc, client_pt.x - len, client_pt.y, NULL);
+                            LineTo(mem_dc, client_pt.x + len + 1, client_pt.y);
+                            MoveToEx(mem_dc, client_pt.x, client_pt.y - len, NULL);
+                            LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
+                        }
 
-                        SelectObject(mem_dc, oldPen);
-                        DeleteObject(hPenBg);
-                        DeleteObject(hPenFg);
+                        if (restore_pen)
+                            SelectObject(mem_dc, restore_pen);
+                        if (hPenBg)
+                            DeleteObject(hPenBg);
+                        if (hPenFg)
+                            DeleteObject(hPenFg);
                     }
                 }
             }
@@ -548,4 +571,3 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
-
