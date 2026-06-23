@@ -292,55 +292,96 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
+static BOOL floater_dispatch_monitor_command(UINT cmd)
+{
+    if (cmd < HG_IDM_MONITOR_BASE || cmd >= HG_IDM_MONITOR_BASE + HG_MAX_MONITORS)
+        return FALSE;
+
+    int idx = (int)(cmd - HG_IDM_MONITOR_BASE);
+    if (idx >= 0 && idx < hg_g_monitor_count) {
+        toggle_monitor_window(idx);
+    }
+    return TRUE;
+}
+
+static BOOL floater_dispatch_audio_device_command(UINT cmd)
+{
+    if (cmd < HG_IDM_AUDIO_DEVICE_BASE || cmd >= HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES)
+        return FALSE;
+
+    int idx = (int)(cmd - HG_IDM_AUDIO_DEVICE_BASE);
+    if (idx >= 0 && idx < hg_g_audio_device_count) {
+        if (set_default_audio_device(hg_g_audio_devices[idx].id)) {
+            update_audio_device_list();
+        }
+    }
+    return TRUE;
+}
+
+static BOOL floater_dispatch_volume_command(UINT cmd)
+{
+    int volume = -1;
+    switch (cmd) {
+    case HG_IDM_VOLUME_SET_0:
+        volume = 0;
+        break;
+    case HG_IDM_VOLUME_SET_25:
+        volume = 25;
+        break;
+    case HG_IDM_VOLUME_SET_50:
+        volume = 50;
+        break;
+    case HG_IDM_VOLUME_SET_75:
+        volume = 75;
+        break;
+    case HG_IDM_VOLUME_SET_100:
+        volume = 100;
+        break;
+    default:
+        return FALSE;
+    }
+
+    set_system_volume(volume);
+    return TRUE;
+}
+
+static void floater_refresh_volume_ui(void)
+{
+    update_toolbar_tooltips(hg_g_toolbar_wnd);
+    if (hg_g_toolbar_wnd) {
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    }
+}
+
 static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
-    if (LOWORD(w_param) == HG_IDM_CLOSE_APP) {
-        DestroyWindow(hwnd);
-    } else if (LOWORD(w_param) >= HG_IDM_MONITOR_BASE && LOWORD(w_param) < HG_IDM_MONITOR_BASE + HG_MAX_MONITORS) {
-        int idx = LOWORD(w_param) - HG_IDM_MONITOR_BASE;
-        if (idx >= 0 && idx < hg_g_monitor_count) {
-            toggle_monitor_window(idx);
+    UINT cmd = LOWORD(w_param);
+
+    BOOL handled = floater_dispatch_monitor_command(cmd) || floater_dispatch_audio_device_command(cmd) ||
+                   floater_dispatch_volume_command(cmd);
+    if (!handled) {
+        if (cmd == HG_IDM_CLOSE_APP) {
+            DestroyWindow(hwnd);
+        } else if (cmd == HG_IDM_MUTE) {
+            set_system_mute(!get_system_mute());
+            floater_refresh_volume_ui();
+        } else if (cmd == HG_IDM_OPEN_SHORTCUTS) {
+            ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
+        } else if (cmd == HG_IDM_EDIT_CONFIG) {
+            ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
+        } else if (cmd == HG_IDM_ABOUT) {
+            show_about_window();
+        } else if (cmd == HG_IDM_RESET_ALL) {
+            hg_config_reset_all(hwnd);
+        } else if (cmd == HG_IDM_FONT_UP) {
+            update_floater_font_size(1);
+        } else if (cmd == HG_IDM_FONT_DOWN) {
+            update_floater_font_size(-1);
+        } else if (cmd == HG_IDM_POWER_OFF) {
+            HWND h_shell = FindWindowW(L"Shell_TrayWnd", NULL);
+            if (h_shell)
+                PostMessageW(h_shell, WM_COMMAND, 506, 0);
         }
-    } else if (LOWORD(w_param) >= HG_IDM_AUDIO_DEVICE_BASE &&
-               LOWORD(w_param) < HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES) {
-        int idx = LOWORD(w_param) - HG_IDM_AUDIO_DEVICE_BASE;
-        if (idx >= 0 && idx < hg_g_audio_device_count) {
-            if (set_default_audio_device(hg_g_audio_devices[idx].id)) {
-                update_audio_device_list();
-            }
-        }
-    } else if (LOWORD(w_param) == HG_IDM_MUTE) {
-        set_system_mute(!get_system_mute());
-        update_toolbar_tooltips(hg_g_toolbar_wnd);
-        if (hg_g_toolbar_wnd) {
-            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-        }
-    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_0) {
-        set_system_volume(0);
-    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_25) {
-        set_system_volume(25);
-    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_50) {
-        set_system_volume(50);
-    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_75) {
-        set_system_volume(75);
-    } else if (LOWORD(w_param) == HG_IDM_VOLUME_SET_100) {
-        set_system_volume(100);
-    } else if (LOWORD(w_param) == HG_IDM_OPEN_SHORTCUTS) {
-        ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
-    } else if (LOWORD(w_param) == HG_IDM_EDIT_CONFIG) {
-        ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
-    } else if (LOWORD(w_param) == HG_IDM_ABOUT) {
-        show_about_window();
-    } else if (LOWORD(w_param) == HG_IDM_RESET_ALL) {
-        hg_config_reset_all(hwnd);
-    } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
-        update_floater_font_size(1);
-    } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
-        update_floater_font_size(-1);
-    } else if (LOWORD(w_param) == HG_IDM_POWER_OFF) {
-        HWND h_shell = FindWindowW(L"Shell_TrayWnd", NULL);
-        if (h_shell)
-            PostMessageW(h_shell, WM_COMMAND, 506, 0);
     }
 
     return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
