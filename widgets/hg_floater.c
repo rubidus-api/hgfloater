@@ -359,10 +359,7 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
         DestroyWindow(hg_g_taskbox_wnd);
         hg_g_taskbox_wnd = NULL;
     }
-    if (hg_g_hotkey_registered) {
-        UnregisterHotKey(hwnd, 1);
-        hg_g_hotkey_registered = FALSE;
-    }
+    unregister_global_hotkey(hwnd);
     if (hg_g_floater_time_font) {
         DeleteObject(hg_g_floater_time_font);
         hg_g_floater_time_font = NULL;

@@ -10,11 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added `docs/RFC-2026-06-staged-refactor.md` with a staged refactor plan covering configuration persistence, toolbar modeling, menu helpers, widget state boundaries, resource lifetime audit, and verification expansion.
 - Added named geometry persistence helpers for floater, taskbox, and command box windows as the first Phase 1 configuration-boundary refactor step.
 - Added named command box font config helpers and a shared font-name save helper for Phase 1 persistence cleanup.
+- Added centralized global hotkey register/unregister helpers.
 
 ### Fixed
 - Persist floater/taskbox alpha changes made through `Alt + Mouse Wheel` and `Alt +/-` paths by routing both runtime alpha update helpers through `save_alpha_config()`.
 - Route command box alpha persistence through a named helper and skip redundant updates when the value is already clamped.
 - Clamp command box font size loaded from `config.ini` to the supported 8-72 range and persist normalized defaults.
+- Normalize invalid hotkey modifier bits and invalid virtual-key values loaded from `config.ini` before registration.
 - Avoid redundant layered-window updates when alpha is already clamped at its minimum or maximum.
 
 ## [2026-06-22] - Floater to Taskbox Hover UX & UI Adjustments
