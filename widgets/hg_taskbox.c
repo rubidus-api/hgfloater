@@ -14,6 +14,8 @@ void update_size(int delta)
         new_size = SC(16);
     if (new_size > SC(128))
         new_size = SC(128);
+    if (new_size == old_size)
+        return;
     hg_g_current_font_size = -new_size;
     save_taskbox_font_config();
     if (hg_g_toolbar_btn_font) {
@@ -58,6 +60,8 @@ void update_edit_font_size(int delta)
         new_size = SC(12);
     if (new_size > SC(128))
         new_size = SC(128);
+    if (new_size == old_size)
+        return;
     hg_g_edit_font_size = -new_size;
     save_taskbox_font_config();
 

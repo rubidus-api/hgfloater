@@ -60,6 +60,7 @@ Progress:
 - 2026-06-23: Command box alpha writes now go through a named helper and skip redundant writes at clamp boundaries.
 - 2026-06-23: Command box font name/size persistence now goes through named helpers, with loaded font sizes normalized to the supported 8-72 range.
 - 2026-06-23: Hotkey config load now strips invalid modifier bits, rejects invalid virtual-key values, and routes registration/unregistration through named helpers.
+- 2026-06-23: Floater/taskbox font save paths now normalize values before writing, and taskbox font/icon updates skip redundant work at clamp boundaries.
 
 Tasks:
 - Centralize alpha, font, geometry, and hotkey persistence helpers.
