@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2026-06-23] - Stabilization and Refactor Planning
+
+### Added
+- Added `docs/RFC-2026-06-staged-refactor.md` with a staged refactor plan covering configuration persistence, toolbar modeling, menu helpers, widget state boundaries, resource lifetime audit, and verification expansion.
+
+### Fixed
+- Persist floater/taskbox alpha changes made through `Alt + Mouse Wheel` and `Alt +/-` paths by routing both runtime alpha update helpers through `save_alpha_config()`.
+- Avoid redundant layered-window updates when alpha is already clamped at its minimum or maximum.
+
 ## [2026-06-22] - Floater to Taskbox Hover UX & UI Adjustments
 
 ### Changed
