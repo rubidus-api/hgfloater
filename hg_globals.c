@@ -68,15 +68,11 @@ int hg_g_window_count = 0;
 BOOL hg_g_in_sizemove = FALSE;
 RECT hg_g_drag_start_rect = {0};
 
-/* Drag & Drop states */
+/* Pointer/menu interaction states */
 POINT hg_g_last_mouse_pos = {-1, -1};
 BOOL hg_g_hover_check_armed = TRUE;
 BOOL hg_g_menu_active = FALSE;
-BOOL hg_g_is_dragging = FALSE;
-int hg_g_drag_source_index = -1;
 POINT hg_g_drag_start_pt = {0, 0};
-POINT hg_g_drag_current_pt = {0, 0};
-int hg_g_drag_target_index = -1;
 
 MonitorInfo hg_g_monitors[HG_MAX_MONITORS] = {0};
 int hg_g_monitor_count = 0;

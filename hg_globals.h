@@ -70,15 +70,11 @@ extern int hg_g_window_count;
 extern BOOL hg_g_in_sizemove;
 extern RECT hg_g_drag_start_rect;
 
-/* Drag & Drop states */
+/* Pointer/menu interaction states */
 extern POINT hg_g_last_mouse_pos;
 extern BOOL hg_g_hover_check_armed;
 extern BOOL hg_g_menu_active;
-extern BOOL hg_g_is_dragging;
-extern int hg_g_drag_source_index;
 extern POINT hg_g_drag_start_pt;
-extern POINT hg_g_drag_current_pt;
-extern int hg_g_drag_target_index;
 
 extern MonitorInfo hg_g_monitors[10]; /* HG_MAX_MONITORS */
 extern int hg_g_monitor_count;

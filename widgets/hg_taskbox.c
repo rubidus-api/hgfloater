@@ -175,6 +175,14 @@ static int toolbar_taskbox_alpha_percent(void)
     return toolbar_clamp_percent((hg_g_taskbox_alpha * 100 + 127) / 255);
 }
 
+typedef struct HgTaskboxDragState {
+    BOOL is_dragging;
+    int source_index;
+    POINT start_pt;
+    POINT current_pt;
+    int target_index;
+} HgTaskboxDragState;
+
 static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
 {
     if (index == HG_TOOL_ICON_ALPHA) {
@@ -453,7 +461,8 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
 }
 
 static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type,
-                                           int pressed_index, int *cached_icon_size)
+                                           int pressed_index, const HgTaskboxDragState *drag_state,
+                                           int *cached_icon_size)
 {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
@@ -502,9 +511,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                 for (int i = 0; i < hg_g_window_count; i++)
                     visual_order[i] = i;
 
-                if (hg_g_is_dragging && hg_g_drag_source_index != -1) {
-                    int src = hg_g_drag_source_index;
-                    int dst = hg_g_drag_target_index;
+                if (drag_state->is_dragging && drag_state->source_index != -1) {
+                    int src = drag_state->source_index;
+                    int dst = drag_state->target_index;
                     if (dst != -1 && dst != src) {
                         int temp = visual_order[src];
                         if (src < dst) {
@@ -526,7 +535,8 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     rc_btn = rc_item;
                     InflateRect(&rc_btn, SC(4), SC(4));
 
-                    if (hg_g_is_dragging && hg_g_drag_source_index != -1 && r_idx == hg_g_drag_source_index) {
+                    if (drag_state->is_dragging && drag_state->source_index != -1 &&
+                        r_idx == drag_state->source_index) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FrameRect(mem_dc, &rc_btn, hbr);
@@ -535,14 +545,14 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         continue;
                     }
 
-                    if (pressed_type == 0 && pressed_index == r_idx && !hg_g_is_dragging) {
+                    if (pressed_type == 0 && pressed_index == r_idx && !drag_state->is_dragging) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
                             DeleteObject(hbr);
                         }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
-                    } else if ((hovered_type == 0 && hovered_index == pos && !hg_g_is_dragging) ||
+                    } else if ((hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) ||
                                (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx)) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
@@ -649,9 +659,10 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     }
                 }
 
-                if (hg_g_is_dragging && hg_g_drag_source_index != -1 && hg_g_drag_source_index < hg_g_window_count) {
-                    int cx = hg_g_drag_current_pt.x - icon_size / 2;
-                    int cy = hg_g_drag_current_pt.y - icon_size / 2;
+                if (drag_state->is_dragging && drag_state->source_index != -1 &&
+                    drag_state->source_index < hg_g_window_count) {
+                    int cx = drag_state->current_pt.x - icon_size / 2;
+                    int cy = drag_state->current_pt.y - icon_size / 2;
                     RECT drag_rc = {cx - SC(4), cy - SC(4), cx + icon_size + SC(4), cy + icon_size + SC(4)};
                     HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
                     if (hbr) {
@@ -659,8 +670,8 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         DeleteObject(hbr);
                     }
                     DrawEdge(mem_dc, &drag_rc, BDR_RAISEDINNER, BF_RECT);
-                    if (hg_g_window_items[hg_g_drag_source_index].icon) {
-                        DrawIconEx(mem_dc, cx, cy, hg_g_window_items[hg_g_drag_source_index].icon, icon_size, icon_size,
+                    if (hg_g_window_items[drag_state->source_index].icon) {
+                        DrawIconEx(mem_dc, cx, cy, hg_g_window_items[drag_state->source_index].icon, icon_size, icon_size,
                                    0, NULL, DI_NORMAL);
                     }
                 }
@@ -676,7 +687,8 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
     return 0;
 }
 
-static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerState *state, LPARAM l_param)
+static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerState *state,
+                                                HgTaskboxDragState *drag_state, LPARAM l_param)
 {
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     RECT rc;
@@ -778,19 +790,20 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
     int cur_type = -1, cur_index = -1;
     get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index);
 
-    if (hg_g_drag_source_index != -1 && !hg_g_is_dragging && GetCapture() == hwnd && state->pressed_type == 0) {
-        if (ABS(pt.x - hg_g_drag_start_pt.x) > GetSystemMetrics(SM_CXDRAG) ||
-            ABS(pt.y - hg_g_drag_start_pt.y) > GetSystemMetrics(SM_CYDRAG)) {
-            hg_g_is_dragging = TRUE;
+    if (drag_state->source_index != -1 && !drag_state->is_dragging && GetCapture() == hwnd &&
+        state->pressed_type == 0) {
+        if (ABS(pt.x - drag_state->start_pt.x) > GetSystemMetrics(SM_CXDRAG) ||
+            ABS(pt.y - drag_state->start_pt.y) > GetSystemMetrics(SM_CYDRAG)) {
+            drag_state->is_dragging = TRUE;
         }
     }
 
-    if (hg_g_is_dragging && hg_g_drag_source_index != -1) {
-        hg_g_drag_current_pt = pt;
+    if (drag_state->is_dragging && drag_state->source_index != -1) {
+        drag_state->current_pt = pt;
         if (cur_type == 0 && cur_index != -1) {
-            hg_g_drag_target_index = cur_index;
+            drag_state->target_index = cur_index;
         } else if (cur_type == -1 || cur_type == 1) {
-            hg_g_drag_target_index = -1;
+            drag_state->target_index = -1;
         }
         InvalidateRect(hwnd, NULL, FALSE);
     } else if (cur_type != state->hovered_type || cur_index != state->hovered_index) {
@@ -805,7 +818,8 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
     return 0;
 }
 
-static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerState *state, LPARAM l_param)
+static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerState *state,
+                                                HgTaskboxDragState *drag_state, LPARAM l_param)
 {
     if (state->is_resizing) {
         state->is_resizing = FALSE;
@@ -848,15 +862,15 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
             SetWindowPos(hg_g_floater_wnd, NULL, rc.left, rc.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
             save_floater_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
-    } else if (hg_g_drag_source_index != -1) {
-        BOOL was_dragging = hg_g_is_dragging;
-        int final_source = hg_g_drag_source_index;
-        int final_target = hg_g_drag_target_index;
-        hg_g_drag_source_index = -1;
-        hg_g_drag_target_index = -1;
+    } else if (drag_state->source_index != -1) {
+        BOOL was_dragging = drag_state->is_dragging;
+        int final_source = drag_state->source_index;
+        int final_target = drag_state->target_index;
+        drag_state->source_index = -1;
+        drag_state->target_index = -1;
         state->pressed_type = -1;
         state->pressed_index = -1;
-        hg_g_is_dragging = FALSE;
+        drag_state->is_dragging = FALSE;
         ReleaseCapture();
         InvalidateRect(hwnd, NULL, FALSE);
 
@@ -1165,7 +1179,8 @@ static void toolbar_controller_show_audio_context_menu(HWND hwnd, int icon_size,
     DestroyMenu(h_menu);
 }
 
-static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerState *state, LPARAM l_param)
+static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerState *state,
+                                                  HgTaskboxDragState *drag_state, LPARAM l_param)
 {
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     RECT rc;
@@ -1193,9 +1208,11 @@ static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerSt
             GetCursorPos(&state->start_mouse);
             GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
         } else if (cur_type == 0) {
-            hg_g_is_dragging = FALSE;
-            hg_g_drag_source_index = cur_index;
-            hg_g_drag_start_pt = pt;
+            drag_state->is_dragging = FALSE;
+            drag_state->source_index = cur_index;
+            drag_state->start_pt = pt;
+            drag_state->current_pt = pt;
+            drag_state->target_index = -1;
         }
         InvalidateRect(hwnd, NULL, FALSE);
         SetCapture(hwnd);
@@ -1256,11 +1273,12 @@ static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param)
     return 0;
 }
 
-static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerState *state)
+static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerState *state,
+                                                 const HgTaskboxDragState *drag_state)
 {
     state->hovered_type = -1;
     state->hovered_index = -1;
-    if (!state->is_resizing && !state->is_moving_taskbox && !hg_g_is_dragging) {
+    if (!state->is_resizing && !state->is_moving_taskbox && !drag_state->is_dragging) {
         state->pressed_type = -1;
         state->pressed_index = -1;
         ReleaseCapture();
@@ -1389,6 +1407,7 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     static ToolbarControllerState state = {-1, -1, -1, -1, 0, FALSE, FALSE, {0, 0}, {0, 0, 0, 0}};
+    static HgTaskboxDragState drag_state = {FALSE, -1, {0, 0}, {0, 0}, -1};
 
     switch (msg) {
     case WM_NCHITTEST: {
@@ -1409,23 +1428,23 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     }
     case WM_PAINT:
         return toolbar_controller_on_paint(hwnd, state.hovered_type, state.hovered_index, state.pressed_type,
-                                           state.pressed_index, &state.cached_icon_size);
+                                           state.pressed_index, &drag_state, &state.cached_icon_size);
     case WM_KEYDOWN: {
         SendMessage(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
         return 0;
     }
     case WM_LBUTTONDOWN:
-        return toolbar_controller_on_lbutton_down(hwnd, &state, l_param);
+        return toolbar_controller_on_lbutton_down(hwnd, &state, &drag_state, l_param);
     case WM_MOUSEMOVE:
-        return toolbar_controller_on_mouse_move(hwnd, &state, l_param);
+        return toolbar_controller_on_mouse_move(hwnd, &state, &drag_state, l_param);
     case WM_LBUTTONUP:
-        return toolbar_controller_on_lbutton_up(hwnd, &state, l_param);
+        return toolbar_controller_on_lbutton_up(hwnd, &state, &drag_state, l_param);
     case WM_RBUTTONUP:
         return toolbar_controller_on_rbutton_up(hwnd, l_param);
     case WM_MBUTTONUP:
         return toolbar_controller_on_mbutton_up(hwnd, l_param);
     case WM_MOUSELEAVE:
-        return toolbar_controller_on_mouse_leave(hwnd, &state);
+        return toolbar_controller_on_mouse_leave(hwnd, &state, &drag_state);
     case WM_MOUSEWHEEL:
         return toolbar_controller_on_mouse_wheel(hwnd, w_param, l_param);
     }
