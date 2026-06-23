@@ -43,17 +43,11 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
 
 void load_commandbox_font()
 {
-    GetPrivateProfileStringW(L"commandbox", L"font_name", L"", hg_g_commandbox_font_name, LF_FACESIZE, hg_g_config_path);
-    int size = (int)GetPrivateProfileIntW(L"commandbox", L"font_size", 16, hg_g_config_path);
-    hg_g_commandbox_font_size = -SC(size);
+    load_commandbox_font_config();
 
     if (hg_g_commandbox_font) {
         DeleteObject(hg_g_commandbox_font);
         hg_g_commandbox_font = NULL;
-    }
-
-    if (hg_g_commandbox_font_name[0] == L'\0') {
-        StringCchCopyW(hg_g_commandbox_font_name, LF_FACESIZE, L"Consolas");
     }
 
     hg_g_commandbox_font = CreateFontW(
@@ -342,10 +336,8 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
             size += (delta > 0 ? 1 : -1);
             if (size < 8) size = 8;
             if (size > 72) size = 72;
-            
-            WCHAR buf[32];
-            hellgates_wsprintf(buf, 32, L"%d", size);
-            WritePrivateProfileStringW(L"commandbox", L"font_size", buf, hg_g_config_path);
+            hg_g_commandbox_font_size = -SC(size);
+            save_commandbox_font_config();
             
             load_commandbox_font();
             if (hg_g_commandbox_out_wnd)

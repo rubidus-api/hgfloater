@@ -112,6 +112,37 @@ void save_taskbox_font_config()
     WritePrivateProfileStringW(L"taskbox", L"icon_size", buf, hg_g_config_path);
 }
 
+void load_commandbox_font_config()
+{
+    GetPrivateProfileStringW(L"commandbox", L"font_name", L"Consolas", hg_g_commandbox_font_name, LF_FACESIZE,
+                             hg_g_config_path);
+    if (hg_g_commandbox_font_name[0] == L'\0') {
+        StringCchCopyW(hg_g_commandbox_font_name, LF_FACESIZE, L"Consolas");
+    }
+
+    UINT size = GetPrivateProfileIntW(L"commandbox", L"font_size", 16, hg_g_config_path);
+    if (size < 8)
+        size = 8;
+    if (size > 72)
+        size = 72;
+    hg_g_commandbox_font_size = -SC((int)size);
+
+    save_commandbox_font_config();
+}
+
+void save_commandbox_font_config()
+{
+    WCHAR buf[32];
+    WritePrivateProfileStringW(L"commandbox", L"font_name", hg_g_commandbox_font_name, hg_g_config_path);
+    int unscaled = (int)(ABS(hg_g_commandbox_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
+    if (unscaled < 8)
+        unscaled = 8;
+    if (unscaled > 72)
+        unscaled = 72;
+    hellgates_wsprintf(buf, 32, L"%d", unscaled);
+    WritePrivateProfileStringW(L"commandbox", L"font_size", buf, hg_g_config_path);
+}
+
 void save_hotkey_config()
 {
     WCHAR buf[32];
@@ -142,6 +173,11 @@ void load_font_name_config()
     if (wcslen(hg_g_font_name) == 0) {
         wcscpy(hg_g_font_name, L"Segoe UI");
     }
+    save_font_name_config();
+}
+
+void save_font_name_config()
+{
     WritePrivateProfileStringW(L"etc", L"font_name", hg_g_font_name, hg_g_config_path);
 }
 
@@ -208,17 +244,14 @@ void hg_config_reset_all(HWND hwnd)
     save_floater_font_config();
     save_taskbox_font_config();
     save_hotkey_config();
-    WritePrivateProfileStringW(L"etc", L"font_name", hg_g_font_name, hg_g_config_path);
+    save_font_name_config();
     save_floater_geometry_config(100, 100, SC(80), SC(55));
     save_taskbox_geometry_config(200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
 
     hg_g_commandbox_alpha = 204;
     hg_g_commandbox_font_size = -SC(16);
     wcscpy(hg_g_commandbox_font_name, L"Consolas");
-    WritePrivateProfileStringW(L"commandbox", L"font_name", hg_g_commandbox_font_name, hg_g_config_path);
-    WCHAR buf_fs[32];
-    hellgates_wsprintf(buf_fs, 32, L"16");
-    WritePrivateProfileStringW(L"commandbox", L"font_size", buf_fs, hg_g_config_path);
+    save_commandbox_font_config();
     save_commandbox_alpha_config();
     save_commandbox_geometry_config(100, 100, SC(400), SC(300));
 
