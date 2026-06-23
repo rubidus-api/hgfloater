@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a toolbar-local taskbox reorder drag context to replace taskbox-only process-wide drag globals.
 - Added taskbox-local focus state and a reset helper so other widgets no longer write toolbar focus globals directly.
 - Added a taskbox layout state context for interactive resize start bounds and centralized toolbar icon-size calculation.
+- Added a taskbox owned-popup-menu tracker so popup display, menu-active state, and `DestroyMenu()` cleanup share one path.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.
