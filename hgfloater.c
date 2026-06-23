@@ -522,10 +522,7 @@ cleanup_finish:
         }
     }
     for (int i = 0; i < hg_g_window_count; i++) {
-        if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-            DestroyIcon(hg_g_window_items[i].icon);
-            hg_g_window_items[i].icon = NULL;
-        }
+        release_window_item_icon(&hg_g_window_items[i]);
     }
 
     if (icon_large)

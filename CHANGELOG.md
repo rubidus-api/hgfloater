@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a taskbox layout state context for interactive resize start bounds and centralized toolbar icon-size calculation.
 - Added a taskbox owned-popup-menu tracker so popup display, menu-active state, and `DestroyMenu()` cleanup share one path.
 - Added a shared default audio endpoint-volume acquisition helper to centralize COM release ownership for volume and mute operations.
+- Added a shared `WindowItem` icon release helper so owned window icons are destroyed and reset consistently.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.

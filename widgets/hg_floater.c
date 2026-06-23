@@ -634,9 +634,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 BOOL found = FALSE;
                 for (int i = 0; i < hg_g_window_count; i++) {
                     if (hg_g_window_items[i].hwnd == target_hwnd) {
-                        if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-                            DestroyIcon(hg_g_window_items[i].icon);
-                        }
+                        release_window_item_icon(&hg_g_window_items[i]);
                         hg_g_window_items[i].icon =
                             get_window_icon(target_hwnd, ABS(hg_g_current_font_size), &hg_g_window_items[i].own_icon);
                         found = TRUE;

@@ -136,6 +136,7 @@ Progress:
 - 2026-06-24: Added `taskbox_track_owned_popup_menu()` so owned taskbox popup menus are tracked, mark `hg_g_menu_active`, and are destroyed through one helper.
 - 2026-06-24: Hardened monitor preview painting so memory DC, bitmap, screen DC, and pen allocation failures do not leave selected GDI objects or call drawing APIs with invalid handles.
 - 2026-06-24: Added `hg_get_default_audio_endpoint_volume()` and routed volume/mute operations through one COM acquisition and release boundary.
+- 2026-06-24: Added `release_window_item_icon()` and routed owned `WindowItem` icon cleanup through one destroy-and-reset helper.
 
 Tasks:
 - Document owner and destroy site for GDI objects, menus, image lists, icons, timers, hooks, and COM interfaces.
