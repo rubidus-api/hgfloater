@@ -927,12 +927,11 @@ static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, i
     return TRUE;
 }
 
-static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+static HMENU taskbox_create_task_context_menu(void)
 {
-    HWND target = hg_g_window_items[cur_index].hwnd;
     HMENU h_menu = CreatePopupMenu();
     if (!h_menu)
-        return;
+        return NULL;
 
     /* Windows: Focus only (remove Run) */
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESTORE, L"Focus (&F)");
@@ -956,6 +955,92 @@ static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, 
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_2, L"480x800 (&2)");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_3, L"540x960 (&3)");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_4, L"720x1280 (&4)");
+    return h_menu;
+}
+
+static BOOL taskbox_task_menu_size_for_command(int cmd, int *out_cx, int *out_cy)
+{
+    if (!out_cx || !out_cy)
+        return FALSE;
+
+    *out_cx = 0;
+    *out_cy = 0;
+    switch (cmd) {
+    case HG_IDM_TASK_RESIZE_4_3_1:
+        *out_cx = 640;
+        *out_cy = 480;
+        break;
+    case HG_IDM_TASK_RESIZE_4_3_2:
+        *out_cx = 800;
+        *out_cy = 600;
+        break;
+    case HG_IDM_TASK_RESIZE_4_3_3:
+        *out_cx = 1280;
+        *out_cy = 960;
+        break;
+    case HG_IDM_TASK_RESIZE_16_9_1:
+        *out_cx = 640;
+        *out_cy = 360;
+        break;
+    case HG_IDM_TASK_RESIZE_16_9_2:
+        *out_cx = 800;
+        *out_cy = 480;
+        break;
+    case HG_IDM_TASK_RESIZE_16_9_3:
+        *out_cx = 960;
+        *out_cy = 540;
+        break;
+    case HG_IDM_TASK_RESIZE_16_9_4:
+        *out_cx = 1280;
+        *out_cy = 720;
+        break;
+    case HG_IDM_TASK_RESIZE_9_16_1:
+        *out_cx = 360;
+        *out_cy = 640;
+        break;
+    case HG_IDM_TASK_RESIZE_9_16_2:
+        *out_cx = 480;
+        *out_cy = 800;
+        break;
+    case HG_IDM_TASK_RESIZE_9_16_3:
+        *out_cx = 540;
+        *out_cy = 960;
+        break;
+    case HG_IDM_TASK_RESIZE_9_16_4:
+        *out_cx = 720;
+        *out_cy = 1280;
+        break;
+    default:
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static void taskbox_dispatch_task_menu_command(int cmd, int cur_index)
+{
+    if (cmd == 0)
+        return;
+
+    HWND target = hg_g_window_items[cur_index].hwnd;
+    if (cmd == HG_IDM_TASK_RESTORE) {
+        activate_taskbar_item(cur_index);
+    } else if (cmd == HG_IDM_TASK_CLOSE) {
+        PostMessageW(target, WM_CLOSE, 0, 0);
+    } else if (cmd == HG_IDM_TASK_MOVETO_0_0) {
+        SetWindowPos(target, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    } else {
+        int cx = 0, cy = 0;
+        if (taskbox_task_menu_size_for_command(cmd, &cx, &cy)) {
+            SetWindowPos(target, NULL, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+    }
+}
+
+static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
+    HMENU h_menu = taskbox_create_task_context_menu();
+    if (!h_menu)
+        return;
 
     POINT screen_pt;
     if (!toolbar_controller_get_context_menu_point(hwnd, 0, cur_index, icon_size, l_param, &screen_pt)) {
@@ -968,79 +1053,46 @@ static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, 
     int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
     hg_g_menu_active = FALSE;
 
-    if (cmd == HG_IDM_TASK_RESTORE) {
-        activate_taskbar_item(cur_index);
-    } else if (cmd == HG_IDM_TASK_CLOSE) {
-        PostMessageW(target, WM_CLOSE, 0, 0);
-    } else if (cmd == HG_IDM_TASK_MOVETO_0_0) {
-        SetWindowPos(target, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-    } else if (cmd >= HG_IDM_TASK_RESIZE_4_3_1 && cmd <= HG_IDM_TASK_RESIZE_9_16_4) {
-        int cx = 0, cy = 0;
-        switch (cmd) {
-        case HG_IDM_TASK_RESIZE_4_3_1:
-            cx = 640;
-            cy = 480;
-            break;
-        case HG_IDM_TASK_RESIZE_4_3_2:
-            cx = 800;
-            cy = 600;
-            break;
-        case HG_IDM_TASK_RESIZE_4_3_3:
-            cx = 1280;
-            cy = 960;
-            break;
-        case HG_IDM_TASK_RESIZE_16_9_1:
-            cx = 640;
-            cy = 360;
-            break;
-        case HG_IDM_TASK_RESIZE_16_9_2:
-            cx = 800;
-            cy = 480;
-            break;
-        case HG_IDM_TASK_RESIZE_16_9_3:
-            cx = 960;
-            cy = 540;
-            break;
-        case HG_IDM_TASK_RESIZE_16_9_4:
-            cx = 1280;
-            cy = 720;
-            break;
-        case HG_IDM_TASK_RESIZE_9_16_1:
-            cx = 360;
-            cy = 640;
-            break;
-        case HG_IDM_TASK_RESIZE_9_16_2:
-            cx = 480;
-            cy = 800;
-            break;
-        case HG_IDM_TASK_RESIZE_9_16_3:
-            cx = 540;
-            cy = 960;
-            break;
-        case HG_IDM_TASK_RESIZE_9_16_4:
-            cx = 720;
-            cy = 1280;
-            break;
-        }
-        if (cx > 0 && cy > 0) {
-            SetWindowPos(target, NULL, 0, 0, cx, cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-        }
-    }
+    taskbox_dispatch_task_menu_command(cmd, cur_index);
 
     DestroyMenu(h_menu);
 }
 
-static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+static HMENU taskbox_create_shortcut_context_menu(int cur_index)
 {
     HMENU h_menu = CreatePopupMenu();
     if (!h_menu)
-        return;
+        return NULL;
 
     /* Shortcuts: Run only (remove Focus) */
     AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_RUN, L"Run (&R)");
     if (cur_index >= HG_NUM_BASIC_ICONS) {
         AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_OPEN_DIR, L"Open File Location (&O)");
     }
+    return h_menu;
+}
+
+static void taskbox_dispatch_shortcut_menu_command(UINT cmd, int cur_index)
+{
+    if (cmd == HG_IDM_SHORTCUT_RUN) {
+        activate_toolbar_item(cur_index);
+    } else if (cmd == HG_IDM_SHORTCUT_OPEN_DIR) {
+        int s_idx = cur_index - HG_NUM_BASIC_ICONS;
+        if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
+            PIDLIST_ABSOLUTE pidl = ILCreateFromPathW(hg_g_shortcuts[s_idx].path);
+            if (pidl) {
+                SHOpenFolderAndSelectItems(pidl, 0, NULL, 0);
+                ILFree(pidl);
+            }
+        }
+    }
+}
+
+static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
+    HMENU h_menu = taskbox_create_shortcut_context_menu(cur_index);
+    if (!h_menu)
+        return;
 
     POINT screen_pt;
     if (!toolbar_controller_get_context_menu_point(hwnd, 1, cur_index, icon_size, l_param, &screen_pt)) {
@@ -1053,18 +1105,7 @@ static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_ind
     int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
     hg_g_menu_active = FALSE;
 
-    if ((UINT)cmd == HG_IDM_SHORTCUT_RUN) {
-        activate_toolbar_item(cur_index);
-    } else if ((UINT)cmd == HG_IDM_SHORTCUT_OPEN_DIR) {
-        int s_idx = cur_index - HG_NUM_BASIC_ICONS;
-        if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
-            PIDLIST_ABSOLUTE pidl = ILCreateFromPathW(hg_g_shortcuts[s_idx].path);
-            if (pidl) {
-                SHOpenFolderAndSelectItems(pidl, 0, NULL, 0);
-                ILFree(pidl);
-            }
-        }
-    }
+    taskbox_dispatch_shortcut_menu_command((UINT)cmd, cur_index);
 
     DestroyMenu(h_menu);
 }
@@ -1103,26 +1144,9 @@ static void toolbar_controller_show_audio_context_menu(HWND hwnd, int icon_size,
 {
     update_audio_device_list();
 
-    HMENU h_menu = CreatePopupMenu();
+    HMENU h_menu = taskbox_create_audio_submenu();
     if (!h_menu)
         return;
-
-    for (int i = 0; i < hg_g_audio_device_count; i++) {
-        UINT flags = MF_STRING;
-        if (hg_g_audio_devices[i].is_default) {
-            flags |= MF_CHECKED;
-        }
-        AppendMenuW(h_menu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i), hg_g_audio_devices[i].name);
-    }
-    if (hg_g_audio_device_count > 0) {
-        AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-    }
-
-    UINT mute_flags = MF_STRING;
-    if (get_system_mute()) {
-        mute_flags |= MF_CHECKED;
-    }
-    AppendMenuW(h_menu, mute_flags, HG_IDM_MUTE, L"Mute");
 
     POINT screen_pt;
     if (!toolbar_controller_get_context_menu_point(hwnd, 1, HG_TOOL_ICON_VOLUME, icon_size, l_param, &screen_pt)) {

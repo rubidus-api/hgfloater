@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Added taskbox main popup menu builder helpers for the main menu, audio submenu, monitor submenu, and selected command forwarding.
+- Added taskbox task and shortcut context menu builder/dispatch helpers, and reused the audio submenu builder for the volume context menu.
 
 ## [2026-06-23] - Stabilization and Refactor Planning
 
