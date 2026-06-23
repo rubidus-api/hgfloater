@@ -347,8 +347,13 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
 LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 void save_config(const WCHAR *section, int x, int y, int w, int h);
+void save_window_geometry_config(const WCHAR *section, int x, int y, int w, int h);
+void save_floater_geometry_config(int x, int y, int w, int h);
+void save_taskbox_geometry_config(int x, int y, int w, int h);
+void save_commandbox_geometry_config(int x, int y, int w, int h);
 void save_floater_font_config(void);
 void save_taskbox_font_config(void);
+void save_commandbox_alpha_config(void);
 void hg_config_reset_all(HWND hwnd);
 void hide_taskbox(HWND hwnd);
 void show_commandbox_window(void);

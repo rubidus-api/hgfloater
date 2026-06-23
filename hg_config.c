@@ -40,6 +40,28 @@ void save_config(const WCHAR *section, int x, int y, int w, int h)
     WritePrivateProfileStringW(section, L"h", buf, hg_g_config_path);
 }
 
+void save_window_geometry_config(const WCHAR *section, int x, int y, int w, int h)
+{
+    if (!section)
+        return;
+    save_config(section, x, y, w, h);
+}
+
+void save_floater_geometry_config(int x, int y, int w, int h)
+{
+    save_window_geometry_config(L"floater", x, y, w, h);
+}
+
+void save_taskbox_geometry_config(int x, int y, int w, int h)
+{
+    save_window_geometry_config(L"taskbox", x, y, w, h);
+}
+
+void save_commandbox_geometry_config(int x, int y, int w, int h)
+{
+    save_window_geometry_config(L"commandbox", x, y, w, h);
+}
+
 void load_floater_font_config()
 {
     UINT fs = GetPrivateProfileIntW(L"floater", L"font_size", 28, hg_g_config_path);
@@ -153,6 +175,13 @@ void save_alpha_config()
     WritePrivateProfileStringW(L"taskbox", L"alpha", buf, hg_g_config_path);
 }
 
+void save_commandbox_alpha_config()
+{
+    WCHAR buf[32];
+    hellgates_wsprintf(buf, 32, L"%u", (UINT)hg_g_commandbox_alpha);
+    WritePrivateProfileStringW(L"commandbox", L"alpha", buf, hg_g_config_path);
+}
+
 void hg_config_reset_all(HWND hwnd)
 {
     (void)hwnd;
@@ -180,19 +209,18 @@ void hg_config_reset_all(HWND hwnd)
     save_taskbox_font_config();
     save_hotkey_config();
     WritePrivateProfileStringW(L"etc", L"font_name", hg_g_font_name, hg_g_config_path);
-    save_config(L"floater", 100, 100, SC(80), SC(55));
-    save_config(L"taskbox", 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
+    save_floater_geometry_config(100, 100, SC(80), SC(55));
+    save_taskbox_geometry_config(200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
 
     hg_g_commandbox_alpha = 204;
     hg_g_commandbox_font_size = -SC(16);
     wcscpy(hg_g_commandbox_font_name, L"Consolas");
     WritePrivateProfileStringW(L"commandbox", L"font_name", hg_g_commandbox_font_name, hg_g_config_path);
-    WCHAR buf_fs[32], buf_al[32];
+    WCHAR buf_fs[32];
     hellgates_wsprintf(buf_fs, 32, L"16");
     WritePrivateProfileStringW(L"commandbox", L"font_size", buf_fs, hg_g_config_path);
-    hellgates_wsprintf(buf_al, 32, L"204");
-    WritePrivateProfileStringW(L"commandbox", L"alpha", buf_al, hg_g_config_path);
-    save_config(L"commandbox", 100, 100, SC(400), SC(300));
+    save_commandbox_alpha_config();
+    save_commandbox_geometry_config(100, 100, SC(400), SC(300));
 
     if (hg_g_commandbox_wnd && IsWindow(hg_g_commandbox_wnd)) {
         SetLayeredWindowAttributes(hg_g_commandbox_wnd, 0, hg_g_commandbox_alpha, LWA_ALPHA);
@@ -269,7 +297,7 @@ void hg_config_reset_all(HWND hwnd)
             SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top,
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             GetWindowRect(hg_g_taskbox_wnd, &rc);
-            save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+            save_taskbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
 
         InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);

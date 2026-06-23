@@ -54,6 +54,11 @@ Exit criteria:
 
 Purpose: make runtime setting changes consistently persist.
 
+Progress:
+- 2026-06-23: Floater/taskbox alpha update helpers now persist `Alt` adjustment paths through the alpha config save path.
+- 2026-06-23: Floater/taskbox/commandbox geometry writes now go through named geometry helpers instead of direct section-string writes at call sites.
+- 2026-06-23: Command box alpha writes now go through a named helper and skip redundant writes at clamp boundaries.
+
 Tasks:
 - Centralize alpha, font, geometry, and hotkey persistence helpers.
 - Ensure every UI path that mutates a persisted setting uses the same helper.
@@ -136,4 +141,3 @@ Exit criteria:
 - Update the RFC if the plan changes.
 - Update local task state after each step so another maintainer can resume without guessing.
 - Do not mix unrelated cleanup into behavior fixes.
-

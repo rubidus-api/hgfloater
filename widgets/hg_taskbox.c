@@ -229,7 +229,7 @@ void hide_taskbox(HWND hwnd)
         SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, cx - fw / 2, cy - fh / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
         ShowWindow(hg_g_floater_wnd, SW_SHOW);
         SetForegroundWindow(hg_g_floater_wnd);
-        save_config(L"floater", cx - fw / 2, cy - fh / 2, fw, fh);
+        save_floater_geometry_config(cx - fw / 2, cy - fh / 2, fw, fh);
     }
     ShowWindow(hwnd, SW_HIDE);
     load_shortcuts();
@@ -823,10 +823,10 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
                      SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 
         GetWindowRect(hg_g_taskbox_wnd, &rc);
-        save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        save_taskbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         if (hg_g_floater_wnd) {
             SetWindowPos(hg_g_floater_wnd, NULL, rc.left, rc.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-            save_config(L"floater", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+            save_floater_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
     } else if (state->is_moving_taskbox) {
         state->is_moving_taskbox = FALSE;
@@ -837,10 +837,10 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
 
         RECT rc;
         GetWindowRect(hg_g_taskbox_wnd, &rc);
-        save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        save_taskbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         if (hg_g_floater_wnd) {
             SetWindowPos(hg_g_floater_wnd, NULL, rc.left, rc.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-            save_config(L"floater", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+            save_floater_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
     } else if (hg_g_drag_source_index != -1) {
         BOOL was_dragging = hg_g_is_dragging;
@@ -2330,10 +2330,10 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
         update_layout(hwnd); /* Will trigger snap exact height */
         GetWindowRect(hwnd, &rc);
-        save_config(L"taskbox", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+        save_taskbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         if (hg_g_floater_wnd) {
             SetWindowPos(hg_g_floater_wnd, NULL, rc.left, rc.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-            save_config(L"floater", rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+            save_floater_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
         return 0;
     }

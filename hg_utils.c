@@ -1965,9 +1965,9 @@ void move_window_by_offset(HWND hwnd, int dx, int dy)
     SetWindowPos(hwnd, NULL, rc.left + dx, rc.top + dy, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     /* Save position and size after movement */
     if (hwnd == hg_g_floater_wnd)
-        save_config(L"floater", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
+        save_floater_geometry_config(rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
     else if (hwnd == hg_g_taskbox_wnd)
-        save_config(L"taskbox", rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
+        save_taskbox_geometry_config(rc.left + dx, rc.top + dy, rc.right - rc.left, rc.bottom - rc.top);
 
 }
 
@@ -1990,9 +1990,9 @@ void resize_window_by_offset(HWND hwnd, int dw, int dh)
     SetWindowPos(hwnd, NULL, 0, 0, new_w, new_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     /* Save position and size after resizing */
     if (hwnd == hg_g_floater_wnd)
-        save_config(L"floater", rc.left, rc.top, new_w, new_h);
+        save_floater_geometry_config(rc.left, rc.top, new_w, new_h);
     else if (hwnd == hg_g_taskbox_wnd)
-        save_config(L"taskbox", rc.left, rc.top, new_w, new_h);
+        save_taskbox_geometry_config(rc.left, rc.top, new_w, new_h);
 }
 
 void disable_window_ime(HWND hwnd)

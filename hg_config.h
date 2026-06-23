@@ -6,6 +6,10 @@
 /* Config Functions */
 void load_config(const WCHAR *section, int *x, int *y, int *w, int *h, int def_x, int def_y, int def_w, int def_h);
 void save_config(const WCHAR *section, int x, int y, int w, int h);
+void save_window_geometry_config(const WCHAR *section, int x, int y, int w, int h);
+void save_floater_geometry_config(int x, int y, int w, int h);
+void save_taskbox_geometry_config(int x, int y, int w, int h);
+void save_commandbox_geometry_config(int x, int y, int w, int h);
 void load_floater_font_config(void);
 void save_floater_font_config(void);
 void load_taskbox_font_config(void);
@@ -15,6 +19,7 @@ int get_alpha_config(const WCHAR *section, int def_alpha);
 void load_font_name_config(void);
 void load_hotkey_config(void);
 void save_alpha_config(void);
+void save_commandbox_alpha_config(void);
 void hg_config_reset_all(HWND hwnd);
 
 #endif /* HG_CONFIG_H */

@@ -278,7 +278,7 @@ void ensure_window_visible(HWND hwnd, const WCHAR *section)
         if (rc.left < mi.rcWork.left || rc.top < mi.rcWork.top || rc.right > mi.rcWork.right ||
             rc.bottom > mi.rcWork.bottom) {
             SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-            save_config(section, 0, 0, rc.right - rc.left, rc.bottom - rc.top);
+            save_window_geometry_config(section, 0, 0, rc.right - rc.left, rc.bottom - rc.top);
         }
     }
 }
