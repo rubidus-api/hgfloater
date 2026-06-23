@@ -93,6 +93,9 @@ Exit criteria:
 
 Purpose: reduce inline menu construction and command-routing risk.
 
+Progress:
+- 2026-06-24: Extracted the taskbox main popup menu, audio submenu, monitor submenu, and selected command forwarding into named helpers while preserving command IDs.
+
 Tasks:
 - Extract main popup menu construction from taskbox activation.
 - Extract audio and monitor submenu builders.

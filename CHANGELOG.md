@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2026-06-24] - Menu Construction Refactor
+
+### Added
+- Added taskbox main popup menu builder helpers for the main menu, audio submenu, monitor submenu, and selected command forwarding.
+
 ## [2026-06-23] - Stabilization and Refactor Planning
 
 ### Added

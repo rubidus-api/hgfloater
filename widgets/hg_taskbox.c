@@ -241,6 +241,88 @@ void hide_taskbox(HWND hwnd)
     InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
 }
 
+static HMENU taskbox_create_audio_submenu(void)
+{
+    HMENU audio_menu = CreatePopupMenu();
+    if (!audio_menu)
+        return NULL;
+
+    for (int i = 0; i < hg_g_audio_device_count; i++) {
+        UINT flags = MF_STRING;
+        if (hg_g_audio_devices[i].is_default)
+            flags |= MF_CHECKED;
+        AppendMenuW(audio_menu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i), hg_g_audio_devices[i].name);
+    }
+    if (hg_g_audio_device_count > 0) {
+        AppendMenuW(audio_menu, MF_SEPARATOR, 0, NULL);
+    }
+
+    UINT mute_flags = MF_STRING;
+    if (get_system_mute()) {
+        mute_flags |= MF_CHECKED;
+    }
+    AppendMenuW(audio_menu, mute_flags, HG_IDM_MUTE, L"Mute");
+    return audio_menu;
+}
+
+static HMENU taskbox_create_monitor_submenu(void)
+{
+    HMENU monitor_menu = CreatePopupMenu();
+    if (!monitor_menu)
+        return NULL;
+
+    for (int i = 0; i < hg_g_monitor_count; i++) {
+        UINT flags = MF_STRING;
+        if (hg_g_monitors[i].active)
+            flags |= MF_CHECKED;
+        AppendMenuW(monitor_menu, flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + (UINT)i), hg_g_monitors[i].name);
+    }
+    return monitor_menu;
+}
+
+static HMENU taskbox_create_main_popup_menu(void)
+{
+    update_audio_device_list();
+
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu)
+        return NULL;
+
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_ABOUT, L"About...");
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+
+    HMENU audio_menu = taskbox_create_audio_submenu();
+    if (audio_menu) {
+        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)audio_menu, L"Select Audio Device")) {
+            DestroyMenu(audio_menu);
+        }
+    }
+
+    HMENU monitor_menu = taskbox_create_monitor_submenu();
+    if (monitor_menu) {
+        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)monitor_menu, L"Arrange Monitors")) {
+            DestroyMenu(monitor_menu);
+        }
+    }
+
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_POWER_OFF, L"Lock Screen (Power Off)");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_CLOSE_APP, L"Exit");
+    return h_menu;
+}
+
+static void taskbox_dispatch_main_menu_command(UINT cmd)
+{
+    if (cmd != 0) {
+        PostMessageW(hg_g_floater_wnd, WM_COMMAND, (WPARAM)cmd, 0);
+    }
+}
+
 void activate_toolbar_item(int index)
 {
     if (index < 0)
@@ -258,53 +340,9 @@ void activate_toolbar_item(int index)
         break;
     }
     case HG_TOOLBAR_CLICK_OPEN_MENU: {
-        update_audio_device_list();
-        HMENU hMenu = CreatePopupMenu();
-        AppendMenuW(hMenu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
-        AppendMenuW(hMenu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
-        AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-        AppendMenuW(hMenu, MF_STRING, HG_IDM_ABOUT, L"About...");
-        AppendMenuW(hMenu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");
-        AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-
-        /* Audio Endpoint Devices List sub-menu */
-        HMENU audio_menu = CreatePopupMenu();
-        if (audio_menu) {
-            for (int i = 0; i < hg_g_audio_device_count; i++) {
-                UINT flags = MF_STRING;
-                if (hg_g_audio_devices[i].is_default)
-                    flags |= MF_CHECKED;
-                AppendMenuW(audio_menu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i),
-                            hg_g_audio_devices[i].name);
-            }
-            if (hg_g_audio_device_count > 0) {
-                AppendMenuW(audio_menu, MF_SEPARATOR, 0, NULL);
-            }
-            UINT mute_flags = MF_STRING;
-            if (get_system_mute()) {
-                mute_flags |= MF_CHECKED;
-            }
-            AppendMenuW(audio_menu, mute_flags, HG_IDM_MUTE, L"Mute");
-
-            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)audio_menu, L"Select Audio Device");
-        }
-
-        /* Physical Monitors layout options */
-        HMENU monitor_menu = CreatePopupMenu();
-        if (monitor_menu) {
-            for (int i = 0; i < hg_g_monitor_count; i++) {
-                UINT flags = MF_STRING;
-                if (hg_g_monitors[i].active)
-                    flags |= MF_CHECKED;
-                AppendMenuW(monitor_menu, flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + (UINT)i), hg_g_monitors[i].name);
-            }
-            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)monitor_menu, L"Arrange Monitors");
-        }
-
-        AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-        AppendMenuW(hMenu, MF_STRING, HG_IDM_POWER_OFF, L"Lock Screen (Power Off)");
-        AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-        AppendMenuW(hMenu, MF_STRING, HG_IDM_CLOSE_APP, L"Exit");
+        HMENU hMenu = taskbox_create_main_popup_menu();
+        if (!hMenu)
+            break;
 
         POINT pt;
         GetCursorPos(&pt);
@@ -313,9 +351,7 @@ void activate_toolbar_item(int index)
         hg_g_menu_active = FALSE;
         DestroyMenu(hMenu);
 
-        if (cmd != 0) {
-            PostMessageW(hg_g_floater_wnd, WM_COMMAND, (WPARAM)(UINT)cmd, 0);
-        }
+        taskbox_dispatch_main_menu_command((UINT)cmd);
         break;
     }
     case HG_TOOLBAR_CLICK_SHOW_COMMANDBOX:
