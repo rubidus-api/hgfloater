@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.
+- Guard monitor preview painting against failed memory DC, bitmap, screen DC, and pen allocation paths.
 
 ## [2026-06-23] - Stabilization and Refactor Planning
 
