@@ -1802,18 +1802,28 @@ typedef struct HgToolbarBuiltinDescriptor {
     const WCHAR *focus_text;
     const WCHAR *tooltip_text;
     HgToolbarBuiltinValueKind value_kind;
+    HgToolbarClickRole click_role;
+    HgToolbarDragRole drag_role;
 } HgToolbarBuiltinDescriptor;
 
 static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
-    {HG_TOOL_ICON_RESIZE, L'R', L"Drag to Resize Window", L"Drag to Resize Window", HG_TOOLBAR_VALUE_NONE},
-    {HG_TOOL_ICON_MOVE, L'M', L"Drag to Move Window", L"Drag to Move Window", HG_TOOLBAR_VALUE_NONE},
-    {HG_TOOL_ICON_CLOSE, L'X', L"Hide Dashboard", L"Hide Dashboard (Reload Shortcuts)", HG_TOOLBAR_VALUE_NONE},
-    {HG_TOOL_ICON_DESKTOP, L'D', L"Show Desktop", L"Show Desktop", HG_TOOLBAR_VALUE_NONE},
-    {HG_TOOL_ICON_MENU, L'P', L"Menu", L"Menu", HG_TOOLBAR_VALUE_NONE},
-    {HG_TOOL_ICON_COMMAND, L'C', L"Command Box", L"Command Box", HG_TOOLBAR_VALUE_NONE},
-    {HG_TOOL_ICON_ALPHA, L'A', NULL, NULL, HG_TOOLBAR_VALUE_ALPHA},
-    {HG_TOOL_ICON_BRIGHTNESS, L'B', NULL, NULL, HG_TOOLBAR_VALUE_BRIGHTNESS},
-    {HG_TOOL_ICON_VOLUME, L'V', NULL, NULL, HG_TOOLBAR_VALUE_VOLUME},
+    {HG_TOOL_ICON_RESIZE, L'R', L"Drag to Resize Window", L"Drag to Resize Window", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_RESIZE_TASKBOX},
+    {HG_TOOL_ICON_MOVE, L'M', L"Drag to Move Window", L"Drag to Move Window", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_MOVE_TASKBOX},
+    {HG_TOOL_ICON_CLOSE, L'X', L"Hide Dashboard", L"Hide Dashboard (Reload Shortcuts)", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_HIDE_TASKBOX, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_DESKTOP, L'D', L"Show Desktop", L"Show Desktop", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_TOGGLE_DESKTOP, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_MENU, L'P', L"Menu", L"Menu", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_MENU,
+     HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_COMMAND, L'C', L"Command Box", L"Command Box", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_SHOW_COMMANDBOX, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_ALPHA, L'A', NULL, NULL, HG_TOOLBAR_VALUE_ALPHA, HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_BRIGHTNESS, L'B', NULL, NULL, HG_TOOLBAR_VALUE_BRIGHTNESS, HG_TOOLBAR_CLICK_NONE,
+     HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_VOLUME, L'V', NULL, NULL, HG_TOOLBAR_VALUE_VOLUME, HG_TOOLBAR_CLICK_TOGGLE_MUTE,
+     HG_TOOLBAR_DRAG_NONE},
 };
 
 enum {
@@ -1878,6 +1888,18 @@ BOOL hg_toolbar_builtin_value_text(int index, HgToolbarTextMode mode, WCHAR *buf
     default:
         return FALSE;
     }
+}
+
+HgToolbarClickRole hg_toolbar_builtin_click_role(int index)
+{
+    const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
+    return desc ? desc->click_role : HG_TOOLBAR_CLICK_NONE;
+}
+
+HgToolbarDragRole hg_toolbar_builtin_drag_role(int index)
+{
+    const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
+    return desc ? desc->drag_role : HG_TOOLBAR_DRAG_NONE;
 }
 
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect)
