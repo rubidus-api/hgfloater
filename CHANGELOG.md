@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added taskbox command dispatch helpers for forwarded floater commands and taskbox font commands.
 - Added a single toolbar controller state context to replace scattered callback-local transient state.
 - Added a toolbar-local taskbox reorder drag context to replace taskbox-only process-wide drag globals.
+- Added taskbox-local focus state and a reset helper so other widgets no longer write toolbar focus globals directly.
+
+### Fixed
+- Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.
 
 ## [2026-06-23] - Stabilization and Refactor Planning
 

@@ -183,6 +183,13 @@ typedef struct HgTaskboxDragState {
     int target_index;
 } HgTaskboxDragState;
 
+typedef struct HgTaskboxFocusState {
+    int area;
+    int index;
+} HgTaskboxFocusState;
+
+static HgTaskboxFocusState hg_taskbox_focus = {0, 0};
+
 static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
 {
     if (index == HG_TOOL_ICON_ALPHA) {
@@ -403,8 +410,8 @@ void update_focus_message(int override_type, int override_index)
         return;
     }
 
-    int type = (override_type == -2) ? hg_g_focus_area : override_type;
-    int index = (override_index == -2) ? hg_g_toolbar_focus_index : override_index;
+    int type = (override_type == -2) ? hg_taskbox_focus.area : override_type;
+    int index = (override_index == -2) ? hg_taskbox_focus.index : override_index;
 
     if (type == 0) {
         if (index >= 0 && index < hg_g_window_count) {
@@ -426,6 +433,13 @@ void update_focus_message(int override_type, int override_index)
             }
         }
     }
+}
+
+void reset_taskbox_focus(void)
+{
+    hg_taskbox_focus.area = 0;
+    hg_taskbox_focus.index = 0;
+    update_focus_message(-2, -2);
 }
 
 int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type, int *out_index)
@@ -553,14 +567,14 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
                     } else if ((hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) ||
-                               (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx)) {
+                               (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx)) {
                         HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
                             DeleteObject(hbr);
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
-                        if (hg_g_focus_area == 0 && hg_g_toolbar_focus_index == r_idx) {
+                        if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx) {
                             HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
                             if (hbr_focus) {
                                 FrameRect(mem_dc, &rc_btn, hbr_focus);
@@ -620,7 +634,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
                     } else if ((hovered_type == 1 && hovered_index == i) ||
-                               (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i)) {
+                               (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)) {
                         if (!keep_value_bg) {
                             HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
                             if (hbr) {
@@ -629,7 +643,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                             }
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
-                        if (hg_g_focus_area == 1 && hg_g_toolbar_focus_index == i) {
+                        if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i) {
                             HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
                             if (hbr_focus) {
                                 FrameRect(mem_dc, &rc_btn, hbr_focus);
@@ -900,7 +914,7 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
                     }
                 }
                 hg_g_window_items[final_target] = temp;
-                hg_g_toolbar_focus_index = final_target;
+                hg_taskbox_focus.index = final_target;
                 update_toolbar_tooltips(hwnd);
             }
         }
@@ -1194,7 +1208,8 @@ static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerSt
     if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
         state->hovered_type = cur_type;
         state->hovered_index = cur_index;
-        hg_g_focus_area = cur_type;
+        hg_taskbox_focus.area = cur_type;
+        hg_taskbox_focus.index = cur_index;
         state->pressed_type = cur_type;
         state->pressed_index = cur_index;
 
@@ -1231,8 +1246,8 @@ static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param)
 
     int cur_type = -1, cur_index = -1;
     if (l_param == 0) {
-        cur_type = hg_g_focus_area;
-        cur_index = hg_g_toolbar_focus_index;
+        cur_type = hg_taskbox_focus.area;
+        cur_index = hg_taskbox_focus.index;
     } else {
         POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index);
@@ -2037,10 +2052,10 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         int total_cells = rows * cols;
 
         int current_cell = -1;
-        if (hg_g_focus_area == 0) {
-            current_cell = hg_g_toolbar_focus_index;
+        if (hg_taskbox_focus.area == 0) {
+            current_cell = hg_taskbox_focus.index;
         } else {
-            current_cell = total_cells - 1 - hg_g_toolbar_focus_index;
+            current_cell = total_cells - 1 - hg_taskbox_focus.index;
         }
 
         if (current_cell < 0)
@@ -2066,13 +2081,13 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             if (hg_g_floater_wnd)
                 PostMessageW(hg_g_floater_wnd, WM_RBUTTONUP, 0, 0);
         } else if (w_param == VK_SPACE) {
-            if (hg_g_focus_area == 0)
-                activate_taskbar_item(hg_g_toolbar_focus_index);
+            if (hg_taskbox_focus.area == 0)
+                activate_taskbar_item(hg_taskbox_focus.index);
             else
-                activate_toolbar_item(hg_g_toolbar_focus_index);
+                activate_toolbar_item(hg_taskbox_focus.index);
         } else if (w_param == VK_RETURN) {
             RECT rc_item;
-            get_toolbar_item_rect(hg_g_focus_area, hg_g_toolbar_focus_index, rc_toolbar.right, rc_toolbar.bottom,
+            get_toolbar_item_rect(hg_taskbox_focus.area, hg_taskbox_focus.index, rc_toolbar.right, rc_toolbar.bottom,
                                   icon_size, &rc_item);
             PostMessageW(hg_g_toolbar_wnd, WM_RBUTTONUP, 0, 0); // Send 0 for l_param to indicate keyboard trigger
         }
@@ -2108,11 +2123,11 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
 
             // 새로운 cell의 정보를 다시 item_type/index로 매핑
             if (new_cell < total_tasks) {
-                hg_g_focus_area = 0;
-                hg_g_toolbar_focus_index = new_cell;
+                hg_taskbox_focus.area = 0;
+                hg_taskbox_focus.index = new_cell;
             } else if (new_cell >= total_cells - total_shortcuts) {
-                hg_g_focus_area = 1;
-                hg_g_toolbar_focus_index = total_cells - 1 - new_cell;
+                hg_taskbox_focus.area = 1;
+                hg_taskbox_focus.index = total_cells - 1 - new_cell;
             }
             update_focus_message(-2, -2);
         }
