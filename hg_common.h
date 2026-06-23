@@ -338,6 +338,7 @@ void refresh_window_list(BOOL force);
 void update_layout(HWND hwnd);
 void update_floater_layout(HWND hwnd);
 void update_focus_message(int override_type, int override_index);
+void reset_taskbox_focus(void);
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass,
                                     DWORD_PTR dw_ref_data);

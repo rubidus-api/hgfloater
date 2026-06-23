@@ -44,8 +44,6 @@ extern BYTE hg_g_floater_alpha;
 extern BYTE hg_g_taskbox_alpha;
 extern int hg_g_floater_highlight_ticks;
 extern int hg_g_taskbox_highlight_ticks;
-extern int hg_g_focus_area;
-extern int hg_g_toolbar_focus_index;
 extern UINT hg_g_hotkey_modifiers;
 extern UINT hg_g_hotkey_key;
 extern BOOL hg_g_hotkey_registered;

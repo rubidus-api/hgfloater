@@ -613,12 +613,8 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 }
                 InvalidateRect(hg_g_taskbox_wnd, NULL, FALSE);
 
-                hg_g_focus_area = 0;
                 SetFocus(hg_g_toolbar_wnd);
-                if (hg_g_window_count > 0) {
-                    hg_g_toolbar_focus_index = 0;
-                }
-                update_focus_message(-2, -2);
+                reset_taskbox_focus();
 
                 InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
             } else {
