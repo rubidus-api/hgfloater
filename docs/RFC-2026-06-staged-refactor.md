@@ -113,6 +113,9 @@ Exit criteria:
 
 Purpose: reduce broad global access over time.
 
+Progress:
+- 2026-06-24: Replaced separate toolbar callback static variables with a single `ToolbarControllerState` context instance passed directly to controller helpers.
+
 Tasks:
 - Introduce small context structs only where they remove real ambiguity.
 - Start with toolbar hover/press/drag state and taskbox layout state.

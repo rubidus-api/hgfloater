@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added taskbox task and shortcut context menu builder/dispatch helpers, and reused the audio submenu builder for the volume context menu.
 - Added floater command dispatch helpers for monitor, audio device, and fixed-volume menu commands.
 - Added taskbox command dispatch helpers for forwarded floater commands and taskbox font commands.
+- Added a single toolbar controller state context to replace scattered callback-local transient state.
 
 ## [2026-06-23] - Stabilization and Refactor Planning
 
