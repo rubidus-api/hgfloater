@@ -2160,20 +2160,43 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
     }
     return 0;
 }
+
+static BOOL taskbox_forward_floater_command(UINT cmd, WPARAM w_param, LPARAM l_param)
+{
+    if (cmd != HG_IDM_ABOUT && cmd != HG_IDM_RESET_ALL)
+        return FALSE;
+
+    if (hg_g_floater_wnd)
+        SendMessage(hg_g_floater_wnd, WM_COMMAND, w_param, l_param);
+    return TRUE;
+}
+
+static BOOL taskbox_dispatch_font_command(UINT cmd)
+{
+    if (cmd == HG_IDM_FONT_UP) {
+        update_edit_font_size(1);
+        return TRUE;
+    }
+    if (cmd == HG_IDM_FONT_DOWN) {
+        update_edit_font_size(-1);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static LRESULT taskbox_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
-    if (LOWORD(w_param) == HG_IDM_CLOSE_APP) {
-        if (hg_g_floater_wnd)
-            DestroyWindow(hg_g_floater_wnd);
-    } else if (LOWORD(w_param) == HG_IDM_ABOUT || LOWORD(w_param) == HG_IDM_RESET_ALL) {
-        if (hg_g_floater_wnd)
-            SendMessage(hg_g_floater_wnd, WM_COMMAND, w_param, l_param);
-    } else if (LOWORD(w_param) == HG_IDM_FONT_UP) {
-        update_edit_font_size(1);
-    } else if (LOWORD(w_param) == HG_IDM_FONT_DOWN) {
-        update_edit_font_size(-1);
-    } else if (taskbox_handle_audio_menu_command(LOWORD(w_param))) {
+    UINT cmd = LOWORD(w_param);
+    BOOL handled = taskbox_forward_floater_command(cmd, w_param, l_param) || taskbox_dispatch_font_command(cmd);
+
+    if (taskbox_handle_audio_menu_command(cmd)) {
         return 0;
+    }
+
+    if (!handled && cmd == HG_IDM_CLOSE_APP) {
+        if (hg_g_floater_wnd) {
+            DestroyWindow(hg_g_floater_wnd);
+        }
     }
     return DefWindowProcW(hwnd, WM_COMMAND, w_param, l_param);
 }
