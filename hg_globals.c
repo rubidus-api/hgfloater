@@ -64,7 +64,6 @@ WindowItem hg_g_new_items[HG_MAX_WINDOW_ITEMS] = {0};
 int hg_g_window_count = 0;
 
 BOOL hg_g_in_sizemove = FALSE;
-RECT hg_g_drag_start_rect = {0};
 
 /* Pointer/menu interaction states */
 POINT hg_g_last_mouse_pos = {-1, -1};

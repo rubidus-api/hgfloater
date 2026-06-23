@@ -175,6 +175,14 @@ static int toolbar_taskbox_alpha_percent(void)
     return toolbar_clamp_percent((hg_g_taskbox_alpha * 100 + 127) / 255);
 }
 
+static int taskbox_toolbar_icon_size(void)
+{
+    int icon_size = ABS(hg_g_current_font_size);
+    if (icon_size < SC(16))
+        icon_size = SC(16);
+    return icon_size;
+}
+
 typedef struct HgTaskboxDragState {
     BOOL is_dragging;
     int source_index;
@@ -187,6 +195,10 @@ typedef struct HgTaskboxFocusState {
     int area;
     int index;
 } HgTaskboxFocusState;
+
+typedef struct HgTaskboxLayoutState {
+    RECT sizemove_start_rect;
+} HgTaskboxLayoutState;
 
 static HgTaskboxFocusState hg_taskbox_focus = {0, 0};
 
@@ -508,9 +520,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     DeleteObject(hbr_bg);
                 }
 
-                int icon_size = ABS(hg_g_current_font_size);
-                if (icon_size < SC(16))
-                    icon_size = SC(16);
+                int icon_size = taskbox_toolbar_icon_size();
 
                 if (icon_size != *cached_icon_size || !hg_g_toolbar_btn_font) {
                     if (hg_g_toolbar_btn_font)
@@ -707,9 +717,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     RECT rc;
     GetClientRect(hwnd, &rc);
-    int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16))
-        icon_size = SC(16);
+    int icon_size = taskbox_toolbar_icon_size();
 
     if (state->is_resizing && GetCapture() == hwnd) {
         POINT cur_mouse;
@@ -845,9 +853,7 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
         /* 크기 조절 완료 시 불필요한 우측 여백을 제거하고 정확하게 스냅되도록 함 */
         RECT rc;
         GetWindowRect(hg_g_taskbox_wnd, &rc);
-        int icon_size = ABS(hg_g_current_font_size);
-        if (icon_size < SC(16))
-            icon_size = SC(16);
+        int icon_size = taskbox_toolbar_icon_size();
         int border = SC(HG_BORDER_THICKNESS);
         int tb_width = (rc.right - rc.left) - border * 2;
         int cols = get_items_per_row(tb_width, icon_size);
@@ -892,9 +898,7 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
             POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             RECT rc;
             GetClientRect(hwnd, &rc);
-            int icon_size = ABS(hg_g_current_font_size);
-            if (icon_size < SC(16))
-                icon_size = SC(16);
+            int icon_size = taskbox_toolbar_icon_size();
             int cur_type = -1, cur_index = -1;
             if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
                 if (cur_type == 0 && cur_index == final_source) {
@@ -1200,9 +1204,7 @@ static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerSt
     RECT rc;
     GetClientRect(hwnd, &rc);
 
-    int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16))
-        icon_size = SC(16);
+    int icon_size = taskbox_toolbar_icon_size();
 
     int cur_type = -1, cur_index = -1;
     if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
@@ -1240,9 +1242,7 @@ static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param)
     RECT rc;
     GetClientRect(hwnd, &rc);
 
-    int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16))
-        icon_size = SC(16);
+    int icon_size = taskbox_toolbar_icon_size();
 
     int cur_type = -1, cur_index = -1;
     if (l_param == 0) {
@@ -1272,9 +1272,7 @@ static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param)
     RECT rc;
     GetClientRect(hwnd, &rc);
 
-    int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16))
-        icon_size = SC(16);
+    int icon_size = taskbox_toolbar_icon_size();
 
     int cur_type = -1, cur_index = -1;
     if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, &cur_type, &cur_index)) {
@@ -1391,9 +1389,7 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
     RECT rc_client;
     GetClientRect(hwnd, &rc_client);
 
-    int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16))
-        icon_size = SC(16);
+    int icon_size = taskbox_toolbar_icon_size();
 
     for (int i = 0; i < HG_NUM_BASIC_ICONS; ++i) {
         if (!hg_toolbar_builtin_has_value(i))
@@ -1430,9 +1426,7 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         ScreenToClient(hwnd, &pt);
         RECT rc;
         GetClientRect(hwnd, &rc);
-        int icon_size = ABS(hg_g_current_font_size);
-        if (icon_size < SC(16))
-            icon_size = SC(16);
+        int icon_size = taskbox_toolbar_icon_size();
         if (get_item_at_pt(pt, rc.right, rc.bottom, icon_size, NULL, NULL))
             return HTCLIENT;
         return HTTRANSPARENT;
@@ -1740,9 +1734,7 @@ void update_layout(HWND hwnd)
         tb_width = 1;
 
     /* Calculate necessary height for the taskbox based on columns and rows */
-    int icon_size = ABS(hg_g_current_font_size);
-    if (icon_size < SC(16))
-        icon_size = SC(16);
+    int icon_size = taskbox_toolbar_icon_size();
     int cols = get_items_per_row(tb_width, icon_size);
     if (cols <= 0)
         cols = 1;
@@ -1923,9 +1915,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
 
     /* Ctrl + +/-: 텍스트 글꼴 크기 조절, Ctrl + 방향키/wasd: 창 크기/그리드 조절 */
     if (is_ctrl) {
-        int icon_size = ABS(hg_g_current_font_size);
-        if (icon_size < SC(16))
-            icon_size = SC(16);
+        int icon_size = taskbox_toolbar_icon_size();
 
         if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
             update_edit_font_size(1);
@@ -2032,9 +2022,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
     int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
 
     if (total_tasks > 0 || total_shortcuts > 0) {
-        int icon_size = ABS(hg_g_current_font_size);
-        if (icon_size < SC(16))
-            icon_size = SC(16);
+        int icon_size = taskbox_toolbar_icon_size();
 
         RECT rc_toolbar;
         GetClientRect(hg_g_toolbar_wnd, &rc_toolbar);
@@ -2204,6 +2192,8 @@ static LRESULT taskbox_controller_on_destroy(HWND hwnd)
 
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
+    static HgTaskboxLayoutState layout_state = {{0, 0, 0, 0}};
+
     switch (msg) {
     case WM_DISPLAYCHANGE: {
         update_monitor_enum();
@@ -2250,7 +2240,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     }
     case WM_ENTERSIZEMOVE: {
         hg_g_in_sizemove = TRUE;
-        GetWindowRect(hwnd, &hg_g_drag_start_rect);
+        GetWindowRect(hwnd, &layout_state.sizemove_start_rect);
         return DefWindowProcW(hwnd, msg, w_param, l_param);
     }
     case WM_EXITSIZEMOVE: {
@@ -2258,12 +2248,12 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         RECT rc = {0};
         GetWindowRect(hwnd, &rc);
 
-        int dw = (rc.right - rc.left) - (hg_g_drag_start_rect.right - hg_g_drag_start_rect.left);
-        int dh = (rc.bottom - rc.top) - (hg_g_drag_start_rect.bottom - hg_g_drag_start_rect.top);
+        int dw = (rc.right - rc.left) -
+                 (layout_state.sizemove_start_rect.right - layout_state.sizemove_start_rect.left);
+        int dh = (rc.bottom - rc.top) -
+                 (layout_state.sizemove_start_rect.bottom - layout_state.sizemove_start_rect.top);
 
-        int icon_size = ABS(hg_g_current_font_size);
-        if (icon_size < SC(16))
-            icon_size = SC(16);
+        int icon_size = taskbox_toolbar_icon_size();
         int border = SC(HG_BORDER_THICKNESS);
 
         int total_tasks = hg_g_window_count;

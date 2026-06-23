@@ -66,7 +66,6 @@ extern WindowItem hg_g_new_items[1024];    /* HG_MAX_WINDOW_ITEMS */
 extern int hg_g_window_count;
 
 extern BOOL hg_g_in_sizemove;
-extern RECT hg_g_drag_start_rect;
 
 /* Pointer/menu interaction states */
 extern POINT hg_g_last_mouse_pos;
