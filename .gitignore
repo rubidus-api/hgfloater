@@ -26,3 +26,10 @@ CHANGELOGS.md
 *.local.md
 refactoring_plan-20260530.md
 hgfloater_internal/
+
+# credentials — never track (defense in depth)
+github-personal-access-token
+*-ssh-key-*
+*.pem
+*api*key*
+cloudflare*.env
