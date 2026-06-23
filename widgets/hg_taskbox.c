@@ -368,23 +368,11 @@ void update_focus_message(int override_type, int override_index)
             const WCHAR *focus_text = hg_toolbar_builtin_focus_text(index);
             if (focus_text) {
                 append_message(focus_text);
-            } else if (index == HG_TOOL_ICON_ALPHA) {
-                static WCHAR alpha_str[64];
-                int cur_pct = toolbar_taskbox_alpha_percent();
-                StringCchPrintfW(alpha_str, 64, L"Alpha: %d%%", cur_pct);
-                append_message(alpha_str);
-            } else if (index == HG_TOOL_ICON_BRIGHTNESS) {
-                static WCHAR bright_str[64];
-                StringCchPrintfW(bright_str, 64, L"Brightness: %d%%", get_system_brightness());
-                append_message(bright_str);
-            } else if (index == HG_TOOL_ICON_VOLUME) {
-                static WCHAR vol_str[64];
-                if (get_system_mute()) {
-                    StringCchPrintfW(vol_str, 64, L"System Volume: %d%% (Muted)", get_system_volume());
-                } else {
-                    StringCchPrintfW(vol_str, 64, L"System Volume: %d%%", get_system_volume());
+            } else if (hg_toolbar_builtin_has_value(index)) {
+                static WCHAR value_str[64];
+                if (hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_FOCUS, value_str, HG_ARRAYSIZE(value_str))) {
+                    append_message(value_str);
                 }
-                append_message(vol_str);
             } else {
                 append_message(hg_g_shortcuts[index - HG_NUM_BASIC_ICONS].name);
             }
@@ -1217,6 +1205,77 @@ static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerSta
     return 0;
 }
 
+static int toolbar_value_current_percent(int index)
+{
+    if (index == HG_TOOL_ICON_ALPHA)
+        return toolbar_taskbox_alpha_percent();
+    if (index == HG_TOOL_ICON_BRIGHTNESS)
+        return get_system_brightness();
+    if (index == HG_TOOL_ICON_VOLUME)
+        return get_system_volume();
+    return 0;
+}
+
+static int toolbar_value_min_percent(int index)
+{
+    if (index == HG_TOOL_ICON_ALPHA)
+        return (HG_MIN_ALPHA * 100 + 127) / 255;
+    return 0;
+}
+
+static int toolbar_value_next_percent(int index, int current, short delta)
+{
+    int next = current;
+    if (delta > 0) {
+        if (current % 5 == 0) {
+            next = current + 5;
+        } else {
+            next = ((current / 5) + 1) * 5;
+        }
+        if (next > 100)
+            next = 100;
+    } else {
+        if (current % 5 == 0) {
+            next = current - 5;
+        } else {
+            next = (current / 5) * 5;
+        }
+        int min_value = toolbar_value_min_percent(index);
+        if (next < min_value)
+            next = min_value;
+    }
+    return next;
+}
+
+static void toolbar_value_apply_percent(int index, int value)
+{
+    if (index == HG_TOOL_ICON_ALPHA) {
+        set_taskbox_opacity_pct(value);
+    } else if (index == HG_TOOL_ICON_BRIGHTNESS) {
+        set_system_brightness(value);
+    } else if (index == HG_TOOL_ICON_VOLUME) {
+        set_system_volume(value);
+    }
+}
+
+static void toolbar_update_value_tooltip(HWND hwnd, int index)
+{
+    if (!hg_g_tooltip_wnd)
+        return;
+
+    TOOLINFOW ti = {0};
+    ti.cbSize = TOOLINFO_V1_SIZE;
+    ti.hwnd = hwnd;
+    ti.uId = (UINT_PTR)(hg_g_window_count + index);
+    static WCHAR value_tips[HG_NUM_BASIC_ICONS][64];
+    if (index >= 0 && index < HG_NUM_BASIC_ICONS &&
+        hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_TOOLTIP, value_tips[index],
+                                      HG_ARRAYSIZE(value_tips[index]))) {
+        ti.lpszText = value_tips[index];
+        SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
+    }
+}
+
 static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
     if (LOWORD(w_param) & MK_CONTROL) {
@@ -1228,7 +1287,6 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
         return SendMessageW(GetParent(hwnd), WM_MOUSEWHEEL, w_param, l_param);
     }
 
-    // V 아이콘 휠 튜닝 볼륨 조절 및 B 아이콘 휠 튜닝 밝기 조절
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     ScreenToClient(hwnd, &pt);
 
@@ -1239,143 +1297,25 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
     if (icon_size < SC(16))
         icon_size = SC(16);
 
-    RECT rc_v_icon;
-    get_toolbar_item_rect(1, HG_TOOL_ICON_VOLUME, rc_client.right, rc_client.bottom, icon_size, &rc_v_icon);
-    InflateRect(&rc_v_icon, SC(4), SC(4)); // 버튼 인식 영역
+    for (int i = 0; i < HG_NUM_BASIC_ICONS; ++i) {
+        if (!hg_toolbar_builtin_has_value(i))
+            continue;
 
-    if (PtInRect(&rc_v_icon, pt)) {
-        short delta = (short)HIWORD(w_param);
-        int cur_vol = get_system_volume();
-        int new_vol = cur_vol;
-        if (delta > 0) {
-            if (cur_vol % 5 == 0) {
-                new_vol = cur_vol + 5;
-            } else {
-                new_vol = ((cur_vol / 5) + 1) * 5;
-            }
-            if (new_vol > 100)
-                new_vol = 100;
-        } else {
-            if (cur_vol % 5 == 0) {
-                new_vol = cur_vol - 5;
-            } else {
-                new_vol = (cur_vol / 5) * 5;
-            }
-            if (new_vol < 0)
-                new_vol = 0;
+        RECT rc_icon;
+        get_toolbar_item_rect(1, i, rc_client.right, rc_client.bottom, icon_size, &rc_icon);
+        InflateRect(&rc_icon, SC(4), SC(4));
+        if (PtInRect(&rc_icon, pt)) {
+            short delta = (short)HIWORD(w_param);
+            int cur_value = toolbar_value_current_percent(i);
+            int new_value = toolbar_value_next_percent(i, cur_value, delta);
+            toolbar_value_apply_percent(i, new_value);
+
+            update_toolbar_tooltips(hwnd);
+            toolbar_update_value_tooltip(hwnd, i);
+            update_focus_message(1, i);
+            InvalidateRect(hwnd, NULL, FALSE);
+            return 0;
         }
-        set_system_volume(new_vol);
-
-        update_toolbar_tooltips(hwnd);
-
-        // 즉각 툴팁 갱신
-        TOOLINFOW ti = {0};
-        ti.cbSize = TOOLINFO_V1_SIZE;
-        ti.hwnd = hwnd;
-        ti.uId = (UINT_PTR)(hg_g_window_count + HG_TOOL_ICON_VOLUME);
-        static WCHAR vol_tip[32];
-        hellgates_wsprintf(vol_tip, 32, L"Vol: %d%%", new_vol);
-        ti.lpszText = vol_tip;
-        SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
-
-        // 에디트박스 즉시 갱신
-        update_focus_message(1, HG_TOOL_ICON_VOLUME);
-        InvalidateRect(hwnd, NULL, FALSE);
-
-        return 0;
-    }
-
-    RECT rc_b_icon;
-    get_toolbar_item_rect(1, HG_TOOL_ICON_BRIGHTNESS, rc_client.right, rc_client.bottom, icon_size, &rc_b_icon);
-    InflateRect(&rc_b_icon, SC(4), SC(4)); // 버튼 인식 영역
-
-    if (PtInRect(&rc_b_icon, pt)) {
-        short delta = (short)HIWORD(w_param);
-        int cur_bright = get_system_brightness();
-        int new_bright = cur_bright;
-        if (delta > 0) {
-            if (cur_bright % 5 == 0) {
-                new_bright = cur_bright + 5;
-            } else {
-                new_bright = ((cur_bright / 5) + 1) * 5;
-            }
-            if (new_bright > 100)
-                new_bright = 100;
-        } else {
-            if (cur_bright % 5 == 0) {
-                new_bright = cur_bright - 5;
-            } else {
-                new_bright = (cur_bright / 5) * 5;
-            }
-            if (new_bright < 0)
-                new_bright = 0;
-        }
-        set_system_brightness(new_bright);
-
-        update_toolbar_tooltips(hwnd);
-
-        // 즉각 툴팁 갱신
-        TOOLINFOW ti = {0};
-        ti.cbSize = TOOLINFO_V1_SIZE;
-        ti.hwnd = hwnd;
-        ti.uId = (UINT_PTR)(hg_g_window_count + HG_TOOL_ICON_BRIGHTNESS);
-        static WCHAR bright_tip[32];
-        hellgates_wsprintf(bright_tip, 32, L"Brightness: %d%%", new_bright);
-        ti.lpszText = bright_tip;
-        SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
-
-        // 에디트박스 즉시 갱신
-        update_focus_message(1, HG_TOOL_ICON_BRIGHTNESS);
-        InvalidateRect(hwnd, NULL, FALSE);
-
-        return 0;
-    }
-
-    RECT rc_a_icon;
-    get_toolbar_item_rect(1, HG_TOOL_ICON_ALPHA, rc_client.right, rc_client.bottom, icon_size, &rc_a_icon);
-    InflateRect(&rc_a_icon, SC(4), SC(4)); // 버튼 인식 영역
-
-    if (PtInRect(&rc_a_icon, pt)) {
-        short delta = (short)HIWORD(w_param);
-        int cur_pct = (hg_g_taskbox_alpha * 100 + 127) / 255;
-        int new_pct = cur_pct;
-        if (delta > 0) {
-            if (cur_pct % 5 == 0) {
-                new_pct = cur_pct + 5;
-            } else {
-                new_pct = ((cur_pct / 5) + 1) * 5;
-            }
-            if (new_pct > 100)
-                new_pct = 100;
-        } else {
-            if (cur_pct % 5 == 0) {
-                new_pct = cur_pct - 5;
-            } else {
-                new_pct = (cur_pct / 5) * 5;
-            }
-            int min_pct = (HG_MIN_ALPHA * 100 + 127) / 255;
-            if (new_pct < min_pct)
-                new_pct = min_pct;
-        }
-        set_taskbox_opacity_pct(new_pct);
-
-        update_toolbar_tooltips(hwnd);
-
-        // 즉각 툴팁 갱신
-        TOOLINFOW ti = {0};
-        ti.cbSize = TOOLINFO_V1_SIZE;
-        ti.hwnd = hwnd;
-        ti.uId = (UINT_PTR)(hg_g_window_count + HG_TOOL_ICON_ALPHA);
-        static WCHAR alpha_tip[32];
-        hellgates_wsprintf(alpha_tip, 32, L"Alpha: %d%%", new_pct);
-        ti.lpszText = alpha_tip;
-        SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
-
-        // 에디트박스 즉시 갱신
-        update_focus_message(1, HG_TOOL_ICON_ALPHA);
-        InvalidateRect(hwnd, NULL, FALSE);
-
-        return 0;
     }
 
     return 0;
