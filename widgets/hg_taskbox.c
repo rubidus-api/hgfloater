@@ -365,18 +365,9 @@ void update_focus_message(int override_type, int override_index)
     } else if (type == 1) {
         int total_items = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
         if (index >= 0 && index < total_items) {
-            if (index == HG_TOOL_ICON_RESIZE)
-                append_message(L"Drag to Resize Window");
-            else if (index == HG_TOOL_ICON_MOVE)
-                append_message(L"Drag to Move Window");
-            else if (index == HG_TOOL_ICON_CLOSE)
-                append_message(L"Hide Dashboard");
-            else if (index == HG_TOOL_ICON_DESKTOP)
-                append_message(L"Show Desktop");
-            else if (index == HG_TOOL_ICON_MENU)
-                append_message(L"Menu");
-            else if (index == HG_TOOL_ICON_COMMAND) {
-                append_message(L"Command Box");
+            const WCHAR *focus_text = hg_toolbar_builtin_focus_text(index);
+            if (focus_text) {
+                append_message(focus_text);
             } else if (index == HG_TOOL_ICON_ALPHA) {
                 static WCHAR alpha_str[64];
                 int cur_pct = toolbar_taskbox_alpha_percent();
@@ -394,8 +385,9 @@ void update_focus_message(int override_type, int override_index)
                     StringCchPrintfW(vol_str, 64, L"System Volume: %d%%", get_system_volume());
                 }
                 append_message(vol_str);
-            } else
+            } else {
                 append_message(hg_g_shortcuts[index - HG_NUM_BASIC_ICONS].name);
+            }
         }
     }
 }
@@ -622,25 +614,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
                         SetBkMode(mem_dc, TRANSPARENT);
                         HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
-                        WCHAR btn_text[2] = {0};
-                        if (i == HG_TOOL_ICON_RESIZE)
-                            btn_text[0] = L'R';
-                        else if (i == HG_TOOL_ICON_MOVE)
-                            btn_text[0] = L'M';
-                        else if (i == HG_TOOL_ICON_CLOSE)
-                            btn_text[0] = L'X';
-                        else if (i == HG_TOOL_ICON_DESKTOP)
-                            btn_text[0] = L'D';
-                        else if (i == HG_TOOL_ICON_MENU)
-                            btn_text[0] = L'P';
-                        else if (i == HG_TOOL_ICON_COMMAND)
-                            btn_text[0] = L'C';
-                        else if (i == HG_TOOL_ICON_ALPHA)
-                            btn_text[0] = L'A';
-                        else if (i == HG_TOOL_ICON_BRIGHTNESS)
-                            btn_text[0] = L'B';
-                        else if (i == HG_TOOL_ICON_VOLUME)
-                            btn_text[0] = L'V';
+                        WCHAR btn_text[2] = {hg_toolbar_builtin_label(i), 0};
                         draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
                                            HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
                         SelectObject(mem_dc, old_font);

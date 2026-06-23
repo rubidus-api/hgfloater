@@ -75,6 +75,9 @@ Exit criteria:
 
 Purpose: make toolbar behavior table-driven without changing UI.
 
+Progress:
+- 2026-06-23: Added a built-in toolbar descriptor table for labels and static focus/tooltip text, with a compile-time descriptor count check against `HG_NUM_BASIC_ICONS`.
+
 Tasks:
 - Define a static descriptor table for built-in toolbar items.
 - Use descriptors for label, tooltip, hit test role, click role, wheel role, and focus message.

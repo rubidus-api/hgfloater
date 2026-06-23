@@ -1789,6 +1789,57 @@ int get_items_per_row(int width, int icon_size)
     return (n > 0) ? n : 1;
 }
 
+typedef struct HgToolbarBuiltinDescriptor {
+    int index;
+    WCHAR label;
+    const WCHAR *focus_text;
+    const WCHAR *tooltip_text;
+} HgToolbarBuiltinDescriptor;
+
+static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
+    {HG_TOOL_ICON_RESIZE, L'R', L"Drag to Resize Window", L"Drag to Resize Window"},
+    {HG_TOOL_ICON_MOVE, L'M', L"Drag to Move Window", L"Drag to Move Window"},
+    {HG_TOOL_ICON_CLOSE, L'X', L"Hide Dashboard", L"Hide Dashboard (Reload Shortcuts)"},
+    {HG_TOOL_ICON_DESKTOP, L'D', L"Show Desktop", L"Show Desktop"},
+    {HG_TOOL_ICON_MENU, L'P', L"Menu", L"Menu"},
+    {HG_TOOL_ICON_COMMAND, L'C', L"Command Box", L"Command Box"},
+    {HG_TOOL_ICON_ALPHA, L'A', NULL, NULL},
+    {HG_TOOL_ICON_BRIGHTNESS, L'B', NULL, NULL},
+    {HG_TOOL_ICON_VOLUME, L'V', NULL, NULL},
+};
+
+enum {
+    HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
+        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS) ? 1 : 0)
+};
+
+static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)
+{
+    for (size_t i = 0; i < HG_ARRAYSIZE(hg_toolbar_builtin_descriptors); ++i) {
+        if (hg_toolbar_builtin_descriptors[i].index == index)
+            return &hg_toolbar_builtin_descriptors[i];
+    }
+    return NULL;
+}
+
+WCHAR hg_toolbar_builtin_label(int index)
+{
+    const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
+    return desc ? desc->label : L'?';
+}
+
+const WCHAR *hg_toolbar_builtin_focus_text(int index)
+{
+    const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
+    return desc ? desc->focus_text : NULL;
+}
+
+const WCHAR *hg_toolbar_builtin_tooltip_text(int index)
+{
+    const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
+    return desc ? desc->tooltip_text : NULL;
+}
+
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect)
 {
     if (width <= 0 || !out_rect) {
@@ -1885,18 +1936,9 @@ void update_toolbar_tooltips(HWND hwnd)
         ti_tool.uFlags = TTF_SUBCLASS;
         ti_tool.hwnd = hwnd;
         ti_tool.uId = (UINT_PTR)id_counter++;
-        if (i == HG_TOOL_ICON_RESIZE)
-            ti_tool.lpszText = L"Drag to Resize Window";
-        else if (i == HG_TOOL_ICON_MOVE)
-            ti_tool.lpszText = L"Drag to Move Window";
-        else if (i == HG_TOOL_ICON_CLOSE)
-            ti_tool.lpszText = L"Hide Dashboard (Reload Shortcuts)";
-        else if (i == HG_TOOL_ICON_DESKTOP)
-            ti_tool.lpszText = L"Show Desktop";
-        else if (i == HG_TOOL_ICON_MENU)
-            ti_tool.lpszText = L"Menu";
-        else if (i == HG_TOOL_ICON_COMMAND) {
-            ti_tool.lpszText = L"Command Box";
+        const WCHAR *tooltip_text = hg_toolbar_builtin_tooltip_text(i);
+        if (tooltip_text) {
+            ti_tool.lpszText = (LPWSTR)tooltip_text;
         } else if (i == HG_TOOL_ICON_ALPHA) {
             static WCHAR alpha_tip[32];
             int cur_pct = (hg_g_taskbox_alpha * 100 + 127) / 255;
@@ -1914,8 +1956,9 @@ void update_toolbar_tooltips(HWND hwnd)
                 hellgates_wsprintf(vol_tip, 32, L"Vol: %d%%", get_system_volume());
             }
             ti_tool.lpszText = vol_tip;
-        } else
+        } else {
             ti_tool.lpszText = hg_g_shortcuts[i - HG_NUM_BASIC_ICONS].name;
+        }
 
         ti_tool.rect = item_rc;
         InflateRect(&ti_tool.rect, SC(4), SC(4));
