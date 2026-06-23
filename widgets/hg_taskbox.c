@@ -305,7 +305,7 @@ void activate_toolbar_item(int index)
         DestroyMenu(hMenu);
 
         if (cmd != 0) {
-            PostMessageW(hg_g_floater_wnd, WM_COMMAND, cmd, 0);
+            PostMessageW(hg_g_floater_wnd, WM_COMMAND, (WPARAM)(UINT)cmd, 0);
         }
     } else if (index == HG_TOOL_ICON_COMMAND) {
         // C button - opens commandbox
