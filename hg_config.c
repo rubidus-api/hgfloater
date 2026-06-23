@@ -77,6 +77,10 @@ void load_floater_font_config()
 void save_floater_font_config()
 {
     WCHAR buf[32];
+    if (hg_g_floater_font_size < HG_FLOATER_MIN_FONT_SIZE)
+        hg_g_floater_font_size = HG_FLOATER_MIN_FONT_SIZE;
+    if (hg_g_floater_font_size > HG_FLOATER_MAX_FONT_SIZE)
+        hg_g_floater_font_size = HG_FLOATER_MAX_FONT_SIZE;
     hellgates_wsprintf(buf, 32, L"%d", hg_g_floater_font_size);
     WritePrivateProfileStringW(L"floater", L"font_size", buf, hg_g_config_path);
 }
@@ -104,10 +108,18 @@ void save_taskbox_font_config()
 {
     WCHAR buf[32];
     int unscaled = (int)(ABS(hg_g_edit_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
+    if (unscaled < 12)
+        unscaled = 12;
+    if (unscaled > 128)
+        unscaled = 128;
     hellgates_wsprintf(buf, 32, L"%d", unscaled);
     WritePrivateProfileStringW(L"taskbox", L"font_size", buf, hg_g_config_path);
 
     int unscaled_icon = (int)(ABS(hg_g_current_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
+    if (unscaled_icon < 16)
+        unscaled_icon = 16;
+    if (unscaled_icon > 128)
+        unscaled_icon = 128;
     hellgates_wsprintf(buf, 32, L"%d", unscaled_icon);
     WritePrivateProfileStringW(L"taskbox", L"icon_size", buf, hg_g_config_path);
 }

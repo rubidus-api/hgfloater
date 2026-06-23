@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Route command box alpha persistence through a named helper and skip redundant updates when the value is already clamped.
 - Clamp command box font size loaded from `config.ini` to the supported 8-72 range and persist normalized defaults.
 - Normalize invalid hotkey modifier bits and invalid virtual-key values loaded from `config.ini` before registration.
+- Normalize floater/taskbox font settings before saving and skip redundant taskbox font/icon refreshes at clamp boundaries.
 - Avoid redundant layered-window updates when alpha is already clamped at its minimum or maximum.
 
 ## [2026-06-22] - Floater to Taskbox Hover UX & UI Adjustments
