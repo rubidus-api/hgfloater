@@ -186,19 +186,51 @@ void load_hotkey_config()
     BOOL needs_save = FALSE;
 
     hg_g_hotkey_modifiers = GetPrivateProfileIntW(L"hotkeys", L"global_focus_modifiers", 0, hg_g_config_path);
+    UINT valid_modifiers = MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_WIN;
+    UINT normalized_modifiers = hg_g_hotkey_modifiers & valid_modifiers;
+    if (normalized_modifiers != hg_g_hotkey_modifiers) {
+        hg_g_hotkey_modifiers = normalized_modifiers;
+        needs_save = TRUE;
+    }
     if (hg_g_hotkey_modifiers == 0) {
         hg_g_hotkey_modifiers = MOD_WIN | MOD_ALT;
         needs_save = TRUE;
     }
 
     hg_g_hotkey_key = GetPrivateProfileIntW(L"hotkeys", L"global_focus_key", 0, hg_g_config_path);
-    if (hg_g_hotkey_key == 0) {
+    if (hg_g_hotkey_key == 0 || hg_g_hotkey_key > 0xFF) {
         hg_g_hotkey_key = VK_SPACE;
         needs_save = TRUE;
     }
 
     if (needs_save) {
         save_hotkey_config();
+    }
+}
+
+BOOL register_global_hotkey(HWND hwnd, BOOL warn_on_failure)
+{
+    if (!hwnd || !IsWindow(hwnd))
+        return FALSE;
+
+    if (hg_g_hotkey_registered) {
+        UnregisterHotKey(hwnd, 1);
+        hg_g_hotkey_registered = FALSE;
+    }
+
+    hg_g_hotkey_registered = RegisterHotKey(hwnd, 1, hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
+    if (!hg_g_hotkey_registered && warn_on_failure) {
+        MessageBoxW(NULL, L"Global hotkey registration failed. Another program may be using the assigned hotkey.",
+                    L"hgfloater", MB_ICONWARNING);
+    }
+    return hg_g_hotkey_registered;
+}
+
+void unregister_global_hotkey(HWND hwnd)
+{
+    if (hg_g_hotkey_registered && hwnd && IsWindow(hwnd)) {
+        UnregisterHotKey(hwnd, 1);
+        hg_g_hotkey_registered = FALSE;
     }
 }
 
@@ -231,14 +263,7 @@ void hg_config_reset_all(HWND hwnd)
     hg_g_hotkey_modifiers = MOD_WIN | MOD_ALT;
     hg_g_hotkey_key = VK_SPACE;
 
-    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
-        if (hg_g_hotkey_registered) {
-            UnregisterHotKey(hg_g_floater_wnd, 1);
-            hg_g_hotkey_registered = FALSE;
-        }
-        hg_g_hotkey_registered =
-            RegisterHotKey(hg_g_floater_wnd, 1, hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
-    }
+    register_global_hotkey(hg_g_floater_wnd, FALSE);
 
     save_alpha_config();
     save_floater_font_config();

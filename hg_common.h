@@ -357,6 +357,8 @@ void load_commandbox_font_config(void);
 void save_commandbox_font_config(void);
 void save_font_name_config(void);
 void save_commandbox_alpha_config(void);
+BOOL register_global_hotkey(HWND hwnd, BOOL warn_on_failure);
+void unregister_global_hotkey(HWND hwnd);
 void hg_config_reset_all(HWND hwnd);
 void hide_taskbox(HWND hwnd);
 void show_commandbox_window(void);

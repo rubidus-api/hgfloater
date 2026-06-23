@@ -388,11 +388,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         goto cleanup_finish;
     }
 
-    hg_g_hotkey_registered = RegisterHotKey(hg_g_floater_wnd, 1, hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
-    if (!hg_g_hotkey_registered) {
-        MessageBoxW(NULL, L"Global hotkey registration failed. Another program may be using the assigned hotkey.",
-                    L"hgfloater", MB_ICONWARNING);
-    }
+    register_global_hotkey(hg_g_floater_wnd, TRUE);
 
     hg_g_taskbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, HG_CLASS_TASKBOX, L"taskbox",
                                        WS_POPUP, tx, ty, tw, th, NULL, NULL, instance, NULL);
@@ -453,10 +449,7 @@ cleanup_finish:
         accel_table = NULL;
     }
 
-    if (hg_g_hotkey_registered && hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
-        UnregisterHotKey(hg_g_floater_wnd, 1);
-        hg_g_hotkey_registered = FALSE;
-    }
+    unregister_global_hotkey(hg_g_floater_wnd);
 
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         DestroyWindow(hg_g_taskbox_wnd);

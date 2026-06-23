@@ -23,6 +23,8 @@ void save_font_name_config(void);
 void load_hotkey_config(void);
 void save_alpha_config(void);
 void save_commandbox_alpha_config(void);
+BOOL register_global_hotkey(HWND hwnd, BOOL warn_on_failure);
+void unregister_global_hotkey(HWND hwnd);
 void hg_config_reset_all(HWND hwnd);
 
 #endif /* HG_CONFIG_H */
