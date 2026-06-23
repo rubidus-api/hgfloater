@@ -132,6 +132,9 @@ Exit criteria:
 
 Purpose: make every owned Win32 object auditable.
 
+Progress:
+- 2026-06-24: Added `taskbox_track_owned_popup_menu()` so owned taskbox popup menus are tracked, mark `hg_g_menu_active`, and are destroyed through one helper.
+
 Tasks:
 - Document owner and destroy site for GDI objects, menus, image lists, icons, timers, hooks, and COM interfaces.
 - Add helper cleanup functions where repeated release sequences exist.

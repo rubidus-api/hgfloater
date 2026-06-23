@@ -307,6 +307,19 @@ static HMENU taskbox_create_monitor_submenu(void)
     return monitor_menu;
 }
 
+static int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND owner)
+{
+    int cmd = 0;
+    if (!h_menu)
+        return 0;
+
+    hg_g_menu_active = TRUE;
+    cmd = TrackPopupMenuEx(h_menu, flags, x, y, owner, NULL);
+    hg_g_menu_active = FALSE;
+    DestroyMenu(h_menu);
+    return cmd;
+}
+
 static HMENU taskbox_create_main_popup_menu(void)
 {
     update_audio_device_list();
@@ -367,17 +380,13 @@ void activate_toolbar_item(int index)
         break;
     }
     case HG_TOOLBAR_CLICK_OPEN_MENU: {
-        HMENU hMenu = taskbox_create_main_popup_menu();
-        if (!hMenu)
+        HMENU h_menu = taskbox_create_main_popup_menu();
+        if (!h_menu)
             break;
 
         POINT pt;
         GetCursorPos(&pt);
-        hg_g_menu_active = TRUE;
-        int cmd = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, hg_g_taskbox_wnd, NULL);
-        hg_g_menu_active = FALSE;
-        DestroyMenu(hMenu);
-
+        int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, hg_g_taskbox_wnd);
         taskbox_dispatch_main_menu_command((UINT)cmd);
         break;
     }
@@ -1081,13 +1090,8 @@ static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, 
     }
 
     SetMenuDefaultItem(h_menu, HG_IDM_TASK_RESTORE, FALSE);
-    hg_g_menu_active = TRUE;
-    int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
-    hg_g_menu_active = FALSE;
-
+    int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd);
     taskbox_dispatch_task_menu_command(cmd, cur_index);
-
-    DestroyMenu(h_menu);
 }
 
 static HMENU taskbox_create_shortcut_context_menu(int cur_index)
@@ -1133,13 +1137,8 @@ static void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_ind
     }
 
     SetMenuDefaultItem(h_menu, HG_IDM_SHORTCUT_RUN, FALSE);
-    hg_g_menu_active = TRUE;
-    int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd, NULL);
-    hg_g_menu_active = FALSE;
-
+    int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd);
     taskbox_dispatch_shortcut_menu_command((UINT)cmd, cur_index);
-
-    DestroyMenu(h_menu);
 }
 
 static BOOL taskbox_handle_audio_menu_command(UINT cmd)
@@ -1187,14 +1186,10 @@ static void toolbar_controller_show_audio_context_menu(HWND hwnd, int icon_size,
     }
 
     SetForegroundWindow(hwnd);
-    hg_g_menu_active = TRUE;
-    int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, screen_pt.x, screen_pt.y, hwnd, NULL);
-    hg_g_menu_active = FALSE;
+    int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, screen_pt.x, screen_pt.y, hwnd);
     if (cmd != 0) {
         taskbox_handle_audio_menu_command((UINT)cmd);
     }
-
-    DestroyMenu(h_menu);
 }
 
 static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerState *state,
@@ -1692,9 +1687,8 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
             pt.y = GET_Y_LPARAM(l_param);
         }
 
-        hg_g_menu_active = TRUE;
-        int cmd = TrackPopupMenuEx(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, hwnd, NULL);
-        hg_g_menu_active = FALSE;
+        int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y,
+                                                 hwnd);
 
         if (cmd == HG_IDM_EDIT_COPYALL) {
             SendMessageW(hwnd, EM_SETSEL, 0, (LPARAM)-1);
@@ -1702,7 +1696,6 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
             SendMessageW(hwnd, EM_SETSEL, (WPARAM)-1, 0);
         }
 
-        DestroyMenu(h_menu);
         return 0;
     }
     }
