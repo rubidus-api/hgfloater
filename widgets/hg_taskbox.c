@@ -1388,13 +1388,7 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
 
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
-    static int hovered_type = -1, hovered_index = -1;
-    static int pressed_type = -1, pressed_index = -1;
-    static int cached_icon_size = 0;
-    static BOOL is_resizing = FALSE;
-    static BOOL is_moving_taskbox = FALSE;
-    static POINT start_mouse;
-    static RECT start_rect;
+    static ToolbarControllerState state = {-1, -1, -1, -1, 0, FALSE, FALSE, {0, 0}, {0, 0, 0, 0}};
 
     switch (msg) {
     case WM_NCHITTEST: {
@@ -1414,76 +1408,24 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         return 0;
     }
     case WM_PAINT:
-        return toolbar_controller_on_paint(hwnd, hovered_type, hovered_index, pressed_type, pressed_index,
-                                           &cached_icon_size);
+        return toolbar_controller_on_paint(hwnd, state.hovered_type, state.hovered_index, state.pressed_type,
+                                           state.pressed_index, &state.cached_icon_size);
     case WM_KEYDOWN: {
         SendMessage(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
         return 0;
     }
-    case WM_LBUTTONDOWN: {
-        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
-                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
-        LRESULT result = toolbar_controller_on_lbutton_down(hwnd, &state, l_param);
-        hovered_type = state.hovered_type;
-        hovered_index = state.hovered_index;
-        pressed_type = state.pressed_type;
-        pressed_index = state.pressed_index;
-        cached_icon_size = state.cached_icon_size;
-        is_resizing = state.is_resizing;
-        is_moving_taskbox = state.is_moving_taskbox;
-        start_mouse = state.start_mouse;
-        start_rect = state.start_rect;
-        return result;
-    }
-    case WM_MOUSEMOVE: {
-        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
-                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
-        LRESULT result = toolbar_controller_on_mouse_move(hwnd, &state, l_param);
-        hovered_type = state.hovered_type;
-        hovered_index = state.hovered_index;
-        pressed_type = state.pressed_type;
-        pressed_index = state.pressed_index;
-        cached_icon_size = state.cached_icon_size;
-        is_resizing = state.is_resizing;
-        is_moving_taskbox = state.is_moving_taskbox;
-        start_mouse = state.start_mouse;
-        start_rect = state.start_rect;
-        return result;
-    }
-    case WM_LBUTTONUP: {
-        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
-                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
-        LRESULT result = toolbar_controller_on_lbutton_up(hwnd, &state, l_param);
-        hovered_type = state.hovered_type;
-        hovered_index = state.hovered_index;
-        pressed_type = state.pressed_type;
-        pressed_index = state.pressed_index;
-        cached_icon_size = state.cached_icon_size;
-        is_resizing = state.is_resizing;
-        is_moving_taskbox = state.is_moving_taskbox;
-        start_mouse = state.start_mouse;
-        start_rect = state.start_rect;
-        return result;
-    }
+    case WM_LBUTTONDOWN:
+        return toolbar_controller_on_lbutton_down(hwnd, &state, l_param);
+    case WM_MOUSEMOVE:
+        return toolbar_controller_on_mouse_move(hwnd, &state, l_param);
+    case WM_LBUTTONUP:
+        return toolbar_controller_on_lbutton_up(hwnd, &state, l_param);
     case WM_RBUTTONUP:
         return toolbar_controller_on_rbutton_up(hwnd, l_param);
     case WM_MBUTTONUP:
         return toolbar_controller_on_mbutton_up(hwnd, l_param);
-    case WM_MOUSELEAVE: {
-        ToolbarControllerState state = {hovered_type, hovered_index,     pressed_type, pressed_index, cached_icon_size,
-                                        is_resizing,  is_moving_taskbox, start_mouse,  start_rect};
-        LRESULT result = toolbar_controller_on_mouse_leave(hwnd, &state);
-        hovered_type = state.hovered_type;
-        hovered_index = state.hovered_index;
-        pressed_type = state.pressed_type;
-        pressed_index = state.pressed_index;
-        cached_icon_size = state.cached_icon_size;
-        is_resizing = state.is_resizing;
-        is_moving_taskbox = state.is_moving_taskbox;
-        start_mouse = state.start_mouse;
-        start_rect = state.start_rect;
-        return result;
-    }
+    case WM_MOUSELEAVE:
+        return toolbar_controller_on_mouse_leave(hwnd, &state);
     case WM_MOUSEWHEEL:
         return toolbar_controller_on_mouse_wheel(hwnd, w_param, l_param);
     }
