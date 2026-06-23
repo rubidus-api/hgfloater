@@ -35,8 +35,13 @@ void update_floater_alpha(int delta)
         new_alpha = HG_MAX_ALPHA;
     if (new_alpha < HG_MIN_ALPHA)
         new_alpha = HG_MIN_ALPHA;
+    if (hg_g_floater_alpha == (BYTE)new_alpha)
+        return;
     hg_g_floater_alpha = (BYTE)new_alpha;
-    SetLayeredWindowAttributes(hg_g_floater_wnd, 0, hg_g_floater_alpha, LWA_ALPHA);
+    if (hg_g_floater_wnd) {
+        SetLayeredWindowAttributes(hg_g_floater_wnd, 0, hg_g_floater_alpha, LWA_ALPHA);
+    }
+    save_alpha_config();
 }
 
 void update_floater_layout(HWND hwnd)

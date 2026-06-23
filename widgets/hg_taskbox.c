@@ -108,11 +108,16 @@ void update_taskbox_alpha(int delta)
         new_alpha = HG_MAX_ALPHA;
     if (new_alpha < HG_MIN_ALPHA)
         new_alpha = HG_MIN_ALPHA;
+    if (hg_g_taskbox_alpha == (BYTE)new_alpha)
+        return;
     hg_g_taskbox_alpha = (BYTE)new_alpha;
-    SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
+    if (hg_g_taskbox_wnd) {
+        SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
+    }
     if (hg_g_toolbar_wnd) {
         InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
     }
+    save_alpha_config();
 }
 
 void set_taskbox_opacity_pct(int pct)
