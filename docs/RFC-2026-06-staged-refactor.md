@@ -117,6 +117,7 @@ Progress:
 - 2026-06-24: Replaced separate toolbar callback static variables with a single `ToolbarControllerState` context instance passed directly to controller helpers.
 - 2026-06-24: Moved taskbox reorder drag state into a toolbar-local `HgTaskboxDragState` context and removed the taskbox-only drag globals.
 - 2026-06-24: Moved toolbar focus area/index state into taskbox-local `HgTaskboxFocusState`, added `reset_taskbox_focus()`, and removed external focus globals.
+- 2026-06-24: Moved interactive taskbox resize start bounds into a callback-local `HgTaskboxLayoutState` and centralized toolbar icon-size calculation.
 
 Tasks:
 - Introduce small context structs only where they remove real ambiguity.
