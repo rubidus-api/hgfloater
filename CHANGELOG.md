@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added named geometry persistence helpers for floater, taskbox, and command box windows as the first Phase 1 configuration-boundary refactor step.
 - Added named command box font config helpers and a shared font-name save helper for Phase 1 persistence cleanup.
 - Added centralized global hotkey register/unregister helpers.
+- Added a built-in toolbar descriptor table for labels and static focus/tooltip text as the first Phase 2 toolbar-model extraction step.
 
 ### Fixed
 - Persist floater/taskbox alpha changes made through `Alt + Mouse Wheel` and `Alt +/-` paths by routing both runtime alpha update helpers through `save_alpha_config()`.
