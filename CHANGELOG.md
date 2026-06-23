@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added taskbox-local focus state and a reset helper so other widgets no longer write toolbar focus globals directly.
 - Added a taskbox layout state context for interactive resize start bounds and centralized toolbar icon-size calculation.
 - Added a taskbox owned-popup-menu tracker so popup display, menu-active state, and `DestroyMenu()` cleanup share one path.
+- Added a shared default audio endpoint-volume acquisition helper to centralize COM release ownership for volume and mute operations.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.

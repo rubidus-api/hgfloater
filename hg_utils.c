@@ -225,24 +225,43 @@ void set_system_brightness(int brightness)
     }
 }
 
+static BOOL hg_get_default_audio_endpoint_volume(IAudioEndpointVolume **out_endpoint)
+{
+    IMMDeviceEnumerator *enumerator = NULL;
+    IMMDevice *device = NULL;
+    IAudioEndpointVolume *endpoint = NULL;
+
+    if (!out_endpoint)
+        return FALSE;
+    *out_endpoint = NULL;
+
+    if (FAILED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
+                                (void **)&enumerator)) ||
+        !enumerator) {
+        return FALSE;
+    }
+
+    if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device)) && device) {
+        if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL,
+                                               (void **)&endpoint)) &&
+            endpoint) {
+            *out_endpoint = endpoint;
+        }
+        device->lpVtbl->Release(device);
+    }
+
+    enumerator->lpVtbl->Release(enumerator);
+    return *out_endpoint != NULL;
+}
+
 int get_system_volume()
 {
     float volume = 0.0f;
-    IMMDeviceEnumerator *enumerator = NULL;
-    IMMDevice *device = NULL;
     IAudioEndpointVolume *endpointVolume = NULL;
 
-    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
-                                   (void **)&enumerator))) {
-        if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device))) {
-            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL,
-                                                   (void **)&endpointVolume))) {
-                endpointVolume->lpVtbl->GetMasterVolumeLevelScalar(endpointVolume, &volume);
-                endpointVolume->lpVtbl->Release(endpointVolume);
-            }
-            device->lpVtbl->Release(device);
-        }
-        enumerator->lpVtbl->Release(enumerator);
+    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
+        endpointVolume->lpVtbl->GetMasterVolumeLevelScalar(endpointVolume, &volume);
+        endpointVolume->lpVtbl->Release(endpointVolume);
     }
     return (int)(volume * 100.0f + 0.5f);
 }
@@ -255,66 +274,36 @@ void set_system_volume(int percent)
         percent = 100;
     float volume = (float)percent / 100.0f;
 
-    IMMDeviceEnumerator *enumerator = NULL;
-    IMMDevice *device = NULL;
     IAudioEndpointVolume *endpointVolume = NULL;
 
-    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
-                                   (void **)&enumerator))) {
-        if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device))) {
-            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL,
-                                                   (void **)&endpointVolume))) {
-                endpointVolume->lpVtbl->SetMasterVolumeLevelScalar(endpointVolume, volume, NULL);
-                if (percent > 0) {
-                    endpointVolume->lpVtbl->SetMute(endpointVolume, FALSE, NULL);
-                }
-                endpointVolume->lpVtbl->Release(endpointVolume);
-            }
-            device->lpVtbl->Release(device);
+    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
+        endpointVolume->lpVtbl->SetMasterVolumeLevelScalar(endpointVolume, volume, NULL);
+        if (percent > 0) {
+            endpointVolume->lpVtbl->SetMute(endpointVolume, FALSE, NULL);
         }
-        enumerator->lpVtbl->Release(enumerator);
+        endpointVolume->lpVtbl->Release(endpointVolume);
     }
 }
 
 int get_system_mute(void)
 {
     BOOL mute = FALSE;
-    IMMDeviceEnumerator *enumerator = NULL;
-    IMMDevice *device = NULL;
     IAudioEndpointVolume *endpointVolume = NULL;
 
-    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
-                                   (void **)&enumerator))) {
-        if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device))) {
-            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL,
-                                                   (void **)&endpointVolume))) {
-                endpointVolume->lpVtbl->GetMute(endpointVolume, &mute);
-                endpointVolume->lpVtbl->Release(endpointVolume);
-            }
-            device->lpVtbl->Release(device);
-        }
-        enumerator->lpVtbl->Release(enumerator);
+    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
+        endpointVolume->lpVtbl->GetMute(endpointVolume, &mute);
+        endpointVolume->lpVtbl->Release(endpointVolume);
     }
     return (int)mute;
 }
 
 void set_system_mute(int mute)
 {
-    IMMDeviceEnumerator *enumerator = NULL;
-    IMMDevice *device = NULL;
     IAudioEndpointVolume *endpointVolume = NULL;
 
-    if (SUCCEEDED(CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator,
-                                   (void **)&enumerator))) {
-        if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device))) {
-            if (SUCCEEDED(device->lpVtbl->Activate(device, &IID_IAudioEndpointVolume, CLSCTX_ALL, NULL,
-                                                   (void **)&endpointVolume))) {
-                endpointVolume->lpVtbl->SetMute(endpointVolume, (BOOL)mute, NULL);
-                endpointVolume->lpVtbl->Release(endpointVolume);
-            }
-            device->lpVtbl->Release(device);
-        }
-        enumerator->lpVtbl->Release(enumerator);
+    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
+        endpointVolume->lpVtbl->SetMute(endpointVolume, (BOOL)mute, NULL);
+        endpointVolume->lpVtbl->Release(endpointVolume);
     }
 }
 
