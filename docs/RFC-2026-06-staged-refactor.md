@@ -95,6 +95,7 @@ Purpose: reduce inline menu construction and command-routing risk.
 
 Progress:
 - 2026-06-24: Extracted the taskbox main popup menu, audio submenu, monitor submenu, and selected command forwarding into named helpers while preserving command IDs.
+- 2026-06-24: Extracted task and shortcut context menu creation plus selected command dispatch into helpers, and reused the audio submenu builder for the volume context menu.
 
 Tasks:
 - Extract main popup menu construction from taskbox activation.
