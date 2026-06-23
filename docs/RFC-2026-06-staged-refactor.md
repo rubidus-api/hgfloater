@@ -58,6 +58,7 @@ Progress:
 - 2026-06-23: Floater/taskbox alpha update helpers now persist `Alt` adjustment paths through the alpha config save path.
 - 2026-06-23: Floater/taskbox/commandbox geometry writes now go through named geometry helpers instead of direct section-string writes at call sites.
 - 2026-06-23: Command box alpha writes now go through a named helper and skip redundant writes at clamp boundaries.
+- 2026-06-23: Command box font name/size persistence now goes through named helpers, with loaded font sizes normalized to the supported 8-72 range.
 
 Tasks:
 - Centralize alpha, font, geometry, and hotkey persistence helpers.
