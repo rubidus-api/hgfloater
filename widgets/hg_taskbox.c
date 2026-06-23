@@ -1527,11 +1527,7 @@ void refresh_window_list(BOOL force)
             hg_g_new_items[new_count] = (WindowItem){0};
             hg_g_new_items[new_count].hwnd = hg_g_window_items[i].hwnd;
             if (force) {
-                if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-                    DestroyIcon(hg_g_window_items[i].icon);
-                }
-                hg_g_window_items[i].icon = NULL;
-                hg_g_window_items[i].own_icon = FALSE;
+                release_window_item_icon(&hg_g_window_items[i]);
                 hg_g_new_items[new_count].icon = get_window_icon(hg_g_window_items[i].hwnd, ABS(hg_g_current_font_size),
                                                                  &hg_g_new_items[new_count].own_icon);
             } else {
@@ -1558,11 +1554,7 @@ void refresh_window_list(BOOL force)
 
             new_count++;
         } else {
-            if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-                DestroyIcon(hg_g_window_items[i].icon);
-            }
-            hg_g_window_items[i].icon = NULL;
-            hg_g_window_items[i].own_icon = FALSE;
+            release_window_item_icon(&hg_g_window_items[i]);
         }
     }
 
@@ -2173,10 +2165,7 @@ static LRESULT taskbox_controller_on_destroy(HWND hwnd)
         }
     }
     for (int i = 0; i < hg_g_window_count; i++) {
-        if (hg_g_window_items[i].own_icon && hg_g_window_items[i].icon) {
-            DestroyIcon(hg_g_window_items[i].icon);
-            hg_g_window_items[i].icon = NULL;
-        }
+        release_window_item_icon(&hg_g_window_items[i]);
     }
     /* 전역 종료는 floater_proc에서 처리하므로 주석 처리 */
     /* PostQuitMessage(0); */

@@ -1599,6 +1599,17 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon)
     return get_icon_from_process_exe(pid, own_icon);
 }
 
+void release_window_item_icon(WindowItem *item)
+{
+    if (!item)
+        return;
+    if (item->own_icon && item->icon) {
+        DestroyIcon(item->icon);
+    }
+    item->icon = NULL;
+    item->own_icon = FALSE;
+}
+
 int compare_shortcuts(const void *a, const void *b)
 {
     ShortcutItem *item_a = (ShortcutItem *)a;

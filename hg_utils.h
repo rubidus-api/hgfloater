@@ -31,6 +31,7 @@ BOOL is_alt_tab_window(HWND hwnd);
 void get_process_name_by_hwnd(HWND hwnd, WCHAR *out_name, size_t out_size, DWORD *out_pid);
 void get_process_path_by_hwnd(HWND hwnd, WCHAR *out_path, size_t out_size, DWORD *out_pid);
 HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon);
+void release_window_item_icon(WindowItem *item);
 int compare_shortcuts(const void *a, const void *b);
 void load_shortcuts(void);
 void append_message(const WCHAR *msg);
