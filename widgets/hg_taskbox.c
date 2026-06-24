@@ -1796,7 +1796,7 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
     apply_dwm_attributes(hwnd);
 
     SetLayeredWindowAttributes(hwnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
-    SetTimer(hwnd, 1, 1000, NULL); /* 1초마다 시계 및 목록 갱신 */
+    SetTimer(hwnd, HG_TIMER_TASKBOX_REFRESH, 1000, NULL); /* 1초마다 시계 및 목록 갱신 */
     return 0;
 }
 
@@ -2133,7 +2133,7 @@ static LRESULT taskbox_controller_on_destroy(HWND hwnd)
 {
     hg_g_taskbox_highlight_ticks = 0;
     KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
-    KillTimer(hwnd, 1);
+    KillTimer(hwnd, HG_TIMER_TASKBOX_REFRESH);
 
     /* GDI 전역 리소스(font, brush) 및 전역 툴팁은 wWinMain의 cleanup_finish에서 안전하게 일괄 해제하므로 여기서
      * 삭제하지 않음 */
@@ -2269,7 +2269,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         return 0;
     }
     case WM_TIMER:
-        if (w_param == 1) {
+        if (w_param == HG_TIMER_TASKBOX_REFRESH) {
             if (IsWindowVisible(hwnd)) {
                 refresh_window_list(FALSE);
             }
