@@ -98,6 +98,7 @@ The configuration file uses a standard INI format. You can manually edit these v
   - **`A` Button (Alpha)**: **Mouse Wheel** adjusts the taskbox transparency dynamically. The red-family background becomes brighter as alpha increases.
   - **`B` Button (Brightness)**: **Mouse Wheel** adjusts screen brightness in 5% steps (Supports laptops & external monitors via Hybrid Gamma Fallback). The green-family background becomes brighter as brightness increases.
   - **`V` Button (Volume)**: **Left Click** to toggle system volume Mute/Unmute state instantly, and **Mouse Wheel** over it adjusts volume percent. The blue-family background becomes brighter as volume increases, and a thick accent-color border marks the muted state.
+  - **`F` Button (Floater)**: **Left Click** collapses the dashboard to the floater for tuning. While in this floater-adjust mode, **Ctrl + Mouse Wheel** resizes the floater and **Alt + Mouse Wheel** changes its opacity; **Left Click** the floater to return to the taskbox. (Hover-to-expand is paused so the wheel tuning isn't interrupted.)
   - **`R` Button (Resize)**: **Left Drag** to resize the taskbox window dynamically.
 - **Right Click (Task/Shortcut Icon)**: Opens context menu.
   - **Run (&R)**: Launches a new instance of the application or selected shortcut.

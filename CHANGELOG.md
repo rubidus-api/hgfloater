@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2026-06-24] - Floater Adjust Mode & Taskbox UX
+
+### Added
+- Added a toolbar **F (Floater)** button: clicking it collapses the dashboard to
+  the floater in an adjust mode where **Ctrl+Wheel resizes** and **Alt+Wheel
+  changes opacity**, and a click on the floater returns to the taskbox. Hover-to-
+  expand is suppressed while adjusting so the wheel tuning isn't interrupted.
+
+### Changed
+- Renamed the **P** toolbar button's label/tooltip from "Menu" to **"Popup Menu"**.
+- The taskbox now collapses to the floater after the cursor has stayed outside for
+  **0.5s** (was 1s), re-checked each tick so a brief exit doesn't collapse it.
+
 ## [2026-06-24] - Menu Construction Refactor
 
 ### Added

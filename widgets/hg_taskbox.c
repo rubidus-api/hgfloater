@@ -395,6 +395,13 @@ void activate_toolbar_item(int index)
             InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
         }
         break;
+    case HG_TOOLBAR_CLICK_FLOATER_ADJUST:
+        /* Collapse to the floater for size/alpha tuning: hover-expand is suppressed
+         * while in this mode (Ctrl+Wheel resizes, Alt+Wheel changes opacity); a
+         * click on the floater returns to the taskbox. */
+        hg_g_floater_adjust_mode = TRUE;
+        hide_taskbox(hg_g_taskbox_wnd);
+        break;
     default:
         break;
     }
@@ -2293,11 +2300,14 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                     }
                 }
                 
+                /* Collapse to the floater only after the cursor has stayed outside
+                 * for 0.5s (re-checked every 100ms tick); coming back inside resets
+                 * the count so a brief exit doesn't collapse the taskbox. */
                 static int mouse_outside_ticks = 0;
                 if (hg_g_hover_check_armed) {
                     if (!PtInRect(&rc, pt)) {
                         mouse_outside_ticks++;
-                        if (mouse_outside_ticks >= 10) {
+                        if (mouse_outside_ticks >= 5) {
                             KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
                             mouse_outside_ticks = 0;
                             hide_taskbox(hwnd);
