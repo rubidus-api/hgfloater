@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added shared global font and brush release helpers to preserve stock fonts and reset owned GDI handles consistently.
 - Added a shared offscreen paint buffer helper to centralize memory DC, bitmap selection, restore, and cleanup paths.
 - Added a shortcut icon release helper so shortcut-owned icons are destroyed and reset consistently.
+- Added shared COM and BSTR release helpers for audio, UWP icon, shortcut, and Explorer shell paths.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.

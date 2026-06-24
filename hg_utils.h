@@ -35,6 +35,14 @@ void release_window_item_icon(WindowItem *item);
 void release_shortcut_item_icon(ShortcutItem *item);
 void release_font_handle(HFONT *font, BOOL preserve_stock);
 void release_brush_handle(HBRUSH *brush);
+void release_bstr(BSTR *value);
+#define HG_RELEASE_COM(interface_ptr)         \
+    do {                                      \
+        if ((interface_ptr) != NULL) {        \
+            (interface_ptr)->lpVtbl->Release(interface_ptr); \
+            (interface_ptr) = NULL;           \
+        }                                     \
+    } while (0)
 typedef struct HgPaintBuffer {
     HDC dc;
     HBITMAP bitmap;

@@ -1446,7 +1446,7 @@ BOOL get_explorer_path(HWND target_hwnd, WCHAR *out_path, int max_len)
 
     long count = 0;
     if (FAILED(psw->lpVtbl->get_Count(psw, &count))) {
-        psw->lpVtbl->Release(psw);
+        HG_RELEASE_COM(psw);
         return FALSE;
     }
 
@@ -1473,23 +1473,23 @@ BOOL get_explorer_path(HWND target_hwnd, WCHAR *out_path, int max_len)
                             BSTR title = NULL;
                             if (SUCCEEDED(pwb->lpVtbl->get_LocationName(pwb, &title)) && title) {
                                 lstrcpynW(out_path, title, max_len);
-                                SysFreeString(title);
+                                release_bstr(&title);
                             } else {
                                 lstrcpynW(out_path, url, max_len);
                             }
                             found = TRUE;
                         }
-                        SysFreeString(url);
+                        release_bstr(&url);
                     }
                 }
-                pwb->lpVtbl->Release(pwb);
+                HG_RELEASE_COM(pwb);
             }
-            pdisp->lpVtbl->Release(pdisp);
+            HG_RELEASE_COM(pdisp);
         }
         if (found)
             break;
     }
-    psw->lpVtbl->Release(psw);
+    HG_RELEASE_COM(psw);
     return found;
 }
 
