@@ -138,6 +138,7 @@ Progress:
 - 2026-06-24: Added `hg_get_default_audio_endpoint_volume()` and routed volume/mute operations through one COM acquisition and release boundary.
 - 2026-06-24: Added `release_window_item_icon()` and routed owned `WindowItem` icon cleanup through one destroy-and-reset helper.
 - 2026-06-24: Added `commandbox_line_height()` so Command Box font metric calculation has one guarded `GetDC()`/font restore/`ReleaseDC()` path and no dummy window.
+- 2026-06-24: Added shared font/brush release helpers and routed global GDI handle cleanup through stock-aware destroy-and-reset paths.
 
 Tasks:
 - Document owner and destroy site for GDI objects, menus, image lists, icons, timers, hooks, and COM interfaces.

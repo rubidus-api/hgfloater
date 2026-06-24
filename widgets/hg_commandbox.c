@@ -66,10 +66,7 @@ void load_commandbox_font()
 {
     load_commandbox_font_config();
 
-    if (hg_g_commandbox_font) {
-        DeleteObject(hg_g_commandbox_font);
-        hg_g_commandbox_font = NULL;
-    }
+    release_font_handle(&hg_g_commandbox_font, FALSE);
 
     hg_g_commandbox_font = CreateFontW(
         hg_g_commandbox_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
