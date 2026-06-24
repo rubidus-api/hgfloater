@@ -137,6 +137,7 @@ Progress:
 - 2026-06-24: Hardened monitor preview painting so memory DC, bitmap, screen DC, and pen allocation failures do not leave selected GDI objects or call drawing APIs with invalid handles.
 - 2026-06-24: Added `hg_get_default_audio_endpoint_volume()` and routed volume/mute operations through one COM acquisition and release boundary.
 - 2026-06-24: Added `release_window_item_icon()` and routed owned `WindowItem` icon cleanup through one destroy-and-reset helper.
+- 2026-06-24: Added `commandbox_line_height()` so Command Box font metric calculation has one guarded `GetDC()`/font restore/`ReleaseDC()` path and no dummy window.
 
 Tasks:
 - Document owner and destroy site for GDI objects, menus, image lists, icons, timers, hooks, and COM interfaces.

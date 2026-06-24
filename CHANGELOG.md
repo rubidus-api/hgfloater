@@ -18,10 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a taskbox owned-popup-menu tracker so popup display, menu-active state, and `DestroyMenu()` cleanup share one path.
 - Added a shared default audio endpoint-volume acquisition helper to centralize COM release ownership for volume and mute operations.
 - Added a shared `WindowItem` icon release helper so owned window icons are destroyed and reset consistently.
+- Added a Command Box line-height helper to centralize font metric DC acquisition and release.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.
 - Guard monitor preview painting against failed memory DC, bitmap, screen DC, and pen allocation paths.
+- Guard Command Box font metric calculation against failed `GetDC()` and remove the temporary dummy window.
 
 ## [2026-06-23] - Stabilization and Refactor Planning
 

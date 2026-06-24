@@ -5,6 +5,27 @@
 
 void commandbox_execute(void);
 
+static int commandbox_line_height(HWND hwnd)
+{
+    int line_h = SC(16);
+    if (!hg_g_commandbox_font)
+        return line_h;
+
+    HDC hdc = GetDC(hwnd);
+    if (!hdc)
+        return line_h;
+
+    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_commandbox_font);
+    TEXTMETRIC tm = {0};
+    if (GetTextMetrics(hdc, &tm)) {
+        line_h = tm.tmHeight + tm.tmExternalLeading;
+    }
+    if (old_font)
+        SelectObject(hdc, old_font);
+    ReleaseDC(hwnd, hdc);
+    return line_h;
+}
+
 LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
                                                UINT_PTR subclass_id, DWORD_PTR ref_data)
 {
@@ -106,22 +127,8 @@ void show_commandbox_window()
 
     int border = SC(8);
     int btn_h = SC(26);
-    int line_h = SC(16);
     load_commandbox_font();
-    if (hg_g_commandbox_font) {
-        HWND dummy = CreateWindowExW(0, L"STATIC", NULL, 0, 0, 0, 0, 0, NULL, NULL, GetModuleHandle(NULL), NULL);
-        if (dummy) {
-            HDC hdc = GetDC(dummy);
-            HFONT old_font = SelectObject(hdc, hg_g_commandbox_font);
-            TEXTMETRIC tm;
-            if (GetTextMetrics(hdc, &tm)) {
-                line_h = tm.tmHeight + tm.tmExternalLeading;
-            }
-            SelectObject(hdc, old_font);
-            ReleaseDC(dummy, hdc);
-            DestroyWindow(dummy);
-        }
-    }
+    int line_h = commandbox_line_height(NULL);
     int min_out_h = line_h * 3 + SC(6);
     int min_in_h = line_h * 1 + SC(6);
     int min_cy = border * 4 + min_out_h + min_in_h + btn_h;
@@ -203,17 +210,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         int btn_h = SC(26);
         int cx_inner = cx - border * 2;
 
-        int line_h = SC(16);
-        if (hg_g_commandbox_font) {
-            HDC hdc = GetDC(hwnd);
-            HFONT old_font = SelectObject(hdc, hg_g_commandbox_font);
-            TEXTMETRIC tm;
-            if (GetTextMetrics(hdc, &tm)) {
-                line_h = tm.tmHeight + tm.tmExternalLeading;
-            }
-            SelectObject(hdc, old_font);
-            ReleaseDC(hwnd, hdc);
-        }
+        int line_h = commandbox_line_height(hwnd);
 
         int min_out_h = line_h * 3 + SC(6);
         int min_in_h = line_h * 1 + SC(6);
@@ -245,17 +242,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         
         int border = SC(8);
         int btn_h = SC(26);
-        int line_h = SC(16);
-        if (hg_g_commandbox_font) {
-            HDC hdc = GetDC(hwnd);
-            HFONT old_font = SelectObject(hdc, hg_g_commandbox_font);
-            TEXTMETRIC tm;
-            if (GetTextMetrics(hdc, &tm)) {
-                line_h = tm.tmHeight + tm.tmExternalLeading;
-            }
-            SelectObject(hdc, old_font);
-            ReleaseDC(hwnd, hdc);
-        }
+        int line_h = commandbox_line_height(hwnd);
 
         int min_out_h = line_h * 3 + SC(6);
         int min_in_h = line_h * 1 + SC(6);
