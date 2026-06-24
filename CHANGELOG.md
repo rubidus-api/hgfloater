@@ -24,11 +24,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a shortcut icon release helper so shortcut-owned icons are destroyed and reset consistently.
 - Added shared COM and BSTR release helpers for audio, UWP icon, shortcut, and Explorer shell paths.
 - Added a repeatable verification checklist covering warning-clean builds, smoke tests, and focused manual runtime checks.
+- Added a toolbar contract smoke test for built-in toolbar count and index invariants.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.
 - Guard monitor preview painting against failed memory DC, bitmap, screen DC, and pen allocation paths.
 - Guard Command Box font metric calculation against failed `GetDC()` and remove the temporary dummy window.
+- Fix the `build.bat` test runner so `main()`-based console smoke tests link correctly, and silence existing cast smoke-test warnings.
 
 ## [2026-06-23] - Stabilization and Refactor Planning
 
