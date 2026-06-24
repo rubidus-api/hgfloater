@@ -2139,10 +2139,7 @@ static LRESULT taskbox_controller_on_destroy(HWND hwnd)
      * 삭제하지 않음 */
 
     for (int i = 0; i < hg_g_shortcut_count; i++) {
-        if (hg_g_shortcuts[i].icon) {
-            DestroyIcon(hg_g_shortcuts[i].icon);
-            hg_g_shortcuts[i].icon = NULL;
-        }
+        release_shortcut_item_icon(&hg_g_shortcuts[i]);
     }
     for (int i = 0; i < hg_g_window_count; i++) {
         release_window_item_icon(&hg_g_window_items[i]);
