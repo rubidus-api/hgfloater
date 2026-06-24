@@ -225,18 +225,18 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             SetWindowSubclass(edit_wnd, monitor_edit_subclass_proc, 1, 0);
             disable_window_ime(edit_wnd);
         }
-        SetTimer(hwnd, 2, 100, NULL);
+        SetTimer(hwnd, HG_TIMER_MONITOR_REFRESH, 100, NULL);
         return 0;
     }
     case WM_ERASEBKGND:
         return 1;
     case WM_TIMER: {
-        if (w_param == 2) {
+        if (w_param == HG_TIMER_MONITOR_REFRESH) {
             if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
                 InvalidateRect(hwnd, NULL, FALSE);
             }
-        } else if (w_param == 3) {
-            KillTimer(hwnd, 3);
+        } else if (w_param == HG_TIMER_MONITOR_DEFERRED_DROP) {
+            KillTimer(hwnd, HG_TIMER_MONITOR_DEFERRED_DROP);
             POINT screen_pt;
             screen_pt.x = (int)(INT_PTR)GetPropW(hwnd, L"drop_x");
             screen_pt.y = (int)(INT_PTR)GetPropW(hwnd, L"drop_y");

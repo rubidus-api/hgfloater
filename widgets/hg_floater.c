@@ -98,7 +98,7 @@ static LRESULT floater_controller_on_create(HWND hwnd)
     apply_dwm_attributes(hwnd);
 
     update_floater_layout(hwnd);
-    SetTimer(hwnd, 1, 1000, NULL);
+    SetTimer(hwnd, HG_TIMER_FLOATER_CLOCK, 1000, NULL);
     return 0;
 }
 
@@ -371,7 +371,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
 static LRESULT floater_controller_on_destroy(HWND hwnd)
 {
     DeregisterShellHookWindow(hwnd);
-    KillTimer(hwnd, 1);
+    KillTimer(hwnd, HG_TIMER_FLOATER_CLOCK);
     KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
     if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
         DestroyWindow(hg_g_about_wnd);
@@ -509,7 +509,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         return 0;
     }
     case WM_TIMER: {
-        if (w_param == 1) {
+        if (w_param == HG_TIMER_FLOATER_CLOCK) {
             static SYSTEMTIME last_st = {0};
             SYSTEMTIME st;
             GetLocalTime(&st);

@@ -143,6 +143,7 @@ Progress:
 - 2026-06-24: Added `release_shortcut_item_icon()` and routed shortcut reload, taskbox destroy, and process cleanup icon release paths through it.
 - 2026-06-24: Added shared COM/BSTR release helpers and routed audio endpoint, UWP icon, shortcut shell link, and Explorer path release paths through reset-aware cleanup.
 - 2026-06-24: Added heap and COM task-memory release macros and routed UWP icon/package string plus audio device ID cleanup through release-and-reset paths.
+- 2026-06-24: Added named timer IDs for floater clock, taskbox refresh, and monitor refresh/deferred-drop timers so timer owner and cleanup sites are auditable.
 
 Tasks:
 - Document owner and destroy site for GDI objects, menus, image lists, icons, timers, hooks, and COM interfaces.

@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a shortcut icon release helper so shortcut-owned icons are destroyed and reset consistently.
 - Added shared COM and BSTR release helpers for audio, UWP icon, shortcut, and Explorer shell paths.
 - Added shared heap and COM task-memory release macros for UWP icon and audio device string cleanup paths.
+- Added named timer IDs for floater clock, taskbox refresh, and monitor refresh/deferred-drop timers.
 - Added a repeatable verification checklist covering warning-clean builds, smoke tests, and focused manual runtime checks.
 - Added a toolbar contract smoke test for built-in toolbar count and index invariants.
 
