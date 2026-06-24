@@ -1604,6 +1604,16 @@ void release_window_item_icon(WindowItem *item)
     item->own_icon = FALSE;
 }
 
+void release_shortcut_item_icon(ShortcutItem *item)
+{
+    if (!item)
+        return;
+    if (item->icon) {
+        DestroyIcon(item->icon);
+    }
+    item->icon = NULL;
+}
+
 void release_font_handle(HFONT *font, BOOL preserve_stock)
 {
     if (!font || !*font)
@@ -1672,10 +1682,7 @@ int compare_shortcuts(const void *a, const void *b)
 void load_shortcuts()
 {
     for (int i = 0; i < hg_g_shortcut_count; i++) {
-        if (hg_g_shortcuts[i].icon) {
-            DestroyIcon(hg_g_shortcuts[i].icon);
-            hg_g_shortcuts[i].icon = NULL;
-        }
+        release_shortcut_item_icon(&hg_g_shortcuts[i]);
     }
     ZeroMemory(hg_g_shortcuts, sizeof(hg_g_shortcuts));
     hg_g_shortcut_count = 0;
