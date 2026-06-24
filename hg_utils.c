@@ -350,15 +350,14 @@ void update_audio_device_list()
                             PropVariantClear(&var);
                             HG_RELEASE_COM(props);
                         }
-                        CoTaskMemFree(id);
+                        HG_COTASKMEM_FREE(id);
                     }
                     HG_RELEASE_COM(device);
                 }
             }
             HG_RELEASE_COM(collection);
         }
-        if (default_id)
-            CoTaskMemFree(default_id);
+        HG_COTASKMEM_FREE(default_id);
         HG_RELEASE_COM(enumerator);
     }
 }
@@ -928,7 +927,7 @@ static WCHAR *get_app_user_model_id_alloc(DWORD pid)
     CloseHandle(h_proc);
 
     if (rc != ERROR_SUCCESS) {
-        HeapFree(GetProcessHeap(), 0, aumid);
+        HG_HEAP_FREE(aumid);
         return NULL;
     }
 
@@ -965,7 +964,7 @@ static WCHAR *get_package_full_name_alloc(DWORD pid)
 
     if (rc != ERROR_SUCCESS) {
         uwp_debug_log(L"UWP icon: GetPackageFullName failed");
-        HeapFree(GetProcessHeap(), 0, full);
+        HG_HEAP_FREE(full);
         return NULL;
     }
 
@@ -992,7 +991,7 @@ static WCHAR *get_package_path_alloc(const WCHAR *full_name)
     rc = GetPackagePathByFullName(full_name, &len, path);
     if (rc != ERROR_SUCCESS) {
         uwp_debug_log(L"UWP icon: GetPackagePathByFullName failed");
-        HeapFree(GetProcessHeap(), 0, path);
+        HG_HEAP_FREE(path);
         return NULL;
     }
 
@@ -1086,7 +1085,7 @@ static BOOL read_utf8_file_to_wide(const WCHAR *path, WCHAR **out_text)
     CloseHandle(h);
 
     if (!ok || read == 0) {
-        HeapFree(GetProcessHeap(), 0, buf);
+        HG_HEAP_FREE(buf);
         return FALSE;
     }
 
@@ -1101,21 +1100,21 @@ static BOOL read_utf8_file_to_wide(const WCHAR *path, WCHAR **out_text)
     }
 
     if (wlen <= 0 || (size_t)wlen > HG_UWP_MAX_MANIFEST_BYTES) {
-        HeapFree(GetProcessHeap(), 0, buf);
+        HG_HEAP_FREE(buf);
         return FALSE;
     }
 
     WCHAR *wbuf = (WCHAR *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((SIZE_T)wlen + 1u) * sizeof(WCHAR));
     if (!wbuf) {
-        HeapFree(GetProcessHeap(), 0, buf);
+        HG_HEAP_FREE(buf);
         return FALSE;
     }
 
     int converted = MultiByteToWideChar(codepage, flags, (LPCCH)buf, (int)read, wbuf, wlen);
-    HeapFree(GetProcessHeap(), 0, buf);
+    HG_HEAP_FREE(buf);
 
     if (converted != wlen) {
-        HeapFree(GetProcessHeap(), 0, wbuf);
+        HG_HEAP_FREE(wbuf);
         return FALSE;
     }
 
@@ -1147,7 +1146,7 @@ static BOOL get_logo_relpath_from_manifest(const WCHAR *package_path, WCHAR *out
 
     if (!ok)
         uwp_debug_log(L"UWP icon: Could not find logo attribute");
-    HeapFree(GetProcessHeap(), 0, manifest);
+    HG_HEAP_FREE(manifest);
     return ok;
 }
 
@@ -1434,7 +1433,7 @@ static HICON get_icon_from_package_pid(DWORD pid, int size_px, BOOL *own_icon)
     WCHAR *aumid = get_app_user_model_id_alloc(pid);
     if (aumid) {
         HICON icon = load_icon_from_aumid(aumid, size_px, own_icon);
-        HeapFree(GetProcessHeap(), 0, aumid);
+        HG_HEAP_FREE(aumid);
         if (icon)
             return icon;
     }
@@ -1444,23 +1443,23 @@ static HICON get_icon_from_package_pid(DWORD pid, int size_px, BOOL *own_icon)
         return NULL;
 
     WCHAR *package_path = get_package_path_alloc(full_name);
-    HeapFree(GetProcessHeap(), 0, full_name);
+    HG_HEAP_FREE(full_name);
     if (!package_path)
         return NULL;
 
     WCHAR rel_logo[HG_MAX_PATH] = {0};
     if (!get_logo_relpath_from_manifest(package_path, rel_logo, HG_ARRAYSIZE(rel_logo))) {
-        HeapFree(GetProcessHeap(), 0, package_path);
+        HG_HEAP_FREE(package_path);
         return NULL;
     }
 
     WCHAR logo_file[HG_MAX_PATH] = {0};
     if (!resolve_logo_asset_file(package_path, rel_logo, size_px, logo_file, HG_ARRAYSIZE(logo_file))) {
-        HeapFree(GetProcessHeap(), 0, package_path);
+        HG_HEAP_FREE(package_path);
         return NULL;
     }
 
-    HeapFree(GetProcessHeap(), 0, package_path);
+    HG_HEAP_FREE(package_path);
     return load_icon_from_image_file(logo_file, size_px, own_icon);
 }
 
@@ -1485,7 +1484,7 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon)
         WCHAR *frame_aumid = get_aumid_from_hwnd(hwnd);
         if (frame_aumid) {
             h_icon = load_icon_from_aumid(frame_aumid, size_px, own_icon);
-            HeapFree(GetProcessHeap(), 0, frame_aumid);
+            HG_HEAP_FREE(frame_aumid);
             if (h_icon)
                 return h_icon;
         }
@@ -1497,7 +1496,7 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon)
             WCHAR *child_aumid = get_aumid_from_hwnd(child_hwnd);
             if (child_aumid) {
                 h_icon = load_icon_from_aumid(child_aumid, size_px, own_icon);
-                HeapFree(GetProcessHeap(), 0, child_aumid);
+                HG_HEAP_FREE(child_aumid);
                 if (h_icon)
                     return h_icon;
             }
@@ -1567,7 +1566,7 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon)
         WCHAR *frame_aumid = get_aumid_from_hwnd(hwnd);
         if (frame_aumid) {
             h_icon = load_icon_from_aumid(frame_aumid, size_px, own_icon);
-            HeapFree(GetProcessHeap(), 0, frame_aumid);
+            HG_HEAP_FREE(frame_aumid);
             if (h_icon)
                 return h_icon;
         }

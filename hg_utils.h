@@ -43,6 +43,20 @@ void release_bstr(BSTR *value);
             (interface_ptr) = NULL;           \
         }                                     \
     } while (0)
+#define HG_HEAP_FREE(heap_ptr)                                \
+    do {                                                      \
+        if ((heap_ptr) != NULL) {                             \
+            HeapFree(GetProcessHeap(), 0, (heap_ptr));        \
+            (heap_ptr) = NULL;                                \
+        }                                                     \
+    } while (0)
+#define HG_COTASKMEM_FREE(task_ptr)       \
+    do {                                  \
+        if ((task_ptr) != NULL) {         \
+            CoTaskMemFree(task_ptr);      \
+            (task_ptr) = NULL;            \
+        }                                 \
+    } while (0)
 typedef struct HgPaintBuffer {
     HDC dc;
     HBITMAP bitmap;
