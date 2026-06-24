@@ -27,6 +27,10 @@ Expected result:
 
 - Every `test/*.c` file compiles.
 - Every produced test executable exits with code 0.
+- `test_toolbar_contract` confirms the built-in toolbar count and index order match the runtime descriptor assumptions.
+- Console smoke tests are built without GUI subsystem entry-point flags, so `main()` tests link normally.
+
+On Linux cross-build hosts without Wine, verify the compile step with the same warning flags and run the produced executables later on Windows.
 
 ## Manual Runtime Checks
 

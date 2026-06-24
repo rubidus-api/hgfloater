@@ -158,6 +158,8 @@ Purpose: make future refactors safer.
 
 Progress:
 - 2026-06-24: Added `docs/VERIFICATION-2026-06.md` with a warning-clean build gate, existing smoke-test expectations, and manual checks for hover, toolbar, menus, audio, monitor preview, command box, reset, and shutdown behavior.
+- 2026-06-24: Added `test/test_toolbar_contract.c` to pin built-in toolbar count and index invariants under the existing smoke-test runner model.
+- 2026-06-24: Fixed the `build.bat` test runner by removing GUI subsystem entry-point flags from console smoke-test compilation and silenced the existing cast smoke-test warning.
 
 Tasks:
 - Add lightweight C tests for deterministic helpers.

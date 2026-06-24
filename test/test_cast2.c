@@ -4,6 +4,7 @@
 int main(void) {
     UINT_PTR ptr = 1234;
     FARPROC fp = (FARPROC)ptr;
+    (void)fp;
     printf("Passed test_cast2\n");
     return 0;
 }
