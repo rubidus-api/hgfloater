@@ -1881,7 +1881,7 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_HIDE_TASKBOX, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_DESKTOP, L'D', L"Show Desktop", L"Show Desktop", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_TOGGLE_DESKTOP, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_MENU, L'P', L"Menu", L"Menu", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_MENU,
+    {HG_TOOL_ICON_MENU, L'P', L"Popup Menu", L"Popup Menu", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_MENU,
      HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_COMMAND, L'C', L"Command Box", L"Command Box", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_SHOW_COMMANDBOX, HG_TOOLBAR_DRAG_NONE},
@@ -1890,6 +1890,9 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_VOLUME, L'V', NULL, NULL, HG_TOOLBAR_VALUE_VOLUME, HG_TOOLBAR_CLICK_TOGGLE_MUTE,
      HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_FLOATER, L'F', L"Floater (Ctrl+Wheel size, Alt+Wheel alpha; click to return)",
+     L"Floater (Ctrl+Wheel size, Alt+Wheel alpha; click to return)", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_FLOATER_ADJUST, HG_TOOLBAR_DRAG_NONE},
 };
 
 enum {

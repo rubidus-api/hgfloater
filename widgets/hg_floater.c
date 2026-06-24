@@ -445,8 +445,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     save_floater_font_config();
                 }
             }
-        } else {
-            // Hover logic
+        } else if (!hg_g_floater_adjust_mode) {
+            // Hover logic (suppressed in F floater-adjust mode so Ctrl/Alt+Wheel can
+            // tune size/alpha without the floater expanding into the taskbox)
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
                 RECT f_rc, t_rc;
                 GetWindowRect(hwnd, &f_rc);
@@ -471,11 +472,12 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     case WM_LBUTTONUP: {
         if (GetCapture() == hwnd) {
             ReleaseCapture();
+            hg_g_floater_adjust_mode = FALSE;   /* a click leaves floater-adjust mode */
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
                 if (IsWindowVisible(hg_g_taskbox_wnd)) {
                     hide_taskbox(hg_g_taskbox_wnd);
                 } else {
-                    PostMessageW(hwnd, WM_HOTKEY, 1, 0);
+                    PostMessageW(hwnd, WM_HOTKEY, 1, 0);   /* expand back to the taskbox */
                 }
             }
         }
