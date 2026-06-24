@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a shared `WindowItem` icon release helper so owned window icons are destroyed and reset consistently.
 - Added a Command Box line-height helper to centralize font metric DC acquisition and release.
 - Added shared global font and brush release helpers to preserve stock fonts and reset owned GDI handles consistently.
+- Added a shared offscreen paint buffer helper to centralize memory DC, bitmap selection, restore, and cleanup paths.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.

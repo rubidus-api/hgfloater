@@ -1622,6 +1622,46 @@ void release_brush_handle(HBRUSH *brush)
     *brush = NULL;
 }
 
+BOOL hg_paint_buffer_begin(HDC target_dc, int width, int height, HgPaintBuffer *buffer)
+{
+    if (!buffer)
+        return FALSE;
+    ZeroMemory(buffer, sizeof(*buffer));
+    if (!target_dc || width <= 0 || height <= 0)
+        return FALSE;
+
+    buffer->dc = CreateCompatibleDC(target_dc);
+    if (!buffer->dc)
+        return FALSE;
+
+    buffer->bitmap = CreateCompatibleBitmap(target_dc, width, height);
+    if (!buffer->bitmap) {
+        hg_paint_buffer_end(buffer);
+        return FALSE;
+    }
+
+    buffer->old_bitmap = (HBITMAP)SelectObject(buffer->dc, buffer->bitmap);
+    if (!buffer->old_bitmap) {
+        hg_paint_buffer_end(buffer);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+void hg_paint_buffer_end(HgPaintBuffer *buffer)
+{
+    if (!buffer)
+        return;
+    if (buffer->dc && buffer->old_bitmap)
+        SelectObject(buffer->dc, buffer->old_bitmap);
+    if (buffer->bitmap)
+        DeleteObject(buffer->bitmap);
+    if (buffer->dc)
+        DeleteDC(buffer->dc);
+    ZeroMemory(buffer, sizeof(*buffer));
+}
+
 int compare_shortcuts(const void *a, const void *b)
 {
     ShortcutItem *item_a = (ShortcutItem *)a;
