@@ -141,6 +141,7 @@ Progress:
 - 2026-06-24: Added shared font/brush release helpers and routed global GDI handle cleanup through stock-aware destroy-and-reset paths.
 - 2026-06-24: Added a shared offscreen paint buffer helper and routed floater, taskbox toolbar, and monitor preview memory-DC/bitmap restore paths through it.
 - 2026-06-24: Added `release_shortcut_item_icon()` and routed shortcut reload, taskbox destroy, and process cleanup icon release paths through it.
+- 2026-06-24: Added shared COM/BSTR release helpers and routed audio endpoint, UWP icon, shortcut shell link, and Explorer path release paths through reset-aware cleanup.
 
 Tasks:
 - Document owner and destroy site for GDI objects, menus, image lists, icons, timers, hooks, and COM interfaces.

@@ -247,10 +247,10 @@ static BOOL hg_get_default_audio_endpoint_volume(IAudioEndpointVolume **out_endp
             endpoint) {
             *out_endpoint = endpoint;
         }
-        device->lpVtbl->Release(device);
+        HG_RELEASE_COM(device);
     }
 
-    enumerator->lpVtbl->Release(enumerator);
+    HG_RELEASE_COM(enumerator);
     return *out_endpoint != NULL;
 }
 
@@ -261,7 +261,7 @@ int get_system_volume()
 
     if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
         endpointVolume->lpVtbl->GetMasterVolumeLevelScalar(endpointVolume, &volume);
-        endpointVolume->lpVtbl->Release(endpointVolume);
+        HG_RELEASE_COM(endpointVolume);
     }
     return (int)(volume * 100.0f + 0.5f);
 }
@@ -281,7 +281,7 @@ void set_system_volume(int percent)
         if (percent > 0) {
             endpointVolume->lpVtbl->SetMute(endpointVolume, FALSE, NULL);
         }
-        endpointVolume->lpVtbl->Release(endpointVolume);
+        HG_RELEASE_COM(endpointVolume);
     }
 }
 
@@ -292,7 +292,7 @@ int get_system_mute(void)
 
     if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
         endpointVolume->lpVtbl->GetMute(endpointVolume, &mute);
-        endpointVolume->lpVtbl->Release(endpointVolume);
+        HG_RELEASE_COM(endpointVolume);
     }
     return (int)mute;
 }
@@ -303,7 +303,7 @@ void set_system_mute(int mute)
 
     if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
         endpointVolume->lpVtbl->SetMute(endpointVolume, (BOOL)mute, NULL);
-        endpointVolume->lpVtbl->Release(endpointVolume);
+        HG_RELEASE_COM(endpointVolume);
     }
 }
 
@@ -319,7 +319,7 @@ void update_audio_device_list()
                                    (void **)&enumerator))) {
         if (SUCCEEDED(enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &default_dev))) {
             default_dev->lpVtbl->GetId(default_dev, &default_id);
-            default_dev->lpVtbl->Release(default_dev);
+            HG_RELEASE_COM(default_dev);
         }
 
         if (SUCCEEDED(enumerator->lpVtbl->EnumAudioEndpoints(enumerator, eRender, DEVICE_STATE_ACTIVE, &collection))) {
@@ -348,18 +348,18 @@ void update_audio_device_list()
                                 }
                             }
                             PropVariantClear(&var);
-                            props->lpVtbl->Release(props);
+                            HG_RELEASE_COM(props);
                         }
                         CoTaskMemFree(id);
                     }
-                    device->lpVtbl->Release(device);
+                    HG_RELEASE_COM(device);
                 }
             }
-            collection->lpVtbl->Release(collection);
+            HG_RELEASE_COM(collection);
         }
         if (default_id)
             CoTaskMemFree(default_id);
-        enumerator->lpVtbl->Release(enumerator);
+        HG_RELEASE_COM(enumerator);
     }
 }
 
@@ -384,7 +384,7 @@ BOOL set_default_audio_device(const WCHAR *device_id)
     if (FAILED(policy->lpVtbl->SetDefaultEndpoint(policy, device_id, eCommunications)))
         ok = FALSE;
 
-    policy->lpVtbl->Release(policy);
+    HG_RELEASE_COM(policy);
     return ok;
 }
 
@@ -895,7 +895,7 @@ static WCHAR *get_aumid_from_hwnd(HWND hwnd)
             }
         }
         PropVariantClear(&pv);
-        pps->lpVtbl->Release(pps);
+        HG_RELEASE_COM(pps);
         return aumid;
     }
     return NULL;
@@ -1364,7 +1364,7 @@ static HICON load_icon_from_image_file(const WCHAR *file, int size_px, BOOL *own
 
     HBITMAP hbmp = NULL;
     hr = hg_get_shell_image_bitmap(factory, sz, &hbmp);
-    factory->lpVtbl->Release(factory);
+    HG_RELEASE_COM(factory);
 
     if (FAILED(hr) || !hbmp) {
         uwp_debug_log(L"UWP icon: IShellItemImageFactory::GetImage failed");
@@ -1400,7 +1400,7 @@ static HICON load_icon_from_aumid(const WCHAR *aumid, int size_px, BOOL *own_ico
 
     IShellItemImageFactory *factory = NULL;
     hr = psi->lpVtbl->QueryInterface(psi, &IID_IShellItemImageFactory, (void **)&factory);
-    psi->lpVtbl->Release(psi);
+    HG_RELEASE_COM(psi);
     if (FAILED(hr) || !factory)
         return NULL;
 
@@ -1410,7 +1410,7 @@ static HICON load_icon_from_aumid(const WCHAR *aumid, int size_px, BOOL *own_ico
 
     HBITMAP hbmp = NULL;
     hr = hg_get_shell_image_bitmap(factory, sz, &hbmp);
-    factory->lpVtbl->Release(factory);
+    HG_RELEASE_COM(factory);
 
     if (FAILED(hr) || !hbmp)
         return NULL;
@@ -1632,6 +1632,14 @@ void release_brush_handle(HBRUSH *brush)
     *brush = NULL;
 }
 
+void release_bstr(BSTR *value)
+{
+    if (!value || !*value)
+        return;
+    SysFreeString(*value);
+    *value = NULL;
+}
+
 BOOL hg_paint_buffer_begin(HDC target_dc, int width, int height, HgPaintBuffer *buffer)
 {
     if (!buffer)
@@ -1758,9 +1766,9 @@ void load_shortcuts()
                             }
                         }
                     }
-                    ppf->lpVtbl->Release(ppf);
+                    HG_RELEASE_COM(ppf);
                 }
-                psl->lpVtbl->Release(psl);
+                HG_RELEASE_COM(psl);
             }
         }
 
