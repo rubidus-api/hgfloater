@@ -156,6 +156,9 @@ Exit criteria:
 
 Purpose: make future refactors safer.
 
+Progress:
+- 2026-06-24: Added `docs/VERIFICATION-2026-06.md` with a warning-clean build gate, existing smoke-test expectations, and manual checks for hover, toolbar, menus, audio, monitor preview, command box, reset, and shutdown behavior.
+
 Tasks:
 - Add lightweight C tests for deterministic helpers.
 - Add build scripts or documented commands for warning-clean release verification.
