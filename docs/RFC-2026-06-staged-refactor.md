@@ -139,6 +139,7 @@ Progress:
 - 2026-06-24: Added `release_window_item_icon()` and routed owned `WindowItem` icon cleanup through one destroy-and-reset helper.
 - 2026-06-24: Added `commandbox_line_height()` so Command Box font metric calculation has one guarded `GetDC()`/font restore/`ReleaseDC()` path and no dummy window.
 - 2026-06-24: Added shared font/brush release helpers and routed global GDI handle cleanup through stock-aware destroy-and-reset paths.
+- 2026-06-24: Added a shared offscreen paint buffer helper and routed floater, taskbox toolbar, and monitor preview memory-DC/bitmap restore paths through it.
 
 Tasks:
 - Document owner and destroy site for GDI objects, menus, image lists, icons, timers, hooks, and COM interfaces.

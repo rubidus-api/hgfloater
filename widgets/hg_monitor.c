@@ -295,26 +295,12 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         GetClientRect(hwnd, &rc);
 
         if (rc.right > 0 && rc.bottom > 0) {
-            HDC mem_dc = CreateCompatibleDC(hdc);
-            if (!mem_dc) {
+            HgPaintBuffer paint_buffer;
+            if (!hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer)) {
                 EndPaint(hwnd, &ps);
                 return 0;
             }
-
-            HBITMAP mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-            if (!mem_bm) {
-                DeleteDC(mem_dc);
-                EndPaint(hwnd, &ps);
-                return 0;
-            }
-
-            HBITMAP old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
-            if (!old_bm) {
-                DeleteObject(mem_bm);
-                DeleteDC(mem_dc);
-                EndPaint(hwnd, &ps);
-                return 0;
-            }
+            HDC mem_dc = paint_buffer.dc;
 
             int border = SC(HG_BORDER_THICKNESS);
             int edit_height = 0;
@@ -409,9 +395,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
 
             BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
 
-            SelectObject(mem_dc, old_bm);
-            DeleteObject(mem_bm);
-            DeleteDC(mem_dc);
+            hg_paint_buffer_end(&paint_buffer);
         }
         EndPaint(hwnd, &ps);
         return 0;

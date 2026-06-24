@@ -34,6 +34,13 @@ HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon);
 void release_window_item_icon(WindowItem *item);
 void release_font_handle(HFONT *font, BOOL preserve_stock);
 void release_brush_handle(HBRUSH *brush);
+typedef struct HgPaintBuffer {
+    HDC dc;
+    HBITMAP bitmap;
+    HBITMAP old_bitmap;
+} HgPaintBuffer;
+BOOL hg_paint_buffer_begin(HDC target_dc, int width, int height, HgPaintBuffer *buffer);
+void hg_paint_buffer_end(HgPaintBuffer *buffer);
 int compare_shortcuts(const void *a, const void *b);
 void load_shortcuts(void);
 void append_message(const WCHAR *msg);

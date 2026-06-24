@@ -110,19 +110,9 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
     GetClientRect(hwnd, &rc);
 
     if (rc.right > 0 && rc.bottom > 0) {
-        HDC mem_dc = CreateCompatibleDC(hdc);
-        HBITMAP mem_bm = NULL, old_bm = NULL;
-
-        if (mem_dc) {
-            mem_bm = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-            if (mem_bm) {
-                old_bm = (HBITMAP)SelectObject(mem_dc, mem_bm);
-                if (!old_bm) {
-                    DeleteObject(mem_bm);
-                    DeleteDC(mem_dc);
-                    EndPaint(hwnd, &ps);
-                    return 0;
-                }
+        HgPaintBuffer paint_buffer;
+        if (hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer)) {
+            HDC mem_dc = paint_buffer.dc;
 
                 int time_size = hg_g_floater_font_size * 12 / 10;
                 int date_size = hg_g_floater_font_size * 8 / 10;
@@ -210,11 +200,8 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                         DeleteObject(border_pen);
                 }
 
-                BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
-                SelectObject(mem_dc, old_bm);
-                DeleteObject(mem_bm);
-            }
-            DeleteDC(mem_dc);
+            BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
+            hg_paint_buffer_end(&paint_buffer);
         }
     }
 
