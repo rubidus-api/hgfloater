@@ -509,10 +509,7 @@ void refresh_theme_surfaces(HWND hwnd)
         apply_dwm_attributes(hg_g_about_wnd);
     }
 
-    if (hg_g_main_bg_brush) {
-        DeleteObject(hg_g_main_bg_brush);
-        hg_g_main_bg_brush = NULL;
-    }
+    release_brush_handle(&hg_g_main_bg_brush);
     hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
     if (hwnd && IsWindow(hwnd)) {
         SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
@@ -527,10 +524,7 @@ void refresh_theme_surfaces(HWND hwnd)
         }
     }
 
-    if (hg_g_edit_bg_brush) {
-        DeleteObject(hg_g_edit_bg_brush);
-        hg_g_edit_bg_brush = NULL;
-    }
+    release_brush_handle(&hg_g_edit_bg_brush);
 
     if (hg_g_tooltip_wnd && IsWindow(hg_g_tooltip_wnd)) {
         SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
@@ -1608,6 +1602,24 @@ void release_window_item_icon(WindowItem *item)
     }
     item->icon = NULL;
     item->own_icon = FALSE;
+}
+
+void release_font_handle(HFONT *font, BOOL preserve_stock)
+{
+    if (!font || !*font)
+        return;
+    if (!preserve_stock || *font != GetStockObject(DEFAULT_GUI_FONT)) {
+        DeleteObject(*font);
+    }
+    *font = NULL;
+}
+
+void release_brush_handle(HBRUSH *brush)
+{
+    if (!brush || !*brush)
+        return;
+    DeleteObject(*brush);
+    *brush = NULL;
 }
 
 int compare_shortcuts(const void *a, const void *b)

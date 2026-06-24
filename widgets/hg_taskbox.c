@@ -18,10 +18,7 @@ void update_size(int delta)
         return;
     hg_g_current_font_size = -new_size;
     save_taskbox_font_config();
-    if (hg_g_toolbar_btn_font) {
-        DeleteObject(hg_g_toolbar_btn_font);
-        hg_g_toolbar_btn_font = NULL;
-    }
+    release_font_handle(&hg_g_toolbar_btn_font, FALSE);
 
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         RECT rc;
@@ -65,10 +62,7 @@ void update_edit_font_size(int delta)
     hg_g_edit_font_size = -new_size;
     save_taskbox_font_config();
 
-    if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) {
-        DeleteObject(hg_g_main_font);
-        hg_g_main_font = NULL;
-    }
+    release_font_handle(&hg_g_main_font, TRUE);
 
     hg_g_main_font =
         CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
@@ -532,8 +526,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                 int icon_size = taskbox_toolbar_icon_size();
 
                 if (icon_size != *cached_icon_size || !hg_g_toolbar_btn_font) {
-                    if (hg_g_toolbar_btn_font)
-                        DeleteObject(hg_g_toolbar_btn_font);
+                    release_font_handle(&hg_g_toolbar_btn_font, FALSE);
                     hg_g_toolbar_btn_font = CreateFontW(icon_size, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
                                                         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
                                                         CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);

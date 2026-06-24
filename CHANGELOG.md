@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a shared default audio endpoint-volume acquisition helper to centralize COM release ownership for volume and mute operations.
 - Added a shared `WindowItem` icon release helper so owned window icons are destroyed and reset consistently.
 - Added a Command Box line-height helper to centralize font metric DC acquisition and release.
+- Added shared global font and brush release helpers to preserve stock fonts and reset owned GDI handles consistently.
 
 ### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.

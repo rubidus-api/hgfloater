@@ -481,38 +481,14 @@ cleanup_finish:
     }
 
     /* Consolidated cleanup for all global GDI resources */
-    if (hg_g_main_font && hg_g_main_font != GetStockObject(DEFAULT_GUI_FONT)) {
-        DeleteObject(hg_g_main_font);
-        hg_g_main_font = NULL;
-    }
-    if (hg_g_floater_time_font) {
-        DeleteObject(hg_g_floater_time_font);
-        hg_g_floater_time_font = NULL;
-    }
-    if (hg_g_floater_date_font) {
-        DeleteObject(hg_g_floater_date_font);
-        hg_g_floater_date_font = NULL;
-    }
-    if (hg_g_toolbar_btn_font) {
-        DeleteObject(hg_g_toolbar_btn_font);
-        hg_g_toolbar_btn_font = NULL;
-    }
-    if (hg_g_main_bg_brush) {
-        DeleteObject(hg_g_main_bg_brush);
-        hg_g_main_bg_brush = NULL;
-    }
-    if (hg_g_edit_bg_brush) {
-        DeleteObject(hg_g_edit_bg_brush);
-        hg_g_edit_bg_brush = NULL;
-    }
-    if (hg_g_hbr_highlight) {
-        DeleteObject(hg_g_hbr_highlight);
-        hg_g_hbr_highlight = NULL;
-    }
-    if (hg_g_commandbox_font) {
-        DeleteObject(hg_g_commandbox_font);
-        hg_g_commandbox_font = NULL;
-    }
+    release_font_handle(&hg_g_main_font, TRUE);
+    release_font_handle(&hg_g_floater_time_font, FALSE);
+    release_font_handle(&hg_g_floater_date_font, FALSE);
+    release_font_handle(&hg_g_toolbar_btn_font, FALSE);
+    release_brush_handle(&hg_g_main_bg_brush);
+    release_brush_handle(&hg_g_edit_bg_brush);
+    release_brush_handle(&hg_g_hbr_highlight);
+    release_font_handle(&hg_g_commandbox_font, FALSE);
 
     /* Clean up all shortcut and window item icons safely */
     for (int i = 0; i < hg_g_shortcut_count; i++) {

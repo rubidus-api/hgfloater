@@ -309,14 +309,8 @@ void hg_config_reset_all(HWND hwnd)
 
     if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
         SetLayeredWindowAttributes(hg_g_floater_wnd, 0, hg_g_floater_alpha, LWA_ALPHA);
-        if (hg_g_floater_time_font) {
-            DeleteObject(hg_g_floater_time_font);
-            hg_g_floater_time_font = NULL;
-        }
-        if (hg_g_floater_date_font) {
-            DeleteObject(hg_g_floater_date_font);
-            hg_g_floater_date_font = NULL;
-        }
+        release_font_handle(&hg_g_floater_time_font, FALSE);
+        release_font_handle(&hg_g_floater_date_font, FALSE);
         SetWindowPos(hg_g_floater_wnd, NULL, 100, 100, SC(80), SC(55), SWP_NOZORDER | SWP_NOACTIVATE);
         update_floater_layout(hg_g_floater_wnd);
         InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
@@ -325,14 +319,8 @@ void hg_config_reset_all(HWND hwnd)
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
 
-        if (hg_g_toolbar_btn_font) {
-            DeleteObject(hg_g_toolbar_btn_font);
-            hg_g_toolbar_btn_font = NULL;
-        }
-        if (hg_g_main_font) {
-            DeleteObject(hg_g_main_font);
-            hg_g_main_font = NULL;
-        }
+        release_font_handle(&hg_g_toolbar_btn_font, FALSE);
+        release_font_handle(&hg_g_main_font, TRUE);
 
         SetWindowPos(hg_g_taskbox_wnd, NULL, 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT),
                      SWP_NOZORDER | SWP_NOACTIVATE);

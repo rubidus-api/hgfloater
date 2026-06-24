@@ -14,14 +14,8 @@ void update_floater_font_size(int delta)
         new_size = HG_FLOATER_MAX_FONT_SIZE;
     if (hg_g_floater_font_size != new_size) {
         hg_g_floater_font_size = new_size;
-        if (hg_g_floater_time_font) {
-            DeleteObject(hg_g_floater_time_font);
-            hg_g_floater_time_font = NULL;
-        }
-        if (hg_g_floater_date_font) {
-            DeleteObject(hg_g_floater_date_font);
-            hg_g_floater_date_font = NULL;
-        }
+        release_font_handle(&hg_g_floater_time_font, FALSE);
+        release_font_handle(&hg_g_floater_date_font, FALSE);
         update_floater_layout(hg_g_floater_wnd);
         InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
         save_floater_font_config();
@@ -401,14 +395,8 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
         hg_g_taskbox_wnd = NULL;
     }
     unregister_global_hotkey(hwnd);
-    if (hg_g_floater_time_font) {
-        DeleteObject(hg_g_floater_time_font);
-        hg_g_floater_time_font = NULL;
-    }
-    if (hg_g_floater_date_font) {
-        DeleteObject(hg_g_floater_date_font);
-        hg_g_floater_date_font = NULL;
-    }
+    release_font_handle(&hg_g_floater_time_font, FALSE);
+    release_font_handle(&hg_g_floater_date_font, FALSE);
     hg_g_floater_wnd = NULL;
     PostQuitMessage(0);
     return 0;
@@ -463,14 +451,8 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     new_size = HG_FLOATER_MAX_FONT_SIZE;
                 if (hg_g_floater_font_size != new_size) {
                     hg_g_floater_font_size = new_size;
-                    if (hg_g_floater_time_font) {
-                        DeleteObject(hg_g_floater_time_font);
-                        hg_g_floater_time_font = NULL;
-                    }
-                    if (hg_g_floater_date_font) {
-                        DeleteObject(hg_g_floater_date_font);
-                        hg_g_floater_date_font = NULL;
-                    }
+                    release_font_handle(&hg_g_floater_time_font, FALSE);
+                    release_font_handle(&hg_g_floater_date_font, FALSE);
                     update_floater_layout(hwnd);
                     InvalidateRect(hwnd, NULL, TRUE);
                     save_floater_font_config();
