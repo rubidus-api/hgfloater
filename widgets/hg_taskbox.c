@@ -1044,14 +1044,15 @@ static BOOL taskbox_task_menu_size_for_command(int cmd, int *out_cx, int *out_cy
     return TRUE;
 }
 
-static void taskbox_dispatch_task_menu_command(int cmd, int cur_index)
+static void taskbox_dispatch_task_menu_command(int cmd, HWND target)
 {
-    if (cmd == 0)
+    if (cmd == 0 || !target || !IsWindow(target))
         return;
 
-    HWND target = hg_g_window_items[cur_index].hwnd;
     if (cmd == HG_IDM_TASK_RESTORE) {
-        activate_taskbar_item(cur_index);
+        if (IsIconic(target))
+            ShowWindow(target, SW_RESTORE);
+        SetForegroundWindow(target);
     } else if (cmd == HG_IDM_TASK_CLOSE) {
         PostMessageW(target, WM_CLOSE, 0, 0);
     } else if (cmd == HG_IDM_TASK_MOVETO_0_0) {
@@ -1066,6 +1067,13 @@ static void taskbox_dispatch_task_menu_command(int cmd, int cur_index)
 
 static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
 {
+    if (cur_index < 0 || cur_index >= hg_g_window_count)
+        return;
+
+    /* The refresh timer can reorder the item list while the menu is modal, so act on
+     * the window handle captured now, not on the index. */
+    HWND target = hg_g_window_items[cur_index].hwnd;
+
     HMENU h_menu = taskbox_create_task_context_menu();
     if (!h_menu)
         return;
@@ -1078,7 +1086,7 @@ static void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, 
 
     SetMenuDefaultItem(h_menu, HG_IDM_TASK_RESTORE, FALSE);
     int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd);
-    taskbox_dispatch_task_menu_command(cmd, cur_index);
+    taskbox_dispatch_task_menu_command(cmd, target);
 }
 
 static HMENU taskbox_create_shortcut_context_menu(int cur_index)
@@ -2277,7 +2285,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     }
     case WM_TIMER:
         if (w_param == HG_TIMER_TASKBOX_REFRESH) {
-            if (IsWindowVisible(hwnd)) {
+            if (IsWindowVisible(hwnd) && !hg_g_menu_active) {
                 refresh_window_list(FALSE);
             }
         } else if (w_param == HG_TIMER_HIGHLIGHT) {
