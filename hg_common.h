@@ -258,7 +258,7 @@ typedef struct {
 
 typedef struct {
     WCHAR path[HG_MAX_PATH];
-    WCHAR name[HG_MAX_PATH];
+    WCHAR name[HG_MAX_STR]; /* display name (file name without extension) */
     HICON icon;
 } ShortcutItem;
 
