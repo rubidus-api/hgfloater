@@ -716,6 +716,21 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
     return 0;
 }
 
+/* Shared by interactive resize and WM_EXITSIZEMOVE: pick the column count that
+ * best fits the requested window height. */
+static int taskbox_cols_from_height(int window_height, int icon_size, int border, int total_items)
+{
+    int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
+    int row_height = icon_size + SC(10);
+    int available_toolbar_h = window_height - (border * 2 + edit_height);
+    int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
+    if (target_rows < 1)
+        target_rows = 1;
+    if (target_rows > total_items)
+        target_rows = total_items;
+    return (total_items + target_rows - 1) / target_rows;
+}
+
 static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerState *state,
                                                 HgTaskboxDragState *drag_state, LPARAM l_param)
 {
@@ -742,16 +757,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
             int new_height = (state->start_rect.bottom - state->start_rect.top) + dh;
             if (new_height < SC(HG_MIN_WINDOW_HEIGHT))
                 new_height = SC(HG_MIN_WINDOW_HEIGHT);
-
-            int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
-            int row_height = icon_size + SC(10);
-            int available_toolbar_h = new_height - (border * 2 + edit_height);
-            int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
-            if (target_rows < 1)
-                target_rows = 1;
-            if (target_rows > total_items)
-                target_rows = total_items;
-            cols = (total_items + target_rows - 1) / target_rows;
+            cols = taskbox_cols_from_height(new_height, icon_size, border, total_items);
         } else {
             int new_width = (state->start_rect.right - state->start_rect.left) + dw;
             if (new_width < SC(HG_MIN_WINDOW_WIDTH))
@@ -2242,16 +2248,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
         int cols;
         if (ABS(dh) > ABS(dw)) {
-            int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
-            int row_height = icon_size + SC(10);
-            int current_h = rc.bottom - rc.top;
-            int available_toolbar_h = current_h - (border * 2 + edit_height);
-            int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
-            if (target_rows < 1)
-                target_rows = 1;
-            if (target_rows > total_items)
-                target_rows = total_items;
-            cols = (total_items + target_rows - 1) / target_rows;
+            cols = taskbox_cols_from_height(rc.bottom - rc.top, icon_size, border, total_items);
         } else {
             int tb_width = (rc.right - rc.left) - border * 2;
             cols = get_items_per_row(tb_width, icon_size);
