@@ -235,20 +235,6 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
                 InvalidateRect(hwnd, NULL, FALSE);
             }
-        } else if (w_param == HG_TIMER_MONITOR_DEFERRED_DROP) {
-            KillTimer(hwnd, HG_TIMER_MONITOR_DEFERRED_DROP);
-            POINT screen_pt;
-            screen_pt.x = (int)(INT_PTR)GetPropW(hwnd, L"drop_x");
-            screen_pt.y = (int)(INT_PTR)GetPropW(hwnd, L"drop_y");
-
-            POINT client_pt;
-            if (screen_pt_to_monitor_pt(hwnd, monitor_idx, screen_pt, &client_pt)) {
-                POINT tb_screen_pt = client_pt;
-                ClientToScreen(hwnd, &tb_screen_pt);
-                SetCursorPos(tb_screen_pt.x, tb_screen_pt.y);
-            }
-            RemovePropW(hwnd, L"drop_x");
-            RemovePropW(hwnd, L"drop_y");
         }
         return 0;
     }
