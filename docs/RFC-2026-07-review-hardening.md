@@ -116,7 +116,7 @@ Progress:
 - 2026-07-09: Taskbox hide restores foreground only when this process owns it, rescans shortcuts only when the directory changed, and kills the hover-check timer on every hide path and on destroy.
 - 2026-07-09: About edit follows main font size changes; releasing a floater Ctrl+drag font-resize no longer toggles the taskbox.
 - 2026-07-09: Smaller items landed: pending toolbar drag state cleared on mouse leave with owned-capture release, dead monitor deferred-drop branch removed, monitor edit metric DC guarded, extern array sizes use the shared macros, alpha load clamp matches the runtime minimum, resize hit bands symmetric.
-- 2026-07-09: Runtime verification on the Windows host is still pending for all of the above; this host has no cross toolchain.
+- 2026-07-09: Release build and all smoke tests compile warning-clean with the full MinGW warning set on the cross-build host; runtime verification on the Windows host is still pending.
 
 Tasks:
 - Re-stamp `GCLP_HBRBACKGROUND` for every class registered with the theme brush when `refresh_theme_surfaces` recreates it, or stop registering the shared brush as a class background.
