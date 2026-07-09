@@ -192,7 +192,8 @@ Progress:
 - 2026-07-10: The toolbar window class registers through the shared class table (with per-spec style and cursor) and unregisters with the others.
 - Extern array sizing with shared macros landed earlier under Phase 1.
 - 2026-07-10: Release build compiles warning-clean on the cross-build host; runtime verification on the Windows host is pending.
-- Remaining: split hg_taskbox.c along its seams (menus, toolbar controller, window-list refresh, window proc) now that the helpers are in place, and split hg_utils.c in the later pass this phase already defers.
+- 2026-07-10: Split hg_taskbox.c (2,362 lines) into four translation units: hg_taskbox.c (window proc, layout, mutators; 1,057), hg_toolbar.c (773), hg_taskbox_menus.c (354), and hg_window_list.c (184), with cross-unit state in widgets/hg_taskbox_internal.h and the build source list updated. The split compiles warning-clean on the cross-build host.
+- Remaining: split hg_utils.c into system-facing modules in the later pass this phase already defers.
 
 Tasks:
 - Add shared helpers for the repeated blocks: edit-height measurement, column-snap width and apply-columns, readonly edit subclass (IME, Esc, move-parent, wheel-forward via `dwRefData`), `WM_CTLCOLOR` handling, and alpha stepping with persistence.

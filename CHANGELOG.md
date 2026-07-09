@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Dragging the command box no longer writes its position to the configuration file on every pixel; it saves once when the drag ends.
 - Reduced static memory use by several megabytes and cut the deepest icon-resolution stack usage.
 - Internal cleanup with no behavior change: edit-height measurement, column-snap width, control coloring, alpha stepping, and read-only edit IME handling each have a single shared implementation, and the toolbar window class registers alongside the other window classes.
+- Internal restructuring with no behavior change: the taskbox source now consists of four units (window proc/layout, toolbar controller, menus, window-list refresh) instead of one 2,400-line file.
 
 ## [2026-06-24] - Floater Adjust Mode & Taskbox UX
 
