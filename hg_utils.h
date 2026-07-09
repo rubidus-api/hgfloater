@@ -16,6 +16,7 @@ int get_system_volume(void);
 void set_system_volume(int percent);
 int get_system_mute(void);
 void set_system_mute(int mute);
+void hg_reset_audio_endpoint_cache(void);
 void update_audio_device_list(void);
 BOOL set_default_audio_device(const WCHAR *device_id);
 void init_color_scheme(void);

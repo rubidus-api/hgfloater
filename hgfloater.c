@@ -525,6 +525,7 @@ cleanup_finish:
         DestroyIcon(icon_large);
     if (icon_small)
         DestroyIcon(icon_small);
+    hg_reset_audio_endpoint_cache();
     if (com_initialized)
         CoUninitialize();
     return exit_code;
