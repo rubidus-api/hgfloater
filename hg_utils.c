@@ -544,6 +544,51 @@ void hg_apply_class_background(HWND hwnd)
     }
 }
 
+/* Small color-keyed cache so paint paths stop creating and destroying dozens
+ * of solid brushes per frame. Entries are never selected across messages, so
+ * evicting the oldest entry when the cache is full is safe. */
+#define HG_BRUSH_CACHE_CAPACITY 16
+static struct {
+    COLORREF color;
+    HBRUSH brush;
+} s_solid_brush_cache[HG_BRUSH_CACHE_CAPACITY];
+static int s_solid_brush_cache_count = 0;
+
+HBRUSH hg_cached_solid_brush(COLORREF color)
+{
+    for (int i = 0; i < s_solid_brush_cache_count; ++i) {
+        if (s_solid_brush_cache[i].color == color) {
+            return s_solid_brush_cache[i].brush;
+        }
+    }
+
+    HBRUSH brush = CreateSolidBrush(color);
+    if (!brush) {
+        return NULL;
+    }
+
+    if (s_solid_brush_cache_count == HG_BRUSH_CACHE_CAPACITY) {
+        DeleteObject(s_solid_brush_cache[0].brush);
+        for (int i = 1; i < HG_BRUSH_CACHE_CAPACITY; ++i) {
+            s_solid_brush_cache[i - 1] = s_solid_brush_cache[i];
+        }
+        s_solid_brush_cache_count--;
+    }
+    s_solid_brush_cache[s_solid_brush_cache_count].color = color;
+    s_solid_brush_cache[s_solid_brush_cache_count].brush = brush;
+    s_solid_brush_cache_count++;
+    return brush;
+}
+
+void hg_flush_solid_brush_cache(void)
+{
+    for (int i = 0; i < s_solid_brush_cache_count; ++i) {
+        DeleteObject(s_solid_brush_cache[i].brush);
+        s_solid_brush_cache[i].brush = NULL;
+    }
+    s_solid_brush_cache_count = 0;
+}
+
 void hg_update_scale_from_dpi(UINT dpi)
 {
     if (dpi > 0) {
@@ -572,6 +617,7 @@ void refresh_theme_surfaces(HWND hwnd)
         apply_dwm_attributes(hg_g_about_wnd);
     }
 
+    hg_flush_solid_brush_cache();
     release_brush_handle(&hg_g_main_bg_brush);
     hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
     /* Every class registered with the shared brush must be re-stamped, or the class
