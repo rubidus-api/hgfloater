@@ -259,15 +259,15 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         return 0;
     }
 
-    case WM_MOVE:
-    case WM_WINDOWPOSCHANGED: {
+    case WM_EXITSIZEMOVE: {
+        /* Persist once per drag; saving on WM_MOVE hit the INI file on every pixel. */
         if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
             RECT rc;
             if (GetWindowRect(hwnd, &rc)) {
                 save_commandbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
             }
         }
-        break;
+        return 0;
     }
 
     case WM_SYSKEYDOWN:
@@ -293,6 +293,11 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
                 dy = move_step;
             if (dx || dy) {
                 move_window_by_offset(hwnd, dx, dy);
+                /* Keyboard moves bypass WM_EXITSIZEMOVE, so persist here. */
+                RECT rc;
+                if (GetWindowRect(hwnd, &rc)) {
+                    save_commandbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+                }
                 return 0;
             }
         }
