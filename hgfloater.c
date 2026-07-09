@@ -12,10 +12,11 @@ static BOOL register_app_window_class(HINSTANCE instance, const WindowClassSpec 
 {
     WNDCLASSEXW wc = {0};
     wc.cbSize = sizeof(WNDCLASSEXW);
+    wc.style = spec->style;
     wc.lpfnWndProc = spec->wnd_proc;
     wc.hInstance = instance;
     wc.lpszClassName = spec->class_name;
-    wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
+    wc.hCursor = LoadCursorW(NULL, spec->cursor_id ? spec->cursor_id : IDC_ARROW);
     wc.hbrBackground = spec->background;
     wc.hIcon = icon_large;
     wc.hIconSm = icon_small;
@@ -33,11 +34,14 @@ static BOOL register_app_window_class(HINSTANCE instance, const WindowClassSpec 
 static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HICON icon_small)
 {
     const WindowClassSpec specs[] = {
-        {HG_CLASS_FLOATER_WIDGET, floater_proc, hg_g_main_bg_brush, L"Failed to register floater class."},
-        {HG_CLASS_ABOUT, about_proc, hg_g_main_bg_brush, L"Failed to register about class."},
-        {HG_CLASS_TASKBOX, window_proc, hg_g_main_bg_brush, L"Failed to register taskbox class."},
-        {HG_CLASS_MONITOR, monitor_wnd_proc, (HBRUSH)GetStockObject(BLACK_BRUSH), L"Failed to register monitor class."},
-        {HG_CLASS_COMMANDBOX, commandbox_proc, hg_g_main_bg_brush, L"Failed to register commandbox class."},
+        {HG_CLASS_FLOATER_WIDGET, floater_proc, hg_g_main_bg_brush, L"Failed to register floater class.", 0, NULL},
+        {HG_CLASS_ABOUT, about_proc, hg_g_main_bg_brush, L"Failed to register about class.", 0, NULL},
+        {HG_CLASS_TASKBOX, window_proc, hg_g_main_bg_brush, L"Failed to register taskbox class.", 0, NULL},
+        {HG_CLASS_MONITOR, monitor_wnd_proc, (HBRUSH)GetStockObject(BLACK_BRUSH),
+         L"Failed to register monitor class.", 0, NULL},
+        {HG_CLASS_COMMANDBOX, commandbox_proc, hg_g_main_bg_brush, L"Failed to register commandbox class.", 0, NULL},
+        {HG_CLASS_TOOLBAR, toolbar_proc, NULL, L"Failed to register toolbar class.", CS_HREDRAW | CS_VREDRAW,
+         IDC_HAND},
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(specs); ++i) {
@@ -52,6 +56,7 @@ static void unregister_app_window_classes(HINSTANCE instance)
 {
     const WCHAR *classes[] = {
         HG_CLASS_FLOATER_WIDGET, HG_CLASS_ABOUT, HG_CLASS_TASKBOX, HG_CLASS_MONITOR, HG_CLASS_COMMANDBOX,
+        HG_CLASS_TOOLBAR,
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(classes); ++i) {
