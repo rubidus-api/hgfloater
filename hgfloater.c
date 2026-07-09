@@ -275,11 +275,23 @@ void ensure_window_visible(HWND hwnd, const WCHAR *section)
     SecureZeroMemory(&mi, sizeof(mi));
     mi.cbSize = sizeof(mi);
     if (GetMonitorInfoW(monitor_handle, &mi)) {
-        /* 창의 일부라도 작업 영역(Work Area)을 벗어나면 0,0으로 이동 */
-        if (rc.left < mi.rcWork.left || rc.top < mi.rcWork.top || rc.right > mi.rcWork.right ||
-            rc.bottom > mi.rcWork.bottom) {
-            SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-            save_window_geometry_config(section, 0, 0, rc.right - rc.left, rc.bottom - rc.top);
+        /* 가장 가까운 모니터의 작업 영역(Work Area) 안으로 클램프. 절대 (0,0)으로
+         * 스냅하면 음수 좌표 멀티모니터 배치에서 주 모니터로 점프해 버린다. */
+        int w = rc.right - rc.left;
+        int h = rc.bottom - rc.top;
+        int x = rc.left;
+        int y = rc.top;
+        if (x + w > mi.rcWork.right)
+            x = mi.rcWork.right - w;
+        if (y + h > mi.rcWork.bottom)
+            y = mi.rcWork.bottom - h;
+        if (x < mi.rcWork.left)
+            x = mi.rcWork.left;
+        if (y < mi.rcWork.top)
+            y = mi.rcWork.top;
+        if (x != rc.left || y != rc.top) {
+            SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+            save_window_geometry_config(section, x, y, w, h);
         }
     }
 }
