@@ -605,6 +605,37 @@ void hg_apply_dpi_suggested_rect(HWND hwnd, LPARAM l_param)
     }
 }
 
+/* One source for the taskbox column-snap width; the formula was previously
+ * repeated at every resize, keyboard, and layout site. */
+int hg_snap_width_for_cols(int cols, int icon_size)
+{
+    if (cols < 1)
+        cols = 1;
+    return (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+}
+
+/* Shared single-line edit height measurement (font metrics plus padding). */
+int hg_measure_edit_height(HWND edit_wnd, HFONT font)
+{
+    int edit_height = SC(20);
+
+    if (!edit_wnd || !font)
+        return edit_height;
+
+    HDC hdc = GetDC(edit_wnd);
+    if (hdc) {
+        HFONT old_font = (HFONT)SelectObject(hdc, font);
+        TEXTMETRIC tm = {0};
+        if (GetTextMetrics(hdc, &tm)) {
+            edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
+        }
+        if (old_font)
+            SelectObject(hdc, old_font);
+        ReleaseDC(edit_wnd, hdc);
+    }
+    return edit_height;
+}
+
 void refresh_theme_surfaces(HWND hwnd)
 {
     update_theme_colors();

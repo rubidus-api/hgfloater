@@ -284,18 +284,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             int border = SC(HG_BORDER_THICKNESS);
             int w = (int)LOWORD(l_param) - border * 2;
 
-            int edit_height = SC(20);
-            HDC hdc = GetDC(edit_wnd);
-            if (hdc) {
-                HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                TEXTMETRIC tm = {0};
-                if (GetTextMetrics(hdc, &tm)) {
-                    edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
-                }
-                if (old_font)
-                    SelectObject(hdc, old_font);
-                ReleaseDC(edit_wnd, hdc);
-            }
+            int edit_height = hg_measure_edit_height(edit_wnd, hg_g_main_font);
 
             MoveWindow(edit_wnd, border, border, w, edit_height, TRUE);
         }
