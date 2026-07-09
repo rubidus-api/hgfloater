@@ -2389,3 +2389,15 @@ BOOL readonly_edit_handle_ime_messages(HWND hwnd, UINT msg, WPARAM w_param)
 
     return FALSE;
 }
+
+/* Common read-only edit subclass handling shared by the taskbox, monitor, and
+ * about edits: focus-time IME disable plus IME message suppression. Returns
+ * TRUE when the message was fully handled. */
+BOOL hg_readonly_edit_common(HWND hwnd, UINT msg, WPARAM w_param)
+{
+    if (msg == WM_SETFOCUS) {
+        disable_window_ime(hwnd);
+        return FALSE; /* default focus processing still applies */
+    }
+    return readonly_edit_handle_ime_messages(hwnd, msg, w_param);
+}

@@ -114,5 +114,6 @@ void resize_window_by_offset(HWND hwnd, int dw, int dh);
 BOOL should_refresh_theme_on_setting_change(LPARAM l_param);
 void disable_window_ime(HWND hwnd);
 BOOL readonly_edit_handle_ime_messages(HWND hwnd, UINT msg, WPARAM w_param);
+BOOL hg_readonly_edit_common(HWND hwnd, UINT msg, WPARAM w_param);
 
 #endif /* HG_UTILS_H */
