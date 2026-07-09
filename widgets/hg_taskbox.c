@@ -33,7 +33,7 @@ void update_size(int delta)
             cols = 1;
 
         /* Calculate exact width required for the SAME number of columns but NEW icon size */
-        int exact_tb_width = (cols - 1) * (new_size + SC(15)) + new_size + SC(20);
+        int exact_tb_width = hg_snap_width_for_cols(cols, new_size);
         int new_w = exact_tb_width + border * 2;
 
         SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top,
@@ -743,18 +743,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
             if (new_height < SC(HG_MIN_WINDOW_HEIGHT))
                 new_height = SC(HG_MIN_WINDOW_HEIGHT);
 
-            int edit_height = SC(20);
-            if (hg_g_edit_msg_wnd && hg_g_main_font) {
-                HDC hdc = GetDC(hg_g_edit_msg_wnd);
-                if (hdc) {
-                    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                    TEXTMETRIC tm = {0};
-                    GetTextMetrics(hdc, &tm);
-                    edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
-                    SelectObject(hdc, old_font);
-                    ReleaseDC(hg_g_edit_msg_wnd, hdc);
-                }
-            }
+            int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
             int row_height = icon_size + SC(10);
             int available_toolbar_h = new_height - (border * 2 + edit_height);
             int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
@@ -775,7 +764,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         if (cols <= 0)
             cols = 1;
 
-        int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+        int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
         int req_w = exact_tb_width + border * 2;
 
         int rows = (total_items + cols - 1) / cols;
@@ -784,18 +773,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         int row_height = icon_size + SC(10);
         int req_toolbar_height = SC(10) + rows * row_height;
 
-        int edit_height = SC(20);
-        if (hg_g_edit_msg_wnd && hg_g_main_font) {
-            HDC hdc = GetDC(hg_g_edit_msg_wnd);
-            if (hdc) {
-                HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                TEXTMETRIC tm = {0};
-                GetTextMetrics(hdc, &tm);
-                edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
-                SelectObject(hdc, old_font);
-                ReleaseDC(hg_g_edit_msg_wnd, hdc);
-            }
-        }
+        int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
         int req_h = border * 2 + edit_height + req_toolbar_height;
 
         SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, req_w, req_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -862,7 +840,7 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
         int border = SC(HG_BORDER_THICKNESS);
         int tb_width = (rc.right - rc.left) - border * 2;
         int cols = get_items_per_row(tb_width, icon_size);
-        int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+        int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
         int new_w = exact_tb_width + border * 2;
         SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, new_w, rc.bottom - rc.top,
                      SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -1723,16 +1701,7 @@ void update_layout(HWND hwnd)
     int width = rc.right;
     int border = SC(HG_BORDER_THICKNESS);
 
-    /* Get edit control height */
-    HDC hdc = GetDC(hg_g_edit_msg_wnd);
-    if (!hdc)
-        return;
-    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-    TEXTMETRIC tm = {0};
-    GetTextMetrics(hdc, &tm);
-    int edit_height = (tm.tmHeight + tm.tmExternalLeading) * 1 + SC(6);
-    SelectObject(hdc, old_font);
-    ReleaseDC(hg_g_edit_msg_wnd, hdc);
+    int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
 
     int tb_width = width - (border * 2);
     if (tb_width <= 0)
@@ -1759,7 +1728,7 @@ void update_layout(HWND hwnd)
     int req_toolbar_height = SC(10) + rows * row_height;
     int required_total_height = border * 2 + edit_height + req_toolbar_height;
 
-    int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+    int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
     int required_total_width = border * 2 + exact_tb_width;
 
     /* If the current window size is different from required, resize it */
@@ -1931,13 +1900,13 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int border = SC(HG_BORDER_THICKNESS);
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
-            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+            int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
 
             if (tb_width > exact_tb_width + SC(5)) {
                 /* Right padding exists, snap to current cols */
             } else if (cols > 1) {
                 cols--;
-                exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+                exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
             }
 
             int new_w = exact_tb_width + border * 2;
@@ -1950,7 +1919,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             cols++;
-            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+            int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
             int new_w = exact_tb_width + border * 2;
             SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             return 0;
@@ -1974,7 +1943,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                     if (new_rows < current_rows)
                         break;
                 }
-                int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+                int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
                 int new_w = exact_tb_width + border * 2;
                 SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             }
@@ -1999,7 +1968,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                     break;
             }
 
-            int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+            int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
             int new_w = exact_tb_width + border * 2;
             SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             return 0;
@@ -2273,21 +2242,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
         int cols;
         if (ABS(dh) > ABS(dw)) {
-            int edit_height = SC(20);
-            if (hg_g_edit_msg_wnd && hg_g_main_font) {
-                HDC hdc = GetDC(hg_g_edit_msg_wnd);
-                if (hdc) {
-                    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_main_font);
-                    TEXTMETRIC tm = {0};
-                    if (GetTextMetrics(hdc, &tm)) {
-                        edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
-                    }
-                    if (old_font)
-                        SelectObject(hdc, old_font);
-                    ReleaseDC(hg_g_edit_msg_wnd, hdc);
-                }
-            }
-
+            int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
             int row_height = icon_size + SC(10);
             int current_h = rc.bottom - rc.top;
             int available_toolbar_h = current_h - (border * 2 + edit_height);
@@ -2304,7 +2259,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         if (cols <= 0)
             cols = 1;
 
-        int exact_tb_width = (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
+        int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
         int new_w = exact_tb_width + border * 2;
 
         SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);

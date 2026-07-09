@@ -77,6 +77,8 @@ void load_shortcuts_if_changed(void);
 void append_message(const WCHAR *msg);
 void draw_outlined_text(HDC hdc, const WCHAR *text, int len, RECT *rc, UINT format, COLORREF text_color, COLORREF outline_color);
 int get_items_per_row(int width, int icon_size);
+int hg_snap_width_for_cols(int cols, int icon_size);
+int hg_measure_edit_height(HWND edit_wnd, HFONT font);
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect);
 typedef enum HgToolbarTextMode {
     HG_TOOLBAR_TEXT_FOCUS = 0,
