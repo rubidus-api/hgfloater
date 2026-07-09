@@ -67,6 +67,7 @@ BOOL hg_paint_buffer_begin(HDC target_dc, int width, int height, HgPaintBuffer *
 void hg_paint_buffer_end(HgPaintBuffer *buffer);
 int compare_shortcuts(const void *a, const void *b);
 void load_shortcuts(void);
+void load_shortcuts_if_changed(void);
 void append_message(const WCHAR *msg);
 void draw_outlined_text(HDC hdc, const WCHAR *text, int len, RECT *rc, UINT format, COLORREF text_color, COLORREF outline_color);
 int get_items_per_row(int width, int icon_size);
