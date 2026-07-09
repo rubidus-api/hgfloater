@@ -157,11 +157,11 @@ static BOOL set_software_brightness(int brightness)
     return res;
 }
 
-int get_system_brightness(void)
+void hg_refresh_brightness_cache(void)
 {
     init_dxva2();
     if (!s_hDxva2 || !s_pfnGetNum || !s_pfnGetPhys || !s_pfnDestroy || !s_pfnGetBright)
-        return hg_g_global_brightness;
+        return;
 
     POINT ptCursor = {0};
     GetCursorPos(&ptCursor);
@@ -181,7 +181,12 @@ int get_system_brightness(void)
             free(pPhysicalMonitors);
         }
     }
+}
 
+int get_system_brightness(void)
+{
+    /* Cache-only: DDC/CI reads block for tens of milliseconds and must stay out of
+     * paint and tooltip paths. Startup, the refresh timer, and setters prime it. */
     return hg_g_global_brightness;
 }
 

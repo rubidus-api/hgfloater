@@ -2327,6 +2327,12 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         if (w_param == HG_TIMER_TASKBOX_REFRESH) {
             if (IsWindowVisible(hwnd) && !hg_g_menu_active) {
                 refresh_window_list(FALSE);
+                /* Keep the DDC/CI brightness cache warm off the paint path. */
+                static int brightness_refresh_ticks = 0;
+                if (++brightness_refresh_ticks >= 5) {
+                    brightness_refresh_ticks = 0;
+                    hg_refresh_brightness_cache();
+                }
             }
         } else if (w_param == HG_TIMER_HIGHLIGHT) {
             hg_g_taskbox_highlight_ticks--;
