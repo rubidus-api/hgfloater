@@ -2365,19 +2365,19 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
         if (pt.x < border && pt.y < border)
             return HTTOPLEFT;
-        if (pt.x > rc.right - border && pt.y < border)
+        if (pt.x >= rc.right - border && pt.y < border)
             return HTTOPRIGHT;
-        if (pt.x < border && pt.y > rc.bottom - border)
+        if (pt.x < border && pt.y >= rc.bottom - border)
             return HTBOTTOMLEFT;
-        if (pt.x > rc.right - border && pt.y > rc.bottom - border)
+        if (pt.x >= rc.right - border && pt.y >= rc.bottom - border)
             return HTBOTTOMRIGHT;
         if (pt.y < border)
             return HTTOP;
-        if (pt.y > rc.bottom - border)
+        if (pt.y >= rc.bottom - border)
             return HTBOTTOM;
         if (pt.x < border)
             return HTLEFT;
-        if (pt.x > rc.right - border)
+        if (pt.x >= rc.right - border)
             return HTRIGHT;
 
         return HTCAPTION; /* 그 외 모든 클라이언트 영역은 드래그 가능하게 */
