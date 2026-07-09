@@ -1172,7 +1172,9 @@ static BOOL read_utf8_file_to_wide(const WCHAR *path, WCHAR **out_text)
     if (!path || !*path)
         return FALSE;
 
-    WCHAR norm[HG_MAX_PATH];
+    /* Static scratch: 64 KB buffers stacked several frames deep from window-proc
+     * depth risk stack exhaustion; the UI is single-threaded. */
+    static WCHAR norm[HG_MAX_PATH];
     normalize_path_for_api(path, norm, HG_MAX_PATH);
 
     HANDLE h = CreateFileW(norm, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -1264,7 +1266,9 @@ static BOOL get_logo_relpath_from_manifest(const WCHAR *package_path, WCHAR *out
 
 static BOOL file_exists_w(const WCHAR *path)
 {
-    WCHAR norm[HG_MAX_PATH];
+    /* Static scratch: 64 KB buffers stacked several frames deep from window-proc
+     * depth risk stack exhaustion; the UI is single-threaded. */
+    static WCHAR norm[HG_MAX_PATH];
     normalize_path_for_api(path, norm, HG_MAX_PATH);
     DWORD attr = GetFileAttributesW(norm);
     return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
@@ -1288,12 +1292,14 @@ static BOOL resolve_logo_asset_file(const WCHAR *package_path, const WCHAR *rel_
     out_file[0] = L'\0';
     size_px = hg_clamp_icon_size_px(size_px);
 
-    WCHAR rel[HG_MAX_PATH];
+    /* Static scratch: six 64 KB locals here plus the callers' buffers approached
+     * the default 1 MB stack from window-proc depth; the UI is single-threaded. */
+    static WCHAR rel[HG_MAX_PATH];
     if (FAILED(StringCchCopyW(rel, HG_ARRAYSIZE(rel), rel_logo)))
         return FALSE;
     normalize_slashes(rel);
 
-    WCHAR base[HG_MAX_PATH];
+    static WCHAR base[HG_MAX_PATH];
     if (FAILED(StringCchPrintfW(base, HG_ARRAYSIZE(base), L"%ls\\%ls", package_path, rel))) {
         return FALSE;
     }
@@ -1302,7 +1308,7 @@ static BOOL resolve_logo_asset_file(const WCHAR *package_path, const WCHAR *rel_
         return SUCCEEDED(StringCchCopyW(out_file, out_cch, base));
     }
 
-    WCHAR dir[HG_MAX_PATH];
+    static WCHAR dir[HG_MAX_PATH];
     if (FAILED(StringCchCopyW(dir, HG_ARRAYSIZE(dir), base)))
         return FALSE;
 
@@ -1316,7 +1322,7 @@ static BOOL resolve_logo_asset_file(const WCHAR *package_path, const WCHAR *rel_
             return FALSE;
     }
 
-    WCHAR stem[HG_MAX_PATH];
+    static WCHAR stem[HG_MAX_PATH];
     if (FAILED(StringCchCopyW(stem, HG_ARRAYSIZE(stem), filename)))
         return FALSE;
 
@@ -1328,7 +1334,7 @@ static BOOL resolve_logo_asset_file(const WCHAR *package_path, const WCHAR *rel_
         *dot = L'\0';
     }
 
-    WCHAR candidate[HG_MAX_PATH];
+    static WCHAR candidate[HG_MAX_PATH];
 
     const WCHAR *dyn_patterns[] = {L"%ls\\%ls.targetsize-%d_altform-unplated%ls", L"%ls\\%ls.targetsize-%d%ls"};
 
@@ -1363,7 +1369,7 @@ static BOOL resolve_logo_asset_file(const WCHAR *package_path, const WCHAR *rel_
         }
     }
 
-    WCHAR pattern[HG_MAX_PATH];
+    static WCHAR pattern[HG_MAX_PATH];
     if (FAILED(StringCchPrintfW(pattern, HG_ARRAYSIZE(pattern), L"%ls\\%ls*.png", dir, stem))) {
         return FALSE;
     }
@@ -1499,7 +1505,7 @@ static HICON load_icon_from_aumid(const WCHAR *aumid, int size_px, BOOL *own_ico
     if (!aumid || !*aumid)
         return NULL;
 
-    WCHAR parsing_name[HG_MAX_PATH];
+    static WCHAR parsing_name[HG_MAX_PATH];
     HRESULT hr = StringCchPrintfW(parsing_name, HG_ARRAYSIZE(parsing_name), L"shell:AppsFolder\\%ls", aumid);
     if (FAILED(hr))
         return NULL;
@@ -1559,13 +1565,15 @@ static HICON get_icon_from_package_pid(DWORD pid, int size_px, BOOL *own_icon)
     if (!package_path)
         return NULL;
 
-    WCHAR rel_logo[HG_MAX_PATH] = {0};
+    static WCHAR rel_logo[HG_MAX_PATH];
+    rel_logo[0] = L'\0';
     if (!get_logo_relpath_from_manifest(package_path, rel_logo, HG_ARRAYSIZE(rel_logo))) {
         HG_HEAP_FREE(package_path);
         return NULL;
     }
 
-    WCHAR logo_file[HG_MAX_PATH] = {0};
+    static WCHAR logo_file[HG_MAX_PATH];
+    logo_file[0] = L'\0';
     if (!resolve_logo_asset_file(package_path, rel_logo, size_px, logo_file, HG_ARRAYSIZE(logo_file))) {
         HG_HEAP_FREE(package_path);
         return NULL;
@@ -1825,12 +1833,13 @@ void load_shortcuts()
     if (!hg_g_shortcuts_path[0])
         return;
 
-    WCHAR search_path[HG_MAX_PATH] = {0};
+    static WCHAR search_path[HG_MAX_PATH];
+    search_path[0] = L'\0';
     if (FAILED(StringCchPrintfW(search_path, HG_ARRAYSIZE(search_path), L"%ls\\*", hg_g_shortcuts_path))) {
         return;
     }
 
-    WCHAR norm_search[HG_MAX_PATH];
+    static WCHAR norm_search[HG_MAX_PATH];
     normalize_path_for_api(search_path, norm_search, HG_MAX_PATH);
 
     WIN32_FIND_DATAW ffd = {0};

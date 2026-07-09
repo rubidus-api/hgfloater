@@ -1563,7 +1563,7 @@ void refresh_window_list(BOOL force)
             }
 
             if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
-                WCHAR path[HG_MAX_PATH];
+                static WCHAR path[HG_MAX_PATH];
                 if (get_explorer_path(refresh_acquire_shell_windows(&shell_windows), hg_g_new_items[new_count].hwnd,
                                       path, HG_MAX_PATH)) {
                     StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
@@ -1605,7 +1605,7 @@ void refresh_window_list(BOOL force)
                 }
 
                 if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
-                    WCHAR path[HG_MAX_PATH];
+                    static WCHAR path[HG_MAX_PATH];
                     if (get_explorer_path(refresh_acquire_shell_windows(&shell_windows), hwnd, path, HG_MAX_PATH)) {
                         StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
                     }
