@@ -79,6 +79,14 @@ void update_edit_font_size(int delta)
         SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
     }
 
+    /* The about edit also uses hg_g_main_font; without this it keeps the destroyed handle. */
+    if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
+        HWND about_edit = GetDlgItem(hg_g_about_wnd, 100);
+        if (about_edit) {
+            SendMessageW(about_edit, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        }
+    }
+
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         update_layout(hg_g_taskbox_wnd);
         InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
