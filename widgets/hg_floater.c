@@ -392,6 +392,7 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
 LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     static int initial_floater_font_size = 0;
+    static BOOL font_drag_active = FALSE;
     switch (msg) {
     case WM_DISPLAYCHANGE: {
         update_monitor_enum();
@@ -420,6 +421,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     case WM_LBUTTONDOWN: {
         hg_g_drag_start_pt.x = GET_X_LPARAM(l_param);
         hg_g_drag_start_pt.y = GET_Y_LPARAM(l_param);
+        font_drag_active = FALSE;
         if (GetKeyState(VK_CONTROL) < 0) {
             initial_floater_font_size = hg_g_floater_font_size;
         }
@@ -430,6 +432,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         if (w_param & MK_LBUTTON && GetCapture() == hwnd) {
             POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             if (GetKeyState(VK_CONTROL) < 0) {
+                if (pt.x != hg_g_drag_start_pt.x || pt.y != hg_g_drag_start_pt.y) {
+                    font_drag_active = TRUE;
+                }
                 int delta = (pt.x - hg_g_drag_start_pt.x) / 5;
                 int new_size = initial_floater_font_size + delta;
                 if (new_size < HG_FLOATER_MIN_FONT_SIZE)
@@ -473,6 +478,11 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         if (GetCapture() == hwnd) {
             ReleaseCapture();
             hg_g_floater_adjust_mode = FALSE;   /* a click leaves floater-adjust mode */
+            if (font_drag_active) {
+                /* Releasing a Ctrl+drag font-resize gesture must not toggle the taskbox. */
+                font_drag_active = FALSE;
+                return 0;
+            }
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
                 if (IsWindowVisible(hg_g_taskbox_wnd)) {
                     hide_taskbox(hg_g_taskbox_wnd);
