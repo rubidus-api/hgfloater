@@ -23,7 +23,7 @@ extern HWND hg_g_commandbox_btn_wnd;
 extern HFONT hg_g_commandbox_font;
 extern int hg_g_commandbox_font_size;
 extern BYTE hg_g_commandbox_alpha;
-extern WCHAR hg_g_commandbox_font_name[32]; /* LF_FACESIZE */
+extern WCHAR hg_g_commandbox_font_name[LF_FACESIZE];
 extern HMENU hg_g_h_audio_submenu;
 
 extern UINT hg_g_shellhook_msg;
@@ -47,22 +47,22 @@ extern int hg_g_taskbox_highlight_ticks;
 extern UINT hg_g_hotkey_modifiers;
 extern UINT hg_g_hotkey_key;
 extern BOOL hg_g_hotkey_registered;
-extern WCHAR hg_g_pending_command_line[32768]; /* HG_MAX_PATH */
+extern WCHAR hg_g_pending_command_line[HG_MAX_PATH];
 extern BOOL hg_g_has_pending_command_line;
 
-extern WCHAR hg_g_base_path[32768];      /* HG_MAX_PATH */
-extern WCHAR hg_g_shortcuts_path[32768]; /* HG_MAX_PATH */
-extern WCHAR hg_g_config_path[32768];    /* HG_MAX_PATH */
+extern WCHAR hg_g_base_path[HG_MAX_PATH];
+extern WCHAR hg_g_shortcuts_path[HG_MAX_PATH];
+extern WCHAR hg_g_config_path[HG_MAX_PATH];
 extern WCHAR hg_g_font_name[64];
 
-extern ShortcutItem hg_g_shortcuts[64]; /* HG_MAX_SHORTCUTS */
+extern ShortcutItem hg_g_shortcuts[HG_MAX_SHORTCUTS];
 extern int hg_g_shortcut_count;
 
-extern AudioDevice hg_g_audio_devices[16]; /* HG_MAX_AUDIO_DEVICES */
+extern AudioDevice hg_g_audio_devices[HG_MAX_AUDIO_DEVICES];
 extern int hg_g_audio_device_count;
 
-extern WindowItem hg_g_window_items[1024]; /* HG_MAX_WINDOW_ITEMS */
-extern WindowItem hg_g_new_items[1024];    /* HG_MAX_WINDOW_ITEMS */
+extern WindowItem hg_g_window_items[HG_MAX_WINDOW_ITEMS];
+extern WindowItem hg_g_new_items[HG_MAX_WINDOW_ITEMS];
 extern int hg_g_window_count;
 
 extern BOOL hg_g_in_sizemove;
@@ -74,7 +74,7 @@ extern BOOL hg_g_floater_adjust_mode; /* F button: floater shown for size/alpha 
 extern BOOL hg_g_menu_active;
 extern POINT hg_g_drag_start_pt;
 
-extern MonitorInfo hg_g_monitors[10]; /* HG_MAX_MONITORS */
+extern MonitorInfo hg_g_monitors[HG_MAX_MONITORS];
 extern int hg_g_monitor_count;
 
 #endif /* HG_GLOBALS_H */
