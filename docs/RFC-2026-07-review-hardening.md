@@ -161,6 +161,15 @@ Exit criteria:
 
 Purpose: remove blocking COM and disk work from paint and hide paths.
 
+Progress:
+- 2026-07-09: Volume and mute calls share one cached `IAudioEndpointVolume`; a failed call drops the cache and retries once, and opening the audio menu re-acquires it.
+- 2026-07-09: Brightness reads are cache-only; startup, the taskbox refresh timer (every 5 s while visible), and the setter keep the DDC/CI-backed cache current.
+- 2026-07-09: The window-list refresh acquires `IShellWindows` once per pass instead of per Explorer window.
+- 2026-07-09: Command box geometry persists on `WM_EXITSIZEMOVE` (and after keyboard moves) instead of every `WM_MOVE`.
+- 2026-07-09: Toolbar and taskbox painting use a color-keyed solid-brush cache flushed on theme change and shutdown.
+- 2026-07-09: `ShortcutItem` display names shrank to `HG_MAX_STR` and the deep UWP icon path buffers moved to static scratch, cutting BSS by several MB and the worst window-proc stack chain by roughly 600 KB.
+- 2026-07-09: Release build compiles warning-clean on the cross-build host; runtime verification on the Windows host is pending.
+
 Tasks:
 - Cache audio state: keep one `IAudioEndpointVolume` (re-acquired on device change) or cached values refreshed by a timer or `RegisterControlChangeNotify`, so paint and tooltip paths never activate COM.
 - Cache or rate-limit brightness reads; never perform DDC/CI I/O inside `WM_PAINT`.
