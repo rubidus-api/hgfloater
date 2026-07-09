@@ -363,15 +363,8 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
 
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORLISTBOX: {
-        HDC hdc_static = (HDC)w_param;
-        SetTextColor(hdc_static, hg_g_color_scheme_selected.text);
-        SetBkMode(hdc_static, OPAQUE);
-        SetBkColor(hdc_static, hg_g_color_scheme_selected.bg);
-        if (!hg_g_edit_bg_brush)
-            hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
-        return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
-    }
+    case WM_CTLCOLORLISTBOX:
+        return hg_on_ctlcolor_edit((HDC)w_param);
 
     case WM_CLOSE:
         ShowWindow(hwnd, SW_HIDE);

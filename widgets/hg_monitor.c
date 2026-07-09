@@ -292,15 +292,8 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         return 0;
     }
     case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORSTATIC: {
-        HDC hdc = (HDC)w_param;
-        SetTextColor(hdc, hg_g_color_scheme_selected.text);
-        SetBkMode(hdc, OPAQUE);
-        SetBkColor(hdc, hg_g_color_scheme_selected.bg);
-        if (!hg_g_edit_bg_brush)
-            hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
-        return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
-    }
+    case WM_CTLCOLORSTATIC:
+        return hg_on_ctlcolor_edit((HDC)w_param);
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
