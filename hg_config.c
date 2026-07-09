@@ -167,10 +167,10 @@ void save_hotkey_config()
 int get_alpha_config(const WCHAR *section, int def_alpha)
 {
     int a = (int)GetPrivateProfileIntW(section, L"alpha", def_alpha, hg_g_config_path);
-    if (a < 128)
-        a = 128;
-    if (a > 255)
-        a = 255;
+    if (a < HG_MIN_ALPHA)
+        a = HG_MIN_ALPHA;
+    if (a > HG_MAX_ALPHA)
+        a = HG_MAX_ALPHA;
 
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%d", a);
