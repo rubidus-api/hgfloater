@@ -16,6 +16,26 @@ static void close_monitor_window(int idx)
     hg_g_monitors[idx].hwnd = NULL;
 }
 
+/* Persist preview geometry under the display device name so a re-enumeration
+ * that reorders monitors keeps geometry attached to the right display. */
+static void monitor_geometry_key(int idx, const WCHAR *suffix, WCHAR *out, size_t out_count)
+{
+    WCHAR sanitized[64];
+    size_t si = 0;
+    const WCHAR *name = hg_g_monitors[idx].name;
+
+    for (size_t i = 0; name[i] && si + 1 < HG_ARRAYSIZE(sanitized); ++i) {
+        if (iswalnum((wint_t)name[i])) {
+            sanitized[si++] = name[i];
+        }
+    }
+    sanitized[si] = L'\0';
+    if (si == 0) {
+        StringCchPrintfW(sanitized, HG_ARRAYSIZE(sanitized), L"monitor%d", idx + 1);
+    }
+    StringCchPrintfW(out, out_count, L"%ls_%ls", sanitized, suffix);
+}
+
 static BOOL open_monitor_window(int idx)
 {
     if (idx < 0 || idx >= hg_g_monitor_count) {
@@ -38,18 +58,27 @@ static BOOL open_monitor_window(int idx)
     int def_w = 640;
     int def_h = (mw > 0) ? (def_w * mh / mw) : 480;
 
-    WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
-    StringCchPrintfW(key_x, 64, L"monitor%d_x", idx + 1);
-    StringCchPrintfW(key_y, 64, L"monitor%d_y", idx + 1);
-    StringCchPrintfW(key_w, 64, L"monitor%d_w", idx + 1);
-    StringCchPrintfW(key_h, 64, L"monitor%d_h", idx + 1);
-    StringCchPrintfW(key_name, 64, L"monitor%d_name", idx + 1);
-    WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[idx].name, hg_g_config_path);
+    WCHAR key_x[96], key_y[96], key_w[96], key_h[96];
+    WCHAR legacy_key[64];
+    monitor_geometry_key(idx, L"x", key_x, HG_ARRAYSIZE(key_x));
+    monitor_geometry_key(idx, L"y", key_y, HG_ARRAYSIZE(key_y));
+    monitor_geometry_key(idx, L"w", key_w, HG_ARRAYSIZE(key_w));
+    monitor_geometry_key(idx, L"h", key_h, HG_ARRAYSIZE(key_h));
 
-    x = (int)GetPrivateProfileIntW(L"monitor", key_x, 100, hg_g_config_path);
-    y = (int)GetPrivateProfileIntW(L"monitor", key_y, 100, hg_g_config_path);
-    w = (int)GetPrivateProfileIntW(L"monitor", key_w, def_w, hg_g_config_path);
-    h = (int)GetPrivateProfileIntW(L"monitor", key_h, def_h, hg_g_config_path);
+    /* Old index-based keys serve as the default so existing settings migrate. */
+    StringCchPrintfW(legacy_key, HG_ARRAYSIZE(legacy_key), L"monitor%d_x", idx + 1);
+    int legacy_x = (int)GetPrivateProfileIntW(L"monitor", legacy_key, 100, hg_g_config_path);
+    StringCchPrintfW(legacy_key, HG_ARRAYSIZE(legacy_key), L"monitor%d_y", idx + 1);
+    int legacy_y = (int)GetPrivateProfileIntW(L"monitor", legacy_key, 100, hg_g_config_path);
+    StringCchPrintfW(legacy_key, HG_ARRAYSIZE(legacy_key), L"monitor%d_w", idx + 1);
+    int legacy_w = (int)GetPrivateProfileIntW(L"monitor", legacy_key, def_w, hg_g_config_path);
+    StringCchPrintfW(legacy_key, HG_ARRAYSIZE(legacy_key), L"monitor%d_h", idx + 1);
+    int legacy_h = (int)GetPrivateProfileIntW(L"monitor", legacy_key, def_h, hg_g_config_path);
+
+    x = (int)GetPrivateProfileIntW(L"monitor", key_x, legacy_x, hg_g_config_path);
+    y = (int)GetPrivateProfileIntW(L"monitor", key_y, legacy_y, hg_g_config_path);
+    w = (int)GetPrivateProfileIntW(L"monitor", key_w, legacy_w, hg_g_config_path);
+    h = (int)GetPrivateProfileIntW(L"monitor", key_h, legacy_h, hg_g_config_path);
 
     HWND mwnd =
         CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, hg_g_monitors[idx].name,
@@ -523,13 +552,11 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         if (monitor_idx >= 0) {
             RECT rc;
             GetWindowRect(hwnd, &rc);
-            WCHAR key_x[64], key_y[64], key_w[64], key_h[64], key_name[64];
-            StringCchPrintfW(key_x, 64, L"monitor%d_x", monitor_idx + 1);
-            StringCchPrintfW(key_y, 64, L"monitor%d_y", monitor_idx + 1);
-            StringCchPrintfW(key_w, 64, L"monitor%d_w", monitor_idx + 1);
-            StringCchPrintfW(key_h, 64, L"monitor%d_h", monitor_idx + 1);
-            StringCchPrintfW(key_name, 64, L"monitor%d_name", monitor_idx + 1);
-            WritePrivateProfileStringW(L"monitor", key_name, hg_g_monitors[monitor_idx].name, hg_g_config_path);
+            WCHAR key_x[96], key_y[96], key_w[96], key_h[96];
+            monitor_geometry_key(monitor_idx, L"x", key_x, HG_ARRAYSIZE(key_x));
+            monitor_geometry_key(monitor_idx, L"y", key_y, HG_ARRAYSIZE(key_y));
+            monitor_geometry_key(monitor_idx, L"w", key_w, HG_ARRAYSIZE(key_w));
+            monitor_geometry_key(monitor_idx, L"h", key_h, HG_ARRAYSIZE(key_h));
 
             WCHAR buf[32];
             hellgates_wsprintf(buf, 32, L"%d", rc.left);
