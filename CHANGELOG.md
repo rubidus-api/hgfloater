@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- Moving between monitors with different display scaling (or changing scale) now resizes and re-renders the floater and taskbox for the new DPI, and the startup size matches the monitor the floater appears on.
+
 ### Fixed
+- Off-screen windows are clamped into the nearest monitor work area instead of jumping to the primary monitor origin.
+- Removing or rearranging a display immediately moves stranded widgets back into view instead of waiting for the next hotkey press.
+- Monitor preview positions are remembered per display device, so reordered monitor enumeration no longer applies a saved position to the wrong display.
 - Theme changes no longer leave the floater, taskbox, and command box window classes holding a deleted background brush.
 - OS dark mode now selects the custom dark palette and OS light mode the system palette; the two schemes were assigned swapped.
 - Task context menu commands (Focus, Close, Move, Resize) act on the window captured when the menu opened, so a background list refresh can no longer redirect them to a different window; the list also pauses refreshing while a menu is open.
