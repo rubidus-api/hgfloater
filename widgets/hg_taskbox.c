@@ -1623,18 +1623,10 @@ void refresh_window_list(BOOL force)
 LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass,
                                     DWORD_PTR dw_ref_data)
 {
-    switch (msg) {
-    case WM_SETFOCUS: {
-        disable_window_ime(hwnd);
-        break;
+    if (hg_readonly_edit_common(hwnd, msg, w_param)) {
+        return 0;
     }
-    case WM_IME_SETCONTEXT:
-    case WM_INPUTLANGCHANGE:
-    case WM_INPUTLANGCHANGEREQUEST:
-        if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
-            return 0;
-        }
-        break;
+    switch (msg) {
     case WM_LBUTTONDOWN: {
         ReleaseCapture();
         SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);

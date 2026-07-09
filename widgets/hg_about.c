@@ -32,10 +32,7 @@ void show_about_window(void)
 static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
                                                  UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
-    if (msg == WM_SETFOCUS) {
-        disable_window_ime(hwnd);
-    }
-    if (readonly_edit_handle_ime_messages(hwnd, msg, w_param)) {
+    if (hg_readonly_edit_common(hwnd, msg, w_param)) {
         return 0;
     }
     if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
