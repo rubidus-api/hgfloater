@@ -1477,18 +1477,14 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
-BOOL get_explorer_path(HWND target_hwnd, WCHAR *out_path, int max_len)
+static BOOL get_explorer_path(IShellWindows *psw, HWND target_hwnd, WCHAR *out_path, int max_len)
 {
-    if (!out_path || max_len <= 0)
+    if (!psw || !out_path || max_len <= 0)
         return FALSE;
     out_path[0] = L'\0';
-    IShellWindows *psw = NULL;
-    if (FAILED(CoCreateInstance(&CLSID_ShellWindows, NULL, CLSCTX_ALL, &IID_IShellWindows, (void **)&psw)))
-        return FALSE;
 
     long count = 0;
     if (FAILED(psw->lpVtbl->get_Count(psw, &count))) {
-        HG_RELEASE_COM(psw);
         return FALSE;
     }
 
@@ -1531,13 +1527,25 @@ BOOL get_explorer_path(HWND target_hwnd, WCHAR *out_path, int max_len)
         if (found)
             break;
     }
-    HG_RELEASE_COM(psw);
     return found;
+}
+
+/* One IShellWindows instance per refresh pass; creating it per Explorer window
+ * made every one-second refresh quadratic in COM traffic. */
+static IShellWindows *refresh_acquire_shell_windows(IShellWindows **psw)
+{
+    if (!*psw) {
+        if (FAILED(CoCreateInstance(&CLSID_ShellWindows, NULL, CLSCTX_ALL, &IID_IShellWindows, (void **)psw))) {
+            *psw = NULL;
+        }
+    }
+    return *psw;
 }
 
 void refresh_window_list(BOOL force)
 {
     int new_count = 0;
+    IShellWindows *shell_windows = NULL; /* acquired lazily, once per pass */
     ZeroMemory(hg_g_new_items, sizeof(hg_g_new_items));
 
     /* 1단계: 기존 창 유효성 체크 및 아이콘 재사용 */
@@ -1569,7 +1577,8 @@ void refresh_window_list(BOOL force)
 
             if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
                 WCHAR path[HG_MAX_PATH];
-                if (get_explorer_path(hg_g_new_items[new_count].hwnd, path, HG_MAX_PATH)) {
+                if (get_explorer_path(refresh_acquire_shell_windows(&shell_windows), hg_g_new_items[new_count].hwnd,
+                                      path, HG_MAX_PATH)) {
                     StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
                 }
             }
@@ -1610,7 +1619,7 @@ void refresh_window_list(BOOL force)
 
                 if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
                     WCHAR path[HG_MAX_PATH];
-                    if (get_explorer_path(hwnd, path, HG_MAX_PATH)) {
+                    if (get_explorer_path(refresh_acquire_shell_windows(&shell_windows), hwnd, path, HG_MAX_PATH)) {
                         StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
                     }
                 }
@@ -1620,6 +1629,8 @@ void refresh_window_list(BOOL force)
         }
         hwnd = GetWindow(hwnd, GW_HWNDNEXT);
     }
+
+    HG_RELEASE_COM(shell_windows);
 
     BOOL changed = force || (new_count != hg_g_window_count);
     if (!changed) {
