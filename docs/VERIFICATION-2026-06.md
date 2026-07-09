@@ -40,13 +40,14 @@ Use a Windows 11 desktop with at least one normal application window open. Run t
 
 - Floater appears with the configured time/date font and alpha.
 - Hovering over the floater opens the taskbox at the floater position.
-- Moving the pointer briefly outside the taskbox does not immediately hide it during the grace interval.
-- Moving the pointer away past the grace interval hides the taskbox and restores the floater.
+- Moving the pointer briefly outside the taskbox does not immediately hide it during the 0.5 s grace interval.
+- Moving the pointer away past the 0.5 s grace interval hides the taskbox and restores the floater.
 - `Alt + Mouse Wheel` or `Alt +/-` changes floater/taskbox alpha and the value persists after restart.
 
 ### Toolbar
 
-- Built-in toolbar labels appear in the expected order: `R`, move handle, `X`, desktop, `P`, `C`, `A`, `B`, `V`.
+- Built-in toolbar labels appear in the expected order: `R`, move handle, `X`, desktop, `P`, `C`, `A`, `B`, `V`, `F`.
+- `F` collapses to the floater in adjust mode: hover-expand stays paused, `Ctrl`/`Alt + Mouse Wheel` tune size/alpha, and a floater click returns to the taskbox.
 - Task icons and shortcut icons draw without blank slots when available.
 - Toolbar focus follows mouse press and keyboard/context menu actions target the focused item.
 - `A`, `B`, and `V` tooltips/focus text show current alpha, brightness, and volume state.
