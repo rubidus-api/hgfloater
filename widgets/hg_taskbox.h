@@ -19,6 +19,5 @@ void activate_taskbar_item(int index);
 void update_focus_message(int override_type, int override_index);
 void reset_taskbox_focus(void);
 int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type, int *out_index);
-BOOL get_explorer_path(HWND target_hwnd, WCHAR *out_path, int max_len);
 
 #endif /* HG_TASKBOX_H */
