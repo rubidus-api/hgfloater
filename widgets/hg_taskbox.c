@@ -265,7 +265,7 @@ void hide_taskbox(HWND hwnd)
         save_floater_geometry_config(cx - fw / 2, cy - fh / 2, fw, fh);
     }
     ShowWindow(hwnd, SW_HIDE);
-    load_shortcuts();
+    load_shortcuts_if_changed();
     update_toolbar_tooltips(hg_g_toolbar_wnd);
     InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
 }

@@ -1696,6 +1696,22 @@ int compare_shortcuts(const void *a, const void *b)
     return lstrcmpiW(item_a->name, item_b->name);
 }
 
+void load_shortcuts_if_changed(void)
+{
+    static FILETIME last_write = {0, 0};
+    WIN32_FILE_ATTRIBUTE_DATA attr = {0};
+
+    if (!hg_g_shortcuts_path[0])
+        return;
+
+    if (GetFileAttributesExW(hg_g_shortcuts_path, GetFileExInfoStandard, &attr)) {
+        if (CompareFileTime(&attr.ftLastWriteTime, &last_write) == 0)
+            return;
+        last_write = attr.ftLastWriteTime;
+    }
+    load_shortcuts();
+}
+
 void load_shortcuts()
 {
     for (int i = 0; i < hg_g_shortcut_count; i++) {
