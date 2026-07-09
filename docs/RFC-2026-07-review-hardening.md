@@ -137,6 +137,15 @@ Exit criteria:
 
 Purpose: make behavior match the declared per-monitor DPI awareness.
 
+Progress:
+- 2026-07-09: `ensure_window_visible` clamps into the nearest monitor work area instead of snapping to absolute (0,0).
+- 2026-07-09: Display changes are handled once, by the floater, which re-enumerates monitors and immediately recovers the floater, taskbox, and command box into visible work areas.
+- 2026-07-09: Monitor preview geometry persists under sanitized display device names, with the old index keys read as migration defaults.
+- 2026-07-09: `WM_DPICHANGED` is handled by every top-level widget: the co-located floater/taskbox pair updates the process scale, adopts the suggested rect, and rebuilds scale-dependent fonts and layout; command box, about, and monitor previews adopt the suggested rect.
+- 2026-07-09: Startup scale derives from the monitor containing the loaded floater position via `GetDpiForMonitor` instead of always the primary monitor.
+- 2026-07-09: Release build compiles warning-clean on the cross-build host; mixed-DPI runtime verification on the Windows host is pending.
+- Remaining staged work: independent per-window scaling for command box, about, and monitor previews when they sit on a different-DPI monitor than the floater.
+
 Tasks:
 - Handle `WM_DPICHANGED` in every top-level widget: adopt the suggested rect and recompute scaled metrics from the new DPI.
 - Replace the single startup scale factor with per-window (or at minimum per-monitor) scaling used by `SC()` call sites, staged widget by widget.
