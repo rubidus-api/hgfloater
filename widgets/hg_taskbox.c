@@ -253,7 +253,15 @@ void hide_taskbox(HWND hwnd)
         int fh = f_rc.bottom - f_rc.top;
         SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, cx - fw / 2, cy - fh / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
         ShowWindow(hg_g_floater_wnd, SW_SHOW);
-        SetForegroundWindow(hg_g_floater_wnd);
+        /* Take foreground only while this process still owns it; the auto-collapse
+         * path must not steal focus from the application the user switched to. */
+        HWND fg_wnd = GetForegroundWindow();
+        DWORD fg_pid = 0;
+        if (fg_wnd)
+            GetWindowThreadProcessId(fg_wnd, &fg_pid);
+        if (!fg_wnd || fg_pid == GetCurrentProcessId()) {
+            SetForegroundWindow(hg_g_floater_wnd);
+        }
         save_floater_geometry_config(cx - fw / 2, cy - fh / 2, fw, fh);
     }
     ShowWindow(hwnd, SW_HIDE);
