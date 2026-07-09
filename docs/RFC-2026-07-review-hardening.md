@@ -211,6 +211,12 @@ Exit criteria:
 
 Purpose: make current-truth documents actually current.
 
+Progress:
+- 2026-07-10: README (both languages) now describes the 0.5 s grace period, lists the F button in the Korean toolbar section, documents the `[commandbox]` configuration section and the 76-255 alpha range, and no longer references the removed floater context menu; About text regenerated from the updated README.
+- 2026-07-10: VERIFICATION toolbar checks include the F button and the explicit 0.5 s grace interval.
+- 2026-07-10: Local current-truth documents updated in place: SPEC.md lists ten built-in icons including F, TESTS.md uses the 0.5 s wording, and HANDOFF.md is a real resume packet for this RFC.
+- 2026-07-10: VER.txt intentionally stays at the last released version; HANDOFF.md records that a release waits on the Windows runtime smoke pass.
+
 Tasks:
 - Add the F button to SPEC.md (count, order, roles) and to the VERIFICATION toolbar checks.
 - Update README (both languages), TESTS.md, and VERIFICATION-2026-06 to the 0.5 s auto-hide grace period; add the F button to the Korean toolbar list; remove appendix references to the removed floater context menu.
