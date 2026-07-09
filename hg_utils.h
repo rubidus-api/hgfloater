@@ -40,6 +40,8 @@ void release_window_item_icon(WindowItem *item);
 void release_shortcut_item_icon(ShortcutItem *item);
 void release_font_handle(HFONT *font, BOOL preserve_stock);
 void release_brush_handle(HBRUSH *brush);
+HBRUSH hg_cached_solid_brush(COLORREF color);
+void hg_flush_solid_brush_cache(void);
 void release_bstr(BSTR *value);
 #define HG_RELEASE_COM(interface_ptr)         \
     do {                                      \

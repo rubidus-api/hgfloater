@@ -512,6 +512,7 @@ cleanup_finish:
     release_brush_handle(&hg_g_main_bg_brush);
     release_brush_handle(&hg_g_edit_bg_brush);
     release_brush_handle(&hg_g_hbr_highlight);
+    hg_flush_solid_brush_cache();
     release_font_handle(&hg_g_commandbox_font, FALSE);
 
     /* Clean up all shortcut and window item icons safely */

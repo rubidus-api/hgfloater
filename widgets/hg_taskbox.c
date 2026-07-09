@@ -229,7 +229,7 @@ static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
     if (!hdc || !rc)
         return;
 
-    HBRUSH hbr = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+    HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
     if (!hbr)
         return;
 
@@ -243,8 +243,6 @@ static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
         if (border_rc.left >= border_rc.right || border_rc.top >= border_rc.bottom)
             break;
     }
-
-    DeleteObject(hbr);
 }
 
 /* Consecutive 100 ms hover-check ticks with the cursor outside the taskbox. */
@@ -536,10 +534,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                 if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
                     bg_color = HG_COLOR_BG_FLASH;
                 }
-                HBRUSH hbr_bg = CreateSolidBrush(bg_color);
+                HBRUSH hbr_bg = hg_cached_solid_brush(bg_color);
                 if (hbr_bg) {
                     FillRect(mem_dc, &rc, hbr_bg);
-                    DeleteObject(hbr_bg);
                 }
 
                 int icon_size = taskbox_toolbar_icon_size();
@@ -582,34 +579,30 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
 
                     if (drag_state->is_dragging && drag_state->source_index != -1 &&
                         r_idx == drag_state->source_index) {
-                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FrameRect(mem_dc, &rc_btn, hbr);
-                            DeleteObject(hbr);
                         }
                         continue;
                     }
 
                     if (pressed_type == 0 && pressed_index == r_idx && !drag_state->is_dragging) {
-                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
-                            DeleteObject(hbr);
                         }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
                     } else if ((hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) ||
                                (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx)) {
-                        HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
-                            DeleteObject(hbr);
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                         if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx) {
-                            HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+                            HBRUSH hbr_focus = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
                             if (hbr_focus) {
                                 FrameRect(mem_dc, &rc_btn, hbr_focus);
-                                DeleteObject(hbr_focus);
                             }
                         }
                     }
@@ -629,10 +622,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         int dot_x = rc_item.left + (icon_size - dot_w) / 2;
                         int dot_y = rc_item.bottom + SC(1);
                         RECT dot_rc = {dot_x, dot_y, dot_x + dot_w, dot_y + dot_h};
-                        HBRUSH hbr_dot = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+                        HBRUSH hbr_dot = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
                         if (hbr_dot) {
                             FillRect(mem_dc, &dot_rc, hbr_dot);
-                            DeleteObject(hbr_dot);
                         }
                     }
                 }
@@ -649,36 +641,32 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                                                                   : toolbar_invert_color(bg_color);
                     BOOL keep_value_bg = (i == HG_TOOL_ICON_ALPHA || i == HG_TOOL_ICON_BRIGHTNESS ||
                                           i == HG_TOOL_ICON_VOLUME);
-                    HBRUSH hbr_opp = CreateSolidBrush(button_bg);
+                    HBRUSH hbr_opp = hg_cached_solid_brush(button_bg);
                     if (hbr_opp) {
                         FillRect(mem_dc, &rc_btn, hbr_opp);
-                        DeleteObject(hbr_opp);
                     }
 
                     if (pressed_type == 1 && pressed_index == i) {
                         if (!keep_value_bg) {
-                            HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                            HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                             if (hbr) {
                                 FillRect(mem_dc, &rc_btn, hbr);
-                                DeleteObject(hbr);
                             }
                         }
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
                     } else if ((hovered_type == 1 && hovered_index == i) ||
                                (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)) {
                         if (!keep_value_bg) {
-                            HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                            HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                             if (hbr) {
                                 FillRect(mem_dc, &rc_btn, hbr);
-                                DeleteObject(hbr);
                             }
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                         if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i) {
-                            HBRUSH hbr_focus = CreateSolidBrush(HG_COLOR_BORDER_SELECTED);
+                            HBRUSH hbr_focus = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
                             if (hbr_focus) {
                                 FrameRect(mem_dc, &rc_btn, hbr_focus);
-                                DeleteObject(hbr_focus);
                             }
                         }
                     }
@@ -709,10 +697,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     int cx = drag_state->current_pt.x - icon_size / 2;
                     int cy = drag_state->current_pt.y - icon_size / 2;
                     RECT drag_rc = {cx - SC(4), cy - SC(4), cx + icon_size + SC(4), cy + icon_size + SC(4)};
-                    HBRUSH hbr = CreateSolidBrush(HG_COLOR_BG_SELECTED);
+                    HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                     if (hbr) {
                         FillRect(mem_dc, &drag_rc, hbr);
-                        DeleteObject(hbr);
                     }
                     DrawEdge(mem_dc, &drag_rc, BDR_RAISEDINNER, BF_RECT);
                     if (hg_g_window_items[drag_state->source_index].icon) {
@@ -1865,10 +1852,9 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
         bg_color = HG_COLOR_BG_FLASH;
     }
-    HBRUSH hbr_bg = CreateSolidBrush(bg_color);
+    HBRUSH hbr_bg = hg_cached_solid_brush(bg_color);
     if (hbr_bg) {
         FillRect(hdc, &rc, hbr_bg);
-        DeleteObject(hbr_bg);
     }
 
     /* 외곽선 그리기 */
@@ -1876,7 +1862,7 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     HWND fg = GetForegroundWindow();
     BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
     COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
-    HBRUSH hbr_border = CreateSolidBrush(border_color);
+    HBRUSH hbr_border = hg_cached_solid_brush(border_color);
     if (hbr_border) {
         /* 상하좌우 사각형으로 채우기 */
         RECT rc_top = {0, 0, rc.right, border};
@@ -1888,8 +1874,6 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
         FillRect(hdc, &rc_bottom, hbr_border);
         FillRect(hdc, &rc_left, hbr_border);
         FillRect(hdc, &rc_right, hbr_border);
-
-        DeleteObject(hbr_border);
     }
     EndPaint(hwnd, &ps);
     return 0;
