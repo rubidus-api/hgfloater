@@ -239,10 +239,16 @@ static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
     DeleteObject(hbr);
 }
 
+/* Consecutive 100 ms hover-check ticks with the cursor outside the taskbox. */
+static int s_hover_outside_ticks = 0;
+
 void hide_taskbox(HWND hwnd)
 {
     if (hwnd == NULL)
         return;
+    /* The hover-check timer must die on every hide path, not only its own collapse. */
+    KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
+    s_hover_outside_ticks = 0;
     if (hg_g_floater_wnd) {
         RECT t_rc, f_rc;
         GetWindowRect(hwnd, &t_rc);
@@ -2157,6 +2163,7 @@ static LRESULT taskbox_controller_on_destroy(HWND hwnd)
     hg_g_taskbox_highlight_ticks = 0;
     KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
     KillTimer(hwnd, HG_TIMER_TASKBOX_REFRESH);
+    KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
 
     /* GDI 전역 리소스(font, brush) 및 전역 툴팁은 wWinMain의 cleanup_finish에서 안전하게 일괄 해제하므로 여기서
      * 삭제하지 않음 */
@@ -2319,20 +2326,17 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 /* Collapse to the floater only after the cursor has stayed outside
                  * for 0.5s (re-checked every 100ms tick); coming back inside resets
                  * the count so a brief exit doesn't collapse the taskbox. */
-                static int mouse_outside_ticks = 0;
                 if (hg_g_hover_check_armed) {
                     if (!PtInRect(&rc, pt)) {
-                        mouse_outside_ticks++;
-                        if (mouse_outside_ticks >= 5) {
-                            KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
-                            mouse_outside_ticks = 0;
+                        s_hover_outside_ticks++;
+                        if (s_hover_outside_ticks >= 5) {
                             hide_taskbox(hwnd);
                         }
                     } else {
-                        mouse_outside_ticks = 0;
+                        s_hover_outside_ticks = 0;
                     }
                 } else {
-                    mouse_outside_ticks = 0;
+                    s_hover_outside_ticks = 0;
                 }
             }
         }
