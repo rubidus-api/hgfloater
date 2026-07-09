@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- Theme changes no longer leave the floater, taskbox, and command box window classes holding a deleted background brush.
+- OS dark mode now selects the custom dark palette and OS light mode the system palette; the two schemes were assigned swapped.
+- Task context menu commands (Focus, Close, Move, Resize) act on the window captured when the menu opened, so a background list refresh can no longer redirect them to a different window; the list also pauses refreshing while a menu is open.
+- The taskbox auto-collapse no longer steals foreground focus from the application being used.
+- Hiding the taskbox stops the hover-check timer on every path (Esc, X button, floater click), not only on timer-driven collapse.
+- Releasing a Ctrl+drag floater font-resize gesture no longer toggles the taskbox.
+- The About window text now follows Ctrl+Plus/Minus font size changes instead of keeping a destroyed font handle.
+- Command lines forwarded from a second instance are copied with an explicit size bound.
+- Persisted alpha values below 128 are honored on startup, matching the 30 percent minimum the runtime controls already allow.
+- Right and bottom taskbox resize bands are now the same width as left and top.
+- Hiding the taskbox rescans the shortcuts folder only when the folder actually changed.
+
+### Changed
+- Removed the unreachable monitor preview deferred-drop timer branch and sized global array declarations with the shared macros.
+
 ## [2026-06-24] - Floater Adjust Mode & Taskbox UX
 
 ### Added
