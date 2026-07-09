@@ -80,6 +80,7 @@ int get_items_per_row(int width, int icon_size);
 int hg_snap_width_for_cols(int cols, int icon_size);
 int hg_measure_edit_height(HWND edit_wnd, HFONT font);
 LRESULT hg_on_ctlcolor_edit(HDC hdc);
+BOOL hg_step_alpha_value(BYTE *alpha, int delta);
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect);
 typedef enum HgToolbarTextMode {
     HG_TOOLBAR_TEXT_FOCUS = 0,

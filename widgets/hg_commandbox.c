@@ -348,12 +348,8 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
             return 0;
         }
         if (GetKeyState(VK_MENU) < 0) {
-            int new_alpha = (int)hg_g_commandbox_alpha + (delta > 0 ? 15 : -15);
-            if (new_alpha > HG_MAX_ALPHA) new_alpha = HG_MAX_ALPHA;
-            if (new_alpha < HG_MIN_ALPHA) new_alpha = HG_MIN_ALPHA;
-            if (hg_g_commandbox_alpha == (BYTE)new_alpha)
+            if (!hg_step_alpha_value(&hg_g_commandbox_alpha, delta))
                 return 0;
-            hg_g_commandbox_alpha = (BYTE)new_alpha;
             SetLayeredWindowAttributes(hwnd, 0, hg_g_commandbox_alpha, LWA_ALPHA);
             save_commandbox_alpha_config();
             return 0;
