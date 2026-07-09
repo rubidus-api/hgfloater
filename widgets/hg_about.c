@@ -49,6 +49,7 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     switch (msg) {
     case WM_CREATE: {
+        hg_apply_class_background(hwnd);
         apply_dwm_attributes(hwnd);
         HWND edit_wnd =
             CreateWindowExW(0, L"EDIT", HG_ABOUT_TEXT_W,

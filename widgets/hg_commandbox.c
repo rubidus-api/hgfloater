@@ -149,6 +149,7 @@ void show_commandbox_window()
     );
 
     if (hg_g_commandbox_wnd) {
+        hg_apply_class_background(hg_g_commandbox_wnd);
         SetLayeredWindowAttributes(hg_g_commandbox_wnd, 0, hg_g_commandbox_alpha, LWA_ALPHA);
         
         hg_g_commandbox_out_wnd = CreateWindowExW(
