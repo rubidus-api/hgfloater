@@ -496,6 +496,13 @@ void apply_dwm_attributes(HWND hwnd)
     DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
 }
 
+void hg_apply_class_background(HWND hwnd)
+{
+    if (hwnd && IsWindow(hwnd) && hg_g_main_bg_brush) {
+        SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+    }
+}
+
 void refresh_theme_surfaces(HWND hwnd)
 {
     update_theme_colors();
@@ -510,12 +517,14 @@ void refresh_theme_surfaces(HWND hwnd)
 
     release_brush_handle(&hg_g_main_bg_brush);
     hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
-    if (hwnd && IsWindow(hwnd)) {
-        SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
-    }
+    /* Every class registered with the shared brush must be re-stamped, or the class
+     * keeps a deleted handle; lazily created windows heal their class on creation. */
+    hg_apply_class_background(hwnd);
+    hg_apply_class_background(hg_g_floater_wnd);
+    hg_apply_class_background(hg_g_commandbox_wnd);
 
     if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
-        SetClassLongPtrW(hg_g_about_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)hg_g_main_bg_brush);
+        hg_apply_class_background(hg_g_about_wnd);
         InvalidateRect(hg_g_about_wnd, NULL, TRUE);
         HWND edit_wnd = GetDlgItem(hg_g_about_wnd, 100);
         if (edit_wnd) {
