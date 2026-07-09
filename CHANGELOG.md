@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Toolbar painting and the volume/mute/brightness readouts no longer create COM audio devices, perform monitor DDC/CI reads, or churn GDI brushes on every frame; the values come from caches kept current by timers, setters, and menu opens.
 - Dragging the command box no longer writes its position to the configuration file on every pixel; it saves once when the drag ends.
 - Reduced static memory use by several megabytes and cut the deepest icon-resolution stack usage.
+- Internal cleanup with no behavior change: edit-height measurement, column-snap width, control coloring, alpha stepping, and read-only edit IME handling each have a single shared implementation, and the toolbar window class registers alongside the other window classes.
 
 ## [2026-06-24] - Floater Adjust Mode & Taskbox UX
 

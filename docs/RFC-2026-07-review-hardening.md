@@ -186,6 +186,14 @@ Exit criteria:
 
 Purpose: continue the RFC 2026-06 direction with the review's measured targets.
 
+Progress:
+- 2026-07-10: Added shared helpers and converted every duplicate site: `hg_measure_edit_height` (five copies), `hg_snap_width_for_cols` (ten copies), `hg_on_ctlcolor_edit` (four copies), `hg_step_alpha_value` (three copies), and `hg_readonly_edit_common` for the taskbox/monitor/about edit subclasses.
+- 2026-07-10: Unified the twin height-to-columns computations behind `taskbox_cols_from_height`.
+- 2026-07-10: The toolbar window class registers through the shared class table (with per-spec style and cursor) and unregisters with the others.
+- Extern array sizing with shared macros landed earlier under Phase 1.
+- 2026-07-10: Release build compiles warning-clean on the cross-build host; runtime verification on the Windows host is pending.
+- Remaining: split hg_taskbox.c along its seams (menus, toolbar controller, window-list refresh, window proc) now that the helpers are in place, and split hg_utils.c in the later pass this phase already defers.
+
 Tasks:
 - Add shared helpers for the repeated blocks: edit-height measurement, column-snap width and apply-columns, readonly edit subclass (IME, Esc, move-parent, wheel-forward via `dwRefData`), `WM_CTLCOLOR` handling, and alpha stepping with persistence.
 - Unify the twin resize-to-columns computations in hg_taskbox.c behind one helper.
