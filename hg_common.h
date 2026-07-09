@@ -298,6 +298,8 @@ typedef struct WindowClassSpec {
     WNDPROC wnd_proc;
     HBRUSH background;
     const WCHAR *fail_message;
+    UINT style;               /* 0 for the default */
+    const WCHAR *cursor_id;   /* NULL for IDC_ARROW */
 } WindowClassSpec;
 
 typedef enum HgCliAction {
@@ -382,6 +384,7 @@ void show_about_window(void);
 static const WCHAR HG_CLASS_FLOATER_WIDGET[] = L"hgfloater_widget_class";
 static const WCHAR HG_CLASS_ABOUT[] = L"hgabout_class";
 static const WCHAR HG_CLASS_TASKBOX[] = L"hgfloater_class";
+static const WCHAR HG_CLASS_TOOLBAR[] = L"hgtoolbar_class";
 static const WCHAR HG_CLASS_MONITOR[] = L"hgmonitor_class";
 static const WCHAR HG_CLASS_COMMANDBOX[] = L"hgcommandbox_class";
 static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";

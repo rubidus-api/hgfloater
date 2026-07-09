@@ -1739,14 +1739,7 @@ void update_layout(HWND hwnd)
 
 static LRESULT taskbox_controller_on_create(HWND hwnd)
 {
-    /* 툴바 클래스 등록 */
-    WNDCLASSW twc = {0};
-    twc.style = CS_HREDRAW | CS_VREDRAW;
-    twc.lpfnWndProc = toolbar_proc;
-    twc.hInstance = GetModuleHandle(NULL);
-    twc.lpszClassName = L"hgtoolbar_class";
-    twc.hCursor = LoadCursor(NULL, IDC_HAND);
-    RegisterClassW(&twc);
+    /* 툴바 클래스는 다른 클래스들과 함께 공유 등록 테이블에서 등록됨 */
 
     /* UI용 일반 폰트 생성 (아이콘 크기와 분리) */
     hg_g_main_font =
@@ -1755,7 +1748,7 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
     if (!hg_g_main_font)
         hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
-    hg_g_toolbar_wnd = CreateWindowExW(0, L"hgtoolbar_class", NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd,
+    hg_g_toolbar_wnd = CreateWindowExW(0, HG_CLASS_TOOLBAR, NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd,
                                        (HMENU)HG_IDC_TOOLBAR, GetModuleHandle(NULL), NULL);
 
     hg_g_edit_msg_wnd =
