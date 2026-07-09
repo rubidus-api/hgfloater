@@ -109,14 +109,8 @@ void update_edit_font_size(int delta)
 
 void update_taskbox_alpha(int delta)
 {
-    int new_alpha = (int)hg_g_taskbox_alpha + (delta > 0 ? 15 : -15);
-    if (new_alpha > HG_MAX_ALPHA)
-        new_alpha = HG_MAX_ALPHA;
-    if (new_alpha < HG_MIN_ALPHA)
-        new_alpha = HG_MIN_ALPHA;
-    if (hg_g_taskbox_alpha == (BYTE)new_alpha)
+    if (!hg_step_alpha_value(&hg_g_taskbox_alpha, delta))
         return;
-    hg_g_taskbox_alpha = (BYTE)new_alpha;
     if (hg_g_taskbox_wnd) {
         SetLayeredWindowAttributes(hg_g_taskbox_wnd, HG_TRANSPARENT_KEY, hg_g_taskbox_alpha, LWA_COLORKEY | LWA_ALPHA);
     }

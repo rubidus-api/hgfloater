@@ -614,6 +614,24 @@ int hg_snap_width_for_cols(int cols, int icon_size)
     return (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
 }
 
+/* Shared +/-15 alpha wheel step with the runtime clamp; TRUE when changed. */
+BOOL hg_step_alpha_value(BYTE *alpha, int delta)
+{
+    int new_alpha;
+
+    if (!alpha)
+        return FALSE;
+    new_alpha = (int)*alpha + (delta > 0 ? 15 : -15);
+    if (new_alpha > HG_MAX_ALPHA)
+        new_alpha = HG_MAX_ALPHA;
+    if (new_alpha < HG_MIN_ALPHA)
+        new_alpha = HG_MIN_ALPHA;
+    if (*alpha == (BYTE)new_alpha)
+        return FALSE;
+    *alpha = (BYTE)new_alpha;
+    return TRUE;
+}
+
 /* Shared WM_CTLCOLOR* handling for the scheme-colored edit controls. */
 LRESULT hg_on_ctlcolor_edit(HDC hdc)
 {
