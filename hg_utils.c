@@ -225,7 +225,7 @@ void set_system_brightness(int brightness)
     }
 }
 
-static BOOL hg_get_default_audio_endpoint_volume(IAudioEndpointVolume **out_endpoint)
+static BOOL hg_acquire_default_audio_endpoint_volume(IAudioEndpointVolume **out_endpoint)
 {
     IMMDeviceEnumerator *enumerator = NULL;
     IMMDevice *device = NULL;
@@ -254,14 +254,41 @@ static BOOL hg_get_default_audio_endpoint_volume(IAudioEndpointVolume **out_endp
     return *out_endpoint != NULL;
 }
 
+/* Paint and tooltip paths read volume/mute every refresh; one cached endpoint
+ * keeps them free of CoCreateInstance/Activate round trips. */
+static IAudioEndpointVolume *s_cached_audio_endpoint = NULL;
+
+void hg_reset_audio_endpoint_cache(void)
+{
+    HG_RELEASE_COM(s_cached_audio_endpoint);
+}
+
+static IAudioEndpointVolume *hg_cached_audio_endpoint(void)
+{
+    if (!s_cached_audio_endpoint) {
+        hg_acquire_default_audio_endpoint_volume(&s_cached_audio_endpoint);
+    }
+    return s_cached_audio_endpoint;
+}
+
+/* On failure the endpoint is likely stale (device removed or default changed):
+ * drop the cache and hand the caller one fresh endpoint to retry with. */
+static IAudioEndpointVolume *hg_retry_audio_endpoint(void)
+{
+    hg_reset_audio_endpoint_cache();
+    return hg_cached_audio_endpoint();
+}
+
 int get_system_volume()
 {
     float volume = 0.0f;
-    IAudioEndpointVolume *endpointVolume = NULL;
+    IAudioEndpointVolume *endpoint = hg_cached_audio_endpoint();
 
-    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
-        endpointVolume->lpVtbl->GetMasterVolumeLevelScalar(endpointVolume, &volume);
-        HG_RELEASE_COM(endpointVolume);
+    if (endpoint && FAILED(endpoint->lpVtbl->GetMasterVolumeLevelScalar(endpoint, &volume))) {
+        endpoint = hg_retry_audio_endpoint();
+        if (endpoint) {
+            endpoint->lpVtbl->GetMasterVolumeLevelScalar(endpoint, &volume);
+        }
     }
     return (int)(volume * 100.0f + 0.5f);
 }
@@ -274,41 +301,49 @@ void set_system_volume(int percent)
         percent = 100;
     float volume = (float)percent / 100.0f;
 
-    IAudioEndpointVolume *endpointVolume = NULL;
+    IAudioEndpointVolume *endpoint = hg_cached_audio_endpoint();
 
-    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
-        endpointVolume->lpVtbl->SetMasterVolumeLevelScalar(endpointVolume, volume, NULL);
-        if (percent > 0) {
-            endpointVolume->lpVtbl->SetMute(endpointVolume, FALSE, NULL);
+    if (endpoint && FAILED(endpoint->lpVtbl->SetMasterVolumeLevelScalar(endpoint, volume, NULL))) {
+        endpoint = hg_retry_audio_endpoint();
+        if (endpoint) {
+            endpoint->lpVtbl->SetMasterVolumeLevelScalar(endpoint, volume, NULL);
         }
-        HG_RELEASE_COM(endpointVolume);
+    }
+    if (endpoint && percent > 0) {
+        endpoint->lpVtbl->SetMute(endpoint, FALSE, NULL);
     }
 }
 
 int get_system_mute(void)
 {
     BOOL mute = FALSE;
-    IAudioEndpointVolume *endpointVolume = NULL;
+    IAudioEndpointVolume *endpoint = hg_cached_audio_endpoint();
 
-    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
-        endpointVolume->lpVtbl->GetMute(endpointVolume, &mute);
-        HG_RELEASE_COM(endpointVolume);
+    if (endpoint && FAILED(endpoint->lpVtbl->GetMute(endpoint, &mute))) {
+        endpoint = hg_retry_audio_endpoint();
+        if (endpoint) {
+            endpoint->lpVtbl->GetMute(endpoint, &mute);
+        }
     }
     return (int)mute;
 }
 
 void set_system_mute(int mute)
 {
-    IAudioEndpointVolume *endpointVolume = NULL;
+    IAudioEndpointVolume *endpoint = hg_cached_audio_endpoint();
 
-    if (hg_get_default_audio_endpoint_volume(&endpointVolume)) {
-        endpointVolume->lpVtbl->SetMute(endpointVolume, (BOOL)mute, NULL);
-        HG_RELEASE_COM(endpointVolume);
+    if (endpoint && FAILED(endpoint->lpVtbl->SetMute(endpoint, (BOOL)mute, NULL))) {
+        endpoint = hg_retry_audio_endpoint();
+        if (endpoint) {
+            endpoint->lpVtbl->SetMute(endpoint, (BOOL)mute, NULL);
+        }
     }
 }
 
 void update_audio_device_list()
 {
+    /* Menu-open time is the natural refresh point for a changed default device. */
+    hg_reset_audio_endpoint_cache();
     hg_g_audio_device_count = 0;
     IMMDeviceEnumerator *enumerator = NULL;
     IMMDeviceCollection *collection = NULL;
