@@ -215,8 +215,9 @@ LRESULT handle_copydata_command_line(const COPYDATASTRUCT *cds)
         return FALSE;
     }
 
-    if (FAILED(
-            StringCchCopyW(hg_g_pending_command_line, HG_ARRAYSIZE(hg_g_pending_command_line), (LPCWSTR)cds->lpData))) {
+    /* Payloads from foreign processes are not guaranteed NUL-terminated within cbData. */
+    if (FAILED(StringCchCopyNW(hg_g_pending_command_line, HG_ARRAYSIZE(hg_g_pending_command_line),
+                               (LPCWSTR)cds->lpData, cds->cbData / sizeof(WCHAR)))) {
         hg_g_pending_command_line[0] = L'\0';
         hg_g_has_pending_command_line = FALSE;
         return FALSE;
