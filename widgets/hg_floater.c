@@ -396,6 +396,10 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     switch (msg) {
     case WM_DISPLAYCHANGE: {
         update_monitor_enum();
+        /* Recover widgets stranded on a removed or rearranged display. */
+        ensure_window_visible(hg_g_floater_wnd, L"floater");
+        ensure_window_visible(hg_g_taskbox_wnd, L"taskbox");
+        ensure_window_visible(hg_g_commandbox_wnd, L"commandbox");
         return 0;
     }
     case WM_MOUSEACTIVATE: {

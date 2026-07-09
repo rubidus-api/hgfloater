@@ -2197,10 +2197,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     static HgTaskboxLayoutState layout_state = {{0, 0, 0, 0}};
 
     switch (msg) {
-    case WM_DISPLAYCHANGE: {
-        update_monitor_enum();
-        return 0;
-    }
+    /* WM_DISPLAYCHANGE is handled once, by the floater, for the whole process. */
     case WM_ACTIVATE: {
         InvalidateRect(hwnd, NULL, FALSE);
         return 0;
