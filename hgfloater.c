@@ -385,6 +385,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     int fx, fy, fw, fh, tx, ty, tw, th;
     load_config(L"floater", &fx, &fy, &fw, &fh, 100, 100, SC(80), SC(55));
     load_config(L"taskbox", &tx, &ty, &tw, &th, 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
+
+    /* Refine the startup scale from the monitor the floater will appear on; the
+     * primary-monitor value above only seeded the config defaults. */
+    POINT floater_origin = {fx, fy};
+    HMONITOR startup_monitor = MonitorFromPoint(floater_origin, MONITOR_DEFAULTTONEAREST);
+    UINT startup_dpi_x = 96;
+    UINT startup_dpi_y = 96;
+    if (SUCCEEDED(GetDpiForMonitor(startup_monitor, MDT_EFFECTIVE_DPI, &startup_dpi_x, &startup_dpi_y))) {
+        hg_update_scale_from_dpi(startup_dpi_x);
+    }
     hg_g_floater_alpha = (BYTE)get_alpha_config(L"floater", 204);
     hg_g_taskbox_alpha = (BYTE)get_alpha_config(L"taskbox", 204);
     hg_g_commandbox_alpha = (BYTE)get_alpha_config(L"commandbox", 204);

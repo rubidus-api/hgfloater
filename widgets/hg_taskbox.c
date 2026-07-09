@@ -2198,6 +2198,21 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
     switch (msg) {
     /* WM_DISPLAYCHANGE is handled once, by the floater, for the whole process. */
+    case WM_DPICHANGED: {
+        /* The floater/taskbox pair is co-located, so it owns the process scale. */
+        hg_update_scale_from_dpi(LOWORD(w_param));
+        hg_apply_dpi_suggested_rect(hwnd, l_param);
+        release_font_handle(&hg_g_toolbar_btn_font, FALSE);
+        update_layout(hwnd);
+        InvalidateRect(hwnd, NULL, TRUE);
+        if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+            release_font_handle(&hg_g_floater_time_font, FALSE);
+            release_font_handle(&hg_g_floater_date_font, FALSE);
+            update_floater_layout(hg_g_floater_wnd);
+            InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+        }
+        return 0;
+    }
     case WM_ACTIVATE: {
         InvalidateRect(hwnd, NULL, FALSE);
         return 0;

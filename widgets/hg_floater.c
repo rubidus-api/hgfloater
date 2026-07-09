@@ -402,6 +402,20 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         ensure_window_visible(hg_g_commandbox_wnd, L"commandbox");
         return 0;
     }
+    case WM_DPICHANGED: {
+        /* The floater/taskbox pair is co-located, so it owns the process scale. */
+        hg_update_scale_from_dpi(LOWORD(w_param));
+        hg_apply_dpi_suggested_rect(hwnd, l_param);
+        release_font_handle(&hg_g_floater_time_font, FALSE);
+        release_font_handle(&hg_g_floater_date_font, FALSE);
+        update_floater_layout(hwnd);
+        InvalidateRect(hwnd, NULL, TRUE);
+        if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+            update_layout(hg_g_taskbox_wnd);
+            InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+        }
+        return 0;
+    }
     case WM_MOUSEACTIVATE: {
         if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd))
             return MA_NOACTIVATE;

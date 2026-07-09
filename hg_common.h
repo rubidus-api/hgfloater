@@ -226,6 +226,10 @@
 #define WM_DWMCOLORIZATIONCOLORCHANGED 0x0320
 #endif
 
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0
+#endif
+
 #define HG_COLOR_BG_DEFAULT hg_g_color_scheme_selected.bg
 #define HG_COLOR_BG_TOOLBAR hg_g_color_scheme_selected.border
 #define HG_COLOR_BG_FLASH hg_g_color_scheme_selected.flash
