@@ -1299,16 +1299,21 @@ static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param)
 }
 
 static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerState *state,
-                                                 const HgTaskboxDragState *drag_state)
+                                                 HgTaskboxDragState *drag_state)
 {
     state->hovered_type = -1;
     state->hovered_index = -1;
     if (!state->is_resizing && !state->is_moving_taskbox && !drag_state->is_dragging) {
         state->pressed_type = -1;
         state->pressed_index = -1;
-        ReleaseCapture();
+        /* A pending (not yet started) reorder drag must not survive the pointer
+         * leaving, or the next unrelated button-up reuses its source index. */
+        drag_state->source_index = -1;
+        drag_state->target_index = -1;
+        if (GetCapture() == hwnd) {
+            ReleaseCapture();
+        }
     }
-    update_focus_message(-1, -1);
     InvalidateRect(hwnd, NULL, FALSE);
     return 0;
 }
