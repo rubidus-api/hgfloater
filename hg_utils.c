@@ -403,7 +403,7 @@ static void refresh_system_accent_color(void)
 
 void init_color_scheme(void)
 {
-    hg_g_color_scheme_light = (color_scheme_t){
+    hg_g_color_scheme_dark = (color_scheme_t){
         .bg = HG_THEME_CUSTOM_BG,
         .border = HG_THEME_CUSTOM_BORDER,
         .text = HG_THEME_CUSTOM_TEXT,
@@ -411,7 +411,8 @@ void init_color_scheme(void)
         .selected = HG_THEME_CUSTOM_SELECTED,
     };
 
-    hg_g_color_scheme_dark = (color_scheme_t){
+    /* GetSysColor values do not follow app dark mode, so they form the light scheme. */
+    hg_g_color_scheme_light = (color_scheme_t){
         .bg = GetSysColor(COLOR_WINDOW),
         .border = GetSysColor(COLOR_WINDOWFRAME),
         .text = GetSysColor(COLOR_WINDOWTEXT),
@@ -448,7 +449,7 @@ void update_theme_colors()
     init_color_scheme();
 
     if (!hg_g_is_high_contrast && hg_g_has_system_accent_color) {
-        hg_g_color_scheme_dark.flash = hg_g_system_accent_color;
+        hg_g_color_scheme_light.flash = hg_g_system_accent_color;
     }
 
     if (hg_g_is_high_contrast) {
