@@ -22,6 +22,8 @@ void init_color_scheme(void);
 void update_theme_colors(void);
 void apply_dwm_attributes(HWND hwnd);
 void hg_apply_class_background(HWND hwnd);
+void hg_update_scale_from_dpi(UINT dpi);
+void hg_apply_dpi_suggested_rect(HWND hwnd, LPARAM l_param);
 void refresh_theme_surfaces(HWND hwnd);
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 void update_monitor_enum(void);

@@ -504,6 +504,22 @@ void hg_apply_class_background(HWND hwnd)
     }
 }
 
+void hg_update_scale_from_dpi(UINT dpi)
+{
+    if (dpi > 0) {
+        hg_g_scale_factor = (double)dpi / 96.0;
+    }
+}
+
+void hg_apply_dpi_suggested_rect(HWND hwnd, LPARAM l_param)
+{
+    const RECT *rc = (const RECT *)l_param;
+    if (hwnd && IsWindow(hwnd) && rc) {
+        SetWindowPos(hwnd, NULL, rc->left, rc->top, rc->right - rc->left, rc->bottom - rc->top,
+                     SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+}
+
 void refresh_theme_surfaces(HWND hwnd)
 {
     update_theme_colors();

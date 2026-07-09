@@ -48,6 +48,10 @@ static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
 LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     switch (msg) {
+    case WM_DPICHANGED:
+        /* Scale ownership stays with the floater/taskbox pair; just take the size. */
+        hg_apply_dpi_suggested_rect(hwnd, l_param);
+        return 0;
     case WM_CREATE: {
         hg_apply_class_background(hwnd);
         apply_dwm_attributes(hwnd);

@@ -259,6 +259,10 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
     }
     case WM_ERASEBKGND:
         return 1;
+    case WM_DPICHANGED:
+        /* Scale ownership stays with the floater/taskbox pair; just take the size. */
+        hg_apply_dpi_suggested_rect(hwnd, l_param);
+        return 0;
     case WM_TIMER: {
         if (w_param == HG_TIMER_MONITOR_REFRESH) {
             if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
