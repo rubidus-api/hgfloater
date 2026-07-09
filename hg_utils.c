@@ -614,6 +614,17 @@ int hg_snap_width_for_cols(int cols, int icon_size)
     return (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
 }
 
+/* Shared WM_CTLCOLOR* handling for the scheme-colored edit controls. */
+LRESULT hg_on_ctlcolor_edit(HDC hdc)
+{
+    SetTextColor(hdc, hg_g_color_scheme_selected.text);
+    SetBkMode(hdc, OPAQUE);
+    SetBkColor(hdc, hg_g_color_scheme_selected.bg);
+    if (!hg_g_edit_bg_brush)
+        hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
+    return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+}
+
 /* Shared single-line edit height measurement (font metrics plus padding). */
 int hg_measure_edit_height(HWND edit_wnd, HFONT font)
 {

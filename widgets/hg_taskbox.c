@@ -2362,27 +2362,19 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         /* fallthrough */
     case WM_CTLCOLORLISTBOX: {
         HDC hdc_static = (HDC)w_param;
-        SetTextColor(hdc_static, hg_g_color_scheme_selected.text);
-        /* 투명 배경 모드 시 글자가 겹쳐 그려지는 문제 방지를 위해 배경을 칠함 */
-        SetBkMode(hdc_static, OPAQUE);
 
-        COLORREF bg_color = hg_g_color_scheme_selected.bg;
+        /* 하이라이트 중에는 깜빡임 배경 유지 (브러시는 캐싱하여 GDI 누수 방지) */
         if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
-            bg_color = HG_COLOR_BG_FLASH;
-        }
-        SetBkColor(hdc_static, bg_color);
-
-        /* 하이라이트 중일 때는 브러시를 캐싱하여 반환 (GDI 누수 방지) */
-        if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
+            SetTextColor(hdc_static, hg_g_color_scheme_selected.text);
+            SetBkMode(hdc_static, OPAQUE);
+            SetBkColor(hdc_static, HG_COLOR_BG_FLASH);
             if (!hg_g_hbr_highlight) {
                 hg_g_hbr_highlight = CreateSolidBrush(HG_COLOR_BG_FLASH);
             }
             return hg_g_hbr_highlight ? (LRESULT)hg_g_hbr_highlight : (LRESULT)GetStockObject(BLACK_BRUSH);
         }
 
-        if (!hg_g_edit_bg_brush)
-            hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
-        return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+        return hg_on_ctlcolor_edit(hdc_static);
     }
     case WM_DESTROY:
         return taskbox_controller_on_destroy(hwnd);

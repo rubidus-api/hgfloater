@@ -80,13 +80,8 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
         return 0;
     }
     case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLOREDIT: {
-        HDC hdc = (HDC)w_param;
-        SetTextColor(hdc, hg_g_color_scheme_selected.text);
-        SetBkMode(hdc, OPAQUE);
-        SetBkColor(hdc, hg_g_color_scheme_selected.bg);
-        return (LRESULT)GetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND);
-    }
+    case WM_CTLCOLOREDIT:
+        return hg_on_ctlcolor_edit((HDC)w_param);
     case WM_KEYDOWN: {
         if (w_param == VK_ESCAPE) {
             PostMessageW(hwnd, WM_CLOSE, 0, 0);
