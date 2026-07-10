@@ -200,8 +200,9 @@ void activate_toolbar_item(int index)
     switch (hg_toolbar_builtin_click_role(index)) {
     case HG_TOOLBAR_CLICK_NONE:
         break;
-    case HG_TOOLBAR_CLICK_HIDE_TASKBOX:
-        hide_taskbox(hg_g_taskbox_wnd);
+    case HG_TOOLBAR_CLICK_EXIT_APP:
+        if (hg_g_floater_wnd)
+            PostMessageW(hg_g_floater_wnd, WM_COMMAND, HG_IDM_CLOSE_APP, 0);
         break;
     case HG_TOOLBAR_CLICK_TOGGLE_DESKTOP: {
         static BOOL is_desktop_shown = FALSE;
@@ -453,7 +454,7 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
     if (hg_g_edit_msg_wnd) {
         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
         SetWindowTextW(hg_g_edit_msg_wnd,
-                       L"RClick: Settings | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
+                       L"X: Exit | O: Options | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
         SetWindowSubclass(hg_g_edit_msg_wnd, edit_subclass_proc, 0, 0);
         disable_window_ime(hg_g_edit_msg_wnd);
     }
