@@ -1,2 +1,53 @@
+#include <winver.h>
+
+/* Version components arrive from the build script as plain tokens (no quoted
+ * strings cross the shell boundary); the display string is assembled here by
+ * stringization. *_STR variants keep their leading zeros, the numeric ones
+ * must not have any (a leading zero would parse as octal in FILEVERSION).
+ * The fallback matches the last released version so a bare windres invocation
+ * still produces a valid resource. */
+#ifndef HG_RC_VER_MAJOR
+#define HG_RC_VER_MAJOR 26
+#define HG_RC_VER_MINOR 5
+#define HG_RC_VER_PATCH 31
+#endif
+#ifndef HG_RC_VER_MINOR_STR
+#define HG_RC_VER_MINOR_STR 05
+#define HG_RC_VER_PATCH_STR 31
+#endif
+
+#define HG_RC_STR_HELPER(x) #x
+#define HG_RC_STR(x) HG_RC_STR_HELPER(x)
+#define HG_RC_VERSION_STR                                                                                              \
+    "v" HG_RC_STR(HG_RC_VER_MAJOR) "." HG_RC_STR(HG_RC_VER_MINOR_STR) "." HG_RC_STR(HG_RC_VER_PATCH_STR)
+
 1 ICON "hgfloater.ico"
 1 24 "hgfloater.manifest"
+
+1 VERSIONINFO
+FILEVERSION HG_RC_VER_MAJOR, HG_RC_VER_MINOR, HG_RC_VER_PATCH, 0
+PRODUCTVERSION HG_RC_VER_MAJOR, HG_RC_VER_MINOR, HG_RC_VER_PATCH, 0
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "ProductName", "hgfloater"
+            VALUE "FileDescription", "hgfloater floating widget and task switcher"
+            VALUE "FileVersion", HG_RC_VERSION_STR
+            VALUE "ProductVersion", HG_RC_VERSION_STR
+            VALUE "OriginalFilename", "hgfloater.exe"
+            VALUE "CompanyName", "rubidus-api"
+            VALUE "LegalCopyright", "MIT License"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END
