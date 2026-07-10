@@ -1,6 +1,7 @@
 # Verification Checklist 2026-06
 
-Status: Draft
+Status: Active checklist
+Last full pass: 2026-07-10 on the Windows host against v26.07.10
 Date: 2026-06-24
 
 This checklist records the repeatable verification expected after hgfloater refactors. It is intentionally small and focused on the behavior most likely to regress during the staged refactor.

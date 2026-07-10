@@ -1,6 +1,6 @@
 # RFC 2026-07: Full Project Review and Hardening Plan
 
-Status: Draft
+Status: Completed (implemented, released as v26.07.10, runtime-verified)
 Date: 2026-07-09
 
 ## Summary
@@ -124,7 +124,8 @@ Progress:
 - 2026-07-09: Taskbox hide restores foreground only when this process owns it, rescans shortcuts only when the directory changed, and kills the hover-check timer on every hide path and on destroy.
 - 2026-07-09: About edit follows main font size changes; releasing a floater Ctrl+drag font-resize no longer toggles the taskbox.
 - 2026-07-09: Smaller items landed: pending toolbar drag state cleared on mouse leave with owned-capture release, dead monitor deferred-drop branch removed, monitor edit metric DC guarded, extern array sizes use the shared macros, alpha load clamp matches the runtime minimum, resize hit bands symmetric.
-- 2026-07-09: Release build and all smoke tests compile warning-clean with the full MinGW warning set on the cross-build host; runtime verification on the Windows host is still pending.
+- 2026-07-09: Release build and all smoke tests compile warning-clean with the full MinGW warning set on the cross-build host.
+- 2026-07-10: Windows runtime verification passed against v26.07.10: theme toggle with lazily created windows, task-menu target correctness under list churn, collapse focus behavior, and shortcut-folder change detection.
 - 2026-07-10: Runtime testing caught a side effect of the focus-preserving auto-collapse: once another application held the foreground, Windows refused the plain SetForegroundWindow on the next hover-summon, leaving the taskbox visible but deaf to keys (reported as the Command Box no longer opening on C). Fixed with hg_force_foreground, which briefly attaches to the foreground thread's input queue when the plain request is refused.
 
 Tasks:
@@ -152,7 +153,8 @@ Progress:
 - 2026-07-09: Monitor preview geometry persists under sanitized display device names, with the old index keys read as migration defaults.
 - 2026-07-09: `WM_DPICHANGED` is handled by every top-level widget: the co-located floater/taskbox pair updates the process scale, adopts the suggested rect, and rebuilds scale-dependent fonts and layout; command box, about, and monitor previews adopt the suggested rect.
 - 2026-07-09: Startup scale derives from the monitor containing the loaded floater position via `GetDpiForMonitor` instead of always the primary monitor.
-- 2026-07-09: Release build compiles warning-clean on the cross-build host; mixed-DPI runtime verification on the Windows host is pending.
+- 2026-07-09: Release build compiles warning-clean on the cross-build host.
+- 2026-07-10: Windows runtime verification passed against v26.07.10: cross-monitor DPI rescale, live scale changes, display removal recovery, and name-keyed monitor preview positions.
 - Remaining staged work: independent per-window scaling for command box, about, and monitor previews when they sit on a different-DPI monitor than the floater.
 
 Tasks:
@@ -177,7 +179,8 @@ Progress:
 - 2026-07-09: Command box geometry persists on `WM_EXITSIZEMOVE` (and after keyboard moves) instead of every `WM_MOVE`.
 - 2026-07-09: Toolbar and taskbox painting use a color-keyed solid-brush cache flushed on theme change and shutdown.
 - 2026-07-09: `ShortcutItem` display names shrank to `HG_MAX_STR` and the deep UWP icon path buffers moved to static scratch, cutting BSS by several MB and the worst window-proc stack chain by roughly 600 KB.
-- 2026-07-09: Release build compiles warning-clean on the cross-build host; runtime verification on the Windows host is pending.
+- 2026-07-09: Release build compiles warning-clean on the cross-build host.
+- 2026-07-10: Windows runtime verification passed against v26.07.10: audio device switching with the cached endpoint, external brightness pickup within the timer window, and stable GDI object counts over extended use.
 
 Tasks:
 - Cache audio state: keep one `IAudioEndpointVolume` (re-acquired on device change) or cached values refreshed by a timer or `RegisterControlChangeNotify`, so paint and tooltip paths never activate COM.
@@ -200,7 +203,7 @@ Progress:
 - 2026-07-10: Unified the twin height-to-columns computations behind `taskbox_cols_from_height`.
 - 2026-07-10: The toolbar window class registers through the shared class table (with per-spec style and cursor) and unregisters with the others.
 - Extern array sizing with shared macros landed earlier under Phase 1.
-- 2026-07-10: Release build compiles warning-clean on the cross-build host; runtime verification on the Windows host is pending.
+- 2026-07-10: Windows runtime verification passed against v26.07.10.
 - 2026-07-10: Split hg_taskbox.c (2,362 lines) into four translation units: hg_taskbox.c (window proc, layout, mutators; 1,057), hg_toolbar.c (773), hg_taskbox_menus.c (354), and hg_window_list.c (184), with cross-unit state in widgets/hg_taskbox_internal.h and the build source list updated. The split compiles warning-clean on the cross-build host.
 - 2026-07-10: Split hg_utils.c (2,379 lines) into hg_audio.c (239), hg_display.c (244), and hg_shell.c (1,100, dominated by the icon pipeline), leaving hg_utils.c with the theme/GDI/string/layout/toolbar-metadata/input helpers (809). The split compiles warning-clean on the cross-build host. Phase 4 is complete.
 
@@ -247,7 +250,8 @@ Progress:
 - 2026-07-10: build.bat accepts debug/release/test arguments for unattended runs: no menu, no auto-start, exit code reflects the result.
 - 2026-07-10: Pure calc helpers (alpha clamp, snap width, items-per-row, DPI scale) moved to hg_calc.c/h with no Win32 dependency; test/test_calc.c runs host-native (verified on the Linux dev host and the cross-build host) and under the existing runner.
 - 2026-07-10: scripts/build-mingw.sh reproduces the release build, test compilation, and host-native test run on any Linux host with mingw-w64; verified end to end on the cross-build host.
-- Remaining: a CI job stays a user decision under the privacy policy, and build.bat's interactive/argument paths still need one confirmation run on the Windows host.
+- 2026-07-10: build.bat interactive and argument runs confirmed on the Windows host against v26.07.10.
+- Remaining: a CI job stays a user decision under the privacy policy.
 
 Tasks:
 - Replace the wmic date parsing with a supported mechanism before it breaks on current Windows 11.
