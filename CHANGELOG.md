@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.11] - 2026-07-11
 
 ### Changed
 - The keyboard/click focus on taskbox items is now marked by a yellow background fill (task icons and toolbar buttons alike, including the value buttons) instead of an accent ring, which proved too subtle at small icon sizes; plain mouse hover keeps its lighter highlight.
