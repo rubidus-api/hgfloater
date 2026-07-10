@@ -47,7 +47,8 @@ Use a Windows 11 desktop with at least one normal application window open. Run t
 
 ### Toolbar
 
-- Built-in toolbar labels appear in the expected order: `R`, move handle, `X`, desktop, `P`, `C`, `A`, `B`, `V`, `F`.
+- Built-in toolbar labels appear in the expected order: `R`, move handle, `X`, desktop, `O`, `C`, `A`, `B`, `V`, `F`.
+- `X` exits the application (all windows close, hotkey and gamma restore).
 - `F` collapses to the floater in adjust mode: hover-expand stays paused, `Ctrl`/`Alt + Mouse Wheel` tune size/alpha, and a floater click returns to the taskbox.
 - Task icons and shortcut icons draw without blank slots when available.
 - Toolbar focus follows mouse press and keyboard/context menu actions target the focused item.
@@ -56,7 +57,7 @@ Use a Windows 11 desktop with at least one normal application window open. Run t
 
 ### Menus
 
-- `P` opens the main popup menu.
+- `O` opens the main options menu.
 - Open Shortcuts Folder, Edit Configuration, About, Reset Settings, Arrange Monitors, Lock Screen, and Exit menu items dispatch correctly.
 - Select Audio Device lists active render devices.
 - Audio Mute menu item reflects and toggles the current mute state.
