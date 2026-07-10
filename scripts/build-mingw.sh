@@ -15,7 +15,9 @@ WARNING_FLAGS="-Wall -Wextra -Wpedantic -Wshadow -Wformat=2 -Wdouble-promotion \
 VER_Y=$(date +%y)
 VER_M=$(date +%m)
 VER_D=$(date +%d)
-VERSION_STRING="v$VER_Y.$VER_M.$VER_D"
+# Optional suffix for same-day re-releases (e.g. VERSION_SUFFIX=b -> v26.07.10b).
+VER_SUFFIX=${VERSION_SUFFIX:-}
+VERSION_STRING="v$VER_Y.$VER_M.$VER_D$VER_SUFFIX"
 
 if command -v python3 >/dev/null 2>&1; then
     python3 scripts/gen_about.py .
@@ -23,7 +25,7 @@ fi
 
 "$CROSS-windres" hgfloater.rc -O coff -o "$OUT/hgfloater_res.o" \
     -DHG_RC_VER_MAJOR=$((10#$VER_Y)) -DHG_RC_VER_MINOR=$((10#$VER_M)) -DHG_RC_VER_PATCH=$((10#$VER_D)) \
-    -DHG_RC_VER_MINOR_STR="$VER_M" -DHG_RC_VER_PATCH_STR="$VER_D"
+    -DHG_RC_VER_MINOR_STR="$VER_M" -DHG_RC_VER_PATCH_STR="$VER_D$VER_SUFFIX"
 
 # shellcheck disable=SC2086
 "$CROSS-gcc" -o "$OUT/hgfloater.exe" \
