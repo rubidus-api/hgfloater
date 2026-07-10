@@ -106,6 +106,22 @@ void commandbox_execute()
     free(in_buf);
 }
 
+/* Recover a position saved off-screen (for example from an old monitor
+ * layout), record where the window actually is in the taskbox log, and take
+ * focus. Shared by the first-show and re-show paths. */
+static void commandbox_after_show(void)
+{
+    ensure_window_visible(hg_g_commandbox_wnd, L"commandbox");
+    RECT rc;
+    if (GetWindowRect(hg_g_commandbox_wnd, &rc)) {
+        WCHAR msg[96];
+        hellgates_wsprintf(msg, HG_ARRAYSIZE(msg), L"CommandBox: shown at (%d,%d) %dx%d", rc.left, rc.top,
+                           rc.right - rc.left, rc.bottom - rc.top);
+        append_message(msg);
+    }
+    hg_force_foreground(hg_g_commandbox_wnd);
+}
+
 void show_commandbox_window()
 {
     if (hg_g_commandbox_wnd && IsWindow(hg_g_commandbox_wnd)) {
@@ -113,7 +129,7 @@ void show_commandbox_window()
             ShowWindow(hg_g_commandbox_wnd, SW_HIDE);
         } else {
             ShowWindow(hg_g_commandbox_wnd, SW_SHOWNORMAL);
-            hg_force_foreground(hg_g_commandbox_wnd);
+            commandbox_after_show();
         }
         return;
     }
@@ -182,7 +198,9 @@ void show_commandbox_window()
         SendMessageW(hg_g_commandbox_wnd, WM_SIZE, 0, MAKELPARAM(rc_client.right, rc_client.bottom));
 
         ShowWindow(hg_g_commandbox_wnd, SW_SHOWNORMAL);
-        hg_force_foreground(hg_g_commandbox_wnd);
+        commandbox_after_show();
+    } else {
+        MessageBoxW(NULL, L"Failed to create the Command Box window.", L"hgfloater", MB_ICONERROR);
     }
 }
 
