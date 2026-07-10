@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- The floater status bars no longer draw a filled track behind them; the floater background shows through, so the blue MEM bar stays visible in dark mode where the system highlight color used to fill the track with the same blue.
+
+### Changed
+- The keyboard/mouse focus outline around toolbar icons is drawn a few pixels thick, making the focused item clearly visible without changing the icon layout.
+
 ## [v26.07.10c] - 2026-07-10
 
 ### Changed

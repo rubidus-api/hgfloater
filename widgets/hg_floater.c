@@ -148,10 +148,9 @@ static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h, int lab
 
         RECT track = {x + label_w, top + bar_gap, x + w, top + row_h - bar_gap};
         if (track.right > track.left && track.bottom > track.top) {
-            HBRUSH track_brush = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-            if (track_brush)
-                FillRect(dc, &track, track_brush);
-
+            /* No track fill: the floater background shows through, so the bars
+             * never clash with theme colors (the blue system highlight used to
+             * hide the blue MEM bar in dark mode). */
             int value = rows[i].value;
             if (value < 0)
                 value = 0;
