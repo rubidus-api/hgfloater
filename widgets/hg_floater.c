@@ -557,6 +557,15 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         ensure_window_visible(hg_g_floater_wnd, L"floater");
         ensure_window_visible(hg_g_taskbox_wnd, L"taskbox");
         ensure_window_visible(hg_g_commandbox_wnd, L"commandbox");
+        /* Repaint everything after a display change; stale layered content can
+         * otherwise linger looking washed out. */
+        InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+        if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+            InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+            if (hg_g_toolbar_wnd) {
+                InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
+            }
+        }
         return 0;
     }
     case WM_DPICHANGED: {
@@ -714,6 +723,24 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             }
             if (IsWindowVisible(hwnd) && floater_refresh_stats()) {
                 InvalidateRect(hwnd, NULL, FALSE); /* fixed panel width: repaint only */
+            }
+            /* Periodic revalidation: layered-window content can go stale after
+             * display sleep or DWM hiccups and then looks washed out until the
+             * next repaint, and both widgets can otherwise go minutes without
+             * one. Force a full repaint of whichever is visible every few
+             * seconds so any such state heals itself. */
+            static int revalidate_ticks = 0;
+            if (++revalidate_ticks >= 5) {
+                revalidate_ticks = 0;
+                if (IsWindowVisible(hwnd)) {
+                    InvalidateRect(hwnd, NULL, TRUE);
+                }
+                if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+                    InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+                    if (hg_g_toolbar_wnd) {
+                        InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
+                    }
+                }
             }
             for (int i = 0; i < hg_g_monitor_count; i++) {
                 if (hg_g_monitors[i].active && hg_g_monitors[i].hwnd) {
