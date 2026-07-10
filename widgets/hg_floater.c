@@ -5,6 +5,9 @@
 /* Forward declaration for show_about_window which is in hgfloater.c (or widgets/hg_about.c when created) */
 void show_about_window(void);
 
+/* Tiny label font for the status bars; recreated whenever the floater font size or DPI changes. */
+static HFONT s_floater_label_font = NULL;
+
 void update_floater_font_size(int delta)
 {
     int new_size = hg_g_floater_font_size + (delta > 0 ? 2 : -2);
@@ -16,6 +19,7 @@ void update_floater_font_size(int delta)
         hg_g_floater_font_size = new_size;
         release_font_handle(&hg_g_floater_time_font, FALSE);
         release_font_handle(&hg_g_floater_date_font, FALSE);
+        release_font_handle(&s_floater_label_font, FALSE);
         update_floater_layout(hg_g_floater_wnd);
         InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
         save_floater_font_config();
@@ -44,7 +48,6 @@ static int s_stat_mem = -1;
 static int s_stat_bat = -1;
 static BOOL s_stat_has_bat = FALSE;
 static BOOL s_stat_charging = FALSE;
-static HFONT s_floater_label_font = NULL;
 
 static BOOL floater_refresh_stats(void)
 {
@@ -72,13 +75,40 @@ static BOOL floater_refresh_stats(void)
 }
 
 /* Only the tiny labels claim exclusive horizontal space; the bars themselves
- * run underneath the clock and date as background. */
-static int floater_stats_panel_width(void)
+ * run underneath the clock and date as background. The label font follows the
+ * floater font size so the labels stay proportionally small. */
+static int floater_label_font_height(void)
 {
-    return hg_g_floater_show_stats ? SC(24) : 0;
+    int size = hg_g_floater_font_size * 4 / 10;
+    if (size < 8)
+        size = 8;
+    return size;
 }
 
-static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h)
+static HFONT floater_label_font(void)
+{
+    if (!s_floater_label_font) {
+        s_floater_label_font = CreateFontW(SC(floater_label_font_height()), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                           DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+    }
+    return s_floater_label_font;
+}
+
+/* Exclusive strip width for the labels, from the widest label's extent. */
+static int floater_stats_label_width(HDC hdc)
+{
+    SIZE sz = {0};
+    HFONT font = floater_label_font();
+
+    if (font) {
+        HFONT old_font = (HFONT)SelectObject(hdc, font);
+        GetTextExtentPoint32W(hdc, L"BAT+", 4, &sz);
+        SelectObject(hdc, old_font);
+    }
+    return (sz.cx > 0 ? sz.cx : SC(20)) + SC(3);
+}
+
+static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h, int label_w)
 {
     struct {
         const WCHAR *label;
@@ -99,17 +129,13 @@ static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h)
     if (count == 0 || w <= 0 || h <= 0)
         return;
 
-    if (!s_floater_label_font) {
-        s_floater_label_font = CreateFontW(SC(9), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0,
-                                           hg_g_font_name);
-    }
+    HFONT font = floater_label_font();
     HFONT old_font = NULL;
-    if (s_floater_label_font)
-        old_font = (HFONT)SelectObject(dc, s_floater_label_font);
+    if (font)
+        old_font = (HFONT)SelectObject(dc, font);
     SetBkMode(dc, TRANSPARENT);
     SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
 
-    int label_w = SC(22);
     int row_h = h / count;
     int bar_gap = SC(2);
     int drawn = 0;
@@ -182,9 +208,13 @@ void update_floater_layout(HWND hwnd)
     int padding_x = pen_width + SC(20);
     int padding_y = pen_width + SC(10);
     int width = (sz_time.cx > sz_date.cx ? sz_time.cx : sz_date.cx);
-    int stats_w = floater_stats_panel_width();
-    if (stats_w > 0)
-        width += stats_w + SC(4);
+    int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
+    if (stats_w > 0) {
+        /* The bars run under the text, so keep the text column snug against
+         * the label strip instead of using the roomy centered padding. */
+        padding_x = pen_width + SC(8);
+        width += stats_w + SC(2);
+    }
     width += padding_x;
     int height = sz_time.cy + sz_date.cy + padding_y;
 
@@ -283,8 +313,8 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     if (start_y < 0)
                         start_y = 0;
 
-                    int stats_w = floater_stats_panel_width();
-                    int stats_gap = (stats_w > 0) ? SC(4) : 0;
+                    int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(mem_dc) : 0;
+                    int stats_gap = (stats_w > 0) ? SC(2) : 0;
 
                     RECT text_area = rc;
                     text_area.left = rc.left + pen_width + stats_w + stats_gap;
@@ -302,7 +332,8 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                          * they span from the label strip to the inner right edge. */
                         int panel_x = rc.left + pen_width + SC(3);
                         int panel_w = (rc.right - pen_width) - panel_x;
-                        floater_draw_stats_panel(mem_dc, panel_x, start_y, panel_w, total_text_height);
+                        floater_draw_stats_panel(mem_dc, panel_x, start_y, panel_w, total_text_height,
+                                                 stats_w - SC(3));
                     }
 
                     SelectObject(mem_dc, hg_g_floater_time_font);
@@ -588,6 +619,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     hg_g_floater_font_size = new_size;
                     release_font_handle(&hg_g_floater_time_font, FALSE);
                     release_font_handle(&hg_g_floater_date_font, FALSE);
+                    release_font_handle(&s_floater_label_font, FALSE);
                     update_floater_layout(hwnd);
                     InvalidateRect(hwnd, NULL, TRUE);
                     save_floater_font_config();
