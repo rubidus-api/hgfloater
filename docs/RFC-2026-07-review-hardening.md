@@ -231,6 +231,15 @@ Exit criteria:
 
 Purpose: keep the build working and scriptable, and grow real test coverage.
 
+Progress:
+- 2026-07-10: build.bat derives the version date from PowerShell instead of the removed wmic tool.
+- 2026-07-10: The about-text generator lives in scripts/gen_about.ps1 (invoked by build.bat) with a byte-compatible scripts/gen_about.py mirror for non-Windows hosts; the fragile echo-assembled inline script is gone.
+- 2026-07-10: hgfloater.rc carries a VERSIONINFO block fed by numeric defines plus stringized zero-padded components, with a valid fallback for bare windres invocations; verified with and without defines on the cross-build host.
+- 2026-07-10: build.bat accepts debug/release/test arguments for unattended runs: no menu, no auto-start, exit code reflects the result.
+- 2026-07-10: Pure calc helpers (alpha clamp, snap width, items-per-row, DPI scale) moved to hg_calc.c/h with no Win32 dependency; test/test_calc.c runs host-native (verified on the Linux dev host and the cross-build host) and under the existing runner.
+- 2026-07-10: scripts/build-mingw.sh reproduces the release build, test compilation, and host-native test run on any Linux host with mingw-w64; verified end to end on the cross-build host.
+- Remaining: a CI job stays a user decision under the privacy policy, and build.bat's interactive/argument paths still need one confirmation run on the Windows host.
+
 Tasks:
 - Replace the wmic date parsing with a supported mechanism before it breaks on current Windows 11.
 - Extract the about-text generator into a standalone script (PowerShell or Python) usable from both the batch build and the Linux host.

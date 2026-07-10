@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Hiding the taskbox rescans the shortcuts folder only when the folder actually changed.
 
 ### Changed
+- The executable now carries standard Windows version information (file properties show the vYY.MM.DD build version), and the build derives its date without the removed wmic tool.
+- build.bat can run unattended (`build.bat debug|release|test`), and the About-text generator is a standalone script usable on non-Windows hosts too.
 - Removed the unreachable monitor preview deferred-drop timer branch and sized global array declarations with the shared macros.
 - Toolbar painting and the volume/mute/brightness readouts no longer create COM audio devices, perform monitor DDC/CI reads, or churn GDI brushes on every frame; the values come from caches kept current by timers, setters, and menu opens.
 - Dragging the command box no longer writes its position to the configuration file on every pixel; it saves once when the drag ends.
