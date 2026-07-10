@@ -54,8 +54,10 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
     return toolbar_invert_color(base_color);
 }
 
-/* Focus outline: a few FrameRect rings drawn inward so the focused item stands
- * out clearly without changing the item layout. */
+/* Focus outline: a bold accent ring around the focused item. It starts one
+ * scaled pixel outside the button (the inter-item gap absorbs it, so the
+ * layout is unchanged) and runs at least three pixels thick inward, matching
+ * the clearly visible muted-border treatment. */
 static void toolbar_draw_focus_frame(HDC dc, const RECT *rc)
 {
     HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
@@ -63,9 +65,10 @@ static void toolbar_draw_focus_frame(HDC dc, const RECT *rc)
         return;
 
     RECT ring = *rc;
-    int thickness = SC(2);
-    if (thickness < 2)
-        thickness = 2;
+    InflateRect(&ring, SC(1), SC(1));
+    int thickness = SC(3);
+    if (thickness < 3)
+        thickness = 3;
     for (int i = 0; i < thickness; ++i) {
         FrameRect(dc, &ring, hbr);
         InflateRect(&ring, -1, -1);
