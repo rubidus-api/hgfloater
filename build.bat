@@ -49,36 +49,9 @@ taskkill /f /im hgfloater.exe >nul 2>&1
 
 echo Building hgfloater [%MODE%] [Version !VERSION_STRING!] using GCC...
 
-:: Generate hg_about_text.h from README.md
+:: Generate hg_about_text.h from README.md (scripts\gen_about.py mirrors this for non-Windows hosts)
 echo Generating About text from README.md...
-echo $readmePath = 'README.md' > gen_about.ps1
-echo $outputPath = 'hg_about_text.h' >> gen_about.ps1
-echo if ^(Test-Path $readmePath^) { >> gen_about.ps1
-echo     [byte[]]$bytes = [System.IO.File]::ReadAllBytes^($readmePath^) >> gen_about.ps1
-echo     $enc = New-Object System.Text.UTF8Encoding^($false^) >> gen_about.ps1
-echo     $readme = $enc.GetString^($bytes^) >> gen_about.ps1
-echo     $lines = $readme -split '\r?\n' >> gen_about.ps1
-echo     $skip = $false >> gen_about.ps1
-echo     $output = @^(^) >> gen_about.ps1
-echo     foreach ^($line in $lines^) { >> gen_about.ps1
-echo         if ^($line.Contains^('^<^^!-- SKIP_START --^>'^)^) { $skip = $true; continue } >> gen_about.ps1
-echo         if ^($line.Contains^('^<^^!-- SKIP_END --^>'^)^) { $skip = $false; continue } >> gen_about.ps1
-echo         if ^($skip -or $line.Contains^('^<^^!-- SKIP --^>'^) -or $line.Trim^(^).StartsWith^('^^!['^)^) { continue } >> gen_about.ps1
-echo         $escaped = $line.Replace^('\', '\\'^).Replace^('"', '\"'^) >> gen_about.ps1
-echo         $output += "L`"$escaped\r\n`"" >> gen_about.ps1
-echo     } >> gen_about.ps1
-echo     $joined = $output -join ' ' >> gen_about.ps1
-echo     $content = "#ifndef HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_README_W $joined`r`n#endif" >> gen_about.ps1
-echo     [System.IO.File]::WriteAllText^($outputPath, $content, $enc^) >> gen_about.ps1
-echo     Write-Host "[Success] README.md processed successfully." -ForegroundColor Green >> gen_about.ps1
-echo } else { >> gen_about.ps1
-echo     $content = '#ifndef HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_README_W L"(README.md not found)"`r`n#endif' >> gen_about.ps1
-echo     Set-Content -Path $outputPath -Value $content -Encoding UTF8 >> gen_about.ps1
-echo     Write-Host "[Warning] README.md not found." -ForegroundColor Yellow >> gen_about.ps1
-echo } >> gen_about.ps1
-
-powershell -NoProfile -ExecutionPolicy Bypass -File gen_about.ps1
-if exist gen_about.ps1 del gen_about.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command
 windres hgfloater.rc -O coff -o hgfloater_res.o
