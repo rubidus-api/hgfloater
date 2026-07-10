@@ -94,6 +94,13 @@ These should be preserved by every phase:
 
 Purpose: remove data-loss risk and dead artifacts before code changes.
 
+Progress:
+- 2026-07-09: `[Unreleased]` changelog section added (landed with the Phase 1 entries).
+- 2026-07-10: The operations, process-test, and check-script infrastructure is committed along with the enabling `.gitignore` change, and the operations notes document that `project-check.sh` validates the local workspace rather than a fresh clone (several required documents are local-only by design).
+- 2026-07-10: Orphan binaries removed (the source-less controlbox test executable in two places, the stale resource object, stale test executables beside their sources) and the vestigial empty `tests/` directory deleted; the working release executable is untouched.
+- 2026-07-10: The four dated unreleased changelog sections now live under `[Unreleased]` as dated subsections, matching the documented format.
+- 2026-07-10: Backup policy: local-only commits are backed up as git bundles in the private companion directory; pushing to the public remote remains a release-time decision for the maintainer.
+
 Tasks:
 - Commit the operations/test/scripts infrastructure and the `.gitignore` change that enables it.
 - Delete orphan binaries and the vestigial empty `tests/` directory.

@@ -35,22 +35,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Internal cleanup with no behavior change: edit-height measurement, column-snap width, control coloring, alpha stepping, and read-only edit IME handling each have a single shared implementation, and the toolbar window class registers alongside the other window classes.
 - Internal restructuring with no behavior change: the taskbox source now consists of four units (window proc/layout, toolbar controller, menus, window-list refresh) instead of one 2,400-line file.
 
-## [2026-06-24] - Floater Adjust Mode & Taskbox UX
+### 2026-06-24 - Floater Adjust Mode & Taskbox UX
 
-### Added
+#### Added
 - Added a toolbar **F (Floater)** button: clicking it collapses the dashboard to
   the floater in an adjust mode where **Ctrl+Wheel resizes** and **Alt+Wheel
   changes opacity**, and a click on the floater returns to the taskbox. Hover-to-
   expand is suppressed while adjusting so the wheel tuning isn't interrupted.
 
-### Changed
+#### Changed
 - Renamed the **P** toolbar button's label/tooltip from "Menu" to **"Popup Menu"**.
 - The taskbox now collapses to the floater after the cursor has stayed outside for
   **0.5s** (was 1s), re-checked each tick so a brief exit doesn't collapse it.
 
-## [2026-06-24] - Menu Construction Refactor
+### 2026-06-24 - Menu Construction Refactor
 
-### Added
+#### Added
 - Added taskbox main popup menu builder helpers for the main menu, audio submenu, monitor submenu, and selected command forwarding.
 - Added taskbox task and shortcut context menu builder/dispatch helpers, and reused the audio submenu builder for the volume context menu.
 - Added floater command dispatch helpers for monitor, audio device, and fixed-volume menu commands.
@@ -72,15 +72,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a repeatable verification checklist covering warning-clean builds, smoke tests, and focused manual runtime checks.
 - Added a toolbar contract smoke test for built-in toolbar count and index invariants.
 
-### Fixed
+#### Fixed
 - Update the stored toolbar focus index on mouse press so keyboard-triggered context menus follow the clicked item.
 - Guard monitor preview painting against failed memory DC, bitmap, screen DC, and pen allocation paths.
 - Guard Command Box font metric calculation against failed `GetDC()` and remove the temporary dummy window.
 - Fix the `build.bat` test runner so `main()`-based console smoke tests link correctly, and silence existing cast smoke-test warnings.
 
-## [2026-06-23] - Stabilization and Refactor Planning
+### 2026-06-23 - Stabilization and Refactor Planning
 
-### Added
+#### Added
 - Added `docs/RFC-2026-06-staged-refactor.md` with a staged refactor plan covering configuration persistence, toolbar modeling, menu helpers, widget state boundaries, resource lifetime audit, and verification expansion.
 - Added named geometry persistence helpers for floater, taskbox, and command box windows as the first Phase 1 configuration-boundary refactor step.
 - Added named command box font config helpers and a shared font-name save helper for Phase 1 persistence cleanup.
@@ -89,7 +89,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added toolbar descriptor value roles for alpha, brightness, and volume dynamic focus/tooltip text and wheel dispatch.
 - Added toolbar descriptor click and drag roles for built-in toolbar button dispatch.
 
-### Fixed
+#### Fixed
 - Persist floater/taskbox alpha changes made through `Alt + Mouse Wheel` and `Alt +/-` paths by routing both runtime alpha update helpers through `save_alpha_config()`.
 - Route command box alpha persistence through a named helper and skip redundant updates when the value is already clamped.
 - Clamp command box font size loaded from `config.ini` to the supported 8-72 range and persist normalized defaults.
@@ -97,16 +97,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Normalize floater/taskbox font settings before saving and skip redundant taskbox font/icon refreshes at clamp boundaries.
 - Avoid redundant layered-window updates when alpha is already clamped at its minimum or maximum.
 
-## [2026-06-22] - Floater to Taskbox Hover UX & UI Adjustments
+### 2026-06-22 - Floater to Taskbox Hover UX & UI Adjustments
 
-### Changed
+#### Changed
 - Converted the interaction model from clicking the Floater to simply **hovering** over it to spawn the Taskbox in place instantly (`WM_MOUSEMOVE` triggering `ShowWindow(SW_HIDE)` for floater and `SW_SHOW` for taskbox). Left-click on the floater still toggles the taskbox.
 - Added an automatic `HG_TIMER_HOVER_CHECK` timer in Taskbox to automatically close and return to the Floater UI when the mouse leaves the bounds of the Taskbox, with a ~1 second (10 tick) grace delay that aborts the hide if the cursor briefly leaves and re-enters.
 - **Removed the Floater's own right-click context menu** to avoid redundancy. The main context menu (Open Shortcuts Folder, Edit Configuration, About, Reset Settings, Select Audio Device, Arrange Monitors, Lock Screen, Exit) now lives solely on the Taskbox toolbar button.
 - **Renamed the Taskbox `M` (Menu) toolbar button to `P` (PopupMenu)**; left-clicking it opens the main context menu.
 - Unified the Time and Date font sizes in the Floater by aligning their multiplier ratio to `1:1` (while preserving variables separately for future independent scaling).
 
-### Build / Internal
+#### Build / Internal
 - Converted `build.bat` to compile the modular split sources (`hg_globals.c`, `hg_utils.c`, `hg_config.c`, `widgets/*.c`) together with `hgfloater.c`, replacing the previous single-translation-unit build. Release builds now use `-O3 -flto=auto -DNDEBUG`.
 - Replaced `dxva2.dll` function-pointer casts with a `union` loader to silence `-Wcast-function-type`, and routed toolbar tooltip indexing through named `HG_TOOL_ICON_*` constants.
 
