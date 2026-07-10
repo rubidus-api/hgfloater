@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.10e] - 2026-07-10
 
 ### Changed
 - The toolbar focus ring is now unmistakable: a bold accent ring at least three pixels thick that starts just outside the focused item (task icons and toolbar buttons alike), absorbed by the inter-item gap so the layout is unchanged. Note that the ring marks the keyboard/click focus; plain mouse hover keeps its lighter highlight.
