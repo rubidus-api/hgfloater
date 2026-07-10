@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.10c] - 2026-07-10
 
 ### Changed
 - The taskbox `X` button now exits hgfloater entirely instead of hiding the taskbox (hover-away, a floater click, and `Esc` still hide it), and the `P` (Popup Menu) button is renamed to `O` (Options); tooltips and the edit-console hint line follow.
