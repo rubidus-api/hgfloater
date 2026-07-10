@@ -32,49 +32,113 @@ void update_floater_alpha(int delta)
     save_alpha_config();
 }
 
-/* Third floater line, e.g. "BAT 87%+  CPU 12%  MEM 43%": battery omitted on
- * systems without one, "+" marks charging, values hidden while unavailable. */
-static WCHAR s_floater_stats[64] = L"";
+/* Compact status panel on the floater's left side: CPU/MEM/BAT horizontal bar
+ * graphs (top to bottom, red/blue/green) with tiny labels. The panel keeps the
+ * floater at its clock height; the battery row hides on systems without one. */
+#define HG_FLOATER_STAT_CPU_COLOR RGB(220, 70, 70)
+#define HG_FLOATER_STAT_MEM_COLOR RGB(80, 130, 230)
+#define HG_FLOATER_STAT_BAT_COLOR RGB(80, 190, 100)
 
-static void floater_build_stats_text(WCHAR *buffer, size_t buffer_cch)
-{
-    int battery = 0;
-    BOOL charging = FALSE;
-    WCHAR part[24];
-
-    buffer[0] = L'\0';
-    if (!hg_g_floater_show_stats)
-        return;
-
-    if (hg_get_battery_percent(&battery, &charging)) {
-        hellgates_wsprintf(part, HG_ARRAYSIZE(part), L"BAT %d%%%ls  ", battery, charging ? L"+" : L"");
-        StringCchCatW(buffer, buffer_cch, part);
-    }
-    int cpu = hg_get_cpu_percent();
-    if (cpu >= 0) {
-        hellgates_wsprintf(part, HG_ARRAYSIZE(part), L"CPU %d%%  ", cpu);
-        StringCchCatW(buffer, buffer_cch, part);
-    }
-    int memory = hg_get_memory_percent();
-    if (memory >= 0) {
-        hellgates_wsprintf(part, HG_ARRAYSIZE(part), L"MEM %d%%", memory);
-        StringCchCatW(buffer, buffer_cch, part);
-    }
-
-    size_t len = wcslen(buffer);
-    while (len > 0 && buffer[len - 1] == L' ') {
-        buffer[--len] = L'\0';
-    }
-}
+static int s_stat_cpu = -1;
+static int s_stat_mem = -1;
+static int s_stat_bat = -1;
+static BOOL s_stat_has_bat = FALSE;
+static BOOL s_stat_charging = FALSE;
+static HFONT s_floater_label_font = NULL;
 
 static BOOL floater_refresh_stats(void)
 {
-    WCHAR fresh[HG_ARRAYSIZE(s_floater_stats)];
-    floater_build_stats_text(fresh, HG_ARRAYSIZE(fresh));
-    if (lstrcmpW(fresh, s_floater_stats) == 0)
+    int cpu = -1;
+    int mem = -1;
+    int bat = 0;
+    BOOL has_bat = FALSE;
+    BOOL charging = FALSE;
+
+    if (hg_g_floater_show_stats) {
+        cpu = hg_get_cpu_percent();
+        mem = hg_get_memory_percent();
+        has_bat = hg_get_battery_percent(&bat, &charging);
+    }
+    if (cpu == s_stat_cpu && mem == s_stat_mem && has_bat == s_stat_has_bat &&
+        (!has_bat || (bat == s_stat_bat && charging == s_stat_charging))) {
         return FALSE;
-    StringCchCopyW(s_floater_stats, HG_ARRAYSIZE(s_floater_stats), fresh);
+    }
+    s_stat_cpu = cpu;
+    s_stat_mem = mem;
+    s_stat_has_bat = has_bat;
+    s_stat_bat = bat;
+    s_stat_charging = charging;
     return TRUE;
+}
+
+static int floater_stats_panel_width(void)
+{
+    return hg_g_floater_show_stats ? SC(64) : 0;
+}
+
+static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h)
+{
+    struct {
+        const WCHAR *label;
+        int value;
+        COLORREF color;
+        BOOL present;
+    } rows[3] = {
+        {L"CPU", s_stat_cpu, HG_FLOATER_STAT_CPU_COLOR, s_stat_cpu >= 0},
+        {L"MEM", s_stat_mem, HG_FLOATER_STAT_MEM_COLOR, s_stat_mem >= 0},
+        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, HG_FLOATER_STAT_BAT_COLOR, s_stat_has_bat},
+    };
+
+    int count = 0;
+    for (int i = 0; i < 3; i++) {
+        if (rows[i].present)
+            count++;
+    }
+    if (count == 0 || w <= 0 || h <= 0)
+        return;
+
+    if (!s_floater_label_font) {
+        s_floater_label_font = CreateFontW(SC(9), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0,
+                                           hg_g_font_name);
+    }
+    HFONT old_font = NULL;
+    if (s_floater_label_font)
+        old_font = (HFONT)SelectObject(dc, s_floater_label_font);
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
+
+    int label_w = SC(22);
+    int row_h = h / count;
+    int bar_gap = SC(2);
+    int drawn = 0;
+    for (int i = 0; i < 3; i++) {
+        if (!rows[i].present)
+            continue;
+        int top = y + drawn * row_h;
+        RECT label_rc = {x, top, x + label_w, top + row_h};
+        DrawTextW(dc, rows[i].label, -1, &label_rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+
+        RECT track = {x + label_w, top + bar_gap, x + w, top + row_h - bar_gap};
+        if (track.right > track.left && track.bottom > track.top) {
+            HBRUSH track_brush = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+            if (track_brush)
+                FillRect(dc, &track, track_brush);
+
+            int value = rows[i].value;
+            if (value < 0)
+                value = 0;
+            if (value > 100)
+                value = 100;
+            RECT fill = track;
+            fill.right = track.left + ((track.right - track.left) * value) / 100;
+            HBRUSH fill_brush = hg_cached_solid_brush(rows[i].color);
+            if (fill_brush && fill.right > fill.left)
+                FillRect(dc, &fill, fill_brush);
+        }
+        drawn++;
+    }
+    if (old_font)
+        SelectObject(dc, old_font);
 }
 
 void update_floater_layout(HWND hwnd)
@@ -110,20 +174,17 @@ void update_floater_layout(HWND hwnd)
     GetTextExtentPoint32W(hdc, time_str, (int)lstrlenW(time_str), &sz_time);
     SelectObject(hdc, hg_g_floater_date_font);
     GetTextExtentPoint32W(hdc, date_str, (int)lstrlenW(date_str), &sz_date);
-    SIZE sz_stats = {0};
-    if (s_floater_stats[0]) {
-        GetTextExtentPoint32W(hdc, s_floater_stats, (int)lstrlenW(s_floater_stats), &sz_stats);
-    }
     SelectObject(hdc, old_font);
 
     int pen_width = SC(HG_BORDER_THICKNESS);
     int padding_x = pen_width + SC(20);
     int padding_y = pen_width + SC(10);
     int width = (sz_time.cx > sz_date.cx ? sz_time.cx : sz_date.cx);
-    if (sz_stats.cx > width)
-        width = sz_stats.cx;
+    int stats_w = floater_stats_panel_width();
+    if (stats_w > 0)
+        width += stats_w + SC(6);
     width += padding_x;
-    int height = sz_time.cy + sz_date.cy + sz_stats.cy + padding_y;
+    int height = sz_time.cy + sz_date.cy + padding_y;
 
     RECT rc;
     GetWindowRect(hwnd, &rc);
@@ -215,21 +276,22 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     GetTextExtentPoint32W(mem_dc, time_str, (int)lstrlenW(time_str), &sz_time);
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     GetTextExtentPoint32W(mem_dc, date_str, (int)lstrlenW(date_str), &sz_date);
-                    SIZE sz_stats = {0};
-                    if (s_floater_stats[0]) {
-                        GetTextExtentPoint32W(mem_dc, s_floater_stats, (int)lstrlenW(s_floater_stats), &sz_stats);
-                    }
-
-                    int total_text_height = sz_time.cy + sz_date.cy + sz_stats.cy;
+                    int total_text_height = sz_time.cy + sz_date.cy;
                     int start_y = (rc.bottom - rc.top - total_text_height) / 2;
                     if (start_y < 0)
                         start_y = 0;
 
-                    RECT time_rc = rc;
+                    int stats_w = floater_stats_panel_width();
+                    int stats_gap = (stats_w > 0) ? SC(6) : 0;
+
+                    RECT text_area = rc;
+                    text_area.left = rc.left + pen_width + stats_w + stats_gap;
+
+                    RECT time_rc = text_area;
                     time_rc.top = start_y;
                     time_rc.bottom = time_rc.top + sz_time.cy;
 
-                    RECT date_rc = rc;
+                    RECT date_rc = text_area;
                     date_rc.top = time_rc.bottom;
                     date_rc.bottom = date_rc.top + sz_date.cy;
 
@@ -239,11 +301,9 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
 
-                    if (s_floater_stats[0]) {
-                        RECT stats_rc = rc;
-                        stats_rc.top = date_rc.bottom;
-                        stats_rc.bottom = stats_rc.top + sz_stats.cy;
-                        DrawTextW(mem_dc, s_floater_stats, -1, &stats_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
+                    if (stats_w > 0) {
+                        floater_draw_stats_panel(mem_dc, rc.left + pen_width + SC(3), start_y,
+                                                 stats_w - SC(3), total_text_height);
                     }
 
                     SelectObject(mem_dc, old_font_in_paint);
@@ -442,6 +502,7 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
     unregister_global_hotkey(hwnd);
     release_font_handle(&hg_g_floater_time_font, FALSE);
     release_font_handle(&hg_g_floater_date_font, FALSE);
+    release_font_handle(&s_floater_label_font, FALSE);
     hg_g_floater_wnd = NULL;
     PostQuitMessage(0);
     return 0;
@@ -466,6 +527,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         hg_apply_dpi_suggested_rect(hwnd, l_param);
         release_font_handle(&hg_g_floater_time_font, FALSE);
         release_font_handle(&hg_g_floater_date_font, FALSE);
+        release_font_handle(&s_floater_label_font, FALSE);
         update_floater_layout(hwnd);
         InvalidateRect(hwnd, NULL, TRUE);
         if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
@@ -611,8 +673,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 InvalidateRect(hwnd, NULL, FALSE);
             }
             if (IsWindowVisible(hwnd) && floater_refresh_stats()) {
-                update_floater_layout(hwnd); /* digit-count changes can alter the width */
-                InvalidateRect(hwnd, NULL, FALSE);
+                InvalidateRect(hwnd, NULL, FALSE); /* fixed panel width: repaint only */
             }
             for (int i = 0; i < hg_g_monitor_count; i++) {
                 if (hg_g_monitors[i].active && hg_g_monitors[i].hwnd) {
