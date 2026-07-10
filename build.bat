@@ -2,12 +2,18 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-:: Calculate Version String based on current date (vYY.MM.DD)
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
-set ver_y=!datetime:~2,2!
-set ver_m=!datetime:~4,2!
-set ver_d=!datetime:~6,2!
+:: Calculate Version String based on current date (vYY.MM.DD).
+:: wmic is removed from current Windows 11 builds, so the date comes from PowerShell.
+for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yy.MM.dd"') do set datever=%%I
+set ver_y=!datever:~0,2!
+set ver_m=!datever:~3,2!
+set ver_d=!datever:~6,2!
 set VERSION_STRING=v!ver_y!.!ver_m!.!ver_d!
+:: Numeric (unpadded) components for the VERSIONINFO resource; leading zeros
+:: would parse as octal in the resource compiler.
+set /a VER_NUM_Y=1!ver_y! - 100
+set /a VER_NUM_M=1!ver_m! - 100
+set /a VER_NUM_D=1!ver_d! - 100
 
 :: MSYS2 Build Script for hgfloater
 :: Requirements: MSYS2 with mingw-w64-x86_64-gcc installed
@@ -54,7 +60,7 @@ echo Generating About text from README.md...
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command
-windres hgfloater.rc -O coff -o hgfloater_res.o
+windres hgfloater.rc -O coff -o hgfloater_res.o -DHG_RC_VER_MAJOR=!VER_NUM_Y! -DHG_RC_VER_MINOR=!VER_NUM_M! -DHG_RC_VER_PATCH=!VER_NUM_D! -DHG_RC_VER_MINOR_STR=!ver_m! -DHG_RC_VER_PATCH_STR=!ver_d!
 gcc hgfloater.c hg_globals.c hg_utils.c hg_config.c hg_calc.c widgets\hg_floater.c widgets\hg_taskbox.c widgets\hg_toolbar.c widgets\hg_taskbox_menus.c widgets\hg_window_list.c widgets\hg_monitor.c widgets\hg_commandbox.c widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
 if exist hgfloater_res.o del hgfloater_res.o
 
