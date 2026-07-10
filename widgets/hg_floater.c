@@ -211,8 +211,9 @@ void update_floater_layout(HWND hwnd)
     int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
     if (stats_w > 0) {
         /* The bars run under the text, so keep the text column snug against
-         * the label strip instead of using the roomy centered padding. */
-        padding_x = pen_width + SC(8);
+         * the label strip instead of using the roomy centered padding, with a
+         * small breathing gap before the right border. */
+        padding_x = pen_width + SC(12);
         width += stats_w + SC(2);
     }
     width += padding_x;
@@ -318,6 +319,8 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
 
                     RECT text_area = rc;
                     text_area.left = rc.left + pen_width + stats_w + stats_gap;
+                    if (stats_w > 0)
+                        text_area.right = rc.right - pen_width;
 
                     RECT time_rc = text_area;
                     time_rc.top = start_y;
