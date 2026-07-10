@@ -116,5 +116,8 @@ BOOL should_refresh_theme_on_setting_change(LPARAM l_param);
 void disable_window_ime(HWND hwnd);
 BOOL readonly_edit_handle_ime_messages(HWND hwnd, UINT msg, WPARAM w_param);
 BOOL hg_readonly_edit_common(HWND hwnd, UINT msg, WPARAM w_param);
+BOOL hg_get_battery_percent(int *out_percent, BOOL *out_charging);
+int hg_get_cpu_percent(void);
+int hg_get_memory_percent(void);
 
 #endif /* HG_UTILS_H */

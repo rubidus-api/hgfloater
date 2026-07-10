@@ -70,6 +70,7 @@ extern BOOL hg_g_in_sizemove;
 /* Pointer/menu interaction states */
 extern POINT hg_g_last_mouse_pos;
 extern BOOL hg_g_hover_check_armed;
+extern BOOL hg_g_floater_show_stats; /* [floater] show_stats: battery/CPU/memory line */
 extern BOOL hg_g_floater_adjust_mode; /* F button: floater shown for size/alpha tuning (no hover-expand) */
 extern BOOL hg_g_menu_active;
 extern POINT hg_g_drag_start_pt;
