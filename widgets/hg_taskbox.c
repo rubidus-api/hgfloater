@@ -533,7 +533,10 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
     int dx = 0, dy = 0;
     int move_step = SC(20);
     BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
-    BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+    /* Do not infer Alt from WM_SYSKEYDOWN: when the window is active without
+     * keyboard focus, plain keys also arrive as WM_SYSKEYDOWN, and treating
+     * them as Alt turned arrow navigation into window moves. */
+    BOOL is_alt = (GetKeyState(VK_MENU) < 0);
 
     /* Alt + 방향키/wasd: 현재 창 이동 (태스크 박스) */
     if (is_alt) {

@@ -395,6 +395,12 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
     } else if (cur_type != state->hovered_type || cur_index != state->hovered_index) {
         state->hovered_type = cur_type;
         state->hovered_index = cur_index;
+        if (cur_type != -1 && cur_index != -1) {
+            /* Hovering moves the focus too, so the yellow focus highlight
+             * follows the mouse as well as the keyboard. */
+            hg_taskbox_focus.area = cur_type;
+            hg_taskbox_focus.index = cur_index;
+        }
         update_focus_message(state->hovered_type, state->hovered_index);
         InvalidateRect(hwnd, NULL, FALSE);
     }

@@ -647,6 +647,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                  * the foreground anymore, so a plain SetForegroundWindow would be
                  * refused and keys would keep going to the other application. */
                 hg_force_foreground(hg_g_taskbox_wnd);
+                SetFocus(hg_g_toolbar_wnd);
                 hg_g_hover_check_armed = TRUE;
                 SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
                 save_taskbox_geometry_config(cx - tw / 2, cy - th / 2, tw, th);
