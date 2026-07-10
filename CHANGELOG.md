@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- The floater gains a compact status panel on its left: CPU, MEM, and BAT horizontal bar graphs (red/blue/green, full width = 100%) with tiny labels, refreshed once per second at the clock's height so the floater stays small; the battery row hides on systems without one, a `+` on the label marks charging, and `[floater] show_stats=0` turns the panel off.
+- The floater gains status bars: CPU, MEM, and BAT horizontal bar graphs (red/blue/green, full width = 100%) run underneath the clock and date with tiny labels on the left edge, refreshed once per second inside the clock height so the floater stays small; the battery row hides on systems without one, a `+` on the label marks charging, and `[floater] show_stats=0` turns them off.
 
 ### Changed
 - The Command Box, About window, and monitor previews now scale to the DPI of the monitor they are on instead of inheriting the floater's scale, completing mixed-DPI support.
