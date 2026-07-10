@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.11b] - 2026-07-11
 
 ### Fixed
 - Arrow keys navigate between taskbox icons again after a hover-summon: the taskbox could become active without keyboard focus, so plain keys arrived as system keys and were misread as Alt+Arrow window moves. Hover-summon now assigns focus and the Alt detection no longer trusts the system-key flag.
