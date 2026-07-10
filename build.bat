@@ -74,7 +74,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command
 windres hgfloater.rc -O coff -o hgfloater_res.o -DHG_RC_VER_MAJOR=!VER_NUM_Y! -DHG_RC_VER_MINOR=!VER_NUM_M! -DHG_RC_VER_PATCH=!VER_NUM_D! -DHG_RC_VER_MINOR_STR=!ver_m! -DHG_RC_VER_PATCH_STR=!ver_d!
-gcc hgfloater.c hg_globals.c hg_utils.c hg_config.c hg_calc.c widgets\hg_floater.c widgets\hg_taskbox.c widgets\hg_toolbar.c widgets\hg_taskbox_menus.c widgets\hg_window_list.c widgets\hg_monitor.c widgets\hg_commandbox.c widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
+gcc hgfloater.c hg_globals.c hg_utils.c hg_audio.c hg_display.c hg_shell.c hg_config.c hg_calc.c widgets\hg_floater.c widgets\hg_taskbox.c widgets\hg_toolbar.c widgets\hg_taskbox_menus.c widgets\hg_window_list.c widgets\hg_monitor.c widgets\hg_commandbox.c widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
 set BUILD_RESULT=%errorlevel%
 if exist hgfloater_res.o del hgfloater_res.o
 
