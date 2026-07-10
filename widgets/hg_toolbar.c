@@ -54,28 +54,9 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
     return toolbar_invert_color(base_color);
 }
 
-/* Focus outline: a bold accent ring around the focused item. It starts one
- * scaled pixel outside the button (the inter-item gap absorbs it, so the
- * layout is unchanged) and runs at least three pixels thick inward, matching
- * the clearly visible muted-border treatment. */
-static void toolbar_draw_focus_frame(HDC dc, const RECT *rc)
-{
-    HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
-    if (!hbr || !rc)
-        return;
-
-    RECT ring = *rc;
-    InflateRect(&ring, SC(1), SC(1));
-    int thickness = SC(3);
-    if (thickness < 3)
-        thickness = 3;
-    for (int i = 0; i < thickness; ++i) {
-        FrameRect(dc, &ring, hbr);
-        InflateRect(&ring, -1, -1);
-        if (ring.left >= ring.right || ring.top >= ring.bottom)
-            break;
-    }
-}
+/* The keyboard/click focus is marked by filling the item background yellow;
+ * rings and bevels alone proved too subtle at small icon sizes. */
+#define HG_TOOLBAR_FOCUS_BG RGB(255, 210, 40)
 
 static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
 {
@@ -208,14 +189,12 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
                     } else if ((hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) ||
                                (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx)) {
-                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+                        BOOL focused = (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx);
+                        HBRUSH hbr = hg_cached_solid_brush(focused ? HG_TOOLBAR_FOCUS_BG : HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
-                        if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx) {
-                            toolbar_draw_focus_frame(mem_dc, &rc_btn);
-                        }
                     }
                     if (hg_g_window_items[r_idx].icon) {
                         DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size,
@@ -267,16 +246,19 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
                     } else if ((hovered_type == 1 && hovered_index == i) ||
                                (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)) {
-                        if (!keep_value_bg) {
+                        BOOL focused = (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i);
+                        if (focused) {
+                            HBRUSH hbr = hg_cached_solid_brush(HG_TOOLBAR_FOCUS_BG);
+                            if (hbr) {
+                                FillRect(mem_dc, &rc_btn, hbr);
+                            }
+                        } else if (!keep_value_bg) {
                             HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                             if (hbr) {
                                 FillRect(mem_dc, &rc_btn, hbr);
                             }
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
-                        if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i) {
-                            toolbar_draw_focus_frame(mem_dc, &rc_btn);
-                        }
                     }
 
                     if (i == HG_TOOL_ICON_VOLUME && get_system_mute()) {
