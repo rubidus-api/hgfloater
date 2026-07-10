@@ -54,6 +54,26 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
     return toolbar_invert_color(base_color);
 }
 
+/* Focus outline: a few FrameRect rings drawn inward so the focused item stands
+ * out clearly without changing the item layout. */
+static void toolbar_draw_focus_frame(HDC dc, const RECT *rc)
+{
+    HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
+    if (!hbr || !rc)
+        return;
+
+    RECT ring = *rc;
+    int thickness = SC(2);
+    if (thickness < 2)
+        thickness = 2;
+    for (int i = 0; i < thickness; ++i) {
+        FrameRect(dc, &ring, hbr);
+        InflateRect(&ring, -1, -1);
+        if (ring.left >= ring.right || ring.top >= ring.bottom)
+            break;
+    }
+}
+
 static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
 {
     if (!hdc || !rc)
@@ -191,10 +211,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                         if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx) {
-                            HBRUSH hbr_focus = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
-                            if (hbr_focus) {
-                                FrameRect(mem_dc, &rc_btn, hbr_focus);
-                            }
+                            toolbar_draw_focus_frame(mem_dc, &rc_btn);
                         }
                     }
                     if (hg_g_window_items[r_idx].icon) {
@@ -255,10 +272,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                         if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i) {
-                            HBRUSH hbr_focus = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
-                            if (hbr_focus) {
-                                FrameRect(mem_dc, &rc_btn, hbr_focus);
-                            }
+                            toolbar_draw_focus_frame(mem_dc, &rc_btn);
                         }
                     }
 
