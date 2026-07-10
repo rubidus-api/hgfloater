@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- The floater and taskbox occasionally lingered with washed-out, grayish content (stale layered-window bitmaps after display sleep or compositor hiccups) until a mouse interaction repainted them; visible widgets now force a full repaint every few seconds and immediately after display changes, so the state heals itself.
+
 ## [v26.07.11b] - 2026-07-11
 
 ### Fixed
