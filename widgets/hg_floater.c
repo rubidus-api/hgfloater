@@ -71,9 +71,11 @@ static BOOL floater_refresh_stats(void)
     return TRUE;
 }
 
+/* Only the tiny labels claim exclusive horizontal space; the bars themselves
+ * run underneath the clock and date as background. */
 static int floater_stats_panel_width(void)
 {
-    return hg_g_floater_show_stats ? SC(64) : 0;
+    return hg_g_floater_show_stats ? SC(24) : 0;
 }
 
 static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h)
@@ -182,7 +184,7 @@ void update_floater_layout(HWND hwnd)
     int width = (sz_time.cx > sz_date.cx ? sz_time.cx : sz_date.cx);
     int stats_w = floater_stats_panel_width();
     if (stats_w > 0)
-        width += stats_w + SC(6);
+        width += stats_w + SC(4);
     width += padding_x;
     int height = sz_time.cy + sz_date.cy + padding_y;
 
@@ -282,7 +284,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                         start_y = 0;
 
                     int stats_w = floater_stats_panel_width();
-                    int stats_gap = (stats_w > 0) ? SC(6) : 0;
+                    int stats_gap = (stats_w > 0) ? SC(4) : 0;
 
                     RECT text_area = rc;
                     text_area.left = rc.left + pen_width + stats_w + stats_gap;
@@ -295,16 +297,19 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     date_rc.top = time_rc.bottom;
                     date_rc.bottom = date_rc.top + sz_date.cy;
 
+                    if (stats_w > 0) {
+                        /* Draw the bars first so they sit behind the clock and date;
+                         * they span from the label strip to the inner right edge. */
+                        int panel_x = rc.left + pen_width + SC(3);
+                        int panel_w = (rc.right - pen_width) - panel_x;
+                        floater_draw_stats_panel(mem_dc, panel_x, start_y, panel_w, total_text_height);
+                    }
+
                     SelectObject(mem_dc, hg_g_floater_time_font);
                     DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
-
-                    if (stats_w > 0) {
-                        floater_draw_stats_panel(mem_dc, rc.left + pen_width + SC(3), start_y,
-                                                 stats_w - SC(3), total_text_height);
-                    }
 
                     SelectObject(mem_dc, old_font_in_paint);
 
