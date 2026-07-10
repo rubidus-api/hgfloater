@@ -118,7 +118,8 @@ Purpose: fix the defects found in review, narrowly and separately.
 Progress:
 - 2026-07-09: Bounded the WM_COPYDATA command-line copy by cbData.
 - 2026-07-09: Theme refresh now re-stamps every class registered with the shared background brush, and lazily created about/commandbox windows heal their class on creation.
-- 2026-07-09: Corrected the swapped dark/light scheme assignment and moved the accent flash override to the system (light) scheme.
+- 2026-07-09: Renamed the color schemes by their content (the custom near-black palette is now `hg_g_color_scheme_dark`, the GetSysColor set `hg_g_color_scheme_light`) and moved the accent flash override to the system scheme.
+- 2026-07-10: The review's "swapped scheme" finding turned out to be the intended design (maintainer-confirmed): the widgets deliberately invert contrast against the system theme, rendering dark on light systems and light on dark systems. The selection now implements the inversion explicitly over the content-named schemes, and SPEC records the contract so a future review does not "fix" it again.
 - 2026-07-09: Task menu commands dispatch on the hwnd captured before the modal loop, the keyboard index path is bounds-checked, and window-list refresh pauses while a menu is active.
 - 2026-07-09: Taskbox hide restores foreground only when this process owns it, rescans shortcuts only when the directory changed, and kills the hover-check timer on every hide path and on destroy.
 - 2026-07-09: About edit follows main font size changes; releasing a floater Ctrl+drag font-resize no longer toggles the taskbox.

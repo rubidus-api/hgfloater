@@ -75,9 +75,12 @@ void update_theme_colors()
             .selected = GetSysColor(COLOR_HIGHLIGHT),
         };
     } else if (hg_g_is_dark_mode) {
-        hg_g_color_scheme_selected = hg_g_color_scheme_dark;
-    } else {
+        /* Deliberate contrast inversion (see SPEC): the widgets must stand out
+         * against the system theme, so dark systems get the light scheme and
+         * light systems get the dark custom palette. */
         hg_g_color_scheme_selected = hg_g_color_scheme_light;
+    } else {
+        hg_g_color_scheme_selected = hg_g_color_scheme_dark;
     }
 }
 

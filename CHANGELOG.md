@@ -15,7 +15,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Removing or rearranging a display immediately moves stranded widgets back into view instead of waiting for the next hotkey press.
 - Monitor preview positions are remembered per display device, so reordered monitor enumeration no longer applies a saved position to the wrong display.
 - Theme changes no longer leave the floater, taskbox, and command box window classes holding a deleted background brush.
-- OS dark mode now selects the custom dark palette and OS light mode the system palette; the two schemes were assigned swapped.
 - Task context menu commands (Focus, Close, Move, Resize) act on the window captured when the menu opened, so a background list refresh can no longer redirect them to a different window; the list also pauses refreshing while a menu is open.
 - The taskbox auto-collapse no longer steals foreground focus from the application being used.
 - Hiding the taskbox stops the hover-check timer on every path (Esc, X button, floater click), not only on timer-driven collapse.
