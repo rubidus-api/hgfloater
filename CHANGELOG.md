@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Moving between monitors with different display scaling (or changing scale) now resizes and re-renders the floater and taskbox for the new DPI, and the startup size matches the monitor the floater appears on.
 
 ### Fixed
+- Hover-summoning the taskbox reliably takes keyboard focus again, so pressing `C` (Command Box), `Esc`, and the navigation keys works right after a focus-preserving auto-collapse; Windows refused the plain foreground request once another application held focus.
 - Off-screen windows are clamped into the nearest monitor work area instead of jumping to the primary monitor origin.
 - Removing or rearranging a display immediately moves stranded widgets back into view instead of waiting for the next hotkey press.
 - Monitor preview positions are remembered per display device, so reordered monitor enumeration no longer applies a saved position to the wrong display.
