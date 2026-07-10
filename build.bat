@@ -21,6 +21,18 @@ set /a VER_NUM_D=1!ver_d! - 100
 :: Common Warning Flags for robust error detection
 set WARNING_FLAGS=-Wall -Wextra -Wpedantic -Wshadow -Wformat=2 -Wdouble-promotion -Wconversion -Wlogical-op -Wno-unused-parameter -Wno-overlength-strings
 
+:: Non-interactive usage: build.bat debug ^| release ^| test
+:: (skips the menu, does not auto-start the exe, and exits with the build result)
+set NONINTERACTIVE=
+set choice=
+if /i "%~1"=="debug" set choice=1
+if /i "%~1"=="release" set choice=2
+if /i "%~1"=="test" set choice=3
+if defined choice (
+    set NONINTERACTIVE=1
+    goto dispatch
+)
+
 :menu
 echo ========================================
 echo hgfloater (HellGates Series) MSYS2 Build
@@ -33,6 +45,7 @@ echo.
 
 set /p choice="Select build mode (1, 2, 3, or 4): "
 
+:dispatch
 if "%choice%"=="1" (
     set FLAGS=%WARNING_FLAGS% -g -O0 -DDEBUG
     set MODE=Debug
@@ -62,18 +75,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 :: Using standard MinGW-w64 GCC command
 windres hgfloater.rc -O coff -o hgfloater_res.o -DHG_RC_VER_MAJOR=!VER_NUM_Y! -DHG_RC_VER_MINOR=!VER_NUM_M! -DHG_RC_VER_PATCH=!VER_NUM_D! -DHG_RC_VER_MINOR_STR=!ver_m! -DHG_RC_VER_PATCH_STR=!ver_d!
 gcc hgfloater.c hg_globals.c hg_utils.c hg_config.c hg_calc.c widgets\hg_floater.c widgets\hg_taskbox.c widgets\hg_toolbar.c widgets\hg_taskbox_menus.c widgets\hg_window_list.c widgets\hg_monitor.c widgets\hg_commandbox.c widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
+set BUILD_RESULT=%errorlevel%
 if exist hgfloater_res.o del hgfloater_res.o
 
-if %errorlevel% equ 0 (
+if %BUILD_RESULT% equ 0 (
     echo.
     echo [Success] hgfloater.exe [%MODE%] has been created!
-    echo Starting hgfloater...
-    start hgfloater.exe
+    if not defined NONINTERACTIVE (
+        echo Starting hgfloater...
+        start hgfloater.exe
+    )
 ) else (
     echo.
     echo [Error] Build failed. Make sure GCC is in your PATH ^(MSYS2 MinGW64^).
 )
 
+if defined NONINTERACTIVE exit /b %BUILD_RESULT%
 pause
 goto menu
 
@@ -106,5 +123,6 @@ if !TEST_FAILED! equ 0 (
     echo.
     echo [Some Tests Failed]
 )
+if defined NONINTERACTIVE exit /b !TEST_FAILED!
 pause
 goto menu
