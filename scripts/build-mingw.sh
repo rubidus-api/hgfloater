@@ -27,7 +27,7 @@ fi
 
 # shellcheck disable=SC2086
 "$CROSS-gcc" -o "$OUT/hgfloater.exe" \
-    hgfloater.c hg_globals.c hg_utils.c hg_audio.c hg_display.c hg_shell.c hg_config.c hg_calc.c \
+    hgfloater.c hg_globals.c hg_utils.c hg_audio.c hg_display.c hg_shell.c hg_sysinfo.c hg_config.c hg_calc.c \
     widgets/hg_floater.c widgets/hg_taskbox.c widgets/hg_toolbar.c \
     widgets/hg_taskbox_menus.c widgets/hg_window_list.c \
     widgets/hg_monitor.c widgets/hg_commandbox.c widgets/hg_about.c \

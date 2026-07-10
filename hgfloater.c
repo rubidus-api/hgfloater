@@ -406,6 +406,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     load_font_name_config();
     load_hotkey_config();
     load_floater_font_config();
+    load_floater_stats_config();
     load_taskbox_font_config();
 
     hg_g_floater_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_APPWINDOW, HG_CLASS_FLOATER_WIDGET,

@@ -11,6 +11,7 @@ void save_floater_geometry_config(int x, int y, int w, int h);
 void save_taskbox_geometry_config(int x, int y, int w, int h);
 void save_commandbox_geometry_config(int x, int y, int w, int h);
 void load_floater_font_config(void);
+void load_floater_stats_config(void);
 void save_floater_font_config(void);
 void load_taskbox_font_config(void);
 void save_taskbox_font_config(void);

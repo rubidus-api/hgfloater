@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- The floater shows a battery/CPU/memory status line under the date (`BAT 87%+  CPU 12%  MEM 43%`); the battery entry hides itself on systems without one, and `[floater] show_stats=0` turns the line off.
+
 ### Changed
 - The Command Box, About window, and monitor previews now scale to the DPI of the monitor they are on instead of inheriting the floater's scale, completing mixed-DPI support.
 

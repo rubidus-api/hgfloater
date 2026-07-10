@@ -62,6 +62,13 @@ void save_commandbox_geometry_config(int x, int y, int w, int h)
     save_window_geometry_config(L"commandbox", x, y, w, h);
 }
 
+void load_floater_stats_config(void)
+{
+    int value = (int)GetPrivateProfileIntW(L"floater", L"show_stats", 1, hg_g_config_path);
+    hg_g_floater_show_stats = (value != 0);
+    WritePrivateProfileStringW(L"floater", L"show_stats", hg_g_floater_show_stats ? L"1" : L"0", hg_g_config_path);
+}
+
 void load_floater_font_config()
 {
     UINT fs = GetPrivateProfileIntW(L"floater", L"font_size", 28, hg_g_config_path);
