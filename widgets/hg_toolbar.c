@@ -355,7 +355,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         int row_height = icon_size + SC(10);
         int req_toolbar_height = SC(10) + rows * row_height;
 
-        int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
+        int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font, hg_g_scale_factor);
         int req_h = border * 2 + edit_height + req_toolbar_height;
 
         SetWindowPos(hg_g_taskbox_wnd, NULL, 0, 0, req_w, req_h, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);

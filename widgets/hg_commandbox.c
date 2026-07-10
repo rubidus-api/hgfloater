@@ -5,9 +5,9 @@
 
 void commandbox_execute(void);
 
-static int commandbox_line_height(HWND hwnd)
+static int commandbox_line_height(HWND hwnd, double scale)
 {
-    int line_h = SC(16);
+    int line_h = SCW(scale, 16);
     if (!hg_g_commandbox_font)
         return line_h;
 
@@ -136,14 +136,18 @@ void show_commandbox_window()
 
     int x, y, w, h;
     load_config(L"commandbox", &x, &y, &w, &h, 100, 100, SC(400), SC(300));
-    if (w < SC(200)) w = SC(200);
 
-    int border = SC(8);
-    int btn_h = SC(26);
+    /* Scale for the monitor the box will appear on, not the floater's. */
+    POINT cb_origin = {x, y};
+    double ws = hg_point_scale(cb_origin);
+    if (w < SCW(ws, 200)) w = SCW(ws, 200);
+
+    int border = SCW(ws, 8);
+    int btn_h = SCW(ws, 26);
     load_commandbox_font();
-    int line_h = commandbox_line_height(NULL);
-    int min_out_h = line_h * 3 + SC(6);
-    int min_in_h = line_h * 1 + SC(6);
+    int line_h = commandbox_line_height(NULL, ws);
+    int min_out_h = line_h * 3 + SCW(ws, 6);
+    int min_in_h = line_h * 1 + SCW(ws, 6);
     int min_cy = border * 4 + min_out_h + min_in_h + btn_h;
     if (h < min_cy) {
         h = min_cy;
@@ -227,14 +231,15 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         int cx = LOWORD(l_param);
         int cy = HIWORD(l_param);
         
-        int border = SC(8);
-        int btn_h = SC(26);
+        double ws = hg_window_scale(hwnd);
+        int border = SCW(ws, 8);
+        int btn_h = SCW(ws, 26);
         int cx_inner = cx - border * 2;
 
-        int line_h = commandbox_line_height(hwnd);
+        int line_h = commandbox_line_height(hwnd, ws);
 
-        int min_out_h = line_h * 3 + SC(6);
-        int min_in_h = line_h * 1 + SC(6);
+        int min_out_h = line_h * 3 + SCW(ws, 6);
+        int min_in_h = line_h * 1 + SCW(ws, 6);
 
         int rem_h = cy - (border * 4 + btn_h);
         int out_h = (rem_h * 7) / 10;
@@ -261,15 +266,16 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     case WM_GETMINMAXINFO: {
         MINMAXINFO *mmi = (MINMAXINFO *)l_param;
         
-        int border = SC(8);
-        int btn_h = SC(26);
-        int line_h = commandbox_line_height(hwnd);
+        double ws = hg_window_scale(hwnd);
+        int border = SCW(ws, 8);
+        int btn_h = SCW(ws, 26);
+        int line_h = commandbox_line_height(hwnd, ws);
 
-        int min_out_h = line_h * 3 + SC(6);
-        int min_in_h = line_h * 1 + SC(6);
+        int min_out_h = line_h * 3 + SCW(ws, 6);
+        int min_in_h = line_h * 1 + SCW(ws, 6);
         int min_cy = border * 4 + min_out_h + min_in_h + btn_h;
 
-        RECT rc_win = {0, 0, SC(200), min_cy};
+        RECT rc_win = {0, 0, SCW(ws, 200), min_cy};
         AdjustWindowRectEx(&rc_win, WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME, FALSE, WS_EX_TOOLWINDOW | WS_EX_LAYERED);
 
         mmi->ptMinTrackSize.x = rc_win.right - rc_win.left;
@@ -300,7 +306,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         }
         if (is_alt) {
             int dx = 0, dy = 0;
-            int move_step = SC(20);
+            int move_step = SCW(hg_window_scale(hwnd), 20);
             if (w_param == VK_LEFT)
                 dx = -move_step;
             else if (w_param == VK_RIGHT)
@@ -321,7 +327,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         }
         if (is_ctrl) {
             int dw = 0, dh = 0;
-            int resize_step = SC(20);
+            int resize_step = SCW(hg_window_scale(hwnd), 20);
             if (w_param == VK_LEFT)
                 dw = -resize_step;
             else if (w_param == VK_RIGHT)
@@ -345,11 +351,12 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     case WM_MOUSEWHEEL: {
         short delta = (short)HIWORD(w_param);
         if (LOWORD(w_param) & MK_CONTROL) {
-            int size = (int)(ABS(hg_g_commandbox_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
+            double ws = hg_window_scale(hwnd);
+            int size = (int)(ABS(hg_g_commandbox_font_size) / (ws > 0 ? ws : 1.0) + 0.5);
             size += (delta > 0 ? 1 : -1);
             if (size < 8) size = 8;
             if (size > 72) size = 72;
-            hg_g_commandbox_font_size = -SC(size);
+            hg_g_commandbox_font_size = -SCW(ws, size);
             save_commandbox_font_config();
             
             load_commandbox_font();

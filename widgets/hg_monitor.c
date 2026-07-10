@@ -140,7 +140,8 @@ static BOOL monitor_pt_to_screen_pt(HWND hwnd, int monitor_idx, POINT client_pt,
         return FALSE;
     RECT rc;
     GetClientRect(hwnd, &rc);
-    int border = SC(HG_BORDER_THICKNESS);
+    double ws = hg_window_scale(hwnd);
+    int border = SCW(ws, HG_BORDER_THICKNESS);
     int edit_height = 0;
     HWND edit_wnd = GetDlgItem(hwnd, 104);
     if (edit_wnd) {
@@ -181,7 +182,8 @@ static BOOL screen_pt_to_monitor_pt(HWND hwnd, int monitor_idx, POINT screen_pt,
         return FALSE;
     RECT rc;
     GetClientRect(hwnd, &rc);
-    int border = SC(HG_BORDER_THICKNESS);
+    double ws = hg_window_scale(hwnd);
+    int border = SCW(ws, HG_BORDER_THICKNESS);
     int edit_height = 0;
     HWND edit_wnd = GetDlgItem(hwnd, 104);
     if (edit_wnd) {
@@ -274,10 +276,11 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
         }
         if (edit_wnd && hg_g_main_font) {
-            int border = SC(HG_BORDER_THICKNESS);
+            double ws = hg_window_scale(hwnd);
+            int border = SCW(ws, HG_BORDER_THICKNESS);
             int w = (int)LOWORD(l_param) - border * 2;
 
-            int edit_height = hg_measure_edit_height(edit_wnd, hg_g_main_font);
+            int edit_height = hg_measure_edit_height(edit_wnd, hg_g_main_font, ws);
 
             MoveWindow(edit_wnd, border, border, w, edit_height, TRUE);
         }
@@ -301,7 +304,8 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             }
             HDC mem_dc = paint_buffer.dc;
 
-            int border = SC(HG_BORDER_THICKNESS);
+            double ws = hg_window_scale(hwnd);
+            int border = SCW(ws, HG_BORDER_THICKNESS);
             int edit_height = 0;
             HWND edit_wnd = GetDlgItem(hwnd, 104);
             if (edit_wnd) {
@@ -338,7 +342,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                         else if (GetAsyncKeyState(VK_LBUTTON) < 0)
                             fill_color = RGB(0, 255, 0); /* green */
 
-                        int len = SC(8);
+                        int len = SCW(ws, 8);
                         /* Draw black crosshair background for contrast */
                         HPEN hPenBg = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
                         HPEN restore_pen = NULL;
@@ -473,7 +477,8 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         pt.y = GET_Y_LPARAM(l_param);
         RECT rc;
         GetWindowRect(hwnd, &rc);
-        int border = SC(8);
+        double ws = hg_window_scale(hwnd);
+        int border = SCW(ws, 8);
         if (pt.x < rc.left + border && pt.y < rc.top + border)
             return HTTOPLEFT;
         if (pt.x >= rc.right - border && pt.y < rc.top + border)

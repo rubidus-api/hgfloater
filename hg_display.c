@@ -193,6 +193,33 @@ void set_system_brightness(int brightness)
     }
 }
 
+/* Effective scale of the monitor hosting the window or point, falling back to
+ * the process scale. Widgets outside the co-located floater/taskbox pair use
+ * this so they render correctly on mixed-DPI setups. */
+double hg_window_scale(HWND hwnd)
+{
+    if (hwnd && IsWindow(hwnd)) {
+        HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        UINT dpi_x = 96;
+        UINT dpi_y = 96;
+        if (SUCCEEDED(GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y)) && dpi_x > 0) {
+            return (double)dpi_x / 96.0;
+        }
+    }
+    return hg_g_scale_factor;
+}
+
+double hg_point_scale(POINT pt)
+{
+    HMONITOR monitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+    UINT dpi_x = 96;
+    UINT dpi_y = 96;
+    if (SUCCEEDED(GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y)) && dpi_x > 0) {
+        return (double)dpi_x / 96.0;
+    }
+    return hg_g_scale_factor;
+}
+
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
     (void)hdcMonitor;

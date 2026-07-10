@@ -304,7 +304,7 @@ void reset_taskbox_focus(void)
  * best fits the requested window height. */
 int taskbox_cols_from_height(int window_height, int icon_size, int border, int total_items)
 {
-    int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
+    int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font, hg_g_scale_factor);
     int row_height = icon_size + SC(10);
     int available_toolbar_h = window_height - (border * 2 + edit_height);
     int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
@@ -388,7 +388,7 @@ void update_layout(HWND hwnd)
     int width = rc.right;
     int border = SC(HG_BORDER_THICKNESS);
 
-    int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font);
+    int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font, hg_g_scale_factor);
 
     int tb_width = width - (border * 2);
     if (tb_width <= 0)

@@ -329,6 +329,9 @@ typedef struct ToolbarControllerState {
 #include "hg_globals.h"
 
 #define SC(x) hg_calc_scale(x)
+/* Per-window variant for widgets that can sit on a different-DPI monitor than
+ * the floater/taskbox pair, which owns the process-wide scale. */
+#define SCW(scale, x) hg_calc_scale_by((scale), (x))
 
 static inline int hellgates_abs(int x)
 {

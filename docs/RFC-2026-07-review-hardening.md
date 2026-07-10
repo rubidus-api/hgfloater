@@ -155,7 +155,7 @@ Progress:
 - 2026-07-09: Startup scale derives from the monitor containing the loaded floater position via `GetDpiForMonitor` instead of always the primary monitor.
 - 2026-07-09: Release build compiles warning-clean on the cross-build host.
 - 2026-07-10: Windows runtime verification passed against v26.07.10: cross-monitor DPI rescale, live scale changes, display removal recovery, and name-keyed monitor preview positions.
-- Remaining staged work: independent per-window scaling for command box, about, and monitor previews when they sit on a different-DPI monitor than the floater.
+- 2026-07-10: Follow-up landed after release: the command box, about window, and monitor previews scale by their own monitor's DPI (hg_window_scale/hg_point_scale over SCW), removing the last staged DPI gap.
 
 Tasks:
 - Handle `WM_DPICHANGED` in every top-level widget: adopt the suggested rect and recompute scaled metrics from the new DPI.
