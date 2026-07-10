@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.10b] - 2026-07-10
 
 ### Added
 - The floater gains status bars: CPU, MEM, and BAT horizontal bar graphs (red/blue/green, full width = 100%) run underneath the clock and date with tiny labels on the left edge, refreshed once per second inside the clock height so the floater stays small; the battery row hides on systems without one, a `+` on the label marks charging, and `[floater] show_stats=0` turns them off.
