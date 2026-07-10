@@ -82,7 +82,7 @@ if exist gen_about.ps1 del gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command
 windres hgfloater.rc -O coff -o hgfloater_res.o
-gcc hgfloater.c hg_globals.c hg_utils.c hg_config.c widgets\hg_floater.c widgets\hg_taskbox.c widgets\hg_toolbar.c widgets\hg_taskbox_menus.c widgets\hg_window_list.c widgets\hg_monitor.c widgets\hg_commandbox.c widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
+gcc hgfloater.c hg_globals.c hg_utils.c hg_config.c hg_calc.c widgets\hg_floater.c widgets\hg_taskbox.c widgets\hg_toolbar.c widgets\hg_taskbox_menus.c widgets\hg_window_list.c widgets\hg_monitor.c widgets\hg_commandbox.c widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
 if exist hgfloater_res.o del hgfloater_res.o
 
 if %errorlevel% equ 0 (

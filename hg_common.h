@@ -238,8 +238,7 @@
 #define HG_COLOR_TEXT_DEFAULT hg_g_color_scheme_selected.text
 #define HG_CLICKABLE_BG hg_g_color_scheme_selected.bg
 
-#define HG_MIN_ALPHA ((int)(255 * (100 - 70) / 100))
-#define HG_MAX_ALPHA 255
+#include "hg_calc.h"
 
 #ifndef ICON_SMALL2
 #define ICON_SMALL2 2
@@ -329,11 +328,7 @@ typedef struct ToolbarControllerState {
  * ========================================================================= */
 #include "hg_globals.h"
 
-static inline int sc(int x)
-{
-    return (int)(x * hg_g_scale_factor + (x >= 0 ? 0.5 : -0.5));
-}
-#define SC(x) sc(x)
+#define SC(x) hg_calc_scale(x)
 
 static inline int hellgates_abs(int x)
 {
