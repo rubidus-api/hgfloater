@@ -200,7 +200,7 @@ Progress:
 - Extern array sizing with shared macros landed earlier under Phase 1.
 - 2026-07-10: Release build compiles warning-clean on the cross-build host; runtime verification on the Windows host is pending.
 - 2026-07-10: Split hg_taskbox.c (2,362 lines) into four translation units: hg_taskbox.c (window proc, layout, mutators; 1,057), hg_toolbar.c (773), hg_taskbox_menus.c (354), and hg_window_list.c (184), with cross-unit state in widgets/hg_taskbox_internal.h and the build source list updated. The split compiles warning-clean on the cross-build host.
-- Remaining: split hg_utils.c into system-facing modules in the later pass this phase already defers.
+- 2026-07-10: Split hg_utils.c (2,379 lines) into hg_audio.c (239), hg_display.c (244), and hg_shell.c (1,100, dominated by the icon pipeline), leaving hg_utils.c with the theme/GDI/string/layout/toolbar-metadata/input helpers (809). The split compiles warning-clean on the cross-build host. Phase 4 is complete.
 
 Tasks:
 - Add shared helpers for the repeated blocks: edit-height measurement, column-snap width and apply-columns, readonly edit subclass (IME, Esc, move-parent, wheel-forward via `dwRefData`), `WM_CTLCOLOR` handling, and alpha stepping with persistence.
