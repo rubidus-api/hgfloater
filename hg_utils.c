@@ -230,9 +230,9 @@ LRESULT hg_on_ctlcolor_edit(HDC hdc)
 }
 
 /* Shared single-line edit height measurement (font metrics plus padding). */
-int hg_measure_edit_height(HWND edit_wnd, HFONT font)
+int hg_measure_edit_height(HWND edit_wnd, HFONT font, double scale)
 {
-    int edit_height = SC(20);
+    int edit_height = SCW(scale, 20);
 
     if (!edit_wnd || !font)
         return edit_height;
@@ -242,7 +242,7 @@ int hg_measure_edit_height(HWND edit_wnd, HFONT font)
         HFONT old_font = (HFONT)SelectObject(hdc, font);
         TEXTMETRIC tm = {0};
         if (GetTextMetrics(hdc, &tm)) {
-            edit_height = (tm.tmHeight + tm.tmExternalLeading) + SC(6);
+            edit_height = (tm.tmHeight + tm.tmExternalLeading) + SCW(scale, 6);
         }
         if (old_font)
             SelectObject(hdc, old_font);

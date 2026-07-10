@@ -52,10 +52,11 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
     case WM_CREATE: {
         hg_apply_class_background(hwnd);
         apply_dwm_attributes(hwnd);
+        double ws = hg_window_scale(hwnd);
         HWND edit_wnd =
             CreateWindowExW(0, L"EDIT", HG_ABOUT_TEXT_W,
                             WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
-                            SC(10), SC(10), SC(364), SC(240), hwnd, (HMENU)100, GetModuleHandle(NULL), NULL);
+                            SCW(ws, 10), SCW(ws, 10), SCW(ws, 364), SCW(ws, 240), hwnd, (HMENU)100, GetModuleHandle(NULL), NULL);
         if (edit_wnd) {
             SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
             SetWindowSubclass(edit_wnd, about_edit_subclass_proc, 1, 0);
@@ -66,13 +67,14 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
     case WM_SIZE: {
         HWND edit_wnd = GetDlgItem(hwnd, 100);
         if (edit_wnd) {
-            int w = (int)LOWORD(l_param) - SC(20);
-            int h = (int)HIWORD(l_param) - SC(20);
+            double ws = hg_window_scale(hwnd);
+            int w = (int)LOWORD(l_param) - SCW(ws, 20);
+            int h = (int)HIWORD(l_param) - SCW(ws, 20);
             if (w < 0)
                 w = 0;
             if (h < 0)
                 h = 0;
-            MoveWindow(edit_wnd, SC(10), SC(10), w, h, TRUE);
+            MoveWindow(edit_wnd, SCW(ws, 10), SCW(ws, 10), w, h, TRUE);
         }
         return 0;
     }

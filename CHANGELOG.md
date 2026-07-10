@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- The Command Box, About window, and monitor previews now scale to the DPI of the monitor they are on instead of inheriting the floater's scale, completing mixed-DPI support.
+
 ## [v26.07.10] - 2026-07-10
 
 ### Added

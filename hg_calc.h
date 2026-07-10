@@ -11,9 +11,14 @@
 extern double hg_g_scale_factor;
 
 /* DPI scaling for design-time pixel values (rounds away from zero). */
+static inline int hg_calc_scale_by(double scale, int x)
+{
+    return (int)(x * scale + (x >= 0 ? 0.5 : -0.5));
+}
+
 static inline int hg_calc_scale(int x)
 {
-    return (int)(x * hg_g_scale_factor + (x >= 0 ? 0.5 : -0.5));
+    return hg_calc_scale_by(hg_g_scale_factor, x);
 }
 
 int hg_clamp_alpha(int alpha);
