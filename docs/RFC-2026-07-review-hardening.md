@@ -124,6 +124,7 @@ Progress:
 - 2026-07-09: About edit follows main font size changes; releasing a floater Ctrl+drag font-resize no longer toggles the taskbox.
 - 2026-07-09: Smaller items landed: pending toolbar drag state cleared on mouse leave with owned-capture release, dead monitor deferred-drop branch removed, monitor edit metric DC guarded, extern array sizes use the shared macros, alpha load clamp matches the runtime minimum, resize hit bands symmetric.
 - 2026-07-09: Release build and all smoke tests compile warning-clean with the full MinGW warning set on the cross-build host; runtime verification on the Windows host is still pending.
+- 2026-07-10: Runtime testing caught a side effect of the focus-preserving auto-collapse: once another application held the foreground, Windows refused the plain SetForegroundWindow on the next hover-summon, leaving the taskbox visible but deaf to keys (reported as the Command Box no longer opening on C). Fixed with hg_force_foreground, which briefly attaches to the foreground thread's input queue when the plain request is refused.
 
 Tasks:
 - Re-stamp `GCLP_HBRBACKGROUND` for every class registered with the theme brush when `refresh_theme_surfaces` recreates it, or stop registering the shared brush as a class background.

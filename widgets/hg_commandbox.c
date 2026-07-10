@@ -113,7 +113,7 @@ void show_commandbox_window()
             ShowWindow(hg_g_commandbox_wnd, SW_HIDE);
         } else {
             ShowWindow(hg_g_commandbox_wnd, SW_SHOWNORMAL);
-            SetForegroundWindow(hg_g_commandbox_wnd);
+            hg_force_foreground(hg_g_commandbox_wnd);
         }
         return;
     }
@@ -182,7 +182,7 @@ void show_commandbox_window()
         SendMessageW(hg_g_commandbox_wnd, WM_SIZE, 0, MAKELPARAM(rc_client.right, rc_client.bottom));
 
         ShowWindow(hg_g_commandbox_wnd, SW_SHOWNORMAL);
-        SetForegroundWindow(hg_g_commandbox_wnd);
+        hg_force_foreground(hg_g_commandbox_wnd);
     }
 }
 

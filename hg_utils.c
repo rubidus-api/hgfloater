@@ -179,6 +179,28 @@ void hg_apply_dpi_suggested_rect(HWND hwnd, LPARAM l_param)
     }
 }
 
+/* SetForegroundWindow is refused when this process no longer owns the
+ * foreground (for example after an auto-collapse that deliberately left focus
+ * with another application). For user-initiated shows, briefly attaching to
+ * the foreground thread's input queue restores the right to take focus. */
+void hg_force_foreground(HWND hwnd)
+{
+    if (!hwnd || !IsWindow(hwnd))
+        return;
+
+    if (SetForegroundWindow(hwnd) && GetForegroundWindow() == hwnd)
+        return;
+
+    HWND fg_wnd = GetForegroundWindow();
+    DWORD our_tid = GetCurrentThreadId();
+    DWORD fg_tid = fg_wnd ? GetWindowThreadProcessId(fg_wnd, NULL) : 0;
+
+    if (fg_tid && fg_tid != our_tid && AttachThreadInput(our_tid, fg_tid, TRUE)) {
+        SetForegroundWindow(hwnd);
+        AttachThreadInput(our_tid, fg_tid, FALSE);
+    }
+}
+
 /* Shared +/-15 alpha wheel step with the runtime clamp; TRUE when changed. */
 BOOL hg_step_alpha_value(BYTE *alpha, int delta)
 {

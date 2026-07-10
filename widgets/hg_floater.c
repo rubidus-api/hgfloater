@@ -478,7 +478,10 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 refresh_window_list(FALSE);
                 ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
                 ShowWindow(hwnd, SW_HIDE);
-                SetForegroundWindow(hg_g_taskbox_wnd);
+                /* After a focus-preserving auto-collapse this process may not own
+                 * the foreground anymore, so a plain SetForegroundWindow would be
+                 * refused and keys would keep going to the other application. */
+                hg_force_foreground(hg_g_taskbox_wnd);
                 hg_g_hover_check_armed = TRUE;
                 SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
                 save_taskbox_geometry_config(cx - tw / 2, cy - th / 2, tw, th);
@@ -592,7 +595,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 } else {
                     refresh_window_list(FALSE);
                 }
-                SetForegroundWindow(hg_g_taskbox_wnd);
+                hg_force_foreground(hg_g_taskbox_wnd);
                 
                 ShowWindow(hwnd, SW_HIDE); // Hide floater just like hover
                 
@@ -611,7 +614,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 
                 InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
             } else {
-                SetForegroundWindow(hwnd);
+                hg_force_foreground(hwnd);
             }
         }
         return 0;
