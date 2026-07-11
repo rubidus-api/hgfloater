@@ -353,6 +353,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     }
 
     init_paths();
+    load_colors_config();
     init_color_scheme();
     update_theme_colors();
 

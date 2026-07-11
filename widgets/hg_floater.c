@@ -39,10 +39,6 @@ void update_floater_alpha(int delta)
 /* Compact status panel on the floater's left side: CPU/MEM/BAT horizontal bar
  * graphs (top to bottom, red/blue/green) with tiny labels. The panel keeps the
  * floater at its clock height; the battery row hides on systems without one. */
-#define HG_FLOATER_STAT_CPU_COLOR RGB(220, 70, 70)
-#define HG_FLOATER_STAT_MEM_COLOR RGB(80, 130, 230)
-#define HG_FLOATER_STAT_BAT_COLOR RGB(80, 190, 100)
-
 static int s_stat_cpu = -1;
 static int s_stat_mem = -1;
 static int s_stat_bat = -1;
@@ -116,9 +112,9 @@ static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h, int lab
         COLORREF color;
         BOOL present;
     } rows[3] = {
-        {L"CPU", s_stat_cpu, HG_FLOATER_STAT_CPU_COLOR, s_stat_cpu >= 0},
-        {L"MEM", s_stat_mem, HG_FLOATER_STAT_MEM_COLOR, s_stat_mem >= 0},
-        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, HG_FLOATER_STAT_BAT_COLOR, s_stat_has_bat},
+        {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, s_stat_cpu >= 0},
+        {L"MEM", s_stat_mem, hg_g_color_stat_mem, s_stat_mem >= 0},
+        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, s_stat_has_bat},
     };
 
     int count = 0;

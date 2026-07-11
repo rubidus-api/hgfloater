@@ -1,5 +1,17 @@
 #include "hg_common.h"
 
+color_scheme_t hg_g_custom_palette = {HG_THEME_CUSTOM_BG, HG_THEME_CUSTOM_BORDER, HG_THEME_CUSTOM_TEXT,
+                                      HG_THEME_CUSTOM_FLASH, HG_THEME_CUSTOM_SELECTED};
+COLORREF hg_g_color_focus_bg = HG_COLOR_FOCUS_BG_DEFAULT;
+COLORREF hg_g_color_stat_cpu = HG_COLOR_STAT_CPU_DEFAULT;
+COLORREF hg_g_color_stat_mem = HG_COLOR_STAT_MEM_DEFAULT;
+COLORREF hg_g_color_stat_bat = HG_COLOR_STAT_BAT_DEFAULT;
+COLORREF hg_g_color_value_alpha_lo = HG_COLOR_VALUE_ALPHA_LO_DEFAULT;
+COLORREF hg_g_color_value_alpha_hi = HG_COLOR_VALUE_ALPHA_HI_DEFAULT;
+COLORREF hg_g_color_value_bright_lo = HG_COLOR_VALUE_BRIGHT_LO_DEFAULT;
+COLORREF hg_g_color_value_bright_hi = HG_COLOR_VALUE_BRIGHT_HI_DEFAULT;
+COLORREF hg_g_color_value_vol_lo = HG_COLOR_VALUE_VOL_LO_DEFAULT;
+COLORREF hg_g_color_value_vol_hi = HG_COLOR_VALUE_VOL_HI_DEFAULT;
 color_scheme_t hg_g_color_scheme_dark = {0};
 color_scheme_t hg_g_color_scheme_light = {0};
 color_scheme_t hg_g_color_scheme_selected = {0};

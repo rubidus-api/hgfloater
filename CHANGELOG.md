@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- Every accent color is now centrally managed and configurable from the new `[colors]` section of `config.ini` (RRGGBB hex): the custom dark palette, the focus highlight, the floater status bar colors, and the `A`/`B`/`V` value-button gradients. Defaults are written back on first run and Reset Settings restores them.
+
 ## [v26.07.11c] - 2026-07-11
 
 ### Fixed
