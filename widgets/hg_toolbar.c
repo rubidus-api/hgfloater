@@ -34,29 +34,28 @@ static int toolbar_taskbox_alpha_percent(void)
     return toolbar_clamp_percent((hg_g_taskbox_alpha * 100 + 127) / 255);
 }
 
+/* Per-channel blend between the configurable low/high gradient endpoints. */
+static COLORREF toolbar_value_blend(COLORREF lo, COLORREF hi, int pct)
+{
+    return RGB(toolbar_scale_color_channel(GetRValue(lo), GetRValue(hi), pct),
+               toolbar_scale_color_channel(GetGValue(lo), GetGValue(hi), pct),
+               toolbar_scale_color_channel(GetBValue(lo), GetBValue(hi), pct));
+}
+
 static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
 {
     if (index == HG_TOOL_ICON_ALPHA) {
-        int pct = toolbar_taskbox_alpha_percent();
-        return RGB(toolbar_scale_color_channel(24, 255, pct), toolbar_scale_color_channel(0, 56, pct),
-                   toolbar_scale_color_channel(0, 56, pct));
+        return toolbar_value_blend(hg_g_color_value_alpha_lo, hg_g_color_value_alpha_hi,
+                                   toolbar_taskbox_alpha_percent());
     }
     if (index == HG_TOOL_ICON_BRIGHTNESS) {
-        int pct = get_system_brightness();
-        return RGB(toolbar_scale_color_channel(0, 72, pct), toolbar_scale_color_channel(24, 255, pct),
-                   toolbar_scale_color_channel(0, 72, pct));
+        return toolbar_value_blend(hg_g_color_value_bright_lo, hg_g_color_value_bright_hi, get_system_brightness());
     }
     if (index == HG_TOOL_ICON_VOLUME) {
-        int pct = get_system_volume();
-        return RGB(toolbar_scale_color_channel(0, 72, pct), toolbar_scale_color_channel(0, 120, pct),
-                   toolbar_scale_color_channel(24, 255, pct));
+        return toolbar_value_blend(hg_g_color_value_vol_lo, hg_g_color_value_vol_hi, get_system_volume());
     }
     return toolbar_invert_color(base_color);
 }
-
-/* The keyboard/click focus is marked by filling the item background yellow;
- * rings and bevels alone proved too subtle at small icon sizes. */
-#define HG_TOOLBAR_FOCUS_BG RGB(255, 210, 40)
 
 static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
 {
@@ -190,7 +189,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     } else if ((hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) ||
                                (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx)) {
                         BOOL focused = (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx);
-                        HBRUSH hbr = hg_cached_solid_brush(focused ? HG_TOOLBAR_FOCUS_BG : HG_COLOR_BG_SELECTED);
+                        HBRUSH hbr = hg_cached_solid_brush(focused ? hg_g_color_focus_bg : HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
                         }
@@ -248,7 +247,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                                (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)) {
                         BOOL focused = (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i);
                         if (focused) {
-                            HBRUSH hbr = hg_cached_solid_brush(HG_TOOLBAR_FOCUS_BG);
+                            HBRUSH hbr = hg_cached_solid_brush(hg_g_color_focus_bg);
                             if (hbr) {
                                 FillRect(mem_dc, &rc_btn, hbr);
                             }

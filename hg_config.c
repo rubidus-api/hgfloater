@@ -62,6 +62,88 @@ void save_commandbox_geometry_config(int x, int y, int w, int h)
     save_window_geometry_config(L"commandbox", x, y, w, h);
 }
 
+/* [colors]: every accent color as RRGGBB hex, self-healing like the other
+ * settings (defaults are written back so the keys are discoverable). */
+static void save_color_value(const WCHAR *key, COLORREF color)
+{
+    WCHAR buf[8];
+    hellgates_wsprintf(buf, HG_ARRAYSIZE(buf), L"%02X%02X%02X", GetRValue(color), GetGValue(color), GetBValue(color));
+    WritePrivateProfileStringW(L"colors", key, buf, hg_g_config_path);
+}
+
+static COLORREF load_color_value(const WCHAR *key, COLORREF def)
+{
+    WCHAR buf[16] = {0};
+    WCHAR def_buf[8];
+    hellgates_wsprintf(def_buf, HG_ARRAYSIZE(def_buf), L"%02X%02X%02X", GetRValue(def), GetGValue(def), GetBValue(def));
+    GetPrivateProfileStringW(L"colors", key, def_buf, buf, HG_ARRAYSIZE(buf), hg_g_config_path);
+
+    COLORREF color = def;
+    if (lstrlenW(buf) == 6) {
+        WCHAR *endptr = NULL;
+        unsigned long value = wcstoul(buf, &endptr, 16);
+        if (endptr && *endptr == L'\0') {
+            color = RGB((value >> 16) & 0xFFu, (value >> 8) & 0xFFu, value & 0xFFu);
+        }
+    }
+    save_color_value(key, color);
+    return color;
+}
+
+void load_colors_config(void)
+{
+    hg_g_custom_palette.bg = load_color_value(L"scheme_bg", HG_THEME_CUSTOM_BG);
+    hg_g_custom_palette.border = load_color_value(L"scheme_border", HG_THEME_CUSTOM_BORDER);
+    hg_g_custom_palette.text = load_color_value(L"scheme_text", HG_THEME_CUSTOM_TEXT);
+    hg_g_custom_palette.flash = load_color_value(L"scheme_flash", HG_THEME_CUSTOM_FLASH);
+    hg_g_custom_palette.selected = load_color_value(L"scheme_selected", HG_THEME_CUSTOM_SELECTED);
+    hg_g_color_focus_bg = load_color_value(L"focus_bg", HG_COLOR_FOCUS_BG_DEFAULT);
+    hg_g_color_stat_cpu = load_color_value(L"stat_cpu", HG_COLOR_STAT_CPU_DEFAULT);
+    hg_g_color_stat_mem = load_color_value(L"stat_mem", HG_COLOR_STAT_MEM_DEFAULT);
+    hg_g_color_stat_bat = load_color_value(L"stat_bat", HG_COLOR_STAT_BAT_DEFAULT);
+    hg_g_color_value_alpha_lo = load_color_value(L"value_alpha_low", HG_COLOR_VALUE_ALPHA_LO_DEFAULT);
+    hg_g_color_value_alpha_hi = load_color_value(L"value_alpha_high", HG_COLOR_VALUE_ALPHA_HI_DEFAULT);
+    hg_g_color_value_bright_lo = load_color_value(L"value_brightness_low", HG_COLOR_VALUE_BRIGHT_LO_DEFAULT);
+    hg_g_color_value_bright_hi = load_color_value(L"value_brightness_high", HG_COLOR_VALUE_BRIGHT_HI_DEFAULT);
+    hg_g_color_value_vol_lo = load_color_value(L"value_volume_low", HG_COLOR_VALUE_VOL_LO_DEFAULT);
+    hg_g_color_value_vol_hi = load_color_value(L"value_volume_high", HG_COLOR_VALUE_VOL_HI_DEFAULT);
+}
+
+void reset_colors_config(void)
+{
+    color_scheme_t defaults = {HG_THEME_CUSTOM_BG, HG_THEME_CUSTOM_BORDER, HG_THEME_CUSTOM_TEXT, HG_THEME_CUSTOM_FLASH,
+                               HG_THEME_CUSTOM_SELECTED};
+    hg_g_custom_palette = defaults;
+    hg_g_color_focus_bg = HG_COLOR_FOCUS_BG_DEFAULT;
+    hg_g_color_stat_cpu = HG_COLOR_STAT_CPU_DEFAULT;
+    hg_g_color_stat_mem = HG_COLOR_STAT_MEM_DEFAULT;
+    hg_g_color_stat_bat = HG_COLOR_STAT_BAT_DEFAULT;
+    hg_g_color_value_alpha_lo = HG_COLOR_VALUE_ALPHA_LO_DEFAULT;
+    hg_g_color_value_alpha_hi = HG_COLOR_VALUE_ALPHA_HI_DEFAULT;
+    hg_g_color_value_bright_lo = HG_COLOR_VALUE_BRIGHT_LO_DEFAULT;
+    hg_g_color_value_bright_hi = HG_COLOR_VALUE_BRIGHT_HI_DEFAULT;
+    hg_g_color_value_vol_lo = HG_COLOR_VALUE_VOL_LO_DEFAULT;
+    hg_g_color_value_vol_hi = HG_COLOR_VALUE_VOL_HI_DEFAULT;
+
+    save_color_value(L"scheme_bg", hg_g_custom_palette.bg);
+    save_color_value(L"scheme_border", hg_g_custom_palette.border);
+    save_color_value(L"scheme_text", hg_g_custom_palette.text);
+    save_color_value(L"scheme_flash", hg_g_custom_palette.flash);
+    save_color_value(L"scheme_selected", hg_g_custom_palette.selected);
+    save_color_value(L"focus_bg", hg_g_color_focus_bg);
+    save_color_value(L"stat_cpu", hg_g_color_stat_cpu);
+    save_color_value(L"stat_mem", hg_g_color_stat_mem);
+    save_color_value(L"stat_bat", hg_g_color_stat_bat);
+    save_color_value(L"value_alpha_low", hg_g_color_value_alpha_lo);
+    save_color_value(L"value_alpha_high", hg_g_color_value_alpha_hi);
+    save_color_value(L"value_brightness_low", hg_g_color_value_bright_lo);
+    save_color_value(L"value_brightness_high", hg_g_color_value_bright_hi);
+    save_color_value(L"value_volume_low", hg_g_color_value_vol_lo);
+    save_color_value(L"value_volume_high", hg_g_color_value_vol_hi);
+
+    update_theme_colors();
+}
+
 void load_floater_stats_config(void)
 {
     int value = (int)GetPrivateProfileIntW(L"floater", L"show_stats", 1, hg_g_config_path);
@@ -268,6 +350,8 @@ void save_commandbox_alpha_config()
 void hg_config_reset_all(HWND hwnd)
 {
     (void)hwnd;
+    reset_colors_config();
+    refresh_theme_surfaces(hg_g_taskbox_wnd);
     hg_g_floater_alpha = 204;
     hg_g_taskbox_alpha = 204;
     hg_g_floater_font_size = 28;

@@ -22,6 +22,8 @@ int get_alpha_config(const WCHAR *section, int def_alpha);
 void load_font_name_config(void);
 void save_font_name_config(void);
 void load_hotkey_config(void);
+void load_colors_config(void);
+void reset_colors_config(void);
 void save_alpha_config(void);
 void save_commandbox_alpha_config(void);
 BOOL register_global_hotkey(HWND hwnd, BOOL warn_on_failure);

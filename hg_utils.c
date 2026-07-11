@@ -17,13 +17,7 @@ static void refresh_system_accent_color(void)
 
 void init_color_scheme(void)
 {
-    hg_g_color_scheme_dark = (color_scheme_t){
-        .bg = HG_THEME_CUSTOM_BG,
-        .border = HG_THEME_CUSTOM_BORDER,
-        .text = HG_THEME_CUSTOM_TEXT,
-        .flash = HG_THEME_CUSTOM_FLASH,
-        .selected = HG_THEME_CUSTOM_SELECTED,
-    };
+    hg_g_color_scheme_dark = hg_g_custom_palette; /* configurable via [colors] */
 
     /* GetSysColor values do not follow app dark mode, so they form the light scheme. */
     hg_g_color_scheme_light = (color_scheme_t){

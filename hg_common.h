@@ -205,6 +205,20 @@
 #define HG_THEME_CUSTOM_FLASH RGB(180, 130, 240)
 #define HG_THEME_CUSTOM_SELECTED RGB(80, 80, 80)
 
+/* Default accent colors. The runtime values live in hg_globals and every one
+ * of them can be overridden from config.ini's [colors] section (RRGGBB hex);
+ * see load_colors_config(). */
+#define HG_COLOR_FOCUS_BG_DEFAULT RGB(255, 210, 40)
+#define HG_COLOR_STAT_CPU_DEFAULT RGB(220, 70, 70)
+#define HG_COLOR_STAT_MEM_DEFAULT RGB(80, 130, 230)
+#define HG_COLOR_STAT_BAT_DEFAULT RGB(80, 190, 100)
+#define HG_COLOR_VALUE_ALPHA_LO_DEFAULT RGB(24, 0, 0)
+#define HG_COLOR_VALUE_ALPHA_HI_DEFAULT RGB(255, 56, 56)
+#define HG_COLOR_VALUE_BRIGHT_LO_DEFAULT RGB(0, 24, 0)
+#define HG_COLOR_VALUE_BRIGHT_HI_DEFAULT RGB(72, 255, 72)
+#define HG_COLOR_VALUE_VOL_LO_DEFAULT RGB(0, 0, 24)
+#define HG_COLOR_VALUE_VOL_HI_DEFAULT RGB(72, 120, 255)
+
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif

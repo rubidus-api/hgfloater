@@ -2,6 +2,17 @@
 #define HG_GLOBALS_H
 
 /* Global state variables declared extern */
+extern color_scheme_t hg_g_custom_palette; /* configurable via [colors] */
+extern COLORREF hg_g_color_focus_bg;
+extern COLORREF hg_g_color_stat_cpu;
+extern COLORREF hg_g_color_stat_mem;
+extern COLORREF hg_g_color_stat_bat;
+extern COLORREF hg_g_color_value_alpha_lo;
+extern COLORREF hg_g_color_value_alpha_hi;
+extern COLORREF hg_g_color_value_bright_lo;
+extern COLORREF hg_g_color_value_bright_hi;
+extern COLORREF hg_g_color_value_vol_lo;
+extern COLORREF hg_g_color_value_vol_hi;
 extern color_scheme_t hg_g_color_scheme_dark;
 extern color_scheme_t hg_g_color_scheme_light;
 extern color_scheme_t hg_g_color_scheme_selected;
