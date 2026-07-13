@@ -76,11 +76,38 @@ static BOOL floater_refresh_stats(void)
 /* Only the tiny labels claim exclusive horizontal space; the bars themselves
  * run underneath the clock and date as background. The label font follows the
  * floater font size so the labels stay proportionally small. */
+/* The clock is the reference: its size is 120% of the configured floater font
+ * size, and everything else is a fixed ratio of the clock. */
+static int floater_time_font_height(void)
+{
+    int size = hg_g_floater_font_size * 12 / 10;
+    if (size < 12)
+        size = 12;
+    return size;
+}
+
+/* Ratios of the clock font: labels 30%, host name 40%, date 70%. */
 static int floater_label_font_height(void)
 {
-    int size = hg_g_floater_font_size * 4 / 10;
+    int size = floater_time_font_height() * 30 / 100;
+    if (size < 7)
+        size = 7;
+    return size;
+}
+
+static int floater_host_font_height(void)
+{
+    int size = floater_time_font_height() * 40 / 100;
     if (size < 8)
         size = 8;
+    return size;
+}
+
+static int floater_date_font_height(void)
+{
+    int size = floater_time_font_height() * 70 / 100;
+    if (size < 9)
+        size = 9;
     return size;
 }
 
@@ -112,12 +139,8 @@ static const WCHAR *floater_host_name(void)
 static HFONT floater_host_font(void)
 {
     if (!s_floater_host_font) {
-        /* Light rather than bold, and 1.5x the bar labels. */
-        int height = floater_label_font_height() * 3 / 2;
-        if (height < 11)
-            height = 11;
-        s_floater_host_font = CreateFontW(SC(height), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0,
-                                          0, hg_g_font_name);
+        s_floater_host_font = CreateFontW(SC(floater_host_font_height()), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE,
+                                          DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
     }
     return s_floater_host_font;
 }
@@ -151,13 +174,8 @@ static int floater_pad_y(void)
     return floater_metric(1, 6); /* ~17% */
 }
 
-/* Gap between the host name and the clock, and between the label strip and the
- * bars/text to its right. */
-static int floater_gap_y(void)
-{
-    return floater_metric(1, 12);
-}
-
+/* No vertical gaps: the host name, clock, and date stack flush against each
+ * other by design. Only the horizontal label/bar gap remains. */
 static int floater_gap_x(void)
 {
     return floater_metric(1, 8);
@@ -169,16 +187,40 @@ static int floater_bar_inset(void)
     return floater_metric(1, 14);
 }
 
+/* Text extent with the font's internal leading removed: GetTextExtentPoint32W
+ * reports the full cell height, whose built-in slack would show up as a gap
+ * between the stacked lines even with zero spacing between them. */
 static SIZE floater_text_extent(HDC hdc, HFONT font, const WCHAR *text)
 {
     SIZE sz = {0};
 
     if (hdc && font && text && text[0]) {
         HFONT old_font = (HFONT)SelectObject(hdc, font);
+        TEXTMETRICW tm = {0};
         GetTextExtentPoint32W(hdc, text, (int)lstrlenW(text), &sz);
+        if (GetTextMetricsW(hdc, &tm) && tm.tmInternalLeading > 0 && sz.cy > tm.tmInternalLeading) {
+            sz.cy -= tm.tmInternalLeading;
+        }
         SelectObject(hdc, old_font);
     }
     return sz;
+}
+
+/* Internal leading of a font, used to shift a text box up so the glyphs land
+ * flush at the top of the height reserved for them. */
+static int floater_font_leading(HDC hdc, HFONT font)
+{
+    TEXTMETRICW tm = {0};
+    int leading = 0;
+
+    if (hdc && font) {
+        HFONT old_font = (HFONT)SelectObject(hdc, font);
+        if (GetTextMetricsW(hdc, &tm)) {
+            leading = tm.tmInternalLeading;
+        }
+        SelectObject(hdc, old_font);
+    }
+    return leading;
 }
 
 /* Host line extent (zeroes when there is no name to draw). */
@@ -206,7 +248,6 @@ typedef struct HgFloaterMetrics {
     int pad_x;
     int pad_y;
     int host_h;      /* 0 when no host line */
-    int host_gap;    /* 0 when no host line */
     int time_h;
     int date_h;
     int label_w;     /* 0 when the status bars are off */
@@ -227,7 +268,6 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
     out->pad_x = floater_pad_x();
     out->pad_y = floater_pad_y();
     out->host_h = sz_host.cy;
-    out->host_gap = (sz_host.cy > 0) ? floater_gap_y() : 0;
     out->time_h = sz_time.cy;
     out->date_h = sz_date.cy;
     out->label_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
@@ -240,13 +280,14 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
         inner_w = sz_host.cx;
     out->width = out->pad_x * 2 + inner_w;
 
-    /* Height: pad + host + gap + time + date + pad, exactly. */
-    out->height = out->pad_y * 2 + out->host_h + out->host_gap + out->time_h + out->date_h;
+    /* Height: pad + host + time + date + pad, exactly; no gaps in between. */
+    out->height = out->pad_y * 2 + out->host_h + out->time_h + out->date_h;
 
     out->content_x = out->pad_x;
     out->column_x = out->pad_x + out->label_w;
     out->column_w = out->width - out->pad_x - out->column_x;
-    out->rows_y = out->pad_y + out->host_h + out->host_gap;
+    /* The bars and the clock/date share the area below the host name. */
+    out->rows_y = out->pad_y + out->host_h;
     out->rows_h = out->time_h + out->date_h;
 }
 
@@ -323,16 +364,12 @@ void update_floater_layout(HWND hwnd)
     const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
     hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
 
-    int time_size = hg_g_floater_font_size * 12 / 10;
-    int date_size = hg_g_floater_font_size * 8 / 10;
-    if (date_size < 10)
-        date_size = 10;
     if (!hg_g_floater_time_font)
-        hg_g_floater_time_font = CreateFontW(SC(time_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0,
-                                             0, 0, 0, hg_g_font_name);
+        hg_g_floater_time_font = CreateFontW(SC(floater_time_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                             DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
     if (!hg_g_floater_date_font)
-        hg_g_floater_date_font = CreateFontW(SC(date_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0,
-                                             0, 0, 0, hg_g_font_name);
+        hg_g_floater_date_font = CreateFontW(SC(floater_date_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                             DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
     if (!hg_g_floater_time_font || !hg_g_floater_date_font)
         return;
 
@@ -379,16 +416,12 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
         if (hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer)) {
             HDC mem_dc = paint_buffer.dc;
 
-                int time_size = hg_g_floater_font_size * 12 / 10;
-                int date_size = hg_g_floater_font_size * 8 / 10;
-                if (date_size < 10)
-                    date_size = 10;
                 if (!hg_g_floater_time_font)
-                    hg_g_floater_time_font = CreateFontW(SC(time_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                                                         DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                    hg_g_floater_time_font = CreateFontW(SC(floater_time_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE,
+                                                         FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
                 if (!hg_g_floater_date_font)
-                    hg_g_floater_date_font = CreateFontW(SC(date_size), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                                                         DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                    hg_g_floater_date_font = CreateFontW(SC(floater_date_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE,
+                                                         FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
 
                 if (hg_g_floater_time_font && hg_g_floater_date_font) {
                     COLORREF bg_color = HG_COLOR_BG_DEFAULT;
@@ -439,11 +472,15 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                         floater_draw_stats_panel(mem_dc, &m);
                     }
 
-                    /* Host name spans the full inner width. */
+                    /* Each line is drawn shifted up by its own internal leading, so
+                     * the glyphs sit flush inside the leading-trimmed heights the
+                     * metrics reserved and no gap creeps between the lines. */
                     if (m.host_h > 0) {
                         HFONT host_font = floater_host_font();
                         if (host_font) {
-                            RECT host_rc = {m.pad_x, m.pad_y, rc.right - m.pad_x, m.pad_y + m.host_h};
+                            int lead = floater_font_leading(mem_dc, host_font);
+                            RECT host_rc = {m.pad_x, m.pad_y - lead, rc.right - m.pad_x,
+                                            m.pad_y + m.host_h};
                             SelectObject(mem_dc, host_font);
                             DrawTextW(mem_dc, floater_host_name(), -1, &host_rc,
                                       DT_CENTER | DT_TOP | DT_SINGLELINE | DT_END_ELLIPSIS);
@@ -451,12 +488,18 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     }
 
                     /* Clock and date center in the column right of the labels. */
-                    RECT time_rc = {m.column_x, m.rows_y, m.column_x + m.column_w, m.rows_y + m.time_h};
-                    RECT date_rc = {m.column_x, time_rc.bottom, m.column_x + m.column_w,
-                                    time_rc.bottom + m.date_h};
+                    int time_lead = floater_font_leading(mem_dc, hg_g_floater_time_font);
+                    int date_lead = floater_font_leading(mem_dc, hg_g_floater_date_font);
+                    int time_top = m.rows_y;
+                    int date_top = time_top + m.time_h;
+
+                    RECT time_rc = {m.column_x, time_top - time_lead, m.column_x + m.column_w,
+                                    time_top + m.time_h};
+                    RECT date_rc = {m.column_x, date_top - date_lead, m.column_x + m.column_w,
+                                    date_top + m.date_h};
 
                     SelectObject(mem_dc, hg_g_floater_time_font);
-                    DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                    DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
 
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
