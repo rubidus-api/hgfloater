@@ -7,6 +7,8 @@ void show_about_window(void);
 
 /* Tiny label font for the status bars; recreated whenever the floater font size or DPI changes. */
 static HFONT s_floater_label_font = NULL;
+/* Thin host-name font; same lifecycle as the label font. */
+static HFONT s_floater_host_font = NULL;
 
 void update_floater_font_size(int delta)
 {
@@ -20,6 +22,7 @@ void update_floater_font_size(int delta)
         release_font_handle(&hg_g_floater_time_font, FALSE);
         release_font_handle(&hg_g_floater_date_font, FALSE);
         release_font_handle(&s_floater_label_font, FALSE);
+        release_font_handle(&s_floater_host_font, FALSE);
         update_floater_layout(hg_g_floater_wnd);
         InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
         save_floater_font_config();
@@ -88,6 +91,66 @@ static HFONT floater_label_font(void)
                                            DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
     }
     return s_floater_label_font;
+}
+
+/* Host name line across the top of the floater: light weight, a little larger
+ * than the tiny bar labels. Cached once (the computer name does not change
+ * while the process runs). */
+static WCHAR s_floater_host[MAX_COMPUTERNAME_LENGTH + 1] = L"";
+
+static const WCHAR *floater_host_name(void)
+{
+    if (!s_floater_host[0]) {
+        DWORD len = HG_ARRAYSIZE(s_floater_host);
+        if (!GetComputerNameW(s_floater_host, &len)) {
+            s_floater_host[0] = L'\0';
+        }
+    }
+    return s_floater_host;
+}
+
+static HFONT floater_host_font(void)
+{
+    if (!s_floater_host_font) {
+        /* A quarter larger than the bar labels, and light rather than bold. */
+        int height = floater_label_font_height() * 5 / 4;
+        if (height < 9)
+            height = 9;
+        s_floater_host_font = CreateFontW(SC(height), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0,
+                                          0, hg_g_font_name);
+    }
+    return s_floater_host_font;
+}
+
+/* Height of the host line (zero when there is no name to draw). */
+static int floater_host_line_height(HDC hdc)
+{
+    const WCHAR *host = floater_host_name();
+    SIZE sz = {0};
+    HFONT font = floater_host_font();
+
+    if (!host[0] || !font)
+        return 0;
+
+    HFONT old_font = (HFONT)SelectObject(hdc, font);
+    GetTextExtentPoint32W(hdc, host, (int)lstrlenW(host), &sz);
+    SelectObject(hdc, old_font);
+    return sz.cy;
+}
+
+static int floater_host_line_width(HDC hdc)
+{
+    const WCHAR *host = floater_host_name();
+    SIZE sz = {0};
+    HFONT font = floater_host_font();
+
+    if (!host[0] || !font)
+        return 0;
+
+    HFONT old_font = (HFONT)SelectObject(hdc, font);
+    GetTextExtentPoint32W(hdc, host, (int)lstrlenW(host), &sz);
+    SelectObject(hdc, old_font);
+    return sz.cx;
 }
 
 /* Exclusive strip width for the labels, from the widest label's extent. */
@@ -203,6 +266,8 @@ void update_floater_layout(HWND hwnd)
     int padding_x = pen_width + SC(20);
     int padding_y = pen_width + SC(10);
     int width = (sz_time.cx > sz_date.cx ? sz_time.cx : sz_date.cx);
+    int host_h = floater_host_line_height(hdc);
+    int host_w = floater_host_line_width(hdc);
     int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
     if (stats_w > 0) {
         /* The bars run under the text, so keep the text column snug against
@@ -212,7 +277,9 @@ void update_floater_layout(HWND hwnd)
         width += stats_w + SC(2);
     }
     width += padding_x;
-    int height = sz_time.cy + sz_date.cy + padding_y;
+    if (host_w + padding_x > width)
+        width = host_w + padding_x;
+    int height = host_h + sz_time.cy + sz_date.cy + padding_y;
 
     RECT rc;
     GetWindowRect(hwnd, &rc);
@@ -304,10 +371,11 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     GetTextExtentPoint32W(mem_dc, time_str, (int)lstrlenW(time_str), &sz_time);
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     GetTextExtentPoint32W(mem_dc, date_str, (int)lstrlenW(date_str), &sz_date);
+                    int host_h = floater_host_line_height(mem_dc);
                     int total_text_height = sz_time.cy + sz_date.cy;
-                    int start_y = (rc.bottom - rc.top - total_text_height) / 2;
-                    if (start_y < 0)
-                        start_y = 0;
+                    int start_y = host_h + (rc.bottom - rc.top - host_h - total_text_height) / 2;
+                    if (start_y < host_h)
+                        start_y = host_h;
 
                     int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(mem_dc) : 0;
                     int stats_gap = (stats_w > 0) ? SC(2) : 0;
@@ -339,6 +407,20 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
 
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
+
+                    if (host_h > 0) {
+                        HFONT host_font = floater_host_font();
+                        if (host_font) {
+                            RECT host_rc = rc;
+                            host_rc.left = rc.left + pen_width;
+                            host_rc.right = rc.right - pen_width;
+                            host_rc.top = rc.top + pen_width / 2;
+                            host_rc.bottom = host_rc.top + host_h;
+                            SelectObject(mem_dc, host_font);
+                            DrawTextW(mem_dc, floater_host_name(), -1, &host_rc,
+                                      DT_CENTER | DT_TOP | DT_SINGLELINE | DT_END_ELLIPSIS);
+                        }
+                    }
 
                     SelectObject(mem_dc, old_font_in_paint);
 
@@ -537,6 +619,7 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
     release_font_handle(&hg_g_floater_time_font, FALSE);
     release_font_handle(&hg_g_floater_date_font, FALSE);
     release_font_handle(&s_floater_label_font, FALSE);
+    release_font_handle(&s_floater_host_font, FALSE);
     hg_g_floater_wnd = NULL;
     PostQuitMessage(0);
     return 0;
@@ -571,6 +654,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         release_font_handle(&hg_g_floater_time_font, FALSE);
         release_font_handle(&hg_g_floater_date_font, FALSE);
         release_font_handle(&s_floater_label_font, FALSE);
+        release_font_handle(&s_floater_host_font, FALSE);
         update_floater_layout(hwnd);
         InvalidateRect(hwnd, NULL, TRUE);
         if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
@@ -627,6 +711,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     release_font_handle(&hg_g_floater_time_font, FALSE);
                     release_font_handle(&hg_g_floater_date_font, FALSE);
                     release_font_handle(&s_floater_label_font, FALSE);
+                    release_font_handle(&s_floater_host_font, FALSE);
                     update_floater_layout(hwnd);
                     InvalidateRect(hwnd, NULL, TRUE);
                     save_floater_font_config();
