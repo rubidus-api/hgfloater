@@ -319,7 +319,7 @@ typedef struct HgFloaterMetrics {
     int pad_x;
     int pad_y;
     int host_h;      /* 0 when no host line */
-    int time_h;
+    int time_h;      /* clock ink plus a breathing margin above and below */
     int date_h;
     int label_w;     /* 0 when the status bars are off */
     int content_x;   /* left edge of the label strip / content column */
@@ -339,7 +339,13 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
     out->pad_x = floater_pad_x();
     out->pad_y = floater_pad_y();
     out->host_h = sz_host.cy;
-    out->time_h = sz_time.cy;
+    /* The lines are otherwise ink-flush, which reads as cramped around the
+     * clock, so give it a margin of a tenth of its own ink height above and
+     * below. The ink-centering places the glyphs in the middle of that. */
+    int time_margin = sz_time.cy / 10;
+    if (time_margin < 1)
+        time_margin = 1;
+    out->time_h = sz_time.cy + time_margin * 2;
     out->date_h = sz_date.cy;
     out->label_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
 
