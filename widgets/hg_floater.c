@@ -187,40 +187,111 @@ static int floater_bar_inset(void)
     return floater_metric(1, 14);
 }
 
-/* Text extent with the font's internal leading removed: GetTextExtentPoint32W
- * reports the full cell height, whose built-in slack would show up as a gap
- * between the stacked lines even with zero spacing between them. */
-static SIZE floater_text_extent(HDC hdc, HFONT font, const WCHAR *text)
+/* Ink bounds of a rendered line: the cell height a font reports carries slack
+ * above the caps and below the baseline, which shows up as gaps between the
+ * stacked lines and makes the glyphs look bottom-heavy. Rendering the text to
+ * a scratch bitmap and scanning for the first and last row that actually got
+ * ink gives the true glyph box, so lines can sit flush and be centered on what
+ * the eye sees rather than on the font's cell. */
+typedef struct HgInkExtent {
+    int cx;      /* advance width (from GetTextExtentPoint32W) */
+    int cy;      /* ink height; 0 when the text is empty */
+    int top;     /* ink top, relative to the text cell's top */
+} HgInkExtent;
+
+static HgInkExtent floater_ink_extent(HDC hdc, HFONT font, const WCHAR *text)
 {
+    HgInkExtent ink = {0, 0, 0};
     SIZE sz = {0};
 
-    if (hdc && font && text && text[0]) {
-        HFONT old_font = (HFONT)SelectObject(hdc, font);
-        TEXTMETRICW tm = {0};
-        GetTextExtentPoint32W(hdc, text, (int)lstrlenW(text), &sz);
-        if (GetTextMetricsW(hdc, &tm) && tm.tmInternalLeading > 0 && sz.cy > tm.tmInternalLeading) {
-            sz.cy -= tm.tmInternalLeading;
-        }
-        SelectObject(hdc, old_font);
+    if (!hdc || !font || !text || !text[0])
+        return ink;
+
+    HFONT old_font = (HFONT)SelectObject(hdc, font);
+    GetTextExtentPoint32W(hdc, text, (int)lstrlenW(text), &sz);
+    SelectObject(hdc, old_font);
+    ink.cx = sz.cx;
+    if (sz.cx <= 0 || sz.cy <= 0)
+        return ink;
+
+    /* Fallback if the scratch surface cannot be made: the full cell. */
+    ink.cy = sz.cy;
+    ink.top = 0;
+
+    HDC scratch = CreateCompatibleDC(hdc);
+    if (!scratch)
+        return ink;
+
+    BITMAPINFO bmi = {0};
+    bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
+    bmi.bmiHeader.biWidth = sz.cx;
+    bmi.bmiHeader.biHeight = -sz.cy; /* top-down */
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    void *bits = NULL;
+    HBITMAP bmp = CreateDIBSection(scratch, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
+    if (!bmp || !bits) {
+        if (bmp)
+            DeleteObject(bmp);
+        DeleteDC(scratch);
+        return ink;
     }
+
+    HBITMAP old_bmp = (HBITMAP)SelectObject(scratch, bmp);
+    HFONT scratch_old_font = (HFONT)SelectObject(scratch, font);
+    RECT full = {0, 0, sz.cx, sz.cy};
+    FillRect(scratch, &full, (HBRUSH)GetStockObject(BLACK_BRUSH));
+    SetBkMode(scratch, TRANSPARENT);
+    SetTextColor(scratch, RGB(255, 255, 255));
+    TextOutW(scratch, 0, 0, text, (int)lstrlenW(text));
+    GdiFlush();
+
+    const DWORD *pixels = (const DWORD *)bits;
+    int first = -1;
+    int last = -1;
+    for (int y = 0; y < sz.cy; ++y) {
+        const DWORD *row = pixels + (size_t)y * (size_t)sz.cx;
+        for (int x = 0; x < sz.cx; ++x) {
+            if ((row[x] & 0x00FFFFFFu) != 0) {
+                if (first < 0)
+                    first = y;
+                last = y;
+                break;
+            }
+        }
+    }
+
+    SelectObject(scratch, scratch_old_font);
+    SelectObject(scratch, old_bmp);
+    DeleteObject(bmp);
+    DeleteDC(scratch);
+
+    if (first >= 0 && last >= first) {
+        ink.top = first;
+        ink.cy = last - first + 1;
+    }
+    return ink;
+}
+
+static SIZE floater_text_extent(HDC hdc, HFONT font, const WCHAR *text)
+{
+    HgInkExtent ink = floater_ink_extent(hdc, font, text);
+    SIZE sz = {ink.cx, ink.cy};
     return sz;
 }
 
-/* Internal leading of a font, used to shift a text box up so the glyphs land
- * flush at the top of the height reserved for them. */
-static int floater_font_leading(HDC hdc, HFONT font)
+/* Where to place a text cell so its ink lands centered in a line of the given
+ * height: subtract the ink offset, then split the leftover slack evenly. */
+static int floater_ink_top(HDC hdc, HFONT font, const WCHAR *text, int line_top, int line_h)
 {
-    TEXTMETRICW tm = {0};
-    int leading = 0;
+    HgInkExtent ink = floater_ink_extent(hdc, font, text);
+    int slack = line_h - ink.cy;
 
-    if (hdc && font) {
-        HFONT old_font = (HFONT)SelectObject(hdc, font);
-        if (GetTextMetricsW(hdc, &tm)) {
-            leading = tm.tmInternalLeading;
-        }
-        SelectObject(hdc, old_font);
-    }
-    return leading;
+    if (slack < 0)
+        slack = 0;
+    return line_top - ink.top + slack / 2;
 }
 
 /* Host line extent (zeroes when there is no name to draw). */
@@ -328,8 +399,10 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
         if (!rows[i].present)
             continue;
         int top = m->rows_y + drawn * row_h;
-        RECT label_rc = {m->content_x, top, m->content_x + m->label_w, top + row_h};
-        DrawTextW(dc, rows[i].label, -1, &label_rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+        /* Center on the ink, not the font cell, so the label lines up with its bar. */
+        int label_y = floater_ink_top(dc, font, rows[i].label, top, row_h);
+        RECT label_rc = {m->content_x, label_y, m->content_x + m->label_w, label_y + row_h * 4};
+        DrawTextW(dc, rows[i].label, -1, &label_rc, DT_LEFT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
 
         RECT track = {m->column_x, top + bar_gap, m->column_x + m->column_w, top + row_h - bar_gap};
         if (track.right > track.left && track.bottom > track.top) {
@@ -472,37 +545,35 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                         floater_draw_stats_panel(mem_dc, &m);
                     }
 
-                    /* Each line is drawn shifted up by its own internal leading, so
-                     * the glyphs sit flush inside the leading-trimmed heights the
-                     * metrics reserved and no gap creeps between the lines. */
+                    /* Each line's cell is placed so its ink is vertically centered
+                     * in the height reserved for it, which also keeps the lines
+                     * flush: the reserved heights are the ink heights. */
                     if (m.host_h > 0) {
                         HFONT host_font = floater_host_font();
                         if (host_font) {
-                            int lead = floater_font_leading(mem_dc, host_font);
-                            RECT host_rc = {m.pad_x, m.pad_y - lead, rc.right - m.pad_x,
-                                            m.pad_y + m.host_h};
+                            const WCHAR *host = floater_host_name();
+                            int top = floater_ink_top(mem_dc, host_font, host, m.pad_y, m.host_h);
+                            RECT host_rc = {m.pad_x, top, rc.right - m.pad_x, top + m.host_h * 4};
                             SelectObject(mem_dc, host_font);
-                            DrawTextW(mem_dc, floater_host_name(), -1, &host_rc,
-                                      DT_CENTER | DT_TOP | DT_SINGLELINE | DT_END_ELLIPSIS);
+                            DrawTextW(mem_dc, host, -1, &host_rc,
+                                      DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP | DT_END_ELLIPSIS);
                         }
                     }
 
                     /* Clock and date center in the column right of the labels. */
-                    int time_lead = floater_font_leading(mem_dc, hg_g_floater_time_font);
-                    int date_lead = floater_font_leading(mem_dc, hg_g_floater_date_font);
                     int time_top = m.rows_y;
                     int date_top = time_top + m.time_h;
+                    int time_y = floater_ink_top(mem_dc, hg_g_floater_time_font, time_str, time_top, m.time_h);
+                    int date_y = floater_ink_top(mem_dc, hg_g_floater_date_font, date_str, date_top, m.date_h);
 
-                    RECT time_rc = {m.column_x, time_top - time_lead, m.column_x + m.column_w,
-                                    time_top + m.time_h};
-                    RECT date_rc = {m.column_x, date_top - date_lead, m.column_x + m.column_w,
-                                    date_top + m.date_h};
+                    RECT time_rc = {m.column_x, time_y, m.column_x + m.column_w, time_y + m.time_h * 4};
+                    RECT date_rc = {m.column_x, date_y, m.column_x + m.column_w, date_y + m.date_h * 4};
 
                     SelectObject(mem_dc, hg_g_floater_time_font);
-                    DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
+                    DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
 
                     SelectObject(mem_dc, hg_g_floater_date_font);
-                    DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
+                    DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
 
                     SelectObject(mem_dc, old_font_in_paint);
 
