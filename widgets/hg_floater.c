@@ -112,14 +112,27 @@ static const WCHAR *floater_host_name(void)
 static HFONT floater_host_font(void)
 {
     if (!s_floater_host_font) {
-        /* A quarter larger than the bar labels, and light rather than bold. */
-        int height = floater_label_font_height() * 5 / 4;
-        if (height < 9)
-            height = 9;
+        /* Light rather than bold, and noticeably larger than the bar labels
+         * (1.25x, scaled up by another 1.5x at the maintainer's request). */
+        int height = floater_label_font_height() * 15 / 8;
+        if (height < 13)
+            height = 13;
         s_floater_host_font = CreateFontW(SC(height), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0,
                                           0, hg_g_font_name);
     }
     return s_floater_host_font;
+}
+
+/* Padding above the host name (matches the horizontal edge padding) and the
+ * deliberately tight gap between the name and the clock below it. */
+static int floater_host_top_pad(void)
+{
+    return SC(6);
+}
+
+static int floater_host_bottom_gap(void)
+{
+    return SC(2);
 }
 
 /* Height of the host line (zero when there is no name to draw). */
@@ -279,7 +292,8 @@ void update_floater_layout(HWND hwnd)
     width += padding_x;
     if (host_w + padding_x > width)
         width = host_w + padding_x;
-    int height = host_h + sz_time.cy + sz_date.cy + padding_y;
+    int host_block = (host_h > 0) ? (floater_host_top_pad() + host_h + floater_host_bottom_gap()) : 0;
+    int height = host_block + sz_time.cy + sz_date.cy + padding_y;
 
     RECT rc;
     GetWindowRect(hwnd, &rc);
@@ -372,10 +386,11 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     GetTextExtentPoint32W(mem_dc, date_str, (int)lstrlenW(date_str), &sz_date);
                     int host_h = floater_host_line_height(mem_dc);
+                    int host_block = (host_h > 0) ? (floater_host_top_pad() + host_h + floater_host_bottom_gap()) : 0;
                     int total_text_height = sz_time.cy + sz_date.cy;
-                    int start_y = host_h + (rc.bottom - rc.top - host_h - total_text_height) / 2;
-                    if (start_y < host_h)
-                        start_y = host_h;
+                    int start_y = host_block + (rc.bottom - rc.top - host_block - total_text_height) / 2;
+                    if (start_y < host_block)
+                        start_y = host_block;
 
                     int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(mem_dc) : 0;
                     int stats_gap = (stats_w > 0) ? SC(2) : 0;
@@ -414,7 +429,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                             RECT host_rc = rc;
                             host_rc.left = rc.left + pen_width;
                             host_rc.right = rc.right - pen_width;
-                            host_rc.top = rc.top + pen_width / 2;
+                            host_rc.top = rc.top + floater_host_top_pad();
                             host_rc.bottom = host_rc.top + host_h;
                             SelectObject(mem_dc, host_font);
                             DrawTextW(mem_dc, floater_host_name(), -1, &host_rc,
