@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.13f] - 2026-07-13
+
+### Fixed
+- The floater's text lines now sit truly flush and are vertically centered on what you actually see: each line is measured by its real ink bounds instead of the font's reported cell, which carried invisible slack above the caps and below the baseline and made the glyphs look bottom-heavy.
+
 ## [v26.07.13e] - 2026-07-13
 
 ### Changed
