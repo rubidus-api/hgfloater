@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.13] - 2026-07-13
 
 ### Added
 - The floater shows the computer name in a thin line across its top, slightly larger than the status bar labels and scaling with the floater font.
