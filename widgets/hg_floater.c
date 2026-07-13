@@ -112,11 +112,10 @@ static const WCHAR *floater_host_name(void)
 static HFONT floater_host_font(void)
 {
     if (!s_floater_host_font) {
-        /* Light rather than bold, and noticeably larger than the bar labels
-         * (1.25x, scaled up by another 1.5x at the maintainer's request). */
-        int height = floater_label_font_height() * 15 / 8;
-        if (height < 13)
-            height = 13;
+        /* Light rather than bold, and 1.5x the bar labels. */
+        int height = floater_label_font_height() * 3 / 2;
+        if (height < 11)
+            height = 11;
         s_floater_host_font = CreateFontW(SC(height), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0,
                                           0, hg_g_font_name);
     }
@@ -132,7 +131,7 @@ static int floater_host_top_pad(void)
 
 static int floater_host_bottom_gap(void)
 {
-    return SC(2);
+    return SC(1);
 }
 
 /* Height of the host line (zero when there is no name to draw). */
@@ -388,9 +387,14 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     int host_h = floater_host_line_height(mem_dc);
                     int host_block = (host_h > 0) ? (floater_host_top_pad() + host_h + floater_host_bottom_gap()) : 0;
                     int total_text_height = sz_time.cy + sz_date.cy;
-                    int start_y = host_block + (rc.bottom - rc.top - host_block - total_text_height) / 2;
-                    if (start_y < host_block)
-                        start_y = host_block;
+                    /* Sit right under the name block rather than centering in the
+                      * remaining space, which used to push the clock too far down. */
+                    int start_y = host_block;
+                    if (start_y + total_text_height > rc.bottom - rc.top) {
+                        start_y = (rc.bottom - rc.top) - total_text_height;
+                    }
+                    if (start_y < 0)
+                        start_y = 0;
 
                     int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(mem_dc) : 0;
                     int stats_gap = (stats_w > 0) ? SC(2) : 0;

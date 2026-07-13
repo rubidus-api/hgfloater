@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- The floater's computer-name line is smaller (80 percent of the previous size) and sits nearly flush with the content below it, and the clock and date now anchor directly under the name instead of centering in the remaining space.
+
 ## [v26.07.13b] - 2026-07-13
 
 ### Changed
