@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.13b] - 2026-07-13
 
 ### Changed
 - The floater's computer-name line is larger (1.5x), sits below a small top padding matching the side edges, and keeps only a tight gap above the clock.
