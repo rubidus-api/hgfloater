@@ -14,13 +14,13 @@ hgfloater is a lightweight, high-performance utility designed for **Windows 11 a
 ## Download and Run / 다운로드 및 실행
 
 ### English
-1. **Download**: Get the latest `hgfloater.exe` from the [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.13) page.
+1. **Download**: Get the latest `hgfloater.exe` from the [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.13b) page.
 2. **Execute**: Just run `hgfloater.exe`.
 3. **Shortcuts**: To add your own shortcuts to the taskbox, place `.lnk` or `.url` files in `%USERPROFILE%\.HellGates\hgfloater\shortcuts`.
 4. **Hotkey**: Press `Win + Alt + Space` (Default) to summon the taskbox.
 
 ### 한국어
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.13) 페이지에서 최신 `hgfloater.exe` 파일을 다운로드하세요.
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.13b) 페이지에서 최신 `hgfloater.exe` 파일을 다운로드하세요.
 2. **실행**: 다운로드한 `hgfloater.exe`를 실행하기만 하면 됩니다.
 3. **단축 아이콘 추가**: 나만의 단축 아이콘을 태스크 박스에 추가하려면 `%USERPROFILE%\.HellGates\hgfloater\shortcuts` 폴더에 바로가기(`.lnk`)나 웹 링크(`.url`) 파일을 넣으세요.
 4. **단축키**: `Win + Alt + Space` (기본값)를 눌러 태스크 박스(taskbox)를 불러낼 수 있습니다.
