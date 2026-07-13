@@ -122,64 +122,137 @@ static HFONT floater_host_font(void)
     return s_floater_host_font;
 }
 
-/* Padding above the host name (matches the horizontal edge padding) and the
- * deliberately tight gap between the name and the clock below it. */
-static int floater_host_top_pad(void)
+/* ---------------------------------------------------------------------------
+ * Layout metrics
+ *
+ * Every length is proportional: it derives from a measured text extent (which
+ * already scales with the floater font size and the monitor DPI) or from a
+ * percentage of the floater font size run through SC(). No fixed pixel gaps,
+ * so the whole widget keeps its proportions at any font size and DPI.
+ *
+ * Vertical:   pad + host + gap + time + date + pad  == window height (exact)
+ * Horizontal: pad + [label strip + bar/text column] + pad == window width
+ * ------------------------------------------------------------------------- */
+
+/* Fraction of the floater font size, scaled for DPI, floored at one pixel. */
+static int floater_metric(int numerator, int denominator)
 {
-    return SC(6);
+    int value = SC(hg_g_floater_font_size * numerator / denominator);
+    return (value > 0) ? value : 1;
 }
 
-static int floater_host_bottom_gap(void)
+static int floater_pad_x(void)
 {
-    return SC(1);
+    return floater_metric(1, 4); /* 25% of the font size */
 }
 
-/* Height of the host line (zero when there is no name to draw). */
-static int floater_host_line_height(HDC hdc)
+static int floater_pad_y(void)
 {
-    const WCHAR *host = floater_host_name();
+    return floater_metric(1, 6); /* ~17% */
+}
+
+/* Gap between the host name and the clock, and between the label strip and the
+ * bars/text to its right. */
+static int floater_gap_y(void)
+{
+    return floater_metric(1, 12);
+}
+
+static int floater_gap_x(void)
+{
+    return floater_metric(1, 8);
+}
+
+/* Vertical inset of a bar inside its row (keeps bars from touching). */
+static int floater_bar_inset(void)
+{
+    return floater_metric(1, 14);
+}
+
+static SIZE floater_text_extent(HDC hdc, HFONT font, const WCHAR *text)
+{
     SIZE sz = {0};
-    HFONT font = floater_host_font();
 
-    if (!host[0] || !font)
-        return 0;
-
-    HFONT old_font = (HFONT)SelectObject(hdc, font);
-    GetTextExtentPoint32W(hdc, host, (int)lstrlenW(host), &sz);
-    SelectObject(hdc, old_font);
-    return sz.cy;
-}
-
-static int floater_host_line_width(HDC hdc)
-{
-    const WCHAR *host = floater_host_name();
-    SIZE sz = {0};
-    HFONT font = floater_host_font();
-
-    if (!host[0] || !font)
-        return 0;
-
-    HFONT old_font = (HFONT)SelectObject(hdc, font);
-    GetTextExtentPoint32W(hdc, host, (int)lstrlenW(host), &sz);
-    SelectObject(hdc, old_font);
-    return sz.cx;
-}
-
-/* Exclusive strip width for the labels, from the widest label's extent. */
-static int floater_stats_label_width(HDC hdc)
-{
-    SIZE sz = {0};
-    HFONT font = floater_label_font();
-
-    if (font) {
+    if (hdc && font && text && text[0]) {
         HFONT old_font = (HFONT)SelectObject(hdc, font);
-        GetTextExtentPoint32W(hdc, L"BAT+", 4, &sz);
+        GetTextExtentPoint32W(hdc, text, (int)lstrlenW(text), &sz);
         SelectObject(hdc, old_font);
     }
-    return (sz.cx > 0 ? sz.cx : SC(20)) + SC(3);
+    return sz;
 }
 
-static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h, int label_w)
+/* Host line extent (zeroes when there is no name to draw). */
+static SIZE floater_host_extent(HDC hdc)
+{
+    return floater_text_extent(hdc, floater_host_font(), floater_host_name());
+}
+
+/* Exclusive strip width for the labels, from the widest label's measured
+ * extent plus a proportional gap. */
+static int floater_stats_label_width(HDC hdc)
+{
+    SIZE sz = floater_text_extent(hdc, floater_label_font(), L"BAT+");
+
+    if (sz.cx <= 0)
+        return 0;
+    return sz.cx + floater_gap_x();
+}
+
+/* One place computes the geometry; both the layout pass and the paint pass use
+ * it, so what is measured is exactly what is drawn. */
+typedef struct HgFloaterMetrics {
+    int width;       /* required window width */
+    int height;      /* required window height */
+    int pad_x;
+    int pad_y;
+    int host_h;      /* 0 when no host line */
+    int host_gap;    /* 0 when no host line */
+    int time_h;
+    int date_h;
+    int label_w;     /* 0 when the status bars are off */
+    int content_x;   /* left edge of the label strip / content column */
+    int column_x;    /* left edge of the bars and the clock/date column */
+    int column_w;    /* width of that column */
+    int rows_y;      /* top of the clock/date (and of the bar rows) */
+    int rows_h;      /* combined height of the clock and date */
+} HgFloaterMetrics;
+
+static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR *date_str, HgFloaterMetrics *out)
+{
+    SIZE sz_time = floater_text_extent(hdc, hg_g_floater_time_font, time_str);
+    SIZE sz_date = floater_text_extent(hdc, hg_g_floater_date_font, date_str);
+    SIZE sz_host = floater_host_extent(hdc);
+
+    ZeroMemory(out, sizeof(*out));
+    out->pad_x = floater_pad_x();
+    out->pad_y = floater_pad_y();
+    out->host_h = sz_host.cy;
+    out->host_gap = (sz_host.cy > 0) ? floater_gap_y() : 0;
+    out->time_h = sz_time.cy;
+    out->date_h = sz_date.cy;
+    out->label_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
+
+    /* Width: the label strip plus the widest of clock/date, and the host name
+     * spans the full inner width, so it only widens the box when it is wider. */
+    int text_w = (sz_time.cx > sz_date.cx) ? sz_time.cx : sz_date.cx;
+    int inner_w = out->label_w + text_w;
+    if (sz_host.cx > inner_w)
+        inner_w = sz_host.cx;
+    out->width = out->pad_x * 2 + inner_w;
+
+    /* Height: pad + host + gap + time + date + pad, exactly. */
+    out->height = out->pad_y * 2 + out->host_h + out->host_gap + out->time_h + out->date_h;
+
+    out->content_x = out->pad_x;
+    out->column_x = out->pad_x + out->label_w;
+    out->column_w = out->width - out->pad_x - out->column_x;
+    out->rows_y = out->pad_y + out->host_h + out->host_gap;
+    out->rows_h = out->time_h + out->date_h;
+}
+
+/* Bars fill the column to the right of the labels; labels are centered in their
+ * row so they line up with the bar they belong to. */
+static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
 {
     struct {
         const WCHAR *label;
@@ -197,7 +270,7 @@ static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h, int lab
         if (rows[i].present)
             count++;
     }
-    if (count == 0 || w <= 0 || h <= 0)
+    if (count == 0 || m->label_w <= 0 || m->rows_h <= 0)
         return;
 
     HFONT font = floater_label_font();
@@ -207,17 +280,17 @@ static void floater_draw_stats_panel(HDC dc, int x, int y, int w, int h, int lab
     SetBkMode(dc, TRANSPARENT);
     SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
 
-    int row_h = h / count;
-    int bar_gap = SC(2);
+    int row_h = m->rows_h / count;
+    int bar_gap = floater_bar_inset();
     int drawn = 0;
     for (int i = 0; i < 3; i++) {
         if (!rows[i].present)
             continue;
-        int top = y + drawn * row_h;
-        RECT label_rc = {x, top, x + label_w, top + row_h};
+        int top = m->rows_y + drawn * row_h;
+        RECT label_rc = {m->content_x, top, m->content_x + m->label_w, top + row_h};
         DrawTextW(dc, rows[i].label, -1, &label_rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-        RECT track = {x + label_w, top + bar_gap, x + w, top + row_h - bar_gap};
+        RECT track = {m->column_x, top + bar_gap, m->column_x + m->column_w, top + row_h - bar_gap};
         if (track.right > track.left && track.bottom > track.top) {
             /* No track fill: the floater background shows through, so the bars
              * never clash with theme colors (the blue system highlight used to
@@ -267,37 +340,13 @@ void update_floater_layout(HWND hwnd)
     if (!hdc)
         return;
 
-    SIZE sz_time = {0}, sz_date = {0};
-    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_floater_time_font);
-    GetTextExtentPoint32W(hdc, time_str, (int)lstrlenW(time_str), &sz_time);
-    SelectObject(hdc, hg_g_floater_date_font);
-    GetTextExtentPoint32W(hdc, date_str, (int)lstrlenW(date_str), &sz_date);
-    SelectObject(hdc, old_font);
-
-    int pen_width = SC(HG_BORDER_THICKNESS);
-    int padding_x = pen_width + SC(20);
-    int padding_y = pen_width + SC(10);
-    int width = (sz_time.cx > sz_date.cx ? sz_time.cx : sz_date.cx);
-    int host_h = floater_host_line_height(hdc);
-    int host_w = floater_host_line_width(hdc);
-    int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
-    if (stats_w > 0) {
-        /* The bars run under the text, so keep the text column snug against
-         * the label strip instead of using the roomy centered padding, with a
-         * small breathing gap before the right border. */
-        padding_x = pen_width + SC(12);
-        width += stats_w + SC(2);
-    }
-    width += padding_x;
-    if (host_w + padding_x > width)
-        width = host_w + padding_x;
-    int host_block = (host_h > 0) ? (floater_host_top_pad() + host_h + floater_host_bottom_gap()) : 0;
-    int height = host_block + sz_time.cy + sz_date.cy + padding_y;
+    HgFloaterMetrics m;
+    floater_compute_metrics(hdc, time_str, date_str, &m);
 
     RECT rc;
     GetWindowRect(hwnd, &rc);
-    if (rc.right - rc.left != width || rc.bottom - rc.top != height) {
-        SetWindowPos(hwnd, NULL, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+    if (rc.right - rc.left != m.width || rc.bottom - rc.top != m.height) {
+        SetWindowPos(hwnd, NULL, 0, 0, m.width, m.height, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
     ReleaseDC(hwnd, hdc);
@@ -379,67 +428,38 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     SetBkMode(mem_dc, TRANSPARENT);
                     SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
 
-                    SIZE sz_time = {0}, sz_date = {0};
+                    /* Same metrics the layout pass used, so the drawing lands
+                     * exactly where the window was sized for. */
+                    HgFloaterMetrics m;
+                    floater_compute_metrics(mem_dc, time_str, date_str, &m);
                     HFONT old_font_in_paint = (HFONT)SelectObject(mem_dc, hg_g_floater_time_font);
-                    GetTextExtentPoint32W(mem_dc, time_str, (int)lstrlenW(time_str), &sz_time);
-                    SelectObject(mem_dc, hg_g_floater_date_font);
-                    GetTextExtentPoint32W(mem_dc, date_str, (int)lstrlenW(date_str), &sz_date);
-                    int host_h = floater_host_line_height(mem_dc);
-                    int host_block = (host_h > 0) ? (floater_host_top_pad() + host_h + floater_host_bottom_gap()) : 0;
-                    int total_text_height = sz_time.cy + sz_date.cy;
-                    /* Sit right under the name block rather than centering in the
-                      * remaining space, which used to push the clock too far down. */
-                    int start_y = host_block;
-                    if (start_y + total_text_height > rc.bottom - rc.top) {
-                        start_y = (rc.bottom - rc.top) - total_text_height;
+
+                    /* Bars first: they run behind the clock and date. */
+                    if (m.label_w > 0) {
+                        floater_draw_stats_panel(mem_dc, &m);
                     }
-                    if (start_y < 0)
-                        start_y = 0;
 
-                    int stats_w = hg_g_floater_show_stats ? floater_stats_label_width(mem_dc) : 0;
-                    int stats_gap = (stats_w > 0) ? SC(2) : 0;
-
-                    RECT text_area = rc;
-                    text_area.left = rc.left + pen_width + stats_w + stats_gap;
-                    if (stats_w > 0)
-                        text_area.right = rc.right - pen_width;
-
-                    RECT time_rc = text_area;
-                    time_rc.top = start_y;
-                    time_rc.bottom = time_rc.top + sz_time.cy;
-
-                    RECT date_rc = text_area;
-                    date_rc.top = time_rc.bottom;
-                    date_rc.bottom = date_rc.top + sz_date.cy;
-
-                    if (stats_w > 0) {
-                        /* Draw the bars first so they sit behind the clock and date;
-                         * they span from the label strip to the inner right edge. */
-                        int panel_x = rc.left + pen_width + SC(3);
-                        int panel_w = (rc.right - pen_width) - panel_x;
-                        floater_draw_stats_panel(mem_dc, panel_x, start_y, panel_w, total_text_height,
-                                                 stats_w - SC(3));
+                    /* Host name spans the full inner width. */
+                    if (m.host_h > 0) {
+                        HFONT host_font = floater_host_font();
+                        if (host_font) {
+                            RECT host_rc = {m.pad_x, m.pad_y, rc.right - m.pad_x, m.pad_y + m.host_h};
+                            SelectObject(mem_dc, host_font);
+                            DrawTextW(mem_dc, floater_host_name(), -1, &host_rc,
+                                      DT_CENTER | DT_TOP | DT_SINGLELINE | DT_END_ELLIPSIS);
+                        }
                     }
+
+                    /* Clock and date center in the column right of the labels. */
+                    RECT time_rc = {m.column_x, m.rows_y, m.column_x + m.column_w, m.rows_y + m.time_h};
+                    RECT date_rc = {m.column_x, time_rc.bottom, m.column_x + m.column_w,
+                                    time_rc.bottom + m.date_h};
 
                     SelectObject(mem_dc, hg_g_floater_time_font);
                     DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE);
-
-                    if (host_h > 0) {
-                        HFONT host_font = floater_host_font();
-                        if (host_font) {
-                            RECT host_rc = rc;
-                            host_rc.left = rc.left + pen_width;
-                            host_rc.right = rc.right - pen_width;
-                            host_rc.top = rc.top + floater_host_top_pad();
-                            host_rc.bottom = host_rc.top + host_h;
-                            SelectObject(mem_dc, host_font);
-                            DrawTextW(mem_dc, floater_host_name(), -1, &host_rc,
-                                      DT_CENTER | DT_TOP | DT_SINGLELINE | DT_END_ELLIPSIS);
-                        }
-                    }
 
                     SelectObject(mem_dc, old_font_in_paint);
 

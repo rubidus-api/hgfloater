@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.13d] - 2026-07-13
+
+### Changed
+- The floater's layout is now fully proportional: every padding and gap derives from the floater font size (scaled for DPI) or from measured text, instead of fixed pixel values, so the design keeps its proportions at any font size and on any monitor. The window height is exactly padding + host name + gap + clock + date + padding, the clock and date center in the column right of the CPU/MEM/BAT labels, and the labels center vertically against their bars.
+
 ## [v26.07.13c] - 2026-07-13
 
 ### Changed
