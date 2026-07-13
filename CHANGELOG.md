@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.13e] - 2026-07-13
+
+### Changed
+- The floater is more compact: the clock is the reference size and the other text scales off it (labels 30%, computer name 40%, date 70%), and the name, clock, and date stack flush with no vertical gaps between them. The status bars split the area below the name into equal rows.
+
 ## [v26.07.13d] - 2026-07-13
 
 ### Changed
