@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.14] - 2026-07-14
 
 ### Changed
 - The windows report themselves as `HGFloater` (and `HGFloater Taskbox`), so the taskbar and Task Manager no longer show a bare `floater`.
