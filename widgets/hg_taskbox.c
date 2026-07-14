@@ -167,14 +167,25 @@ void hide_taskbox(HWND hwnd)
     KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
     s_hover_outside_ticks = 0;
     if (hg_g_floater_wnd) {
-        RECT t_rc, f_rc;
-        GetWindowRect(hwnd, &t_rc);
+        RECT f_rc;
         GetWindowRect(hg_g_floater_wnd, &f_rc);
-        int cx = t_rc.left + (t_rc.right - t_rc.left) / 2;
-        int cy = t_rc.top + (t_rc.bottom - t_rc.top) / 2;
         int fw = f_rc.right - f_rc.left;
         int fh = f_rc.bottom - f_rc.top;
-        SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, cx - fw / 2, cy - fh / 2, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+
+        /* Return to where the floater sat before it expanded, rather than to the
+         * center of a taskbox that may have been pushed away from a screen edge. */
+        int fx, fy;
+        if (hg_g_floater_home_valid) {
+            fx = hg_g_floater_home_rect.left;
+            fy = hg_g_floater_home_rect.top;
+        } else {
+            RECT t_rc;
+            GetWindowRect(hwnd, &t_rc);
+            fx = t_rc.left + (t_rc.right - t_rc.left) / 2 - fw / 2;
+            fy = t_rc.top + (t_rc.bottom - t_rc.top) / 2 - fh / 2;
+        }
+
+        SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, fx, fy, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
         ShowWindow(hg_g_floater_wnd, SW_SHOW);
         /* Take foreground only while this process still owns it; the auto-collapse
          * path must not steal focus from the application the user switched to. */
@@ -185,7 +196,8 @@ void hide_taskbox(HWND hwnd)
         if (!fg_wnd || fg_pid == GetCurrentProcessId()) {
             SetForegroundWindow(hg_g_floater_wnd);
         }
-        save_floater_geometry_config(cx - fw / 2, cy - fh / 2, fw, fh);
+        save_floater_geometry_config(fx, fy, fw, fh);
+        hg_g_floater_home_valid = FALSE;
     }
     ShowWindow(hwnd, SW_HIDE);
     load_shortcuts_if_changed();

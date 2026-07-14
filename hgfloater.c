@@ -411,7 +411,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     load_taskbox_font_config();
 
     hg_g_floater_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_APPWINDOW, HG_CLASS_FLOATER_WIDGET,
-                                       L"floater", WS_POPUP | WS_VISIBLE, fx, fy, fw, fh, NULL, NULL, instance, NULL);
+                                       L"HGFloater", WS_POPUP | WS_VISIBLE, fx, fy, fw, fh, NULL, NULL, instance,
+                                       NULL);
     if (!hg_g_floater_wnd) {
         MessageBoxW(NULL, L"Failed to create floater window.", L"hgfloater", MB_ICONERROR);
         exit_code = 1;
@@ -420,7 +421,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
     register_global_hotkey(hg_g_floater_wnd, TRUE);
 
-    hg_g_taskbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, HG_CLASS_TASKBOX, L"taskbox",
+    hg_g_taskbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, HG_CLASS_TASKBOX,
+                                       L"HGFloater Taskbox",
                                        WS_POPUP, tx, ty, tw, th, NULL, NULL, instance, NULL);
     if (!hg_g_taskbox_wnd) {
         MessageBoxW(NULL, L"Failed to create taskbox window.", L"hgfloater", MB_ICONERROR);

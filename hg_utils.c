@@ -198,6 +198,48 @@ void hg_force_foreground(HWND hwnd)
     }
 }
 
+/* Expand the taskbox from the floater: centered on it, but pushed fully inside
+ * the work area of the monitor the floater sits on, so a floater parked at a
+ * screen edge does not produce a clipped taskbox. The floater's position is
+ * remembered first so hiding can restore it instead of re-centering. */
+void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd)
+{
+    RECT f_rc, t_rc;
+
+    if (!floater_wnd || !IsWindow(floater_wnd) || !taskbox_wnd || !IsWindow(taskbox_wnd))
+        return;
+    if (!GetWindowRect(floater_wnd, &f_rc) || !GetWindowRect(taskbox_wnd, &t_rc))
+        return;
+
+    hg_g_floater_home_rect = f_rc;
+    hg_g_floater_home_valid = TRUE;
+
+    int tw = t_rc.right - t_rc.left;
+    int th = t_rc.bottom - t_rc.top;
+    int cx = f_rc.left + (f_rc.right - f_rc.left) / 2;
+    int cy = f_rc.top + (f_rc.bottom - f_rc.top) / 2;
+    int x = cx - tw / 2;
+    int y = cy - th / 2;
+
+    MONITORINFO mi;
+    SecureZeroMemory(&mi, sizeof(mi));
+    mi.cbSize = sizeof(mi);
+    if (GetMonitorInfoW(MonitorFromWindow(floater_wnd, MONITOR_DEFAULTTONEAREST), &mi)) {
+        const RECT *work = &mi.rcWork;
+        if (x + tw > work->right)
+            x = work->right - tw;
+        if (y + th > work->bottom)
+            y = work->bottom - th;
+        if (x < work->left)
+            x = work->left;
+        if (y < work->top)
+            y = work->top;
+    }
+
+    SetWindowPos(taskbox_wnd, HWND_TOPMOST, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+    save_taskbox_geometry_config(x, y, tw, th);
+}
+
 /* Shared +/-15 alpha wheel step with the runtime clamp; TRUE when changed. */
 BOOL hg_step_alpha_value(BYTE *alpha, int delta)
 {
