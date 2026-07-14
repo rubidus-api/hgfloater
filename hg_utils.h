@@ -27,6 +27,7 @@ void hg_apply_class_background(HWND hwnd);
 void hg_update_scale_from_dpi(UINT dpi);
 void hg_apply_dpi_suggested_rect(HWND hwnd, LPARAM l_param);
 void hg_force_foreground(HWND hwnd);
+void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd);
 double hg_window_scale(HWND hwnd);
 double hg_point_scale(POINT pt);
 void refresh_theme_surfaces(HWND hwnd);

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- The windows report themselves as `HGFloater` (and `HGFloater Taskbox`), so the taskbar and Task Manager no longer show a bare `floater`.
+- Summoning the taskbox from a floater parked at a screen edge no longer clips it: the taskbox is centered on the floater but pushed fully inside that monitor's work area.
+- Collapsing the taskbox returns the floater to exactly where it was before the expand, instead of re-centering it on the taskbox.
+
 ## [v26.07.13g] - 2026-07-13
 
 ### Changed
