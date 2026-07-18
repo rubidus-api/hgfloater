@@ -37,9 +37,9 @@ static int hg_boxes_overlap(HgBox a, HgBox b)
 
 /* Pick the first cardinal slot, north then west then south then east, that holds
  * the target's size fully inside the work area without touching the occupied
- * region. Each candidate hugs the work-area edge in that direction and keeps the
- * other axis where it was (clamped back on screen), so the window clears out as
- * far as it can instead of merely stepping aside. */
+ * region. Each candidate takes the smallest step that clears the occupied region
+ * in that direction - it lands flush against it, not against the far edge of the
+ * screen - and keeps the other axis where it was (clamped back on screen). */
 HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work, HgBox *out)
 {
     if (!out)
@@ -60,14 +60,16 @@ HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work,
         int x;
         int y;
     } candidates[] = {
-        {HG_RELOCATE_NORTH, kept_x, work.top},
-        {HG_RELOCATE_WEST, work.left, kept_y},
-        {HG_RELOCATE_SOUTH, kept_x, work.bottom - h},
-        {HG_RELOCATE_EAST, work.right - w, kept_y},
+        {HG_RELOCATE_NORTH, kept_x, occupied.top - h},
+        {HG_RELOCATE_WEST, occupied.left - w, kept_y},
+        {HG_RELOCATE_SOUTH, kept_x, occupied.bottom},
+        {HG_RELOCATE_EAST, occupied.right, kept_y},
     };
 
     for (unsigned i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
         HgBox slot = {candidates[i].x, candidates[i].y, candidates[i].x + w, candidates[i].y + h};
+        if (slot.left < work.left || slot.top < work.top || slot.right > work.right || slot.bottom > work.bottom)
+            continue;
         if (!hg_boxes_overlap(slot, occupied)) {
             *out = slot;
             return candidates[i].dir;
