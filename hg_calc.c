@@ -79,6 +79,31 @@ HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work,
     return HG_RELOCATE_NONE;
 }
 
+/* The floater sits at a fixed offset from the taskbox it expanded into, so when
+ * the taskbox is dragged, nudged, or resized while open, the floater travels the
+ * same distance instead of snapping back to where it started. */
+HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work)
+{
+    int w = home.right - home.left;
+    int h = home.bottom - home.top;
+    int x = home.left + (to.left - from.left);
+    int y = home.top + (to.top - from.top);
+
+    /* Right/bottom first, then left/top: a floater larger than the work area
+     * still ends up anchored at its top-left corner instead of off screen. */
+    if (x + w > work.right)
+        x = work.right - w;
+    if (y + h > work.bottom)
+        y = work.bottom - h;
+    if (x < work.left)
+        x = work.left;
+    if (y < work.top)
+        y = work.top;
+
+    HgBox moved = {x, y, x + w, y + h};
+    return moved;
+}
+
 int get_items_per_row(int width, int icon_size)
 {
     if (width <= 0)

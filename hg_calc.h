@@ -46,4 +46,8 @@ typedef enum HgRelocateDirection {
 
 HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work, HgBox *out);
 
+/* Offset `home` by however far the taskbox travelled from `from` to `to`, kept
+ * inside `work`. Collapsing uses it so the floater follows every taskbox move. */
+HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
+
 #endif /* HG_CALC_H */

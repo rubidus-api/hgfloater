@@ -82,6 +82,7 @@ POINT hg_g_last_mouse_pos = {-1, -1};
 BOOL hg_g_hover_check_armed = TRUE;
 BOOL hg_g_floater_show_stats = TRUE;
 RECT hg_g_floater_home_rect = {0, 0, 0, 0};
+RECT hg_g_taskbox_expand_rect = {0, 0, 0, 0};
 BOOL hg_g_floater_home_valid = FALSE;
 BOOL hg_g_floater_adjust_mode = FALSE;
 BOOL hg_g_menu_active = FALSE;

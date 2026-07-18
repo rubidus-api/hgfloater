@@ -238,6 +238,13 @@ void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd)
 
     SetWindowPos(taskbox_wnd, HWND_TOPMOST, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
     save_taskbox_geometry_config(x, y, tw, th);
+
+    /* Collapsing measures the taskbox against this rect, so any move made while
+     * the taskbox is open carries the floater along with it. */
+    hg_g_taskbox_expand_rect.left = x;
+    hg_g_taskbox_expand_rect.top = y;
+    hg_g_taskbox_expand_rect.right = x + tw;
+    hg_g_taskbox_expand_rect.bottom = y + th;
 }
 
 /* M click (as opposed to M drag): nudge the pair to the first cardinal slot -
@@ -294,23 +301,8 @@ BOOL hg_relocate_taskbox_away(HWND taskbox_wnd)
     SetWindowPos(taskbox_wnd, NULL, slot.left, slot.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     save_taskbox_geometry_config(slot.left, slot.top, tw, th);
 
-    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
-        RECT cur_f;
-        if (GetWindowRect(hg_g_floater_wnd, &cur_f)) {
-            int fw = cur_f.right - cur_f.left;
-            int fh = cur_f.bottom - cur_f.top;
-            SetWindowPos(hg_g_floater_wnd, NULL, slot.left, slot.top, 0, 0,
-                         SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-            save_floater_geometry_config(slot.left, slot.top, fw, fh);
-            /* Collapsing must land on the new spot, not the pre-expand one. */
-            hg_g_floater_home_rect.left = slot.left;
-            hg_g_floater_home_rect.top = slot.top;
-            hg_g_floater_home_rect.right = slot.left + fw;
-            hg_g_floater_home_rect.bottom = slot.top + fh;
-            hg_g_floater_home_valid = TRUE;
-        }
-    }
-
+    /* The floater is not repositioned here: collapsing applies the taskbox's
+     * total travel to it, which covers this move and every drag or nudge. */
     return TRUE;
 }
 
