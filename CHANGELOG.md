@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.19c] - 2026-07-19
 
 ### Fixed
 - Collapsing the taskbox no longer drops the floater back at its pre-expand spot after the taskbox has been moved. The floater now travels the same distance the taskbox did, whether it was dragged by the Move handle, nudged with `Alt` + arrows, resized, or sent aside by a Move-handle click, and the result is kept inside the work area.
