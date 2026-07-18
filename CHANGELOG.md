@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.19b] - 2026-07-19
 
 ### Changed
 - The Move handle's click now takes the smallest step that clears the spot it was on, landing flush against it instead of travelling all the way to the edge of the work area.
