@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.19] - 2026-07-19
 
 ### Added
 - Clicking the toolbar's Move handle (rather than dragging it) moves the floater and taskbox aside on their own. The search tries north, then west, then south, then east, and takes the first work-area edge where the pair no longer overlaps the area it occupies right now; if no direction is clear, the pair stays where it is.
