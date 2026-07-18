@@ -1,4 +1,5 @@
-/* Host-native test for the pure relocation math behind the toolbar M click.
+/* Host-native test for the pure placement math: the toolbar M click's relocation
+ * search and the floater's follow-the-taskbox offset used when collapsing.
  * The unit is included directly so a plain host gcc needs no extra link step. */
 #include <stdio.h>
 
@@ -100,6 +101,32 @@ int main(void)
     expect(hg_calc_relocation(middle, middle, work, NULL) == HG_RELOCATE_NONE, "a null output is refused");
     HgBox empty_work = box(0, 0, 0, 0);
     expect(hg_calc_relocation(middle, middle, empty_work, &out) == HG_RELOCATE_NONE, "an empty work area is refused");
+
+    /* The floater follows the taskbox by exactly the distance it travelled. */
+    HgBox home = box(800, 500, 880, 555);
+    HgBox tb_before = box(700, 400, 1100, 700);
+    expect(box_equals(hg_calc_follow_move(home, tb_before, tb_before, work), home),
+           "an unmoved taskbox leaves the floater exactly where it was");
+    expect(box_equals(hg_calc_follow_move(home, tb_before, box(900, 300, 1300, 600), work),
+                      box(1000, 400, 1080, 455)),
+           "the floater travels the same delta as the taskbox");
+    expect(box_equals(hg_calc_follow_move(home, tb_before, box(700, 100, 1100, 400), work),
+                      box(800, 200, 880, 255)),
+           "a taskbox moved north drags the floater north by the same step");
+
+    /* The result is kept on screen even when the taskbox is pushed to an edge. */
+    expect(box_equals(hg_calc_follow_move(home, tb_before, box(1900, 400, 2300, 700), work),
+                      box(1840, 500, 1920, 555)),
+           "the follow move clamps against the work right edge");
+    expect(box_equals(hg_calc_follow_move(home, tb_before, box(700, -600, 1100, -300), work),
+                      box(800, 0, 880, 55)),
+           "the follow move clamps against the work top edge");
+
+    /* A floater larger than the work area anchors at its top-left corner. */
+    HgBox huge = box(0, 0, 3000, 2000);
+    expect(box_equals(hg_calc_follow_move(huge, tb_before, box(900, 400, 1300, 700), work),
+                      box(0, 0, 3000, 2000)),
+           "an oversized floater anchors at the work origin");
 
     if (failures) {
         printf("relocation math: %d failure(s)\n", failures);

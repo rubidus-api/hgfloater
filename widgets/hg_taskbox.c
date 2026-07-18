@@ -173,14 +173,30 @@ void hide_taskbox(HWND hwnd)
         int fh = f_rc.bottom - f_rc.top;
 
         /* Return to where the floater sat before it expanded, rather than to the
-         * center of a taskbox that may have been pushed away from a screen edge. */
+         * center of a taskbox that may have been pushed away from a screen edge -
+         * but follow the taskbox if it was moved (dragged, nudged with Alt+arrows,
+         * resized, or sent aside by the M button) while it was open. */
+        RECT t_rc;
+        GetWindowRect(hwnd, &t_rc);
         int fx, fy;
         if (hg_g_floater_home_valid) {
-            fx = hg_g_floater_home_rect.left;
-            fy = hg_g_floater_home_rect.top;
+            MONITORINFO mi;
+            SecureZeroMemory(&mi, sizeof(mi));
+            mi.cbSize = sizeof(mi);
+            RECT work = {0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)};
+            if (GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi))
+                work = mi.rcWork;
+
+            HgBox home = {hg_g_floater_home_rect.left, hg_g_floater_home_rect.top,
+                          hg_g_floater_home_rect.left + fw, hg_g_floater_home_rect.top + fh};
+            HgBox from = {hg_g_taskbox_expand_rect.left, hg_g_taskbox_expand_rect.top,
+                          hg_g_taskbox_expand_rect.right, hg_g_taskbox_expand_rect.bottom};
+            HgBox to = {t_rc.left, t_rc.top, t_rc.right, t_rc.bottom};
+            HgBox work_box = {work.left, work.top, work.right, work.bottom};
+            HgBox moved = hg_calc_follow_move(home, from, to, work_box);
+            fx = moved.left;
+            fy = moved.top;
         } else {
-            RECT t_rc;
-            GetWindowRect(hwnd, &t_rc);
             fx = t_rc.left + (t_rc.right - t_rc.left) / 2 - fw / 2;
             fy = t_rc.top + (t_rc.bottom - t_rc.top) / 2 - fh / 2;
         }
