@@ -16,8 +16,10 @@ host-native ones, or compile the single test directly with the host compiler.
 ## Assertions
 
 - The search order is north, west, south, east, and the first clear slot wins.
-- Each candidate hugs the work-area edge in its direction and keeps the other
-  axis where it was, clamped back inside the work area.
+- Each candidate takes the smallest step that clears the occupied region in its
+  direction, landing flush against it rather than at the work-area edge, and
+  keeps the other axis where it was, clamped back inside the work area.
+- A candidate that would fall outside the work area is skipped.
 - A candidate is clear only when it shares no area with the occupied region; the
   occupied region is the union of the taskbox and the floater's own spot.
 - Touching edges do not count as overlap.

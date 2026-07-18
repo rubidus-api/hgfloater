@@ -240,11 +240,13 @@ void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd)
     save_taskbox_geometry_config(x, y, tw, th);
 }
 
-/* M click (as opposed to M drag): send the pair to the first cardinal slot -
+/* M click (as opposed to M drag): nudge the pair to the first cardinal slot -
  * north, then west, then south, then east - that clears the area they occupy
  * right now, so whatever sits underneath becomes readable without a manual
- * drag. The floater rides along to the same corner a move-drag would leave it
- * at. Returns FALSE when no slot clears the current area, leaving the pair put. */
+ * drag. The step is the smallest one that stops the overlap: the pair lands
+ * flush against the area it just vacated rather than at the screen edge. The
+ * floater rides along to the same corner a move-drag would leave it at. Returns
+ * FALSE when no slot clears the current area, leaving the pair put. */
 BOOL hg_relocate_taskbox_away(HWND taskbox_wnd)
 {
     RECT t_rc;
