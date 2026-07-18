@@ -28,6 +28,7 @@ void hg_update_scale_from_dpi(UINT dpi);
 void hg_apply_dpi_suggested_rect(HWND hwnd, LPARAM l_param);
 void hg_force_foreground(HWND hwnd);
 void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd);
+BOOL hg_relocate_taskbox_away(HWND taskbox_wnd);
 double hg_window_scale(HWND hwnd);
 double hg_point_scale(POINT pt);
 void refresh_theme_surfaces(HWND hwnd);
@@ -95,7 +96,8 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_OPEN_MENU,
     HG_TOOLBAR_CLICK_SHOW_COMMANDBOX,
     HG_TOOLBAR_CLICK_TOGGLE_MUTE,
-    HG_TOOLBAR_CLICK_FLOATER_ADJUST
+    HG_TOOLBAR_CLICK_FLOATER_ADJUST,
+    HG_TOOLBAR_CLICK_RELOCATE_AWAY
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
     HG_TOOLBAR_DRAG_NONE = 0,

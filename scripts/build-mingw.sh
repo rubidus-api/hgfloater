@@ -53,9 +53,15 @@ for t in test/*.c; do
     fi
 done
 
+# Win32-free units run natively on the build host, so their behavior (not just
+# their compilation) is checked even without wine.
+HOST_TESTS="test_calc test_relocate"
+
 if command -v gcc >/dev/null 2>&1; then
-    # shellcheck disable=SC2086
-    gcc -o "$OUT/test_calc_host" test/test_calc.c $WARNING_FLAGS -Wno-logical-op 2>/dev/null \
-        || gcc -o "$OUT/test_calc_host" test/test_calc.c
-    "$OUT/test_calc_host" && echo "test run (host): OK test_calc"
+    for n in $HOST_TESTS; do
+        # shellcheck disable=SC2086
+        gcc -o "$OUT/${n}_host" "test/$n.c" $WARNING_FLAGS -Wno-logical-op 2>/dev/null \
+            || gcc -o "$OUT/${n}_host" "test/$n.c"
+        "$OUT/${n}_host" && echo "test run (host): OK $n"
+    done
 fi
