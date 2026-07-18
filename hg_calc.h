@@ -25,4 +25,25 @@ int hg_clamp_alpha(int alpha);
 int hg_snap_width_for_cols(int cols, int icon_size);
 int get_items_per_row(int width, int icon_size);
 
+/* Screen rectangle in the RECT layout (left/top inclusive, right/bottom
+ * exclusive) without pulling in windows.h, so the placement math stays testable
+ * on the host. */
+typedef struct HgBox {
+    int left;
+    int top;
+    int right;
+    int bottom;
+} HgBox;
+
+/* Where a relocation sent the window, in the order the search tries them. */
+typedef enum HgRelocateDirection {
+    HG_RELOCATE_NONE = 0,
+    HG_RELOCATE_NORTH,
+    HG_RELOCATE_WEST,
+    HG_RELOCATE_SOUTH,
+    HG_RELOCATE_EAST
+} HgRelocateDirection;
+
+HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work, HgBox *out);
+
 #endif /* HG_CALC_H */

@@ -244,6 +244,10 @@ void activate_toolbar_item(int index)
             InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
         }
         break;
+    case HG_TOOLBAR_CLICK_RELOCATE_AWAY:
+        /* A click on M (no drag) sends the pair to the first free cardinal slot. */
+        hg_relocate_taskbox_away(hg_g_taskbox_wnd);
+        break;
     case HG_TOOLBAR_CLICK_FLOATER_ADJUST:
         /* Collapse to the floater for size/alpha tuning: hover-expand is suppressed
          * while in this mode (Ctrl+Wheel resizes, Alt+Wheel changes opacity); a

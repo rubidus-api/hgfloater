@@ -240,6 +240,78 @@ void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd)
     save_taskbox_geometry_config(x, y, tw, th);
 }
 
+/* M click (as opposed to M drag): send the pair to the first cardinal slot -
+ * north, then west, then south, then east - that clears the area they occupy
+ * right now, so whatever sits underneath becomes readable without a manual
+ * drag. The floater rides along to the same corner a move-drag would leave it
+ * at. Returns FALSE when no slot clears the current area, leaving the pair put. */
+BOOL hg_relocate_taskbox_away(HWND taskbox_wnd)
+{
+    RECT t_rc;
+
+    if (!taskbox_wnd || !IsWindow(taskbox_wnd) || !GetWindowRect(taskbox_wnd, &t_rc))
+        return FALSE;
+
+    HgBox target = {t_rc.left, t_rc.top, t_rc.right, t_rc.bottom};
+    HgBox occupied = target;
+
+    /* The floater's own spot counts as occupied even while it is hidden: that is
+     * where collapsing puts it back, so a slot overlapping it is not clear. */
+    RECT f_rc;
+    SetRectEmpty(&f_rc);
+    if (hg_g_floater_home_valid) {
+        f_rc = hg_g_floater_home_rect;
+    } else if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        if (!GetWindowRect(hg_g_floater_wnd, &f_rc))
+            SetRectEmpty(&f_rc);
+    }
+    if (!IsRectEmpty(&f_rc)) {
+        if (f_rc.left < occupied.left)
+            occupied.left = f_rc.left;
+        if (f_rc.top < occupied.top)
+            occupied.top = f_rc.top;
+        if (f_rc.right > occupied.right)
+            occupied.right = f_rc.right;
+        if (f_rc.bottom > occupied.bottom)
+            occupied.bottom = f_rc.bottom;
+    }
+
+    MONITORINFO mi;
+    SecureZeroMemory(&mi, sizeof(mi));
+    mi.cbSize = sizeof(mi);
+    if (!GetMonitorInfoW(MonitorFromWindow(taskbox_wnd, MONITOR_DEFAULTTONEAREST), &mi))
+        return FALSE;
+
+    HgBox work = {mi.rcWork.left, mi.rcWork.top, mi.rcWork.right, mi.rcWork.bottom};
+    HgBox slot;
+    if (hg_calc_relocation(target, occupied, work, &slot) == HG_RELOCATE_NONE)
+        return FALSE;
+
+    int tw = slot.right - slot.left;
+    int th = slot.bottom - slot.top;
+    SetWindowPos(taskbox_wnd, NULL, slot.left, slot.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    save_taskbox_geometry_config(slot.left, slot.top, tw, th);
+
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        RECT cur_f;
+        if (GetWindowRect(hg_g_floater_wnd, &cur_f)) {
+            int fw = cur_f.right - cur_f.left;
+            int fh = cur_f.bottom - cur_f.top;
+            SetWindowPos(hg_g_floater_wnd, NULL, slot.left, slot.top, 0, 0,
+                         SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+            save_floater_geometry_config(slot.left, slot.top, fw, fh);
+            /* Collapsing must land on the new spot, not the pre-expand one. */
+            hg_g_floater_home_rect.left = slot.left;
+            hg_g_floater_home_rect.top = slot.top;
+            hg_g_floater_home_rect.right = slot.left + fw;
+            hg_g_floater_home_rect.bottom = slot.top + fh;
+            hg_g_floater_home_valid = TRUE;
+        }
+    }
+
+    return TRUE;
+}
+
 /* Shared +/-15 alpha wheel step with the runtime clamp; TRUE when changed. */
 BOOL hg_step_alpha_value(BYTE *alpha, int delta)
 {
@@ -539,8 +611,9 @@ typedef struct HgToolbarBuiltinDescriptor {
 static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_RESIZE, L'R', L"Drag to Resize Window", L"Drag to Resize Window", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_RESIZE_TASKBOX},
-    {HG_TOOL_ICON_MOVE, L'M', L"Drag to Move Window", L"Drag to Move Window", HG_TOOLBAR_VALUE_NONE,
-     HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_MOVE_TASKBOX},
+    {HG_TOOL_ICON_MOVE, L'M', L"Click to Move Aside, Drag to Move Window",
+     L"Click to Move Aside, Drag to Move Window", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_RELOCATE_AWAY,
+     HG_TOOLBAR_DRAG_MOVE_TASKBOX},
     {HG_TOOL_ICON_CLOSE, L'X', L"Exit hgfloater", L"Exit hgfloater", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_EXIT_APP, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_DESKTOP, L'D', L"Show Desktop", L"Show Desktop", HG_TOOLBAR_VALUE_NONE,

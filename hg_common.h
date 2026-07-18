@@ -333,6 +333,7 @@ typedef struct ToolbarControllerState {
     int cached_icon_size;
     BOOL is_resizing;
     BOOL is_moving_taskbox;
+    BOOL move_drag_started; /* the move press passed the drag threshold, so it is not a click */
     POINT start_mouse;
     RECT start_rect;
 } ToolbarControllerState;

@@ -365,7 +365,13 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         GetCursorPos(&cur_mouse);
         int dx = cur_mouse.x - state->start_mouse.x;
         int dy = cur_mouse.y - state->start_mouse.y;
-        if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+        /* The window only follows the mouse once the press passes the system drag
+         * threshold; below it the press is still a click, which relocates instead. */
+        if (!state->move_drag_started &&
+            (ABS(dx) > GetSystemMetrics(SM_CXDRAG) || ABS(dy) > GetSystemMetrics(SM_CYDRAG))) {
+            state->move_drag_started = TRUE;
+        }
+        if (state->move_drag_started && hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
             SetWindowPos(hg_g_taskbox_wnd, NULL, state->start_rect.left + dx, state->start_rect.top + dy, 0, 0,
                          SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         }
@@ -438,11 +444,22 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
             save_floater_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
     } else if (state->is_moving_taskbox) {
+        BOOL was_dragged = state->move_drag_started;
+        int move_index = state->pressed_index;
         state->is_moving_taskbox = FALSE;
+        state->move_drag_started = FALSE;
         state->pressed_type = -1;
         state->pressed_index = -1;
         ReleaseCapture();
         InvalidateRect(hwnd, NULL, FALSE);
+
+        if (!was_dragged) {
+            /* Nothing moved, so run the button's click role instead of saving
+             * the geometry the window already had. */
+            if (move_index != -1)
+                activate_toolbar_item(move_index);
+            return 0;
+        }
 
         RECT rc;
         GetWindowRect(hg_g_taskbox_wnd, &rc);
@@ -532,6 +549,7 @@ static LRESULT toolbar_controller_on_lbutton_down(HWND hwnd, ToolbarControllerSt
             GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
         } else if (drag_role == HG_TOOLBAR_DRAG_MOVE_TASKBOX) {
             state->is_moving_taskbox = TRUE;
+            state->move_drag_started = FALSE;
             GetCursorPos(&state->start_mouse);
             GetWindowRect(hg_g_taskbox_wnd, &state->start_rect);
         } else if (cur_type == 0) {
@@ -732,7 +750,7 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
 
 LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
-    static ToolbarControllerState state = {-1, -1, -1, -1, 0, FALSE, FALSE, {0, 0}, {0, 0, 0, 0}};
+    static ToolbarControllerState state = {-1, -1, -1, -1, 0, FALSE, FALSE, FALSE, {0, 0}, {0, 0, 0, 0}};
     static HgTaskboxDragState drag_state = {FALSE, -1, {0, 0}, {0, 0}, -1};
 
     switch (msg) {

@@ -1,0 +1,26 @@
+# T003: Move-Aside Placement
+
+## Requirement
+
+A click on the toolbar's Move handle relocates the floater/taskbox pair to a spot
+that does not overlap the area they occupy at that moment, searching north, then
+west, then south, then east.
+
+## Verification Method
+
+`hg_calc_relocation` holds the placement math with no Win32 dependency, so
+`test/test_relocate.c` compiles and runs on the build host. Run
+`sh scripts/build-mingw.sh`, which cross-compiles every test and runs the
+host-native ones, or compile the single test directly with the host compiler.
+
+## Assertions
+
+- The search order is north, west, south, east, and the first clear slot wins.
+- Each candidate hugs the work-area edge in its direction and keeps the other
+  axis where it was, clamped back inside the work area.
+- A candidate is clear only when it shares no area with the occupied region; the
+  occupied region is the union of the taskbox and the floater's own spot.
+- Touching edges do not count as overlap.
+- Work areas that do not start at the origin (secondary monitors, taskbar
+  reservations) are honored.
+- A window as large as the work area, or a request with no output, does not move.
