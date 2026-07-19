@@ -264,6 +264,15 @@ void activate_toolbar_item(int index)
         /* A click on M (no drag) sends the pair to the first free cardinal slot. */
         hg_relocate_taskbox_away(hg_g_taskbox_wnd);
         break;
+    case HG_TOOLBAR_CLICK_TOGGLE_PIN:
+        /* Pinned, the taskbox ignores the hover-out collapse; every explicit
+         * close (X, Esc, the hotkey, a floater click) still works. */
+        hg_g_taskbox_pinned = !hg_g_taskbox_pinned;
+        append_message(hg_g_taskbox_pinned ? L"Taskbox pinned open." : L"Taskbox unpinned.");
+        update_toolbar_tooltips(hg_g_toolbar_wnd);
+        if (hg_g_toolbar_wnd)
+            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+        break;
     case HG_TOOLBAR_CLICK_FLOATER_ADJUST:
         /* Collapse to the floater for size/alpha tuning: hover-expand is suppressed
          * while in this mode (Ctrl+Wheel resizes, Alt+Wheel changes opacity); a
@@ -384,7 +393,7 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
         HMENU h_menu = CreatePopupMenu();
         if (!h_menu)
             return 0;
-        AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_COPYALL, L"Copy All (&A)");
+        AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_COPYALL, L"Copy Status Line (&A)");
 
         POINT pt;
         if (l_param == (LPARAM)-1) { /* Keyboard shortcut */
@@ -481,12 +490,13 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
 
     hg_g_edit_msg_wnd =
         CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL,
-                        WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY, 0, 0, 0,
-                        0, hwnd, (HMENU)HG_IDC_EDIT_MSG, GetModuleHandle(NULL), NULL);
+                        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_READONLY, 0, 0, 0, 0, hwnd,
+                        (HMENU)HG_IDC_EDIT_MSG, GetModuleHandle(NULL), NULL);
     if (hg_g_edit_msg_wnd) {
         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
         SetWindowTextW(hg_g_edit_msg_wnd,
                        L"X: Exit | O: Options | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
+        hg_g_edit_msg_tick = GetTickCount64();
         SetWindowSubclass(hg_g_edit_msg_wnd, edit_subclass_proc, 0, 0);
         disable_window_ime(hg_g_edit_msg_wnd);
     }
@@ -983,6 +993,9 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     case WM_TIMER:
         if (w_param == HG_TIMER_TASKBOX_REFRESH) {
             if (IsWindowVisible(hwnd) && !hg_g_menu_active) {
+                /* Idle status line falls back to the clock, which then reads
+                 * the same every second until the minute rolls over. */
+                hg_update_status_clock();
                 refresh_window_list(FALSE);
                 /* Keep the DDC/CI brightness cache warm off the paint path. */
                 static int brightness_refresh_ticks = 0;
@@ -1014,7 +1027,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 /* Collapse to the floater only after the cursor has stayed outside
                  * for 0.5s (re-checked every 100ms tick); coming back inside resets
                  * the count so a brief exit doesn't collapse the taskbox. */
-                if (hg_g_hover_check_armed) {
+                if (hg_g_hover_check_armed && !hg_g_taskbox_pinned) {
                     if (!PtInRect(&rc, pt)) {
                         s_hover_outside_ticks++;
                         if (s_hover_outside_ticks >= 5) {

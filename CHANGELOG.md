@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- A `P` (Pin) toolbar button holds the taskbox open: while pinned, moving the mouse away no longer collapses it back to the floater, and the button carries an accent border. Explicit closes still work.
+
+### Changed
+- The taskbox status line shows one message at a time instead of a scrolling log, and falls back to the current time (`2026. 11. 23.(Tue) 13:24`) once a message has sat there for ten seconds, refreshing as the minute changes.
+
 ## [v26.07.19c] - 2026-07-19
 
 ### Fixed

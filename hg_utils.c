@@ -529,30 +529,43 @@ void hg_paint_buffer_end(HgPaintBuffer *buffer)
     ZeroMemory(buffer, sizeof(*buffer));
 }
 
+/* The status line shows one message at a time; the clock takes the line back
+ * once the message has sat there for HG_STATUS_CLOCK_IDLE_MS. */
 void append_message(const WCHAR *msg)
 {
     if (!hg_g_edit_msg_wnd || !msg)
         return;
 
-    int line_count = (int)SendMessageW(hg_g_edit_msg_wnd, EM_GETLINECOUNT, 0, 0);
-    if (line_count > HG_TASKBOX_EDIT_CONTROL_TRIM_THRESHOLD) {
-        int remove_count = line_count - HG_TASKBOX_EDIT_CONTROL_RETAIN_COUNT;
-        int char_index = (int)SendMessageW(hg_g_edit_msg_wnd, EM_LINEINDEX, (WPARAM)remove_count, 0);
-        if (char_index != -1) {
-            SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, 0, (LPARAM)char_index);
-            SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"");
-        }
-    }
+    SetWindowTextW(hg_g_edit_msg_wnd, msg);
+    SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, 0, 0);
+    hg_g_edit_msg_tick = GetTickCount64();
+}
 
-    int len = GetWindowTextLengthW(hg_g_edit_msg_wnd);
-    SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
-    if (len > 0)
-        SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
-    int new_line_start = GetWindowTextLengthW(hg_g_edit_msg_wnd);
-    SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, (WPARAM)new_line_start, (LPARAM)new_line_start);
-    SendMessageW(hg_g_edit_msg_wnd, EM_REPLACESEL, FALSE, (LPARAM)msg);
-    SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, (WPARAM)new_line_start, (LPARAM)new_line_start);
-    SendMessageW(hg_g_edit_msg_wnd, EM_SCROLLCARET, 0, 0);
+/* Called once a second: replaces an idle status line with the current time and
+ * keeps it fresh, writing only when the displayed minute actually changes. */
+void hg_update_status_clock(void)
+{
+    if (!hg_g_edit_msg_wnd || !IsWindow(hg_g_edit_msg_wnd))
+        return;
+    if (GetTickCount64() - hg_g_edit_msg_tick < HG_STATUS_CLOCK_IDLE_MS)
+        return;
+
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+
+    WCHAR clock_text[32];
+    if (hg_calc_format_clock(clock_text, (int)HG_ARRAYSIZE(clock_text), st.wYear, st.wMonth, st.wDay, st.wDayOfWeek,
+                             st.wHour, st.wMinute) <= 0)
+        return;
+
+    WCHAR current[32];
+    GetWindowTextW(hg_g_edit_msg_wnd, current, (int)HG_ARRAYSIZE(current));
+    if (wcscmp(current, clock_text) == 0)
+        return;
+
+    /* Not append_message: showing the clock must not restart the idle timer. */
+    SetWindowTextW(hg_g_edit_msg_wnd, clock_text);
+    SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, 0, 0);
 }
 
 void draw_outlined_text(HDC hdc, const WCHAR *text, int len, RECT *rc, UINT format, COLORREF text_color,
@@ -624,6 +637,8 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_FLOATER, L'F', L"Floater (Ctrl+Wheel size, Alt+Wheel alpha; click to return)",
      L"Floater (Ctrl+Wheel size, Alt+Wheel alpha; click to return)", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_FLOATER_ADJUST, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_PIN, L'P', L"Pin the Taskbox Open", L"Pin the Taskbox Open", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
 enum {

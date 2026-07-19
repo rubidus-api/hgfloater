@@ -80,6 +80,7 @@ int compare_shortcuts(const void *a, const void *b);
 void load_shortcuts(void);
 void load_shortcuts_if_changed(void);
 void append_message(const WCHAR *msg);
+void hg_update_status_clock(void);
 void draw_outlined_text(HDC hdc, const WCHAR *text, int len, RECT *rc, UINT format, COLORREF text_color, COLORREF outline_color);
 int hg_measure_edit_height(HWND edit_wnd, HFONT font, double scale);
 LRESULT hg_on_ctlcolor_edit(HDC hdc);
@@ -97,7 +98,8 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_SHOW_COMMANDBOX,
     HG_TOOLBAR_CLICK_TOGGLE_MUTE,
     HG_TOOLBAR_CLICK_FLOATER_ADJUST,
-    HG_TOOLBAR_CLICK_RELOCATE_AWAY
+    HG_TOOLBAR_CLICK_RELOCATE_AWAY,
+    HG_TOOLBAR_CLICK_TOGGLE_PIN
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
     HG_TOOLBAR_DRAG_NONE = 0,

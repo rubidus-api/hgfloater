@@ -1,6 +1,8 @@
 #ifndef HG_CALC_H
 #define HG_CALC_H
 
+#include <stddef.h> /* wchar_t, for the status-clock formatter below */
+
 /* Pure scalar and layout math shared by the widgets. This header has no Win32
  * dependency, so host-native test binaries can compile and link the unit
  * directly (see test/test_calc.c). */
@@ -49,5 +51,10 @@ HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work,
 /* Offset `home` by however far the taskbox travelled from `from` to `to`, kept
  * inside `work`. Collapsing uses it so the floater follows every taskbox move. */
 HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
+
+/* Render the taskbox status clock as "2026. 11. 23.(Tue) 13:24" into `out`.
+ * `dow` is 0=Sunday. Writes nothing unless the whole string plus terminator
+ * fits; returns the character count written (0 when it does not fit). */
+int hg_calc_format_clock(wchar_t *out, int cch, int year, int month, int day, int dow, int hour, int minute);
 
 #endif /* HG_CALC_H */
