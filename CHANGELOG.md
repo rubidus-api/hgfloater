@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.19e] - 2026-07-19
 
 ### Changed
 - Right-clicking the taskbox status line now opens the main options menu, the same one the `O` toolbar button shows, instead of a copy-only context menu.
