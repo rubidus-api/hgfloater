@@ -29,5 +29,7 @@ void save_commandbox_alpha_config(void);
 BOOL register_global_hotkey(HWND hwnd, BOOL warn_on_failure);
 void unregister_global_hotkey(HWND hwnd);
 void hg_config_reset_all(HWND hwnd);
+/* Write anything the debounced savers are still holding (shutdown, reset). */
+void hg_config_flush_pending(void);
 
 #endif /* HG_CONFIG_H */

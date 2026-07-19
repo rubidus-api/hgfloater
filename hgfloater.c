@@ -476,6 +476,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     save_alpha_config();
 
 cleanup_finish:
+    hg_config_flush_pending(); /* debounced settings must survive the exit */
     restore_system_gamma();
     if (accel_table) {
         DestroyAcceleratorTable(accel_table);

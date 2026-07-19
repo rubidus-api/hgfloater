@@ -1,6 +1,97 @@
 #include "hg_config.h"
 #include "hg_utils.h"
 
+/* Deferred INI writes.
+ *
+ * WritePrivateProfileStringW rewrites the whole file on every call, and the
+ * wheel and key-repeat paths (alpha, font size, Alt+arrow moves) fire dozens of
+ * times a second. Those settings are therefore marked pending and written once
+ * the user stops, HG_CONFIG_FLUSH_DELAY_MS later, or at shutdown. Everything
+ * pending re-reads the live globals at flush time, so only the final value ever
+ * reaches the disk. */
+#define HG_CONFIG_FLUSH_DELAY_MS 1000
+
+enum {
+    HG_CFG_ALPHA = 1u << 0,
+    HG_CFG_COMMANDBOX_ALPHA = 1u << 1,
+    HG_CFG_FLOATER_FONT = 1u << 2,
+    HG_CFG_TASKBOX_FONT = 1u << 3,
+    HG_CFG_COMMANDBOX_FONT = 1u << 4,
+    HG_CFG_FLOATER_GEOMETRY = 1u << 5,
+    HG_CFG_TASKBOX_GEOMETRY = 1u << 6,
+    HG_CFG_COMMANDBOX_GEOMETRY = 1u << 7
+};
+
+typedef struct HgPendingGeometry {
+    int x, y, w, h;
+} HgPendingGeometry;
+
+static unsigned s_pending_mask;
+static HgPendingGeometry s_pending_floater_geometry;
+static HgPendingGeometry s_pending_taskbox_geometry;
+static HgPendingGeometry s_pending_commandbox_geometry;
+static UINT_PTR s_flush_timer;
+
+static void write_alpha_config(void);
+static void write_commandbox_alpha_config(void);
+static void write_floater_font_config(void);
+static void write_taskbox_font_config(void);
+static void write_commandbox_font_config(void);
+
+static VOID CALLBACK config_flush_timer_proc(HWND hwnd, UINT msg, UINT_PTR id, DWORD tick)
+{
+    (void)hwnd;
+    (void)msg;
+    (void)id;
+    (void)tick;
+    hg_config_flush_pending();
+}
+
+static void config_defer(unsigned bits)
+{
+    s_pending_mask |= bits;
+
+    /* Restart the window on every change, so a burst writes exactly once. */
+    if (s_flush_timer)
+        KillTimer(NULL, s_flush_timer);
+    s_flush_timer = SetTimer(NULL, 0, HG_CONFIG_FLUSH_DELAY_MS, config_flush_timer_proc);
+    if (!s_flush_timer)
+        hg_config_flush_pending(); /* no timer, no deferral: write it now */
+}
+
+void hg_config_flush_pending(void)
+{
+    if (s_flush_timer) {
+        KillTimer(NULL, s_flush_timer);
+        s_flush_timer = 0;
+    }
+
+    unsigned mask = s_pending_mask;
+    s_pending_mask = 0;
+    if (!mask)
+        return;
+
+    if (mask & HG_CFG_ALPHA)
+        write_alpha_config();
+    if (mask & HG_CFG_COMMANDBOX_ALPHA)
+        write_commandbox_alpha_config();
+    if (mask & HG_CFG_FLOATER_FONT)
+        write_floater_font_config();
+    if (mask & HG_CFG_TASKBOX_FONT)
+        write_taskbox_font_config();
+    if (mask & HG_CFG_COMMANDBOX_FONT)
+        write_commandbox_font_config();
+    if (mask & HG_CFG_FLOATER_GEOMETRY)
+        save_config(L"floater", s_pending_floater_geometry.x, s_pending_floater_geometry.y,
+                    s_pending_floater_geometry.w, s_pending_floater_geometry.h);
+    if (mask & HG_CFG_TASKBOX_GEOMETRY)
+        save_config(L"taskbox", s_pending_taskbox_geometry.x, s_pending_taskbox_geometry.y,
+                    s_pending_taskbox_geometry.w, s_pending_taskbox_geometry.h);
+    if (mask & HG_CFG_COMMANDBOX_GEOMETRY)
+        save_config(L"commandbox", s_pending_commandbox_geometry.x, s_pending_commandbox_geometry.y,
+                    s_pending_commandbox_geometry.w, s_pending_commandbox_geometry.h);
+}
+
 void load_config(const WCHAR *section, int *x, int *y, int *w, int *h, int def_x, int def_y, int def_w, int def_h)
 {
     WCHAR buf[32] = {0};
@@ -49,17 +140,23 @@ void save_window_geometry_config(const WCHAR *section, int x, int y, int w, int 
 
 void save_floater_geometry_config(int x, int y, int w, int h)
 {
-    save_window_geometry_config(L"floater", x, y, w, h);
+    HgPendingGeometry g = {x, y, w, h};
+    s_pending_floater_geometry = g;
+    config_defer(HG_CFG_FLOATER_GEOMETRY);
 }
 
 void save_taskbox_geometry_config(int x, int y, int w, int h)
 {
-    save_window_geometry_config(L"taskbox", x, y, w, h);
+    HgPendingGeometry g = {x, y, w, h};
+    s_pending_taskbox_geometry = g;
+    config_defer(HG_CFG_TASKBOX_GEOMETRY);
 }
 
 void save_commandbox_geometry_config(int x, int y, int w, int h)
 {
-    save_window_geometry_config(L"commandbox", x, y, w, h);
+    HgPendingGeometry g = {x, y, w, h};
+    s_pending_commandbox_geometry = g;
+    config_defer(HG_CFG_COMMANDBOX_GEOMETRY);
 }
 
 /* [colors]: every accent color as RRGGBB hex, self-healing like the other
@@ -165,6 +262,11 @@ void load_floater_font_config()
 
 void save_floater_font_config()
 {
+    config_defer(HG_CFG_FLOATER_FONT);
+}
+
+static void write_floater_font_config(void)
+{
     WCHAR buf[32];
     if (hg_g_floater_font_size < HG_FLOATER_MIN_FONT_SIZE)
         hg_g_floater_font_size = HG_FLOATER_MIN_FONT_SIZE;
@@ -194,6 +296,11 @@ void load_taskbox_font_config()
 }
 
 void save_taskbox_font_config()
+{
+    config_defer(HG_CFG_TASKBOX_FONT);
+}
+
+static void write_taskbox_font_config(void)
 {
     WCHAR buf[32];
     int unscaled = (int)(ABS(hg_g_edit_font_size) / (hg_g_scale_factor > 0 ? hg_g_scale_factor : 1.0) + 0.5);
@@ -232,6 +339,11 @@ void load_commandbox_font_config()
 }
 
 void save_commandbox_font_config()
+{
+    config_defer(HG_CFG_COMMANDBOX_FONT);
+}
+
+static void write_commandbox_font_config(void)
 {
     WCHAR buf[32];
     WritePrivateProfileStringW(L"commandbox", L"font_name", hg_g_commandbox_font_name, hg_g_config_path);
@@ -333,6 +445,11 @@ void unregister_global_hotkey(HWND hwnd)
 
 void save_alpha_config()
 {
+    config_defer(HG_CFG_ALPHA);
+}
+
+static void write_alpha_config(void)
+{
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%u", (UINT)hg_g_floater_alpha);
     WritePrivateProfileStringW(L"floater", L"alpha", buf, hg_g_config_path);
@@ -342,6 +459,11 @@ void save_alpha_config()
 
 void save_commandbox_alpha_config()
 {
+    config_defer(HG_CFG_COMMANDBOX_ALPHA);
+}
+
+static void write_commandbox_alpha_config(void)
+{
     WCHAR buf[32];
     hellgates_wsprintf(buf, 32, L"%u", (UINT)hg_g_commandbox_alpha);
     WritePrivateProfileStringW(L"commandbox", L"alpha", buf, hg_g_config_path);
@@ -349,6 +471,13 @@ void save_commandbox_alpha_config()
 
 void hg_config_reset_all(HWND hwnd)
 {
+    /* The reset writes every key itself, so pending values must not land after it. */
+    if (s_flush_timer) {
+        KillTimer(NULL, s_flush_timer);
+        s_flush_timer = 0;
+    }
+    s_pending_mask = 0;
+
     (void)hwnd;
     reset_colors_config();
     refresh_theme_surfaces(hg_g_taskbox_wnd);
