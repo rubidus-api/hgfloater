@@ -57,7 +57,7 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
     return toolbar_invert_color(base_color);
 }
 
-static void toolbar_draw_muted_border(HDC hdc, const RECT *rc)
+static void toolbar_draw_state_border(HDC hdc, const RECT *rc)
 {
     if (!hdc || !rc)
         return;
@@ -260,8 +260,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                     }
 
-                    if (i == HG_TOOL_ICON_VOLUME && get_system_mute()) {
-                        toolbar_draw_muted_border(mem_dc, &rc_btn);
+                    if ((i == HG_TOOL_ICON_VOLUME && get_system_mute()) ||
+                        (i == HG_TOOL_ICON_PIN && hg_g_taskbox_pinned)) {
+                        toolbar_draw_state_border(mem_dc, &rc_btn);
                     }
 
                     if (i >= HG_NUM_BASIC_ICONS) {

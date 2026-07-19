@@ -2,6 +2,7 @@
  * search and the floater's follow-the-taskbox offset used when collapsing.
  * The unit is included directly so a plain host gcc needs no extra link step. */
 #include <stdio.h>
+#include <wchar.h>
 
 #include "../hg_calc.c"
 
@@ -127,6 +128,24 @@ int main(void)
     expect(box_equals(hg_calc_follow_move(huge, tb_before, box(900, 400, 1300, 700), work),
                       box(0, 0, 3000, 2000)),
            "an oversized floater anchors at the work origin");
+
+    /* The taskbox status clock has one fixed shape. */
+    wchar_t clock[32];
+    int written = hg_calc_format_clock(clock, 32, 2026, 11, 23, 2, 13, 24);
+    expect(written == 24, "the clock is 24 characters long");
+    expect(wcscmp(clock, L"2026. 11. 23.(Tue) 13:24") == 0, "the clock matches the requested format");
+
+    expect(hg_calc_format_clock(clock, 32, 2026, 7, 5, 0, 9, 3) == 24, "single-digit parts still fill the shape");
+    expect(wcscmp(clock, L"2026. 07. 05.(Sun) 09:03") == 0, "single-digit parts are zero padded");
+
+    expect(hg_calc_format_clock(clock, 32, 2026, 12, 31, 6, 0, 0) == 24, "midnight new year's eve formats");
+    expect(wcscmp(clock, L"2026. 12. 31.(Sat) 00:00") == 0, "midnight is 00:00, not 24:00");
+
+    /* A buffer that cannot hold the whole string is left alone. */
+    wchar_t small[8] = {L'k', 0};
+    expect(hg_calc_format_clock(small, 8, 2026, 11, 23, 2, 13, 24) == 0, "a short buffer is refused");
+    expect(small[0] == L'k', "a refused format writes nothing");
+    expect(hg_calc_format_clock(NULL, 32, 2026, 11, 23, 2, 13, 24) == 0, "a null buffer is refused");
 
     if (failures) {
         printf("relocation math: %d failure(s)\n", failures);

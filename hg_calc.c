@@ -1,5 +1,7 @@
 #include "hg_calc.h"
 
+#define HG_CLOCK_TEXT_CCH 25 /* "2026. 11. 23.(Tue) 13:24" plus terminator */
+
 #define SC(x) hg_calc_scale(x)
 
 int hg_clamp_alpha(int alpha)
@@ -102,6 +104,49 @@ HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work)
 
     HgBox moved = {x, y, x + w, y + h};
     return moved;
+}
+
+/* Hand-rolled so the unit stays free of both Win32 and the CRT: the taskbox
+ * clock is the only formatted text here and its shape is fixed. */
+static int hg_write_padded(wchar_t *out, int pos, int value, int digits)
+{
+    for (int place = digits - 1; place >= 0; --place) {
+        int divisor = 1;
+        for (int i = 0; i < place; ++i)
+            divisor *= 10;
+        out[pos++] = (wchar_t)(L'0' + (value / divisor) % 10);
+    }
+    return pos;
+}
+
+int hg_calc_format_clock(wchar_t *out, int cch, int year, int month, int day, int dow, int hour, int minute)
+{
+    static const wchar_t *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
+
+    if (!out || cch < HG_CLOCK_TEXT_CCH)
+        return 0;
+    if (dow < 0 || dow > 6)
+        dow = 0;
+
+    int pos = 0;
+    pos = hg_write_padded(out, pos, year, 4);
+    out[pos++] = L'.';
+    out[pos++] = L' ';
+    pos = hg_write_padded(out, pos, month, 2);
+    out[pos++] = L'.';
+    out[pos++] = L' ';
+    pos = hg_write_padded(out, pos, day, 2);
+    out[pos++] = L'.';
+    out[pos++] = L'(';
+    for (int i = 0; days[dow][i]; ++i)
+        out[pos++] = days[dow][i];
+    out[pos++] = L')';
+    out[pos++] = L' ';
+    pos = hg_write_padded(out, pos, hour, 2);
+    out[pos++] = L':';
+    pos = hg_write_padded(out, pos, minute, 2);
+    out[pos] = L'\0';
+    return pos;
 }
 
 int get_items_per_row(int width, int icon_size)
