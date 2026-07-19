@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.19d] - 2026-07-19
 
 ### Added
 - A `P` (Pin) toolbar button holds the taskbox open: while pinned, moving the mouse away no longer collapses it back to the floater, and the button carries an accent border. Explicit closes still work.
