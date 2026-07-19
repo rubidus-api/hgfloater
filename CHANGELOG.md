@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- Right-clicking the taskbox status line now opens the main options menu, the same one the `O` toolbar button shows, instead of a copy-only context menu.
+- Settings that change in bursts - opacity, font and icon size, and window position - are written to `config.ini` once the change settles (or at exit) instead of on every wheel notch or arrow-key repeat. Each notch used to rewrite the whole INI file, twice for opacity.
+
 ## [v26.07.19d] - 2026-07-19
 
 ### Added

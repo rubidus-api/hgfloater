@@ -390,10 +390,12 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
         break;
     }
     case WM_CONTEXTMENU: {
-        HMENU h_menu = CreatePopupMenu();
+        /* The status line holds a single message, so a copy-only menu earned its
+         * space poorly; right-clicking it opens the main options menu instead -
+         * the same one the O toolbar button shows. */
+        HMENU h_menu = taskbox_create_main_popup_menu();
         if (!h_menu)
             return 0;
-        AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_COPYALL, L"Copy Status Line (&A)");
 
         POINT pt;
         if (l_param == (LPARAM)-1) { /* Keyboard shortcut */
@@ -407,13 +409,8 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
         }
 
         int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y,
-                                                 hwnd);
-
-        if (cmd == HG_IDM_EDIT_COPYALL) {
-            SendMessageW(hwnd, EM_SETSEL, 0, (LPARAM)-1);
-            SendMessageW(hwnd, WM_COPY, 0, 0);
-            SendMessageW(hwnd, EM_SETSEL, (WPARAM)-1, 0);
-        }
+                                                 hg_g_taskbox_wnd);
+        taskbox_dispatch_main_menu_command((UINT)cmd);
 
         return 0;
     }
