@@ -1,7 +1,7 @@
 # Generate hg_about_text.h from README.md.
 # Run from the repository root: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 $readmePath = 'README.md'
-$outputPath = 'hg_about_text.h'
+$outputPath = 'src/hg_about_text.h'
 if (Test-Path $readmePath) {
     [byte[]]$bytes = [System.IO.File]::ReadAllBytes($readmePath)
     $enc = New-Object System.Text.UTF8Encoding($false)
