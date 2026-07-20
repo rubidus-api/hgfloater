@@ -3,9 +3,11 @@
 ## Requirement
 
 A click on the toolbar's Move handle relocates the floater/taskbox pair to a spot
-that does not overlap the area they occupy at that moment, searching north, then
-west, then south, then east. Collapsing the taskbox afterwards puts the floater
-at the new spot: the floater follows every taskbox move, not just this one.
+that does not overlap the area they occupy at that moment. The search keeps the
+heading of the previous click and turns counter-clockwise - north, west, south,
+east - only when that heading has no room, so repeated clicks walk the pair
+around the screen. Collapsing the taskbox afterwards puts the floater at the new
+spot: the floater follows every taskbox move, not just this one.
 
 ## Verification Method
 
@@ -16,7 +18,10 @@ host-native ones, or compile the single test directly with the host compiler.
 
 ## Assertions
 
-- The search order is north, west, south, east, and the first clear slot wins.
+- The search starts at the given heading and keeps it while that direction has
+  room; repeated steps in one direction stack up until the work-area edge.
+- A blocked heading turns counter-clockwise (north, west, south, east) and wraps
+  from east back to north; an unset heading starts north.
 - Each candidate takes the smallest step that clears the occupied region in its
   direction, landing flush against it rather than at the work-area edge, and
   keeps the other axis where it was, clamped back inside the work area.

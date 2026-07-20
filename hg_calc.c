@@ -37,12 +37,14 @@ static int hg_boxes_overlap(HgBox a, HgBox b)
     return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 }
 
-/* Pick the first cardinal slot, north then west then south then east, that holds
- * the target's size fully inside the work area without touching the occupied
- * region. Each candidate takes the smallest step that clears the occupied region
- * in that direction - it lands flush against it, not against the far edge of the
- * screen - and keeps the other axis where it was (clamped back on screen). */
-HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work, HgBox *out)
+/* Keep going the way the last step went, turning counter-clockwise only when
+ * that direction runs out of room, so repeated clicks walk the pair around the
+ * screen instead of cycling between two spots. Each candidate takes the smallest
+ * step that clears the occupied region - it lands flush against it, not against
+ * the far edge of the screen - and keeps the other axis where it was (clamped
+ * back on screen). */
+HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work, HgRelocateDirection start,
+                                       HgBox *out)
 {
     if (!out)
         return HG_RELOCATE_NONE;
@@ -68,7 +70,17 @@ HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work,
         {HG_RELOCATE_EAST, occupied.right, kept_y},
     };
 
-    for (unsigned i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
+    unsigned count = sizeof(candidates) / sizeof(candidates[0]);
+    unsigned first = 0;
+    for (unsigned i = 0; i < count; ++i) {
+        if (candidates[i].dir == start) {
+            first = i;
+            break;
+        }
+    }
+
+    for (unsigned n = 0; n < count; ++n) {
+        unsigned i = (first + n) % count;
         HgBox slot = {candidates[i].x, candidates[i].y, candidates[i].x + w, candidates[i].y + h};
         if (slot.left < work.left || slot.top < work.top || slot.right > work.right || slot.bottom > work.bottom)
             continue;

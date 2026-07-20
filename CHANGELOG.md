@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- The Move-handle click keeps the heading it used last time instead of restarting its search at north every click, so repeated clicks walk the window across the screen rather than bouncing between two spots. It turns counter-clockwise - north, west, south, east - only when the current heading has no room left.
+
 ## [v26.07.19e] - 2026-07-19
 
 ### Changed
