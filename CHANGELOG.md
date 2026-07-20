@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- The sources moved into `src/`, leaving the repository root for the build files and documentation. `build.bat`, the cross-build script, the tests, and the About-text generator all follow the new layout.
+- `README.md` is now an English-only reference manual, rewritten as numbered chapters with a table of contents; the Korean translation lives beside it in `README.ko.md` and the two link to each other.
+
+### Added
+- A `Makefile` builds the project on any host with a MinGW-w64 toolchain: `make`, `make debug`, `make test`, `make clean`, with `CROSS=`, `OUT=`, and `VERSION_SUFFIX=` variables. `build.bat` still offers the same builds on Windows, and `scripts/build-mingw.sh` is now a thin wrapper over the Makefile so the source list cannot drift between them.
+
 ## [v26.07.20] - 2026-07-20
 
 ### Changed

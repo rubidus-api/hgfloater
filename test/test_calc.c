@@ -2,7 +2,7 @@
  * the single-file test runner (and a plain host gcc) needs no extra link step. */
 #include <stdio.h>
 
-#include "../hg_calc.c"
+#include "../src/hg_calc.c"
 
 double hg_g_scale_factor = 1.0;
 

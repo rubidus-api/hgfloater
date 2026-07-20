@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <wchar.h>
 
-#include "../hg_calc.c"
+#include "../src/hg_calc.c"
 
 double hg_g_scale_factor = 1.0;
 

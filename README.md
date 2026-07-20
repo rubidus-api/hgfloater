@@ -1,364 +1,490 @@
 # hgfloater
 
-<!-- SKIP_START -->
-![screenshot](hgfloater.ico)
-<!-- SKIP_END -->
+**English** | [한국어](README.ko.md)
 
-hgfloater is a lightweight, high-performance utility designed for **Windows 11 and above**. It leverages translucent floating boxes and optimized keyboard/mouse interactions to enable fast and responsive computer operation. Built using pure C and WinAPI, it operates with zero external dependencies, ensuring an extremely fluid user experience.
+hgfloater is a lightweight desktop utility for **Windows 11 and above**. A small
+translucent widget floats on your desktop; hovering it opens a dashboard that
+launches your shortcuts, switches between running windows, and puts volume,
+brightness, opacity, and a command console one click away. It is written in pure
+C against the Win32 API with zero external dependencies, so it starts instantly
+and stays out of your way.
 
 <!-- SKIP_START -->
 ![screenshot](./screenshot/hgfloater-v26.04.30-screenshot.png)
 <!-- SKIP_END -->
 
 ---
-## Download and Run / 다운로드 및 실행
 
-### English
-1. **Download**: Get the latest `hgfloater.exe` from the [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.20) page.
-2. **Execute**: Just run `hgfloater.exe`.
-3. **Shortcuts**: To add your own shortcuts to the taskbox, place `.lnk` or `.url` files in `%USERPROFILE%\.HellGates\hgfloater\shortcuts`.
-4. **Hotkey**: Press `Win + Alt + Space` (Default) to summon the taskbox.
+## Table of Contents
 
-### 한국어
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.20) 페이지에서 최신 `hgfloater.exe` 파일을 다운로드하세요.
-2. **실행**: 다운로드한 `hgfloater.exe`를 실행하기만 하면 됩니다.
-3. **단축 아이콘 추가**: 나만의 단축 아이콘을 태스크 박스에 추가하려면 `%USERPROFILE%\.HellGates\hgfloater\shortcuts` 폴더에 바로가기(`.lnk`)나 웹 링크(`.url`) 파일을 넣으세요.
-4. **단축키**: `Win + Alt + Space` (기본값)를 눌러 태스크 박스(taskbox)를 불러낼 수 있습니다.
+1. [Overview](#1-overview)
+2. [Install and First Run](#2-install-and-first-run)
+3. [The Two Windows](#3-the-two-windows)
+4. [The Floater](#4-the-floater)
+5. [The Taskbox](#5-the-taskbox)
+6. [The Toolbar](#6-the-toolbar)
+7. [The Options Menu](#7-the-options-menu)
+8. [The Command Box](#8-the-command-box)
+9. [Monitor Thumbnails](#9-monitor-thumbnails)
+10. [Keyboard Reference](#10-keyboard-reference)
+11. [Mouse Reference](#11-mouse-reference)
+12. [Configuration File](#12-configuration-file)
+13. [Files and Directories](#13-files-and-directories)
+14. [Building From Source](#14-building-from-source)
+15. [Project Layout](#15-project-layout)
+16. [Tests and Verification](#16-tests-and-verification)
+17. [About the Developer](#17-about-the-developer)
+18. [The HellGates Series](#18-the-hellgates-series)
+19. [License](#19-license)
 
 ---
 
-## Table of Contents / 목차
-- [English Version](#hgfloater-manual-en)
-- [한국어 버전](#hgfloater-manual-kr)
+## 1. Overview
 
----
+hgfloater aims at one thing: making everyday desktop control faster than the
+stock taskbar allows. It currently works as a **quick launcher**, a **task
+switcher**, and a **system control panel** (volume, brightness, window opacity,
+screen lock), all reachable from a widget you can park anywhere on any monitor.
 
-<!-- SKIP_START -->
-<a id="hgfloater-manual-en"></a>
-<!-- SKIP_END -->
-# hgfloater Manual
+Design principles worth knowing before you use it:
 
-## 1. Purpose and Intent
-The primary goal of hgfloater is to provide a streamlined, highly customizable environment for efficient system control. Currently, it functions as a **Quick Launcher** (via shortcuts) and a **Task Switcher**, allowing users to position control interfaces anywhere on the screen and manipulate them instantly.
+- **Nothing runs in the background but the app itself.** No services, no
+  installers, no registry keys. A single `hgfloater.exe`.
+- **One file on disk.** Settings live in a plain `config.ini` under your user
+  profile. The program writes no logs, caches, or temporary files.
+- **Everything is adjustable in place.** Size, opacity, font size, grid shape,
+  and colors change live with the wheel or the keyboard, and persist by
+  themselves.
+- **Keyboard and mouse are equal citizens.** Every action has both a pointer
+  gesture and a key.
+- **It follows the system theme.** Switching Windows between light and dark mode
+  re-colors the widgets immediately.
 
-While it complements the default Windows Taskbar, hgfloater is built for power users who demand maximum speed. The current version is just the beginning; future updates will introduce a wider array of features dedicated to making computer operation even more intuitive and responsive.
+## 2. Install and First Run
 
-## 2. File and Directory Structure
-hgfloater stores its data in the user's profile directory to ensure persistence without interfering with system files.
+1. **Download** the latest `hgfloater.exe` from the
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.20)
+   page.
+2. **Run it.** There is no installer. On first launch it creates
+   `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
+   folder, then shows the floater.
+3. **Add shortcuts.** Drop `.lnk` or `.url` files into
+   `%USERPROFILE%\.HellGates\hgfloater\shortcuts`. They appear in the taskbox
+   automatically; press `Esc` in the taskbox to re-scan the folder immediately.
+4. **Summon it from anywhere** with `Win + Alt + Space` (configurable).
 
-- **Base Directory**: `%USERPROFILE%\.HellGates\hgfloater`
-  - This is the root folder where all application data is stored.
-- **Shortcuts Directory**: `%USERPROFILE%\.HellGates\hgfloater\shortcuts`
-  - Place your application shortcuts (`.lnk`) or web links (`.url`) here. They will automatically appear in the taskbox toolbar.
-- **Configuration File**: `%USERPROFILE%\.HellGates\hgfloater\config.ini`
-  - Stores all user preferences, window positions, and hotkey settings.
+Only one instance runs at a time. Launching `hgfloater.exe` again simply
+signals the running copy instead of starting a second one.
 
-## 3. Configuration (config.ini)
-The configuration file uses a standard INI format. You can manually edit these values while the program is closed.
+## 3. The Two Windows
 
-### [etc] Section
-- **font_name**: The name of the font to be used universally across the editing controls, tooltips, and the about dialog (Default is `Segoe UI`).
+hgfloater is built from two windows that trade places:
 
-### [floater] & [taskbox] Sections
-- **x, y**: The screen coordinates (top-left) of the window.
-- **w, h**: The width and height of the window.
-- **alpha**: The opacity level of the window (76-255).
-- **font_size**: The size of the text font.
-- **icon_size**: (Only in [taskbox]) The bounds resolution of the icons.
-- **show_stats**: (Only in [floater]) Set `0` to hide the battery/CPU/memory status line (default `1`).
+| Window | What it is | How you get it |
+| :--- | :--- | :--- |
+| **floater** | A small always-on-top widget: clock, date, host name, and system bars. | The default state. |
+| **taskbox** | The dashboard: running windows, your shortcuts, and the toolbar. | Hover or click the floater, or press the global hotkey. |
 
-### [commandbox] Section
-- Stores the Command Box window independently: **x, y, w, h**, **alpha**, **font_size**, and its own **font_name**.
+Expanding centers the taskbox on the floater and then pushes it fully inside
+that monitor's work area, so a floater parked at a screen edge never yields a
+clipped dashboard. Collapsing returns the floater to where it was — and if you
+moved the taskbox while it was open, the floater travels the same distance, so
+the pair stays where you left it.
 
-### [colors] Section
-- Every accent color as `RRGGBB` hex (e.g. `FFD228`); defaults are written on first run, and deleting a key restores its default: `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected` (the custom dark palette), `focus_bg` (keyboard/mouse focus highlight), `stat_cpu`/`stat_mem`/`stat_bat` (floater status bars), and `value_alpha_low/high`, `value_brightness_low/high`, `value_volume_low/high` (the `A`/`B`/`V` button gradients).
+## 4. The Floater
 
-### [hotkeys] Section
-- **global_focus_modifiers**: Bitmask for modifier keys (e.g., `Alt=1`, `Ctrl=2`, `Shift=4`, `Win=8`). Default is `9` (Win + Alt).
-- **global_focus_key**: The virtual key code for the trigger key. Default is `32` (Space).
+The floater is the resting state: a compact translucent panel that stays on top
+of other windows.
 
-## 4. Mouse Operations
-### Floating Widget (floater)
-- **Hover**: Simply move the mouse over the floater to instantly summon the taskbox in place (the floater hides itself). The taskbox is kept fully inside the monitor's work area, so a floater parked at a screen edge still shows the whole taskbox. When the cursor leaves it (after a ~0.5 second grace period that prevents accidental hide), the taskbox collapses and the floater returns to exactly where it was before.
-- **Left Click**: Toggle taskbox visibility.
-- **Left Drag**: Move the floater window to any position on the screen.
-- **Alt + Mouse Wheel**: Adjust transparency of the floater.
-- **Ctrl + Mouse Wheel / Ctrl + Left Drag**: Adjust top-level time and date font sizes while hovered or focused.
-- **Host Name**: The computer name is shown in a thin line across the top of the floater.
-- **Status Bars**: CPU, MEM, and BAT horizontal bar graphs (red/blue/green, full width = 100%) run across the floater underneath the clock and date, with tiny labels on the left edge, refreshed once per second; the battery row hides on systems without one and `+` on the label marks charging.
+**What it shows**
 
-> Note: The floater no longer has its own right-click menu. The main settings/options menu now lives on the taskbox **`O` (Options)** toolbar button (see below).
+- **Clock and date**, refreshed every second, sized proportionally to the
+  widget itself.
+- **Host name** in a thin line across the top.
+- **Status bars** for CPU, memory, and battery: horizontal bars (red, blue,
+  green) running the full width behind the text, with small labels on the left
+  edge. Full width means 100%. The battery row hides itself on desktops without
+  one, and a `+` on its label means charging. Set `show_stats=0` in `config.ini`
+  to hide the whole line.
 
-### taskbox & Toolbars
-- **Left Click (Icon)**: Activate the selected application or launch the shortcut.
-- **Left Drag (Task Icon/Window)**: Navigate drag for reordering icons, or drag the window via empty space and the top edit console.
-- **Toolbar Rich Interaction Buttons**:
-  - **Move Handle**: **Left Drag** to move the taskbox window. **Left Click** (without dragging) nudges it aside on its own, just far enough to stop covering the spot it was sitting on. Clicks keep the same heading, so repeated clicks walk the window across the screen; when that heading runs out of room it turns counter-clockwise (north, west, south, east). If no direction has room, it stays put.
-  - **`X` Button (Exit)**: **Left Click** to exit hgfloater entirely.
-  - **Show Desktop Button**: **Left Click** to toggle minimizing/restoring all windows (show desktop).
-  - **`O` Button (Options)**: **Left Click** opens the main options menu:
-    - **Open Shortcuts Folder** / **Edit Configuration**
-    - **About...** / **Reset Settings**
-    - **Select Audio Device**: pick the default output device (current device is checked) or toggle **Mute**.
-    - **Arrange Monitors**: toggle the thumbnail monitoring window for each connected monitor. You can click and drag inside the thumbnail to interact with the actual monitor seamlessly. Drag the edit box to move the thumbnail window, or right-click the edit box to close it.
-    - **Lock Screen (Power Off)**
-    - **Exit**
-  - **Status Line (top)**: Shows one message at a time. Ten seconds after the last message it falls back to the current time (`2026. 11. 23.(Tue) 13:24`), refreshed every minute. **Right-click** it for the options menu; **Left-drag** it to move the window.
-  - **`C` Button (Command Box)**: **Left Click** opens the independent Command Box console window.
-  - **`A` Button (Alpha)**: **Mouse Wheel** adjusts the taskbox transparency dynamically. The red-family background becomes brighter as alpha increases.
-  - **`B` Button (Brightness)**: **Mouse Wheel** adjusts screen brightness in 5% steps (Supports laptops & external monitors via Hybrid Gamma Fallback). The green-family background becomes brighter as brightness increases.
-  - **`V` Button (Volume)**: **Left Click** to toggle system volume Mute/Unmute state instantly, and **Mouse Wheel** over it adjusts volume percent. The blue-family background becomes brighter as volume increases, and a thick accent-color border marks the muted state.
-  - **`F` Button (Floater)**: **Left Click** collapses the dashboard to the floater for tuning. While in this floater-adjust mode, **Ctrl + Mouse Wheel** resizes the floater and **Alt + Mouse Wheel** changes its opacity; **Left Click** the floater to return to the taskbox. (Hover-to-expand is paused so the wheel tuning isn't interrupted.)
-  - **`P` Button (Pin)**: **Left Click** pins the taskbox open, so moving the mouse away no longer collapses it back to the floater. The button keeps an accent border while pinned; click again to unpin. Explicit closes (`X`, `Esc`, the global hotkey, a floater click) still work while pinned.
-  - **`R` Button (Resize)**: **Left Drag** to resize the taskbox window dynamically.
-- **Right Click (Task/Shortcut Icon)**: Opens context menu.
-  - **Run (&R)**: Launches a new instance of the application or selected shortcut.
-  - **Focus (&F)**: Activates and switches to the existing window.
-  - **Close Window (&X)**: (For Task Icons) Closes the selected application.
-  - **Open File Location (&O)**: (For Shortcut Icons) Opens the folder containing the target file.
+**What you can do to it**
 
-### Global Features
-- **Dark/Light Mode Sync**: Automatically inverts inner Text and Background colors natively capturing Windows systemic Light/Dark mode boundaries seamlessly gracefully in real-time.
+- **Hover** — opens the taskbox in place. The floater hides itself while the
+  taskbox is up.
+- **Left click** — toggles the taskbox.
+- **Left drag** — moves the floater anywhere on any monitor.
+- **Alt + Wheel** — opacity.
+- **Ctrl + Wheel** or **Ctrl + Left drag** — font size, which scales the whole
+  widget with it.
+- **Alt + Arrows / WASD** — moves the window from the keyboard.
+- **`T`** — opens the taskbox. **`C`** — opens the Command Box. **`F1`** — About.
 
-## 5. Keyboard Shortcuts
-### Global Trigger
-- **`Win + Alt + Space`** (Default): Show or hide the taskbox. (Can be customized in `config.ini`)
-  - **Note**: If either the floater or taskbox window is outside the screen bounds, it is automatically clamped back into the nearest monitor's work area upon summoning.
+When the cursor leaves the taskbox, it collapses back to the floater after a
+half-second grace period, so brushing past the edge does not dismiss it.
 
-### Navigation (Within taskbox)
-- **`Arrow Keys` / `WASD`**: Move focus between icons.
-- **`Space`**: Switch to the selected application or launch the shortcut.
-- **`Enter`**: Open the context menu for the focused item. (Shortcut icons also support this)
-- **`C`**: Open and focus the **Command Box**.
-- **`Esc`**: Hide the taskbox and **refresh shortcuts**.
+## 5. The Taskbox
 
-### Window Manipulation (Works on focused/hovered window: floater or taskbox)
-- **Movement**: `Alt` + `Arrow Keys` / `WASD`
-- **Reset Layout**: `Ctrl` + `R` / `0` or `F5` to reset position, alpha, and size.
-- **Font/Icon Scaling**: `Ctrl` + `+/-` or `Ctrl` + `Mouse Wheel` scales text fonts and icons smoothly.
-- **Transparency**: `Alt` + `+` / `-` or `Alt` + `Mouse Wheel`
+The taskbox is a grid of icons with a status line on top and a toolbar of
+built-in buttons.
 
-### System Actions
-- Exit Application: `Ctrl` + `Q` / `X` or `Alt` + `F4`.
-- Context Menu: `F2` (Triggers context menu for focused floater/taskbox).
-- Show About: `F1`.
-- Open Command Box: `C` (when Floater or Taskbox is focused).
-- Open Taskbox: `T` (when Floater is focused).
-- Execute Command: `Ctrl + Enter` (inside the Command Box).
-- Focus Command Input: `Ctrl + Space` (inside the Command Box).
+### 5.1 Running windows and shortcuts
 
-## 6. Shortcuts & Operations Reference (Appendix)
+- **Task icons** come first: one per visible top-level window, in the order
+  Windows reports them.
+- **Shortcut icons** follow: one per `.lnk` or `.url` in your shortcuts folder.
+- **Left click** activates a task or launches a shortcut.
+- **Left drag** on a task icon reorders it within the grid.
+- **Right click** (or `Enter` / `F2` on the focused icon) opens its menu:
+  - **Run (&R)** — start a new instance, or launch the shortcut.
+  - **Focus (&F)** — switch to the existing window.
+  - **Close Window (&X)** — task icons only.
+  - **Open File Location (&O)** — shortcut icons only.
 
-| Function | Shortcut, Trigger & Target Window/Context |
+### 5.2 The status line
+
+A single-line read-only field across the top of the taskbox.
+
+- It shows **one message at a time** — the most recent one replaces its
+  predecessor.
+- Ten seconds after the last message it falls back to the **current time**,
+  written as `2026. 11. 23.(Tue) 13:24`, and refreshes as the minute changes.
+- **Right click** it to open the options menu (the same one the `O` button
+  shows).
+- **Left drag** it to move the whole taskbox.
+- **Ctrl + Wheel** over it changes only its own font size.
+
+### 5.3 Shape and size
+
+- **Drag any border** to change the grid: the taskbox snaps to whole columns, so
+  no half icon is ever left hanging.
+- **Ctrl + Wheel** (or `Ctrl` + `+` / `-`) scales icons and text together and
+  keeps the window proportional.
+- **Alt + Wheel** (or `Alt` + `+` / `-`) changes opacity.
+- **`Ctrl` + `R` / `0`, or `F5`** resets position, size, and opacity.
+
+## 6. The Toolbar
+
+Eleven built-in buttons sit in the same grid as the icons. Their order is fixed.
+
+| Button | Click | Drag / Wheel |
+| :--- | :--- | :--- |
+| **`R`** Resize | — | **Drag** resizes the taskbox grid. |
+| **`M`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
+| **`X`** Exit | Quits hgfloater. | — |
+| **`D`** Desktop | Minimizes every window; click again to restore. | — |
+| **`O`** Options | Opens the [options menu](#7-the-options-menu). | — |
+| **`C`** Command | Opens the [Command Box](#8-the-command-box). | — |
+| **`A`** Alpha | — | **Wheel** changes taskbox opacity. The red background brightens as opacity rises. |
+| **`B`** Brightness | — | **Wheel** changes screen brightness in 5% steps. The green background brightens with it. |
+| **`V`** Volume | Toggles mute. A thick accent border marks the muted state. | **Wheel** changes the volume. The blue background brightens with it. |
+| **`F`** Floater | Collapses to the floater for tuning (see below). | — |
+| **`P`** Pin | Pins the taskbox open. | — |
+
+**`M` — move aside.** Clicking the move handle without dragging nudges the pair
+out of the way on its own, just far enough to stop covering the spot it was
+sitting on. Clicks keep their heading, so pressing it repeatedly walks the
+window across the screen; when that heading runs out of room it turns
+counter-clockwise — north, west, south, east, and back to north. If no direction
+has room, nothing moves.
+
+**`B` — brightness.** Laptop panels and external monitors are both supported:
+hgfloater asks the monitor over DDC/CI first and falls back to a gamma ramp when
+the hardware refuses.
+
+**`F` — floater adjust.** Collapses the dashboard and suspends hover-to-expand,
+so you can tune the floater with `Ctrl + Wheel` (size) and `Alt + Wheel`
+(opacity) without the taskbox reappearing under your cursor. Click the floater
+to go back.
+
+**`P` — pin.** While pinned, moving the mouse away no longer collapses the
+taskbox, and the button carries an accent border. Explicit closes — `X`, `Esc`,
+the global hotkey, a floater click — still work. Click again to unpin.
+
+## 7. The Options Menu
+
+Open it with the `O` toolbar button or by right-clicking the status line.
+
+- **Open Shortcuts Folder** — opens the shortcuts directory in Explorer.
+- **Edit Configuration** — opens `config.ini` in Notepad.
+- **About...** — this document, rendered inside the app.
+- **Reset Settings** — restores default geometry, opacity, sizes, and colors.
+- **Select Audio Device** — lists the output devices with the current one
+  checked, and offers a **Mute** toggle.
+- **Arrange Monitors** — turns the [monitor thumbnails](#9-monitor-thumbnails)
+  on and off.
+- **Lock Screen (Power Off)** — locks the workstation.
+- **Exit** — quits.
+
+## 8. The Command Box
+
+A standalone console window, opened with the `C` toolbar button or the `C` key
+while the floater or taskbox has focus.
+
+- Type a command and run it with **`Ctrl + Enter`** or the Execute button.
+- **`Ctrl + Space`** returns focus to the input field.
+- The window keeps its own position, size, opacity, font, and font size in
+  `config.ini`, independent of the other widgets.
+
+## 9. Monitor Thumbnails
+
+**Arrange Monitors** in the options menu opens a live thumbnail window per
+connected display.
+
+- **Click and drag inside a thumbnail** to drive the real monitor: mouse input
+  is forwarded to it, so you can operate a screen you are not looking at.
+- **Left drag the thumbnail's edit box** to move the thumbnail window.
+- **Right click the edit box** to close it.
+- Each thumbnail remembers its own position and size.
+
+## 10. Keyboard Reference
+
+### Global
+
+| Key | Action |
 | :--- | :--- |
-| **Show / Hide Taskbox** | `Win + Alt + Space` (Global Hotkey), **hover** the Floating Widget (floater), or **Left-click** the floater |
-| **Move Focus** | `Arrow Keys` / `WASD` within the Taskbox |
-| **Activate Focused Item** | `Space` or **Left-click** on the icon within the Taskbox |
-| **Open Item Context Menu** | `Enter` or `F2` or **Right-click** on an icon within the Taskbox |
-| **Open Main Context Menu** | **Left-click** the `P` (PopupMenu) toolbar button on the Taskbox |
-| **Hide Taskbox & Refresh Icons** | `Esc` inside the Taskbox, or **Left-click** the `X` toolbar button, or move the cursor away from the taskbox |
-| **Move Window** | `Alt` + `Arrow Keys` / `WASD` (Floater/Taskbox), or **Left-drag** empty space / top edit box / the Move-handle toolbar button |
-| **Move Aside** | **Left-click** the Move-handle toolbar button (smallest step clear of the current spot; keeps its heading, turning counter-clockwise when blocked) |
-| **Pin Taskbox Open** | **Left-click** the `P` toolbar button (click again to unpin) |
-| **Resize Taskbox Grid** | **Left-drag** the boundary borders of the Taskbox, or **Left-drag** the `R` toolbar button |
-| **Adjust Font / Icon Size** | `Ctrl` + `+` / `-` or `Ctrl` + **Mouse Wheel** (while hovered or focused on Floater/Taskbox) |
-| **Adjust Window Opacity** | `Alt` + `+` / `-` or `Alt` + **Mouse Wheel** (while hovered or focused on Floater/Taskbox) |
-| **Reset Layout & Settings** | `Ctrl` + `R` / `0` or `F5` to restore default position, opacity, and sizes (Floater/Taskbox), or select "Reset Settings" from the `O` (Options) menu |
-| **Open the Options Menu** | **Left-click** the `O` toolbar button, or **Right-click** the status line at the top of the taskbox |
-| **Control Remote Monitors** | **Left / Right Click** or **Drag** inside the monitor thumbnail. **Left-drag** the thumbnail's top edit box to move the window, or **Right-click** the top edit box to close |
-| **Show Help / About** | `F1` (Floater/Taskbox) |
-| **Open Command Box** | `C` key when Floater or Taskbox is focused, or click the `C` toolbar button |
-| **Open Taskbox** | `T` key when Floater is focused |
-| **Execute Command** | `Ctrl + Enter` inside the Command Box, or click the Execute button |
-| **Focus Command Input** | `Ctrl + Space` inside the Command Box |
-| **Exit Application** | `Ctrl` + `Q` / `X` or `Alt` + `F4`, or click the taskbox `X` button, or select "Exit" from the `O` (Options) menu |
+| `Win + Alt + Space` | Show or hide the taskbox (configurable). If a window has drifted off screen, it is pulled back into the nearest monitor's work area. |
+
+### Inside the taskbox
+
+| Key | Action |
+| :--- | :--- |
+| `Arrow keys` / `WASD` | Move focus between icons |
+| `Space` | Activate the focused item |
+| `Enter` / `F2` | Open the focused item's context menu |
+| `C` | Open the Command Box |
+| `Esc` | Hide the taskbox and re-scan shortcuts |
+
+### Window manipulation (focused or hovered floater/taskbox)
+
+| Key | Action |
+| :--- | :--- |
+| `Alt` + `Arrow keys` / `WASD` | Move the window |
+| `Ctrl` + `+` / `-` | Font and icon size |
+| `Alt` + `+` / `-` | Opacity |
+| `Ctrl` + `R` / `0`, `F5` | Reset position, size, and opacity |
+
+### System
+
+| Key | Action |
+| :--- | :--- |
+| `F1` | About |
+| `T` | Open the taskbox (from the floater) |
+| `Ctrl` + `Q` / `X`, `Alt + F4` | Quit |
+| `Ctrl + Enter` | Execute (inside the Command Box) |
+| `Ctrl + Space` | Focus the input (inside the Command Box) |
+
+## 11. Mouse Reference
+
+| Action | Gesture |
+| :--- | :--- |
+| **Show / hide the taskbox** | Hover or left-click the floater, or press the global hotkey |
+| **Activate an item** | Left-click an icon |
+| **Reorder icons** | Left-drag a task icon |
+| **Item context menu** | Right-click an icon |
+| **Options menu** | Left-click `O`, or right-click the status line |
+| **Move a window** | Left-drag empty space, the status line, or the `M` button |
+| **Move the taskbox aside** | Left-click the `M` button |
+| **Resize the taskbox grid** | Drag a border, or drag the `R` button |
+| **Font / icon size** | `Ctrl` + wheel |
+| **Opacity** | `Alt` + wheel, or wheel over `A` |
+| **Screen brightness** | Wheel over `B` |
+| **Volume / mute** | Wheel over `V` / click `V` |
+| **Pin the taskbox** | Left-click `P` |
+| **Remote monitor control** | Click or drag inside a monitor thumbnail |
+| **Quit** | Left-click `X`, or Exit in the options menu |
+
+## 12. Configuration File
+
+`%USERPROFILE%\.HellGates\hgfloater\config.ini`, plain INI, safe to edit by hand
+while the program is closed. Missing keys are written back with their defaults on
+startup, so deleting a key restores it.
+
+Settings that change in bursts — opacity, font and icon size, window position —
+are written once the change settles (about a second) or at exit, rather than on
+every wheel notch.
+
+### `[floater]` and `[taskbox]`
+
+| Key | Meaning |
+| :--- | :--- |
+| `x`, `y` | Top-left screen coordinates |
+| `w`, `h` | Width and height |
+| `alpha` | Opacity, 76–255 |
+| `font_size` | Text size |
+| `icon_size` | Icon resolution (`[taskbox]` only) |
+| `show_stats` | `0` hides the CPU/memory/battery line (`[floater]` only, default `1`) |
+
+### `[commandbox]`
+
+Its own `x`, `y`, `w`, `h`, `alpha`, `font_size`, and `font_name`.
+
+### `[etc]`
+
+| Key | Meaning |
+| :--- | :--- |
+| `font_name` | Font for edit controls, tooltips, and the About dialog (default `Segoe UI`) |
+
+### `[colors]`
+
+Every accent color as `RRGGBB` hex, for example `FFD228`:
+
+- `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
+  — the dark palette.
+- `focus_bg` — the keyboard/mouse focus highlight.
+- `stat_cpu`, `stat_mem`, `stat_bat` — the floater's status bars.
+- `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
+  `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
+  gradients behind the `A`, `B`, and `V` buttons.
+
+### `[hotkeys]`
+
+| Key | Meaning |
+| :--- | :--- |
+| `global_focus_modifiers` | Modifier bitmask: `Alt=1`, `Ctrl=2`, `Shift=4`, `Win=8`. Default `9` (Win + Alt) |
+| `global_focus_key` | Virtual key code of the trigger. Default `32` (Space) |
+
+## 13. Files and Directories
+
+| Path | Purpose |
+| :--- | :--- |
+| `%USERPROFILE%\.HellGates\hgfloater\` | Base directory, created on first run |
+| `%USERPROFILE%\.HellGates\hgfloater\config.ini` | Every setting |
+| `%USERPROFILE%\.HellGates\hgfloater\shortcuts\` | Your `.lnk` and `.url` files |
+
+That is the complete list. hgfloater writes no log files, no caches, and no
+temporary files, and nothing it writes grows without bound.
 
 <!-- SKIP_START -->
-## 7. Build Instructions
-This project is developed and tested using the **MSYS2** environment.
-1. Download and install **MSYS2** from the official website: [https://www.msys2.org/](https://www.msys2.org/)
-2. Open the **MSYS2 MinGW64** terminal and install the GCC toolchain by running:
-   `pacman -S mingw-w64-x86_64-gcc`
-3. Add the MSYS2 MinGW64 binary path (usually `C:\msys64\mingw64\bin`) to your system's **PATH** environment variable.
-4. Navigate to the project directory in the MSYS2 terminal and run `build.bat`.
-   - **Example**: If your project is in `D:\mydata\hgfloater`, type:
-     `cd /d/mydata/hgfloater`
-   - Then run the build script:
-     `./build.bat` (or `cmd /c build.bat`)
+## 14. Building From Source
+
+The project builds with **MinGW-w64 GCC** and nothing else — no libraries, no
+build system beyond `make` (or the batch script). The build is expected to stay
+warning-clean under a strict warning set.
+
+### 14.1 Toolchain
+
+On Windows, install [MSYS2](https://www.msys2.org/), then:
+
+```sh
+pacman -S mingw-w64-x86_64-gcc make
+```
+
+Add `C:\msys64\mingw64\bin` to your `PATH` so `gcc` and `windres` are visible.
+
+On Linux or macOS you need a mingw-w64 cross toolchain (`x86_64-w64-mingw32-gcc`
+and `x86_64-w64-mingw32-windres`) plus GNU `make`.
+
+### 14.2 With make
+
+```sh
+make                      # release build -> hgfloater.exe
+make debug                # unoptimised build with symbols
+make test                 # build and run the tests
+make clean
+```
+
+Useful variables:
+
+| Variable | Effect |
+| :--- | :--- |
+| `CROSS=x86_64-w64-mingw32-` | Build with a cross toolchain from Linux/macOS |
+| `OUT=build` | Write the executable and objects to another directory |
+| `VERSION_SUFFIX=b` | Mark a same-day re-release, e.g. `v26.07.20b` |
+
+For example, a cross build into `build/`:
+
+```sh
+make CROSS=x86_64-w64-mingw32- OUT=build release
+```
+
+### 14.3 With build.bat
+
+`build.bat` offers the same builds through a menu on Windows:
+
+```bat
+build.bat            REM interactive menu
+build.bat release    REM non-interactive, exits with the build result
+build.bat debug
+build.bat test
+```
+
+### 14.4 What the build does
+
+- The version string is the build date, `vYY.MM.DD`, optionally suffixed.
+- `scripts/gen_about.py` (or `gen_about.ps1` on Windows) regenerates
+  `src/hg_about_text.h` from this README, which is what the About dialog shows.
+  Never edit that header by hand — edit the README and rebuild.
+- The release build is `-O3 -flto` and stripped, linked statically, so the
+  resulting `hgfloater.exe` needs no runtime DLLs.
 <!-- SKIP_END -->
 
-## 8. About the Developer
+<!-- SKIP_START -->
+## 15. Project Layout
+
+```
+hgfloater/
+├── Makefile              build for POSIX hosts and MSYS2
+├── build.bat             interactive Windows build menu
+├── README.md             this file (English, the reference version)
+├── README.ko.md          Korean translation
+├── CHANGELOG.md          release history
+├── src/                  all source and resources
+│   ├── hgfloater.c       entry point, message loop, single-instance IPC
+│   ├── hg_common.h       shared macros, ids, and constants
+│   ├── hg_globals.*      global state
+│   ├── hg_utils.*        theme, icons, toolbar descriptors, helpers
+│   ├── hg_config.*       config.ini load/save, deferred writes
+│   ├── hg_calc.*         pure math: layout, placement, clock formatting
+│   ├── hg_audio.c        volume and device selection
+│   ├── hg_display.c      monitors, DPI, brightness
+│   ├── hg_shell.c        shortcuts and shell integration
+│   ├── hg_sysinfo.c      CPU, memory, battery
+│   ├── hgfloater.rc      version info, icon, manifest
+│   └── widgets/          one file per window
+│       ├── hg_floater.c
+│       ├── hg_taskbox.c, hg_taskbox_menus.c, hg_toolbar.c, hg_window_list.c
+│       ├── hg_commandbox.c
+│       ├── hg_monitor.c
+│       └── hg_about.c
+├── test/                 console tests
+├── scripts/              build and documentation helpers
+└── docs/                 design notes and the test catalogue
+```
+
+`hg_calc.c` deliberately depends on neither Win32 nor the C runtime, so the
+logic that is easy to get wrong — grid snapping, where a window moves to, how
+the clock reads — can be tested on any host.
+<!-- SKIP_END -->
+
+<!-- SKIP_START -->
+## 16. Tests and Verification
+
+```sh
+make test                     # compile every test, run the host-native ones
+sh scripts/build-mingw.sh     # full cross-build verification
+sh scripts/project-check.sh   # documentation and repository hygiene
+```
+
+Every file in `test/` is compiled with the full warning set. The units that
+avoid Win32 also run natively on the build host, so their behaviour — not just
+their compilation — is checked without a Windows machine. `docs/tests/` holds the
+catalogue of what each check covers.
+<!-- SKIP_END -->
+
+## 17. About the Developer
+
 - **Author**: rubidus-api (rubidus@gmail.com)
-- **Development Method**: This application was developed using **Vibe Coding** with AI assistance.
-- **Note**: The developer is a hobbyist coder, not a seasoned professional. This project is a result of creative experimentation and AI-driven collaboration.
+- **Method**: developed with AI assistance, in the "vibe coding" style.
+- **Note**: the author is a hobbyist, not a career programmer. This project is
+  the result of creative experimentation and collaboration with AI tools.
 
-## 9. The "HellGates" Series
-The name "HellGates" is a playful parody of Bill Gates and Windows. It represents a collection of utilities designed to enhance the desktop experience and system responsiveness. The series was born from a desire for Windows to be a more user-friendly, lightweight, and responsive OS. Through this series, we plan to experiment with various innovative UX/UI ideas to push the boundaries of desktop interaction.
+## 18. The HellGates Series
 
----
+"HellGates" is a playful parody of Bill Gates and Windows: a collection of
+utilities meant to make the desktop lighter and more responsive. The series
+started from wishing Windows were friendlier, quicker, and less in the way, and
+it exists to try UX ideas that the stock shell will not.
 
-<!-- SKIP_START -->
-<a id="hgfloater-manual-kr"></a>
-<!-- SKIP_END -->
-# hgfloater 매뉴얼 (Korean Version)
+## 19. License
 
-hgfloater는 **윈도우 11 이상**의 플랫폼에서 반투명 플로팅 박스와 최적화된 키보드/마우스 인터랙션을 통해 컴퓨터를 빠르고 반응성 있게 조작하기 위해 제작되었습니다. 순수 C와 WinAPI만을 사용하여 외부 의존성 없이 제작되었으며, 극도로 가볍고 즉각적인 반응성을 보장합니다.
-
-## 1. 목적 및 의도
-hgfloater의 핵심 목표는 시스템 조작의 효율성을 극대화하는 것입니다. 현재는 단축 아이콘을 이용한 **퀵 런처**와 **태스크 스위처** 기능을 중심으로, 화면 어디에나 배치하고 단축키로 즉시 제어할 수 있는 유연한 환경을 제공합니다.
-
-기본 윈도우 태스크바를 보완하는 동시에, 속도와 효율을 중시하는 파워 유저들을 위한 강력한 도구로 설계되었습니다. 현재의 기능은 시작에 불과하며, 차후에는 컴퓨터의 빠르고 반응성 있는 조작을 돕는 다양한 기능들을 지속적으로 추가하여 완성된 조작 환경을 구축할 예정입니다.
-
-## 2. 파일 및 디렉토리 구조
-hgfloater는 설정의 영속성을 유지하기 위해 사용자 프로필 디렉토리 내에 데이터를 저장합니다.
-
-- **기본 설정 폴더**: `%USERPROFILE%\.HellGates\hgfloater`
-  - 모든 애플리케이션 데이터가 저장되는 루트 폴더입니다.
-- **단축 아이콘 디렉토리**: `%USERPROFILE%\.HellGates\hgfloater\shortcuts`
-  - 이 폴더에 실행 파일의 바로가기(`.lnk`)나 웹 링크(`.url`)를 넣으면 taskbox 툴바에 자동으로 나타납니다.
-- **설정 파일**: `%USERPROFILE%\.HellGates\hgfloater\config.ini`
-  - 사용자 환경 설정, 창 위치, 단축키 설정 등이 저장됩니다.
-
-## 3. 설정 항목 안내 (config.ini)
-설정 파일은 표준 INI 형식을 따릅니다. 프로그램을 종료한 상태에서 메모장 등으로 직접 수정할 수 있습니다.
-
-### [etc] 섹션
-- **font_name**: 에디트 컨트롤, 툴팁, 프로그램 정보(About) 등에 공통적으로 적용될 폰트의 이름입니다 (기본값: `Segoe UI`).
-
-### [floater] 및 [taskbox] 섹션
-- **x, y**: 창의 화면 시작 좌표(좌측 상단)입니다.
-- **w, h**: 창의 가로 및 세로 크기입니다.
-- **alpha**: 창의 투명도 수준입니다 (76-255).
-- **font_size**: 표시할 텍스트 폰트의 크기입니다.
-- **icon_size**: ([taskbox] 전용) 툴바 및 활성 창 목록에 표시되는 아이콘의 크기 해상도입니다.
-- **show_stats**: ([floater] 전용) `0`으로 설정하면 배터리/CPU/메모리 상태 표시줄을 숨깁니다 (기본값 `1`).
-
-### [commandbox] 섹션
-- Command Box 창의 설정을 독립적으로 저장합니다: **x, y, w, h**, **alpha**, **font_size**, 그리고 전용 **font_name**.
-
-### [colors] 섹션
-- 모든 강조 색을 `RRGGBB` 16진수(예: `FFD228`)로 지정합니다. 첫 실행 시 기본값이 기록되며, 키를 지우면 기본값으로 복원됩니다: `scheme_bg`/`scheme_border`/`scheme_text`/`scheme_flash`/`scheme_selected`(커스텀 다크 팔레트), `focus_bg`(키보드/마우스 포커스 강조), `stat_cpu`/`stat_mem`/`stat_bat`(플로터 상태 막대), `value_alpha_low/high`/`value_brightness_low/high`/`value_volume_low/high`(`A`/`B`/`V` 버튼 그라데이션).
-
-### [hotkeys] 섹션
-- **global_focus_modifiers**: 조합 키의 비트마스크 값입니다 (예: `Alt=1`, `Ctrl=2`, `Shift=4`, `Win=8`). 기본값은 `9` (Win + Alt)입니다.
-- **global_focus_key**: 호출 단축키의 가상 키 코드(Virtual Key Code)입니다. 기본값은 `32` (Space)입니다.
-
-## 4. 마우스 조작 안내
-### 플로팅 위젯 (floater)
-- **마우스 호버(올리기)**: 위젯 위에 마우스를 올리기만 하면 그 자리에 taskbox가 즉시 나타납니다(플로터는 스스로 숨김). taskbox는 해당 모니터의 작업 영역 안에 완전히 들어오도록 자동 배치되므로, 플로터가 화면 가장자리에 있어도 잘리지 않습니다. 커서가 taskbox를 벗어나면(약 0.5초 유예 후) taskbox가 접히고 플로터는 **호버 이전 위치 그대로** 돌아옵니다.
-- **왼쪽 클릭**: taskbox 보이기/숨기기 토글.
-- **왼쪽 드래그**: 위젯 창을 화면 원하는 곳으로 이동.
-- **Alt + 마우스 휠**: 위젯의 투명도 조절.
-- **PC 이름**: 플로터 상단에 현재 PC의 컴퓨터 이름이 가는 글씨로 표시됩니다.
-- **상태 막대**: CPU/MEM/BAT 가로 막대 그래프(빨강/파랑/초록, 전체 폭 = 100%)가 시계와 날짜 **뒤에 배경으로 깔려** 플로터 전체 폭을 사용하고, 왼쪽 가장자리에 아주 작은 라벨이 붙습니다(1초 갱신). 배터리 없는 시스템에서는 BAT 줄이 숨겨지고, 충전 중에는 라벨에 `+`가 붙습니다.
-- **Ctrl + 마우스 휠 / Ctrl + 왼쪽 드래그**: 위젯에 마우스를 올리거나 포커싱되었을 때 시간과 날짜의 글꼴 크기를 조절.
-
-> 참고: 플로터의 자체 우클릭 메뉴는 제거되었습니다. 메인 설정/컨텍스트 메뉴는 이제 taskbox 툴바의 **`P` (PopupMenu)** 버튼에 있습니다(아래 참고).
-
-### taskbox 및 툴바
-- **아이콘 왼쪽 클릭**: 해당 앱으로 전환하거나 단축 아이콘을 실행합니다.
-- **아이콘/창 왼쪽 드래그**: 아이콘 위치를 끌어서 순서를 변경하거나, 빈 공간 및 상단 에디트 박스를 드래그하여 창을 이동합니다.
-- **툴바 버튼 다채로운 조작**:
-  - **이동 핸들 (Move Handle)**: **왼쪽 드래그**로 태스크 박스 창을 화면 내에서 자유롭게 이동합니다. **왼쪽 클릭**(드래그하지 않고)하면 방금 있던 영역을 딱 벗어날 만큼만 스스로 비켜납니다. 진행 방향은 유지되므로 계속 클릭하면 같은 방향으로 화면을 가로질러 이동하며, 그 방향에 자리가 없으면 반시계 방향(북 → 서 → 남 → 동)으로 꺾습니다. 갈 수 있는 방향이 없으면 그대로 있습니다.
-  - **`X` 버튼 (Exit)**: **왼쪽 클릭** 시 hgfloater를 완전히 종료합니다.
-  - **바탕화면 보기 버튼 (Show Desktop)**: **왼쪽 클릭** 시 모든 창을 최소화/복원(바탕화면 보기)하는 토글입니다.
-  - **`O` 버튼 (Options)**: **왼쪽 클릭** 시 메인 옵션 메뉴를 엽니다:
-    - **Open Shortcuts Folder** / **Edit Configuration**
-    - **About...** / **Reset Settings**
-    - **Select Audio Device**: 기본 출력 장치 선택(현재 장치는 체크 표시) 또는 **Mute** 토글.
-    - **Arrange Monitors**: 연결된 각 모니터의 썸네일 모니터링 창을 켜기/끄기. 썸네일 내부를 클릭/드래그하면 실제 모니터에 마우스 입력이 그대로 전달됩니다. 창 이동은 상단 에디트 박스 드래그, 닫기는 에디트 박스 우클릭.
-    - **Lock Screen (Power Off)**
-    - **Exit**
-  - **상단 상태 표시줄**: 메시지를 한 번에 한 줄만 표시하며, 마지막 메시지 후 10초가 지나면 현재 시각(`2026. 11. 23.(Tue) 13:24`)으로 바뀌어 매 분 갱신됩니다. **오른쪽 클릭**하면 옵션 메뉴가 열리고, **왼쪽 드래그**로 창을 이동합니다.
-  - **`C` 버튼 (Command Box)**: **왼쪽 클릭** 시 독립적인 팝업형 CLI 명령 콘솔 창(Command Box)을 호출합니다.
-  - **`A` 버튼 (Alpha)**: **마우스 휠**을 돌려 태스크 박스의 투명도를 실시간으로 동적 조절합니다. 버튼 배경은 빨간색 계열이며 투명도 값이 높을수록 밝아집니다.
-  - **`B` 버튼 (Brightness)**: **마우스 휠**을 돌려 화면 밝기를 5% 단위로 실시간 조절합니다. (노트북 내장 화면 및 외장 모니터를 모두 지원하는 하이브리드 감마 Fallback 제공) 버튼 배경은 초록색 계열이며 밝기 값이 높을수록 밝아집니다.
-  - **`V` 버튼 (Volume)**: **왼쪽 클릭** 시 시스템 볼륨을 즉각적으로 Mute/Unmute(음소거) 토글하고, 버튼 위에서 **마우스 휠**을 돌리면 볼륨 크기를 세밀하게 증감합니다. 버튼 배경은 파란색 계열이며 볼륨 값이 높을수록 밝아지고, 음소거 상태에서는 테마 강조색 굵은 테두리로 표시됩니다.
-  - **`F` 버튼 (Floater)**: **왼쪽 클릭** 시 taskbox를 접고 플로터만 남겨 조정 모드로 전환합니다. 이 상태에서 **Ctrl + 마우스 휠**로 플로터 크기, **Alt + 마우스 휠**로 투명도를 조절할 수 있으며, 플로터를 **왼쪽 클릭**하면 taskbox로 복귀합니다. (조정 중에는 호버 확장이 일시 중지되어 휠 조작이 끊기지 않습니다.)
-  - **`P` 버튼 (Pin)**: **왼쪽 클릭** 시 태스크 박스를 열린 상태로 고정합니다. 마우스가 밖으로 나가도 플로터로 접히지 않으며, 고정된 동안 버튼에 강조 테두리가 표시됩니다. 다시 클릭하면 해제됩니다. 고정 중에도 `X`, `Esc`, 전역 단축키, 플로터 클릭 등 명시적인 닫기는 그대로 동작합니다.
-  - **`R` 버튼 (Resize)**: **왼쪽 드래그**로 태스크 박스의 가로/세로 칸수(그리드 크기)를 실시간 조절합니다.
-- **아이콘 오른쪽 클릭 (태스크/단축 아이콘)**: 컨텍스트 메뉴를 엽니다.
-  - **Run (&R)**: 해당 앱의 새 인스턴스를 실행하거나 단축 아이콘을 실행합니다.
-  - **Focus (&F)**: 이미 실행 중인 해당 창으로 포커스를 전환합니다.
-  - **Close Window (&X)**: (태스크 아이콘 전용) 해당 앱을 종료합니다.
-  - **Open File Location (&O)**: (단축 아이콘 전용) 파일 위치를 엽니다.
-- **상단 상태 표시줄 오른쪽 클릭**: `O`(Options) 버튼과 동일한 메인 옵션 메뉴를 엽니다.
-- **Ctrl + 마우스 휠**: 아이콘 크기를 조절하며 테두리 창 크기를 비례적으로 유지. 상단 에디트 박스 위에 포커스 시 에디트 박스 내부의 글꼴 크기만을 증감.
-- **Alt + 마우스 휠**: taskbox의 투명도 조절.
-- **테두리 드래그**: 창의 위/아래 모서리나 변을 잡아끌거나 드래그하여 그리드 칸수를 실시간 조절.
-
-### 글로벌 기능
-- **다크/라이트 모드 반전**: 윈도우 배색 모드를 다크나 라이트로 변경 시 실시간으로 시스템 설정에 따라 앱 내 텍스트와 배경 색상이 서로 교차 반전됨.
-
-## 5. 단축키 안내
-### 전역 호출
-- **`Win + Alt + Space`** (기본값): taskbox 보이기/숨기기. (`config.ini`에서 변경 가능)
-  - **참고**: 호출 시 floater나 taskbox 창이 화면 내에 일부라도 존재하지 않는 경우, 가장 가까운 모니터의 작업 영역 안으로 자동 복구됩니다.
-
-### 탐색 (taskbox 내부)
-- **`방향키` / `WASD`**:  아이콘 사이 포커스 이동.
-- **`Space`**: 선택한 앱으로 전환하거나 바로가기 실행.
-- **`Enter`**: 선택한 항목의 컨텍스트 메뉴 열기 (단축 아이콘에서도 동일하게 작동).
-- **`C`**: **커맨드 박스(Command Box)** 열기 및 포커스.
-- **`Esc`**: taskbox 숨기기 및 **바로가기 아이콘 갱신**.
-
-### 창 조작 (포커스되거나 마우스가 위에 있는 창: floater 또는 taskbox)
-- **위치 이동**: `Alt` + `방향키` / `WASD`
-- **레이아웃 초기화**: `Ctrl` + `R` / `0` 또는 `F5` 를 누르면 크기, 투명도, 위치가 모두 리셋됩니다.
-- **폰트/아이콘 크기 조절**: `Ctrl` + `+/-` 또는 `Ctrl` + `마우스 휠` 
-- **투명도 조절**: `Alt` + `+` / `-` 또는 `Alt` + `마우스 휠`
-
-### 시스템 동작
-- **프로그램 종료**: `Ctrl` + `Q` / `X` 또는 `Alt` + `F4`.
-- **컨텍스트 메뉴**: `F2` (포커스된 창의 컨텍스트 메뉴 호출).
-- **정보 창 보기**: `F1`.
-- **커맨드 박스 열기**: `C` (플로팅 위젯/태스크 박스 포커스 시).
-- **태스크 박스 열기**: `T` (플로팅 위젯 포커스 시).
-- **명령 실행**: `Ctrl + Enter` (커맨드 박스 내부).
-- **입력 창 포커스**: `Ctrl + Space` (커맨드 박스 내부).
-
-## 6. 단축키 및 조작법 참조 (부록)
-
-| 기능 | 단축키, 트리거 조건 및 대상 창/컨텍스트 |
-| :--- | :--- |
-| **태스크 박스(Taskbox) 토글** | `Win + Alt + Space` (전역 단축키), 플로팅 위젯(floater) **마우스 호버**, 또는 플로터 **왼쪽 클릭** |
-| **포커스 이동** | 태스크 박스 내부에서 `방향키` / `WASD` |
-| **선택 항목 실행 및 전환** | 태스크 박스 아이콘 위에서 `Space` 또는 **왼쪽 클릭** |
-| **아이콘 컨텍스트 메뉴 열기**| 태스크 박스 아이콘 위에서 `Enter` 또는 `F2` 또는 **오른쪽 클릭** |
-| **메인 컨텍스트 메뉴 열기** | 태스크 박스 툴바의 `P` (PopupMenu) 버튼 **왼쪽 클릭** |
-| **태스크 박스 닫기 및 바로가기 갱신** | 태스크 박스 내부에서 `Esc` 혹은 툴바 `X` 버튼 **왼쪽 클릭**, 또는 커서를 태스크 박스 밖으로 이동 |
-| **창 이동** | `Alt` + `방향키` / `WASD` 또는 빈 공간/상단 에디트 박스/**툴바 이동 핸들 버튼** **드래그** (플로팅 위젯 및 태스크 박스 공통) |
-| **태스크 박스 크기(칸수) 변경** | 태스크 박스 테두리 드래그, 또는 **툴바 `R` 버튼** **드래그** |
-| **텍스트 및 아이콘 크기 조절** | `Ctrl` + `+` / `-` 또는 `Ctrl` + **마우스 휠** (마우스 오버 혹은 포커스 시) |
-| **투명도 조절** | `Alt` + `+` / `-` 또는 `Alt` + **마우스 휠** (마우스 오버 혹은 포커스 시) |
-| **레이아웃 및 크기 초기화** | `Ctrl` + `R` / `0` 또는 `F5` (기본 좌표, 투명도, 크기로 초기 설정 복구), 혹은 `O`(Options) 버튼 메뉴의 "Reset Settings" 선택 |
-| **옵션 메뉴 열기** | 툴바 `O` 버튼 **왼쪽 클릭**, 또는 태스크 박스 상단 상태 표시줄 **오른쪽 클릭** |
-| **원격 모니터 조작** | 모니터 썸네일 창 내부에서 직접 **왼/우클릭 및 드래그**. 썸네일 창 에디트 박스 **드래그**로 창 이동, 혹은 에디트 박스 **오른쪽 클릭**으로 닫기 |
-| **커맨드 박스 열기** | 플로팅 위젯 또는 태스크 박스 포커스 시 `C` 키 입력, 혹은 태스크 박스의 `C` 버튼 클릭 |
-| **태스크 박스 열기** | `T` 키 입력 |
-| **명령 실행** | 커맨드 박스 내에서 `Ctrl + Enter` 입력, 혹은 실행 버튼 클릭 |
-| **입력 창 포커스** | 커맨드 박스 내에서 `Ctrl + Space` 입력 |
-| **프로그램 정보 및 도움말 보기** | `F1` 키 입력 (플로팅 위젯 및 태스크 박스 공통) |
-| **애플리케이션 종료** | `Ctrl` + `Q` / `X` 또는 `Alt` + `F4`, 또는 taskbox `X` 버튼 클릭, 혹은 `O`(Options) 버튼 메뉴에서 "Exit" 선택 |
-
-<!-- SKIP_START -->
-## 7. 빌드 도움말
-본 프로젝트는 **MSYS2** 환경을 기준으로 작성 및 테스트되었습니다.
-1. **MSYS2** 공식 사이트([https://www.msys2.org/](https://www.msys2.org/))에서 설치 프로그램을 다운로드하여 설치합니다.
-2. **MSYS2 MinGW64** 터미널을 열고 다음 명령어를 입력하여 GCC 툴체인을 설치합니다:
-   `pacman -S mingw-w64-x86_64-gcc`
-3. MSYS2의 MinGW64 바이너리 경로(기본값: `C:\msys64\mingw64\bin`)를 시스템 환경 변수 **PATH**에 추가합니다.
-4. MSYS2 터미널에서 프로젝트 폴더로 이동한 뒤 `build.bat`를 실행합니다.
-   - **이동 예시**: 프로젝트가 `D:\mydata\hgfloater` 폴더에 있다면 다음과 같이 입력합니다:
-     `cd /d/mydata/hgfloater` (MSYS2에서는 드라이브 문자를 `/d/`와 같이 표시합니다.)
-   - **실행**: 폴더 이동 후 다음 명령어로 빌드 스크립트를 실행합니다:
-     `./build.bat` (또는 `cmd /c build.bat`)
-<!-- SKIP_END -->
-
-## 8. 제작자 정보
-- **제작자**: rubidus-api (rubidus@gmail.com)
-- **제작 방식**: 이 프로그램은 AI의 도움을 받은 **바이브 코딩(Vibe Coding)**을 통해 제작되었습니다.
-- **참고**: 제작자는 전문적인 경력이 많은 프로그래머가 아닌 취미로 코딩을 즐기는 사람입니다. 이 프로젝트는 창의적인 실험과 AI와의 협업을 통해 만들어진 결과물입니다.
-
-## 9. "HellGates" 시리즈란?
-"HellGates"라는 이름은 빌 게이츠(Bill Gates)와 윈도우(Windows)에 대한 유머러스한 패러디를 담고 있습니다. 이는 데스크톱 사용 경험과 반응성을 개선하기 위한 일련의 프로그램 집합을 의미합니다. MS의 윈도우 OS가 사용자 입장에서 더 편리하고, 가볍고, 반응이 빠른 운영체제가 되기를 바라는 마음에서 시작되었습니다. 이 시리즈를 통해 UX/UI에 대한 다양한 실험적인 아이디어들을 적용해 나갈 예정입니다.
+Released under the MIT License. See [LICENSE](LICENSE).

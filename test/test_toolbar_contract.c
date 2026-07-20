@@ -1,4 +1,4 @@
-#include "../hg_common.h"
+#include "../src/hg_common.h"
 #include <stdio.h>
 
 static int expect_int(const char *name, int actual, int expected)

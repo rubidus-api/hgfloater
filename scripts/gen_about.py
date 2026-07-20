@@ -13,7 +13,7 @@ try:
 except OSError:
     content = ('#ifndef HG_ABOUT_TEXT_H\r\n#define HG_ABOUT_TEXT_H\r\n'
                '#define HG_ABOUT_README_W L"(README.md not found)"\r\n#endif')
-    open(root + "/hg_about_text.h", "w", encoding="utf-8", newline="").write(content)
+    open(root + "/src/hg_about_text.h", "w", encoding="utf-8", newline="").write(content)
     print("[Warning] README.md not found.")
     sys.exit(0)
 
@@ -34,5 +34,5 @@ for raw in readme.split("\n"):
 
 content = ("#ifndef HG_ABOUT_TEXT_H\r\n#define HG_ABOUT_TEXT_H\r\n"
            "#define HG_ABOUT_README_W " + " ".join(out) + "\r\n#endif")
-open(root + "/hg_about_text.h", "w", encoding="utf-8", newline="").write(content)
+open(root + "/src/hg_about_text.h", "w", encoding="utf-8", newline="").write(content)
 print("[Success] README.md processed successfully.")
