@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.20b] - 2026-07-20
 
 ### Changed
 - The sources moved into `src/`, leaving the repository root for the build files and documentation. `build.bat`, the cross-build script, the tests, and the About-text generator all follow the new layout.
