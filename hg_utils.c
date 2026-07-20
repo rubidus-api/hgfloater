@@ -247,13 +247,13 @@ void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd)
     hg_g_taskbox_expand_rect.bottom = y + th;
 }
 
-/* M click (as opposed to M drag): nudge the pair to the first cardinal slot -
- * north, then west, then south, then east - that clears the area they occupy
- * right now, so whatever sits underneath becomes readable without a manual
- * drag. The step is the smallest one that stops the overlap: the pair lands
- * flush against the area it just vacated rather than at the screen edge. The
- * floater rides along to the same corner a move-drag would leave it at. Returns
- * FALSE when no slot clears the current area, leaving the pair put. */
+/* M click (as opposed to M drag): nudge the pair clear of the area it occupies
+ * right now, so whatever sits underneath becomes readable without a manual drag.
+ * The step is the smallest one that stops the overlap, and it keeps the heading
+ * of the previous click - turning counter-clockwise (north, west, south, east)
+ * only when the current heading runs out of room - so repeated clicks walk the
+ * pair around the screen instead of bouncing between two spots. The floater
+ * follows on collapse. Returns FALSE when no direction has room. */
 BOOL hg_relocate_taskbox_away(HWND taskbox_wnd)
 {
     RECT t_rc;
@@ -293,8 +293,12 @@ BOOL hg_relocate_taskbox_away(HWND taskbox_wnd)
 
     HgBox work = {mi.rcWork.left, mi.rcWork.top, mi.rcWork.right, mi.rcWork.bottom};
     HgBox slot;
-    if (hg_calc_relocation(target, occupied, work, &slot) == HG_RELOCATE_NONE)
+    HgRelocateDirection taken = hg_calc_relocation(target, occupied, work, hg_g_relocate_direction, &slot);
+    if (taken == HG_RELOCATE_NONE)
         return FALSE;
+
+    /* Remember the heading so the next click carries on the same way. */
+    hg_g_relocate_direction = taken;
 
     int tw = slot.right - slot.left;
     int th = slot.bottom - slot.top;

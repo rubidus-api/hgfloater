@@ -46,7 +46,13 @@ typedef enum HgRelocateDirection {
     HG_RELOCATE_EAST
 } HgRelocateDirection;
 
-HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work, HgBox *out);
+/* Step `target` clear of `occupied`, staying inside `work`. The search starts at
+ * `start` - the direction the last step used - and only turns when that one has
+ * no room, so repeated clicks walk one way instead of bouncing. Turns go
+ * counter-clockwise: north, west, south, east, north. Returns the direction
+ * taken, or HG_RELOCATE_NONE when no direction has room. */
+HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work, HgRelocateDirection start,
+                                       HgBox *out);
 
 /* Offset `home` by however far the taskbox travelled from `from` to `to`, kept
  * inside `work`. Collapsing uses it so the floater follows every taskbox move. */
