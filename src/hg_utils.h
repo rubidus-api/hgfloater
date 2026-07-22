@@ -31,6 +31,24 @@ void hg_expand_taskbox_from_floater(HWND floater_wnd, HWND taskbox_wnd);
 BOOL hg_relocate_taskbox_away(HWND taskbox_wnd);
 double hg_window_scale(HWND hwnd);
 double hg_point_scale(POINT pt);
+
+/* Per-monitor Windows display-scale (DPI) control. The supported percentages a
+ * monitor exposes are a contiguous window; hg_display_scale_options() reports
+ * that window and the current value so a menu can check and disable entries. */
+#define HG_SCALE_OPTION_COUNT 6
+typedef struct HgDisplayScale {
+    BOOL valid;            /* the query succeeded */
+    int current_percent;   /* 0 when the current value is unknown */
+    int min_percent;       /* lowest percentage this monitor allows */
+    int max_percent;       /* highest percentage this monitor allows */
+    WCHAR name[128];       /* friendly monitor name, or its GDI device name */
+} HgDisplayScale;
+
+/* The fixed set offered in the menu, in order. */
+extern const int hg_display_scale_options[HG_SCALE_OPTION_COUNT];
+
+BOOL hg_query_display_scale(HMONITOR monitor, HgDisplayScale *out);
+BOOL hg_set_display_scale(HMONITOR monitor, int percent);
 void refresh_theme_surfaces(HWND hwnd);
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 void update_monitor_enum(void);
