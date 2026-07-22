@@ -212,6 +212,12 @@ Open it with the `O` toolbar button or by right-clicking the status line.
   checked, and offers a **Mute** toggle.
 - **Arrange Monitors** — turns the [monitor thumbnails](#9-monitor-thumbnails)
   on and off.
+- **_(current display name)_** — a submenu named after the monitor the taskbox is
+  on, listing Windows display-scaling percentages (100, 125, 150, 175, 200, 225).
+  The current scale is checked; percentages the monitor cannot reach are greyed
+  out. Choosing one changes that monitor's scale system-wide, exactly as the
+  Settings app would. The floater and taskbox live on the same monitor, so this
+  is the scale for both.
 - **Lock Screen (Power Off)** — locks the workstation.
 - **Exit** — quits.
 

@@ -28,6 +28,41 @@ static HMENU taskbox_create_audio_submenu(void)
     return audio_menu;
 }
 
+/* Windows scaling percentage for the display the taskbox sits on, as a submenu
+ * named after that monitor with the current value checked and any percentage the
+ * monitor cannot reach greyed out. */
+static HMENU taskbox_create_scale_submenu(WCHAR *label_out, size_t label_cch)
+{
+    HWND anchor = hg_g_taskbox_wnd ? hg_g_taskbox_wnd : hg_g_floater_wnd;
+    if (!anchor)
+        return NULL;
+
+    HgDisplayScale info;
+    if (!hg_query_display_scale(MonitorFromWindow(anchor, MONITOR_DEFAULTTONEAREST), &info) || !info.valid)
+        return NULL;
+
+    HMENU scale_menu = CreatePopupMenu();
+    if (!scale_menu)
+        return NULL;
+
+    for (int i = 0; i < HG_SCALE_OPTION_COUNT; ++i) {
+        int percent = hg_display_scale_options[i];
+        UINT flags = MF_STRING;
+        if (percent == info.current_percent)
+            flags |= MF_CHECKED;
+        if (percent < info.min_percent || percent > info.max_percent)
+            flags |= MF_GRAYED;
+
+        WCHAR text[16];
+        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d%%", percent);
+        AppendMenuW(scale_menu, flags, (UINT_PTR)(HG_IDM_SCALE_BASE + (UINT)i), text);
+    }
+
+    if (label_out && label_cch > 0)
+        StringCchCopyW(label_out, label_cch, info.name);
+    return scale_menu;
+}
+
 static HMENU taskbox_create_monitor_submenu(void)
 {
     HMENU monitor_menu = CreatePopupMenu();
@@ -82,6 +117,14 @@ HMENU taskbox_create_main_popup_menu(void)
     if (monitor_menu) {
         if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)monitor_menu, L"Arrange Monitors")) {
             DestroyMenu(monitor_menu);
+        }
+    }
+
+    WCHAR scale_label[128];
+    HMENU scale_menu = taskbox_create_scale_submenu(scale_label, HG_ARRAYSIZE(scale_label));
+    if (scale_menu) {
+        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)scale_menu, scale_label)) {
+            DestroyMenu(scale_menu);
         }
     }
 

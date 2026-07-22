@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- The options menu (`O` button, or right-click the status line) gains a submenu named after the display the taskbox is on, listing Windows scaling percentages 100, 125, 150, 175, 200, and 225. The current scale is checked, values the monitor cannot reach are greyed out, and choosing one changes that monitor's scale system-wide through the same DisplayConfig interface the Settings app uses.
+
 ## [v26.07.20b] - 2026-07-20
 
 ### Changed

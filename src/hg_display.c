@@ -220,6 +220,208 @@ double hg_point_scale(POINT pt)
     return hg_g_scale_factor;
 }
 
+/* =========================================================================
+ * Per-monitor display scale (DPI) control.
+ *
+ * Windows exposes no public API for reading or changing a monitor's scaling
+ * percentage, so this uses the same undocumented DisplayConfig device-info
+ * interface the Settings app itself drives. The scale is expressed as an index
+ * into a fixed table of percentages, given relative to the monitor's
+ * recommended value; converting to and from an absolute percentage just means
+ * indexing that table.
+ * ========================================================================= */
+
+const int hg_display_scale_options[HG_SCALE_OPTION_COUNT] = {100, 125, 150, 175, 200, 225};
+
+/* The full percentage ladder Windows steps through, recommended value included.
+ * The relative indices the OS returns are offsets within this table. */
+static const int hg_dpi_ladder[] = {100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500};
+
+#define HG_DISPLAYCONFIG_GET_DPI_SCALE ((DISPLAYCONFIG_DEVICE_INFO_TYPE)(-3))
+#define HG_DISPLAYCONFIG_SET_DPI_SCALE ((DISPLAYCONFIG_DEVICE_INFO_TYPE)(-4))
+
+typedef struct HgDpiScaleGet {
+    DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+    INT32 min_rel; /* smallest step relative to recommended (<= 0) */
+    INT32 cur_rel; /* current step relative to recommended */
+    INT32 max_rel; /* largest step relative to recommended (>= 0) */
+} HgDpiScaleGet;
+
+typedef struct HgDpiScaleSet {
+    DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+    INT32 scale_rel; /* requested step relative to recommended */
+} HgDpiScaleSet;
+
+static int hg_ladder_index_of(int percent)
+{
+    for (int i = 0; i < (int)HG_ARRAYSIZE(hg_dpi_ladder); ++i) {
+        if (hg_dpi_ladder[i] == percent)
+            return i;
+    }
+    return -1;
+}
+
+/* Locate the active DisplayConfig source (adapter + id) whose GDI device name
+ * matches gdi_name, and, when out_name is given, its friendly monitor name. */
+static BOOL hg_find_display_source(const WCHAR *gdi_name, LUID *adapter_id, UINT32 *source_id, WCHAR *out_name,
+                                   size_t out_name_cch)
+{
+    UINT32 path_count = 0;
+    UINT32 mode_count = 0;
+    if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &path_count, &mode_count) != ERROR_SUCCESS)
+        return FALSE;
+    if (path_count == 0)
+        return FALSE;
+
+    DISPLAYCONFIG_PATH_INFO *paths = calloc(path_count, sizeof(*paths));
+    DISPLAYCONFIG_MODE_INFO *modes = calloc(mode_count ? mode_count : 1, sizeof(*modes));
+    if (!paths || !modes) {
+        free(paths);
+        free(modes);
+        return FALSE;
+    }
+
+    BOOL found = FALSE;
+    if (QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &path_count, paths, &mode_count, modes, NULL) == ERROR_SUCCESS) {
+        for (UINT32 i = 0; i < path_count && !found; ++i) {
+            DISPLAYCONFIG_SOURCE_DEVICE_NAME src;
+            SecureZeroMemory(&src, sizeof(src));
+            src.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+            src.header.size = sizeof(src);
+            src.header.adapterId = paths[i].sourceInfo.adapterId;
+            src.header.id = paths[i].sourceInfo.id;
+            if (DisplayConfigGetDeviceInfo(&src.header) != ERROR_SUCCESS)
+                continue;
+            if (wcscmp(src.viewGdiDeviceName, gdi_name) != 0)
+                continue;
+
+            *adapter_id = paths[i].sourceInfo.adapterId;
+            *source_id = paths[i].sourceInfo.id;
+            found = TRUE;
+
+            if (out_name && out_name_cch > 0) {
+                DISPLAYCONFIG_TARGET_DEVICE_NAME tgt;
+                SecureZeroMemory(&tgt, sizeof(tgt));
+                tgt.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+                tgt.header.size = sizeof(tgt);
+                tgt.header.adapterId = paths[i].targetInfo.adapterId;
+                tgt.header.id = paths[i].targetInfo.id;
+                if (DisplayConfigGetDeviceInfo(&tgt.header) == ERROR_SUCCESS &&
+                    tgt.monitorFriendlyDeviceName[0] != L'\0') {
+                    StringCchCopyW(out_name, out_name_cch, tgt.monitorFriendlyDeviceName);
+                } else {
+                    StringCchCopyW(out_name, out_name_cch, gdi_name);
+                }
+            }
+        }
+    }
+
+    free(paths);
+    free(modes);
+    return found;
+}
+
+/* Fill a MONITORINFOEXW so its szDevice (the GDI device name) can drive the
+ * DisplayConfig lookup. */
+static BOOL hg_monitor_device_name(HMONITOR monitor, WCHAR *out, size_t out_cch)
+{
+    if (!monitor)
+        return FALSE;
+    MONITORINFOEXW mi;
+    SecureZeroMemory(&mi, sizeof(mi));
+    mi.cbSize = sizeof(mi);
+    if (!GetMonitorInfoW(monitor, (MONITORINFO *)&mi))
+        return FALSE;
+    StringCchCopyW(out, out_cch, mi.szDevice);
+    return TRUE;
+}
+
+BOOL hg_query_display_scale(HMONITOR monitor, HgDisplayScale *out)
+{
+    if (!out)
+        return FALSE;
+    SecureZeroMemory(out, sizeof(*out));
+
+    WCHAR device[64];
+    if (!hg_monitor_device_name(monitor, device, HG_ARRAYSIZE(device)))
+        return FALSE;
+
+    LUID adapter_id;
+    UINT32 source_id = 0;
+    if (!hg_find_display_source(device, &adapter_id, &source_id, out->name, HG_ARRAYSIZE(out->name)))
+        return FALSE;
+
+    HgDpiScaleGet get;
+    SecureZeroMemory(&get, sizeof(get));
+    get.header.type = HG_DISPLAYCONFIG_GET_DPI_SCALE;
+    get.header.size = sizeof(get);
+    get.header.adapterId = adapter_id;
+    get.header.id = source_id;
+    if (DisplayConfigGetDeviceInfo(&get.header) != ERROR_SUCCESS)
+        return FALSE;
+
+    /* The recommended (100%) value sits at index abs(min_rel) in the ladder, so
+     * an absolute value is the ladder entry at that base plus the relative step. */
+    int base = -get.min_rel;
+    int cur_idx = base + get.cur_rel;
+    int min_idx = base + get.min_rel; /* == 0 */
+    int max_idx = base + get.max_rel;
+    int last = (int)HG_ARRAYSIZE(hg_dpi_ladder) - 1;
+    if (min_idx < 0)
+        min_idx = 0;
+    if (max_idx > last)
+        max_idx = last;
+
+    out->min_percent = hg_dpi_ladder[min_idx];
+    out->max_percent = hg_dpi_ladder[max_idx];
+    out->current_percent = (cur_idx >= 0 && cur_idx <= last) ? hg_dpi_ladder[cur_idx] : 0;
+    out->valid = TRUE;
+    return TRUE;
+}
+
+BOOL hg_set_display_scale(HMONITOR monitor, int percent)
+{
+    int target_idx = hg_ladder_index_of(percent);
+    if (target_idx < 0)
+        return FALSE;
+
+    WCHAR device[64];
+    if (!hg_monitor_device_name(monitor, device, HG_ARRAYSIZE(device)))
+        return FALSE;
+
+    LUID adapter_id;
+    UINT32 source_id = 0;
+    if (!hg_find_display_source(device, &adapter_id, &source_id, NULL, 0))
+        return FALSE;
+
+    HgDpiScaleGet get;
+    SecureZeroMemory(&get, sizeof(get));
+    get.header.type = HG_DISPLAYCONFIG_GET_DPI_SCALE;
+    get.header.size = sizeof(get);
+    get.header.adapterId = adapter_id;
+    get.header.id = source_id;
+    if (DisplayConfigGetDeviceInfo(&get.header) != ERROR_SUCCESS)
+        return FALSE;
+
+    /* Convert the absolute target back to a step relative to recommended, then
+     * hold it inside the range this monitor actually supports. */
+    int base = -get.min_rel;
+    int scale_rel = target_idx - base;
+    if (scale_rel < get.min_rel)
+        scale_rel = get.min_rel;
+    if (scale_rel > get.max_rel)
+        scale_rel = get.max_rel;
+
+    HgDpiScaleSet set;
+    SecureZeroMemory(&set, sizeof(set));
+    set.header.type = HG_DISPLAYCONFIG_SET_DPI_SCALE;
+    set.header.size = sizeof(set);
+    set.header.adapterId = adapter_id;
+    set.header.id = source_id;
+    set.scale_rel = scale_rel;
+    return DisplayConfigSetDeviceInfo(&set.header) == ERROR_SUCCESS;
+}
+
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
     (void)hdcMonitor;

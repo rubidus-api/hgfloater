@@ -678,6 +678,20 @@ static BOOL floater_dispatch_monitor_command(UINT cmd)
     return TRUE;
 }
 
+static BOOL floater_dispatch_scale_command(UINT cmd)
+{
+    if (cmd < HG_IDM_SCALE_BASE || cmd >= HG_IDM_SCALE_BASE + HG_SCALE_OPTION_COUNT)
+        return FALSE;
+
+    int idx = (int)(cmd - HG_IDM_SCALE_BASE);
+    /* Apply to the monitor the taskbox is on now, matching the menu that built
+     * this command. */
+    HWND anchor = hg_g_taskbox_wnd ? hg_g_taskbox_wnd : hg_g_floater_wnd;
+    if (anchor)
+        hg_set_display_scale(MonitorFromWindow(anchor, MONITOR_DEFAULTTONEAREST), hg_display_scale_options[idx]);
+    return TRUE;
+}
+
 static BOOL floater_dispatch_audio_device_command(UINT cmd)
 {
     if (cmd < HG_IDM_AUDIO_DEVICE_BASE || cmd >= HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES)
@@ -731,8 +745,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
 {
     UINT cmd = LOWORD(w_param);
 
-    BOOL handled = floater_dispatch_monitor_command(cmd) || floater_dispatch_audio_device_command(cmd) ||
-                   floater_dispatch_volume_command(cmd);
+    BOOL handled = floater_dispatch_monitor_command(cmd) || floater_dispatch_scale_command(cmd) ||
+                   floater_dispatch_audio_device_command(cmd) || floater_dispatch_volume_command(cmd);
     if (!handled) {
         if (cmd == HG_IDM_CLOSE_APP) {
             DestroyWindow(hwnd);
