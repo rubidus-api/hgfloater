@@ -295,13 +295,19 @@ outside hgfloater. **The first line is the title**; everything after it is the
 body. Notes live in `%USERPROFILE%\.HellGates\hgfloater\note\` and are named
 `note-<id>-YYYYMMDD.txt`, where the date is the day the note was created.
 
-**The list** shows one note per row: creation date, last-modified date, and
-title, most recently changed first. A `*` before the title marks a kept note.
+**The list** starts with **`+Add Note`** and then shows one note per row:
+creation date, last-modified date, and title, most recently changed first. A `*`
+before the title marks a kept note.
+
+`+Add Note` is the row the list opens on, so `N` then `Enter` writes a new note
+without a key to remember. It answers a single click, unlike the note rows, and
+it is there even when there are no notes yet.
 
 | Key | What it does |
 | :--- | :--- |
+| `Enter` on `+Add Note`, or one click on it | Create a note and open it. |
 | `Enter`, double click | Open the note in its own editor window. |
-| `Insert` | Create a note and open it. |
+| `Insert` | Create a note and open it, from any row. |
 | `K` | Keep or release the selected note. |
 | `Delete` | Delete the selected note. A kept note refuses; release it with `K` first. |
 | `Esc` | Close the list. |
