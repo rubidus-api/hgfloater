@@ -64,7 +64,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.22)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.28)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -180,7 +180,7 @@ Twelve built-in buttons sit in the same grid as the icons. Their order is fixed.
 | **`V`** Volume | Toggles mute. A thick accent border marks the muted state. | **Wheel** changes the volume. The blue background brightens with it. |
 | **`F`** Floater | Collapses to the floater for tuning (see below). | — |
 | **`P`** Pin | Pins the taskbox open. | — |
-| **`N`** Note | Opens the [note list](#12-notes). | — |
+| **`N`** Note | Opens the [note list](#10-notes). | — |
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -264,7 +264,7 @@ could come and go between the list you read and the number you typed.
 | `move 1 100 100` | `m 1 100 100` | Move window 1 to 100, 100 on the display it is already on. |
 | `move 1 100 100 2` | `m 1 100 100 2` | Move window 1 to 100, 100 on display 2. |
 | `search windows word` | `s w word` | Windows whose title contains `word`, listed under their `list` numbers rather than renumbered. |
-| `note` | — | Open the [note list](#12-notes). |
+| `note` | — | Open the [note list](#10-notes). |
 
 `X` and `Y` are measured from the target display's own top-left corner, not from
 the virtual desktop's, so the same pair of numbers means the same place on every

@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.28] - 2026-07-28
 
 ### Added
 - The options menu (`O` button, or right-click the status line) now carries one submenu per connected display, each holding everything the app can do to that one monitor: its **Preview Window** thumbnail, **Scale** (100, 125, 150, 175, 200, 225), and **Brightness** in quarter steps (0, 25, 50, 75, 100). The current scale and the nearest brightness step are checked, and scaling percentages the monitor cannot reach stay greyed out.
