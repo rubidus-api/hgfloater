@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29c] - 2026-07-29
 
 ### Added
 - The note context menu gains **Delete**, so a note can be removed without knowing the `Delete` key. It is offered for every note, archived or not: archiving files a note away, it does not lock it.
