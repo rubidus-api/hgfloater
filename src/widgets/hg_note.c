@@ -19,6 +19,9 @@
 #define HG_NOTE_EDIT_ID 100
 #define HG_NOTE_LIST_ID 101
 #define HG_NOTE_TIMER_SAVE 1
+#define HG_NOTE_ROW_ADD 0            /* the list's first row is the New Note action */
+#define HG_NOTE_MSG_REFILL (WM_APP + 0) /* an editor closed; its row needs redrawing */
+#define HG_NOTE_MSG_ADD (WM_APP + 1)    /* the action row was clicked */
 
 typedef struct HgNote {
     BOOL used;
@@ -534,7 +537,7 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         }
         KillTimer(hwnd, HG_NOTE_TIMER_SAVE);
         if (s_note_list_wnd && IsWindow(s_note_list_wnd))
-            PostMessageW(s_note_list_wnd, WM_APP, 0, 0);
+            PostMessageW(s_note_list_wnd, HG_NOTE_MSG_REFILL, 0, 0);
         return 0;
     }
     }
@@ -563,6 +566,11 @@ static void note_list_fill(HWND hwnd)
     int selected = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
     SendMessageW(list, LB_RESETCONTENT, 0, 0);
 
+    /* Row zero is always the action, never a note, so making a note needs no
+     * remembered key and an empty list still offers something to do. */
+    SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)L"+Add Note");
+    SendMessageW(list, LB_SETITEMDATA, (WPARAM)HG_NOTE_ROW_ADD, (LPARAM)-1);
+
     int order[HG_MAX_NOTES];
     int count = 0;
     for (int i = 0; i < s_note_count; ++i) {
@@ -584,23 +592,34 @@ static void note_list_fill(HWND hwnd)
             SendMessageW(list, LB_SETITEMDATA, (WPARAM)row, (LPARAM)order[i]);
     }
 
+    int last_row = count; /* the action row pushed every note down by one */
     if (selected < 0)
-        selected = 0;
-    if (selected >= count)
-        selected = count - 1;
-    if (selected >= 0)
-        SendMessageW(list, LB_SETCURSEL, (WPARAM)selected, 0);
+        selected = HG_NOTE_ROW_ADD;
+    if (selected > last_row)
+        selected = last_row;
+    SendMessageW(list, LB_SETCURSEL, (WPARAM)selected, 0);
 }
 
+/* The note the selection points at, or -1 when it rests on the action row. */
 static int note_list_selected(HWND hwnd)
 {
     HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
     if (!list)
         return -1;
     int row = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
-    if (row < 0)
+    if (row <= HG_NOTE_ROW_ADD)
         return -1;
     return (int)SendMessageW(list, LB_GETITEMDATA, (WPARAM)row, 0);
+}
+
+/* Make a note, show it in the list, and open it ready to type into. */
+static void note_list_create(HWND hwnd)
+{
+    HgNote *note = note_create();
+    if (!note)
+        return;
+    note_list_fill(hwnd);
+    note_open_editor((int)(note - s_notes));
 }
 
 void show_note_list_window(void)
@@ -630,11 +649,27 @@ void show_note_list_window(void)
     hg_force_foreground(s_note_list_wnd);
 }
 
+/* Enter on the action row makes a note; on any other row it opens one. */
 static void note_list_open_selected(HWND hwnd)
 {
+    HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
+    if (list && (int)SendMessageW(list, LB_GETCURSEL, 0, 0) == HG_NOTE_ROW_ADD) {
+        note_list_create(hwnd);
+        return;
+    }
+
     int index = note_list_selected(hwnd);
     if (index >= 0)
         note_open_editor(index);
+}
+
+/* The row under a click, or -1 when the pointer is past the last one. */
+static int note_list_row_at(HWND list, LPARAM l_param)
+{
+    DWORD hit = (DWORD)SendMessageW(list, LB_ITEMFROMPOINT, 0, l_param);
+    if (HIWORD(hit) != 0)
+        return -1; /* outside the items */
+    return (int)LOWORD(hit);
 }
 
 static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
@@ -648,6 +683,17 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         SendMessageW(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
         return 0;
     }
+
+    /* The action row reads as a button, so it answers a single click rather than
+     * the double click a note needs. Both button messages are swallowed so a
+     * quick second click cannot make a second note. */
+    if ((msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK) && note_list_row_at(hwnd, l_param) == HG_NOTE_ROW_ADD) {
+        SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)HG_NOTE_ROW_ADD, 0);
+        if (msg == WM_LBUTTONDOWN)
+            PostMessageW(GetParent(hwnd), HG_NOTE_MSG_ADD, 0, 0);
+        return 0;
+    }
+
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
@@ -691,14 +737,9 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         case VK_RETURN:
             note_list_open_selected(hwnd);
             return 0;
-        case VK_INSERT: {
-            HgNote *note = note_create();
-            if (note) {
-                note_list_fill(hwnd);
-                note_open_editor((int)(note - s_notes));
-            }
+        case VK_INSERT:
+            note_list_create(hwnd);
             return 0;
-        }
         case VK_DELETE: {
             int index = note_list_selected(hwnd);
             if (index >= 0) {
@@ -730,8 +771,12 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
 
     /* An editor posts this on the way out so its row picks up the new title and
      * modification date. */
-    case WM_APP:
+    case HG_NOTE_MSG_REFILL:
         note_list_fill(hwnd);
+        return 0;
+
+    case HG_NOTE_MSG_ADD:
+        note_list_create(hwnd);
         return 0;
 
     case WM_CTLCOLORSTATIC:
