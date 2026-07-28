@@ -62,6 +62,20 @@ void hg_refresh_all_monitor_brightness(void);
 /* Menu label for a display: its number, the monitor name the driver reports
  * from EDID, and the connector it hangs off. */
 void hg_describe_monitor(const WCHAR *gdi_name, WCHAR *out, size_t out_cch);
+/* The number in that label, taken from the GDI device name, so the menu and the
+ * command box call the same display by the same number. */
+int hg_monitor_display_number(const WCHAR *gdi_name);
+
+/* Window sizes offered in the task context menu and by the command box, in one
+ * table so the two cannot drift apart. The menu's resize command ids are
+ * consecutive, so the id offset is the index here. */
+typedef struct HgResizePreset {
+    const WCHAR *name;
+    int cx;
+    int cy;
+} HgResizePreset;
+#define HG_RESIZE_PRESET_COUNT 11
+extern const HgResizePreset hg_resize_presets[HG_RESIZE_PRESET_COUNT];
 void refresh_theme_surfaces(HWND hwnd);
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 void update_monitor_enum(void);
@@ -130,7 +144,8 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_TOGGLE_MUTE,
     HG_TOOLBAR_CLICK_FLOATER_ADJUST,
     HG_TOOLBAR_CLICK_RELOCATE_AWAY,
-    HG_TOOLBAR_CLICK_TOGGLE_PIN
+    HG_TOOLBAR_CLICK_TOGGLE_PIN,
+    HG_TOOLBAR_CLICK_SHOW_NOTES
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
     HG_TOOLBAR_DRAG_NONE = 0,

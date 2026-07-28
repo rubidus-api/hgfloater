@@ -26,16 +26,17 @@ and stays out of your way.
 7. [The Options Menu](#7-the-options-menu)
 8. [The Command Box](#8-the-command-box)
 9. [Monitor Thumbnails](#9-monitor-thumbnails)
-10. [Keyboard Reference](#10-keyboard-reference)
-11. [Mouse Reference](#11-mouse-reference)
-12. [Configuration File](#12-configuration-file)
-13. [Files and Directories](#13-files-and-directories)
-14. [Building From Source](#14-building-from-source)
-15. [Project Layout](#15-project-layout)
-16. [Tests and Verification](#16-tests-and-verification)
-17. [About the Developer](#17-about-the-developer)
-18. [The HellGates Series](#18-the-hellgates-series)
-19. [License](#19-license)
+10. [Notes](#10-notes)
+11. [Keyboard Reference](#11-keyboard-reference)
+12. [Mouse Reference](#12-mouse-reference)
+13. [Configuration File](#13-configuration-file)
+14. [Files and Directories](#14-files-and-directories)
+15. [Building From Source](#15-building-from-source)
+16. [Project Layout](#16-project-layout)
+17. [Tests and Verification](#17-tests-and-verification)
+18. [About the Developer](#18-about-the-developer)
+19. [The HellGates Series](#19-the-hellgates-series)
+20. [License](#20-license)
 
 ---
 
@@ -164,7 +165,7 @@ A single-line read-only field across the top of the taskbox.
 
 ## 6. The Toolbar
 
-Eleven built-in buttons sit in the same grid as the icons. Their order is fixed.
+Twelve built-in buttons sit in the same grid as the icons. Their order is fixed.
 
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
@@ -179,6 +180,7 @@ Eleven built-in buttons sit in the same grid as the icons. Their order is fixed.
 | **`V`** Volume | Toggles mute. A thick accent border marks the muted state. | **Wheel** changes the volume. The blue background brightens with it. |
 | **`F`** Floater | Collapses to the floater for tuning (see below). | — |
 | **`P`** Pin | Pins the taskbox open. | — |
+| **`N`** Note | Opens the [note list](#12-notes). | — |
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -243,6 +245,36 @@ while the floater or taskbox has focus.
 - The window keeps its own position, size, opacity, font, and font size in
   `config.ini`, independent of the other widgets.
 
+### Commands
+
+Every command that names a window uses the number `list` prints beside it, and
+that is the window's place in the same list the toolbar draws. Only the commands
+that print numbers re-read the window list: if `go` refreshed first, windows
+could come and go between the list you read and the number you typed.
+
+| Command | Short | What it does |
+| :--- | :--- | :--- |
+| `help` | `h` | The list below, inside the box. |
+| `list` | `l` | Windows, numbered. |
+| `list windows` | `l w` | The same list. |
+| `list resize` | `l r` | The resize presets, numbered. |
+| `list shortcut` | `l s` | The shortcut icons, numbered. |
+| `go 1` | — | Focus window 1, restoring it if it is minimised. |
+| `resize 1 1` | `r 1 1` | Resize window 1 to preset 1. |
+| `move 1 100 100` | `m 1 100 100` | Move window 1 to 100, 100 on the display it is already on. |
+| `move 1 100 100 2` | `m 1 100 100 2` | Move window 1 to 100, 100 on display 2. |
+| `search windows word` | `s w word` | Windows whose title contains `word`, listed under their `list` numbers rather than renumbered. |
+| `note` | — | Open the [note list](#12-notes). |
+
+`X` and `Y` are measured from the target display's own top-left corner, not from
+the virtual desktop's, so the same pair of numbers means the same place on every
+screen. The display number is the one the options menu shows beside that
+monitor's name. A search term may contain spaces; everything after `windows` is
+the term.
+
+The input field is multi-line, so pasting several lines runs them in order, each
+echoed behind a `>` prompt.
+
 ## 9. Monitor Thumbnails
 
 **Preview Window** in a display's submenu opens a live thumbnail of that
@@ -254,7 +286,38 @@ display.
 - **Right click the edit box** to close it.
 - Each thumbnail remembers its own position and size.
 
-## 10. Keyboard Reference
+## 10. Notes
+
+Open the note list with the **`N`** toolbar button or the `note` command.
+
+Each note is a plain UTF-8 `.txt` file, so it stays readable and editable
+outside hgfloater. **The first line is the title**; everything after it is the
+body. Notes live in `%USERPROFILE%\.HellGates\hgfloater\note\` and are named
+`note-<id>-YYYYMMDD.txt`, where the date is the day the note was created.
+
+**The list** shows one note per row: creation date, last-modified date, and
+title, most recently changed first. A `*` before the title marks a kept note.
+
+| Key | What it does |
+| :--- | :--- |
+| `Enter`, double click | Open the note in its own editor window. |
+| `Insert` | Create a note and open it. |
+| `K` | Keep or release the selected note. |
+| `Delete` | Delete the selected note. A kept note refuses; release it with `K` first. |
+| `Esc` | Close the list. |
+
+**The editors** are separate windows, and several can be open at once. Typing
+updates the title as soon as the first line changes. `Esc` closes an editor.
+
+**Saving** happens on its own. Edits are held in memory and written a couple of
+seconds after the typing settles, and only for the notes that actually changed,
+so holding a key down does not turn into one write per character. Closing an
+editor and quitting the app both flush whatever is still pending.
+
+The only thing kept outside the text files is the keep flag, which lives in
+`note\index.ini` beside them.
+
+## 11. Keyboard Reference
 
 ### Global
 
@@ -291,7 +354,7 @@ display.
 | `Ctrl + Enter` | Execute (inside the Command Box) |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
 
-## 11. Mouse Reference
+## 12. Mouse Reference
 
 | Action | Gesture |
 | :--- | :--- |
@@ -311,7 +374,7 @@ display.
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
 | **Quit** | Left-click `X`, or Exit in the options menu |
 
-## 12. Configuration File
+## 13. Configuration File
 
 `%USERPROFILE%\.HellGates\hgfloater\config.ini`, plain INI, safe to edit by hand
 while the program is closed. Missing keys are written back with their defaults on
@@ -361,19 +424,20 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 | `global_focus_modifiers` | Modifier bitmask: `Alt=1`, `Ctrl=2`, `Shift=4`, `Win=8`. Default `9` (Win + Alt) |
 | `global_focus_key` | Virtual key code of the trigger. Default `32` (Space) |
 
-## 13. Files and Directories
+## 14. Files and Directories
 
 | Path | Purpose |
 | :--- | :--- |
 | `%USERPROFILE%\.HellGates\hgfloater\` | Base directory, created on first run |
 | `%USERPROFILE%\.HellGates\hgfloater\config.ini` | Every setting |
 | `%USERPROFILE%\.HellGates\hgfloater\shortcuts\` | Your `.lnk` and `.url` files |
+| `%USERPROFILE%\.HellGates\hgfloater\note\` | One `.txt` per [note](#10-notes), plus `index.ini` for the keep flags |
 
 That is the complete list. hgfloater writes no log files, no caches, and no
 temporary files, and nothing it writes grows without bound.
 
 <!-- SKIP_START -->
-## 14. Building From Source
+## 15. Building From Source
 
 The project builds with **MinGW-w64 GCC** and nothing else — no libraries, no
 build system beyond `make` (or the batch script). The build is expected to stay
@@ -437,7 +501,7 @@ build.bat test
 <!-- SKIP_END -->
 
 <!-- SKIP_START -->
-## 15. Project Layout
+## 16. Project Layout
 
 ```
 hgfloater/
@@ -453,6 +517,7 @@ hgfloater/
 │   ├── hg_utils.*        theme, icons, toolbar descriptors, helpers
 │   ├── hg_config.*       config.ini load/save, deferred writes
 │   ├── hg_calc.*         pure math: layout, placement, clock formatting
+│   ├── hg_command.*      the command box language
 │   ├── hg_audio.c        volume and device selection
 │   ├── hg_display.c      monitors, DPI, brightness
 │   ├── hg_shell.c        shortcuts and shell integration
@@ -462,6 +527,7 @@ hgfloater/
 │       ├── hg_floater.c
 │       ├── hg_taskbox.c, hg_taskbox_menus.c, hg_toolbar.c, hg_window_list.c
 │       ├── hg_commandbox.c
+│       ├── hg_note.c
 │       ├── hg_monitor.c
 │       └── hg_about.c
 ├── test/                 console tests
@@ -475,7 +541,7 @@ the clock reads — can be tested on any host.
 <!-- SKIP_END -->
 
 <!-- SKIP_START -->
-## 16. Tests and Verification
+## 17. Tests and Verification
 
 ```sh
 make test                     # compile every test, run the host-native ones
@@ -489,20 +555,20 @@ their compilation — is checked without a Windows machine. `docs/tests/` holds 
 catalogue of what each check covers.
 <!-- SKIP_END -->
 
-## 17. About the Developer
+## 18. About the Developer
 
 - **Author**: rubidus-api (rubidus@gmail.com)
 - **Method**: developed with AI assistance, in the "vibe coding" style.
 - **Note**: the author is a hobbyist, not a career programmer. This project is
   the result of creative experimentation and collaboration with AI tools.
 
-## 18. The HellGates Series
+## 19. The HellGates Series
 
 "HellGates" is a playful parody of Bill Gates and Windows: a collection of
 utilities meant to make the desktop lighter and more responsive. The series
 started from wishing Windows were friendlier, quicker, and less in the way, and
 it exists to try UX ideas that the stock shell will not.
 
-## 19. License
+## 20. License
 
 Released under the MIT License. See [LICENSE](LICENSE).

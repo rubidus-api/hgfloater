@@ -2,6 +2,7 @@
 #include "../hg_utils.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
+#include "../hg_command.h"
 
 void commandbox_execute(void);
 
@@ -75,6 +76,23 @@ void load_commandbox_font()
     );
 }
 
+void commandbox_print(const WCHAR *text)
+{
+    if (!hg_g_commandbox_out_wnd || !IsWindow(hg_g_commandbox_out_wnd) || !text)
+        return;
+
+    int out_len = GetWindowTextLengthW(hg_g_commandbox_out_wnd);
+    SendMessageW(hg_g_commandbox_out_wnd, EM_SETSEL, (WPARAM)out_len, (LPARAM)out_len);
+    if (out_len > 0) {
+        SendMessageW(hg_g_commandbox_out_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
+    }
+    SendMessageW(hg_g_commandbox_out_wnd, EM_REPLACESEL, FALSE, (LPARAM)text);
+
+    int new_out_len = GetWindowTextLengthW(hg_g_commandbox_out_wnd);
+    SendMessageW(hg_g_commandbox_out_wnd, EM_SETSEL, (WPARAM)new_out_len, (LPARAM)new_out_len);
+    SendMessageW(hg_g_commandbox_out_wnd, EM_SCROLLCARET, 0, 0);
+}
+
 void commandbox_execute()
 {
     if (!hg_g_commandbox_in_wnd || !hg_g_commandbox_out_wnd)
@@ -90,16 +108,30 @@ void commandbox_execute()
         return;
     GetWindowTextW(hg_g_commandbox_in_wnd, in_buf, in_len + 1);
 
-    int out_len = GetWindowTextLengthW(hg_g_commandbox_out_wnd);
-    SendMessageW(hg_g_commandbox_out_wnd, EM_SETSEL, (WPARAM)out_len, (LPARAM)out_len);
-    if (out_len > 0) {
-        SendMessageW(hg_g_commandbox_out_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"\r\n");
+    /* The input field is multi-line, so a paste can carry several commands: each
+     * line is echoed behind a prompt and then run, in the order given. */
+    WCHAR *cursor = in_buf;
+    while (*cursor) {
+        WCHAR *end = cursor;
+        while (*end && *end != L'\r' && *end != L'\n')
+            ++end;
+        WCHAR saved = *end;
+        *end = L'\0';
+
+        if (*cursor) {
+            WCHAR echo[HG_MAX_STR];
+            StringCchPrintfW(echo, HG_ARRAYSIZE(echo), L"> %ls", cursor);
+            commandbox_print(echo);
+            hg_command_execute(cursor);
+        }
+
+        if (saved == L'\0')
+            break;
+        *end = saved;
+        while (*end == L'\r' || *end == L'\n')
+            ++end;
+        cursor = end;
     }
-    SendMessageW(hg_g_commandbox_out_wnd, EM_REPLACESEL, FALSE, (LPARAM)in_buf);
-    
-    int new_out_len = GetWindowTextLengthW(hg_g_commandbox_out_wnd);
-    SendMessageW(hg_g_commandbox_out_wnd, EM_SETSEL, (WPARAM)new_out_len, (LPARAM)new_out_len);
-    SendMessageW(hg_g_commandbox_out_wnd, EM_SCROLLCARET, 0, 0);
 
     SetWindowTextW(hg_g_commandbox_in_wnd, L"");
     SetFocus(hg_g_commandbox_in_wnd);

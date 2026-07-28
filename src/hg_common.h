@@ -124,7 +124,7 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 11
+#define HG_NUM_BASIC_ICONS 12
 
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
@@ -137,6 +137,7 @@
 #define HG_TOOL_ICON_VOLUME 8
 #define HG_TOOL_ICON_FLOATER 9
 #define HG_TOOL_ICON_PIN 10
+#define HG_TOOL_ICON_NOTE 11
 
 #define HG_IDM_MINIMIZE 201
 #define HG_IDM_CLOSE 202
@@ -376,6 +377,8 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 void save_config(const WCHAR *section, int x, int y, int w, int h);
 void save_window_geometry_config(const WCHAR *section, int x, int y, int w, int h);
 void save_floater_geometry_config(int x, int y, int w, int h);
@@ -392,6 +395,10 @@ void unregister_global_hotkey(HWND hwnd);
 void hg_config_reset_all(HWND hwnd);
 void hide_taskbox(HWND hwnd);
 void show_commandbox_window(void);
+void show_note_list_window(void);
+void hg_notes_load(void);
+void hg_notes_flush(BOOL force);
+void hg_notes_shutdown(void);
 void load_commandbox_font(void);
 void ensure_window_visible(HWND hwnd, const WCHAR *section);
 void toggle_monitor_window(int idx);
@@ -406,6 +413,8 @@ static const WCHAR HG_CLASS_TASKBOX[] = L"hgfloater_class";
 static const WCHAR HG_CLASS_TOOLBAR[] = L"hgtoolbar_class";
 static const WCHAR HG_CLASS_MONITOR[] = L"hgmonitor_class";
 static const WCHAR HG_CLASS_COMMANDBOX[] = L"hgcommandbox_class";
+static const WCHAR HG_CLASS_NOTE_LIST[] = L"hgnotelist_class";
+static const WCHAR HG_CLASS_NOTE_EDIT[] = L"hgnoteedit_class";
 static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";
 
 #endif /* HG_COMMON_H */

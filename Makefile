@@ -52,6 +52,7 @@ SRC := \
 	src/hg_sysinfo.c \
 	src/hg_config.c \
 	src/hg_calc.c \
+	src/hg_command.c \
 	src/widgets/hg_floater.c \
 	src/widgets/hg_taskbox.c \
 	src/widgets/hg_toolbar.c \
@@ -59,6 +60,7 @@ SRC := \
 	src/widgets/hg_window_list.c \
 	src/widgets/hg_monitor.c \
 	src/widgets/hg_commandbox.c \
+	src/widgets/hg_note.c \
 	src/widgets/hg_about.c
 
 RES := $(OUT)/hgfloater_res.o

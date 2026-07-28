@@ -213,21 +213,19 @@ static HMENU taskbox_create_task_context_menu(void)
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_CLOSE, L"Close Window (&X)");
     AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
 
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_1, L"640x480 (&A)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_2, L"800x600 (&S)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_4_3_3, L"1280x960 (&D)");
-    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_1, L"640x360 (&Q)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_2, L"800x480 (&W)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_3, L"960x540 (&E)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_16_9_4, L"1280x720 (&R)");
-    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_1, L"360x640 (&1)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_2, L"480x800 (&2)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_3, L"540x960 (&3)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESIZE_9_16_4, L"720x1280 (&4)");
+    /* Sizes and their order come from the shared preset table, so this menu and
+     * the command box's 'list resize' can never disagree; only the access keys
+     * and the group separators live here. */
+    static const WCHAR *const accel_keys[HG_RESIZE_PRESET_COUNT] = {L"A", L"S", L"D", L"Q", L"W", L"E",
+                                                                    L"R", L"1", L"2", L"3", L"4"};
+    for (int i = 0; i < HG_RESIZE_PRESET_COUNT; ++i) {
+        if (i == 3 || i == 7) {
+            AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+        }
+        WCHAR text[48];
+        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%ls (&%ls)", hg_resize_presets[i].name, accel_keys[i]);
+        AppendMenuW(h_menu, MF_STRING, (UINT_PTR)(HG_IDM_TASK_RESIZE_4_3_1 + (UINT)i), text);
+    }
     return h_menu;
 }
 
@@ -236,56 +234,16 @@ static BOOL taskbox_task_menu_size_for_command(int cmd, int *out_cx, int *out_cy
     if (!out_cx || !out_cy)
         return FALSE;
 
+    /* The resize command ids are consecutive, so the offset from the first one
+     * is the index into the preset table the menu was built from. */
     *out_cx = 0;
     *out_cy = 0;
-    switch (cmd) {
-    case HG_IDM_TASK_RESIZE_4_3_1:
-        *out_cx = 640;
-        *out_cy = 480;
-        break;
-    case HG_IDM_TASK_RESIZE_4_3_2:
-        *out_cx = 800;
-        *out_cy = 600;
-        break;
-    case HG_IDM_TASK_RESIZE_4_3_3:
-        *out_cx = 1280;
-        *out_cy = 960;
-        break;
-    case HG_IDM_TASK_RESIZE_16_9_1:
-        *out_cx = 640;
-        *out_cy = 360;
-        break;
-    case HG_IDM_TASK_RESIZE_16_9_2:
-        *out_cx = 800;
-        *out_cy = 480;
-        break;
-    case HG_IDM_TASK_RESIZE_16_9_3:
-        *out_cx = 960;
-        *out_cy = 540;
-        break;
-    case HG_IDM_TASK_RESIZE_16_9_4:
-        *out_cx = 1280;
-        *out_cy = 720;
-        break;
-    case HG_IDM_TASK_RESIZE_9_16_1:
-        *out_cx = 360;
-        *out_cy = 640;
-        break;
-    case HG_IDM_TASK_RESIZE_9_16_2:
-        *out_cx = 480;
-        *out_cy = 800;
-        break;
-    case HG_IDM_TASK_RESIZE_9_16_3:
-        *out_cx = 540;
-        *out_cy = 960;
-        break;
-    case HG_IDM_TASK_RESIZE_9_16_4:
-        *out_cx = 720;
-        *out_cy = 1280;
-        break;
-    default:
+    int index = cmd - HG_IDM_TASK_RESIZE_4_3_1;
+    if (index < 0 || index >= HG_RESIZE_PRESET_COUNT)
         return FALSE;
-    }
+
+    *out_cx = hg_resize_presets[index].cx;
+    *out_cy = hg_resize_presets[index].cy;
     return TRUE;
 }
 

@@ -644,8 +644,10 @@ static const WCHAR *hg_output_technology_label(UINT32 technology)
 }
 
 /* `\\.\DISPLAY3` -> 3, matching the number the Settings app puts on the display. */
-static int hg_display_number(const WCHAR *gdi_name)
+int hg_monitor_display_number(const WCHAR *gdi_name)
 {
+    if (!gdi_name)
+        return 0;
     int value = 0;
     for (const WCHAR *p = gdi_name; *p; ++p) {
         if (*p >= L'0' && *p <= L'9') {
@@ -695,7 +697,7 @@ void hg_describe_monitor(const WCHAR *gdi_name, WCHAR *out, size_t out_cch)
         StringCchCopyW(friendly, HG_ARRAYSIZE(friendly), gdi_name);
 
     const WCHAR *port = have_source ? hg_output_technology_label(technology) : NULL;
-    int number = hg_display_number(gdi_name);
+    int number = hg_monitor_display_number(gdi_name);
 
     if (number > 0 && port) {
         StringCchPrintfW(out, out_cch, L"%d. %ls (%ls)", number, friendly, port);

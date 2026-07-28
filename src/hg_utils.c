@@ -619,6 +619,12 @@ typedef struct HgToolbarBuiltinDescriptor {
     HgToolbarDragRole drag_role;
 } HgToolbarBuiltinDescriptor;
 
+const HgResizePreset hg_resize_presets[HG_RESIZE_PRESET_COUNT] = {
+    {L"640x480", 640, 480},   {L"800x600", 800, 600},   {L"1280x960", 1280, 960}, {L"640x360", 640, 360},
+    {L"800x480", 800, 480},   {L"960x540", 960, 540},   {L"1280x720", 1280, 720}, {L"360x640", 360, 640},
+    {L"480x800", 480, 800},   {L"540x960", 540, 960},   {L"720x1280", 720, 1280},
+};
+
 static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_RESIZE, L'R', L"Drag to Resize Window", L"Drag to Resize Window", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_RESIZE_TASKBOX},
@@ -643,6 +649,8 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_FLOATER_ADJUST, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_PIN, L'P', L"Pin the Taskbox Open", L"Pin the Taskbox Open", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_NOTE, L'N', L"Notes", L"Notes", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_SHOW_NOTES,
+     HG_TOOLBAR_DRAG_NONE},
 };
 
 enum {
