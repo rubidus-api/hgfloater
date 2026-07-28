@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29d] - 2026-07-29
 
 ### Added
 - `Ctrl + Wheel` over the note list or any note editor changes the note text size. One size covers the list and every open editor, and it is stored in `note\note.ini` unscaled, so a change made on a 200% display reads the same on a 100% one and a note dragged between monitors is redrawn at that display's scale. A plain wheel still scrolls.
