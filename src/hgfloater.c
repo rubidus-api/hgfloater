@@ -42,6 +42,8 @@ static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HI
         {HG_CLASS_COMMANDBOX, commandbox_proc, hg_g_main_bg_brush, L"Failed to register commandbox class.", 0, NULL},
         {HG_CLASS_TOOLBAR, toolbar_proc, NULL, L"Failed to register toolbar class.", CS_HREDRAW | CS_VREDRAW,
          IDC_HAND},
+        {HG_CLASS_NOTE_LIST, note_list_proc, hg_g_main_bg_brush, L"Failed to register note list class.", 0, NULL},
+        {HG_CLASS_NOTE_EDIT, note_edit_proc, hg_g_main_bg_brush, L"Failed to register note editor class.", 0, NULL},
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(specs); ++i) {
@@ -55,8 +57,8 @@ static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HI
 static void unregister_app_window_classes(HINSTANCE instance)
 {
     const WCHAR *classes[] = {
-        HG_CLASS_FLOATER_WIDGET, HG_CLASS_ABOUT, HG_CLASS_TASKBOX, HG_CLASS_MONITOR, HG_CLASS_COMMANDBOX,
-        HG_CLASS_TOOLBAR,
+        HG_CLASS_FLOATER_WIDGET, HG_CLASS_ABOUT,     HG_CLASS_TASKBOX,   HG_CLASS_MONITOR, HG_CLASS_COMMANDBOX,
+        HG_CLASS_TOOLBAR,        HG_CLASS_NOTE_LIST, HG_CLASS_NOTE_EDIT,
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(classes); ++i) {
@@ -269,7 +271,9 @@ static void request_existing_instance_activation(LPCWSTR cmd_line)
 /* 창이 화면을 벗어났는지 확인하고 0,0으로 복구 */
 void ensure_window_visible(HWND hwnd, const WCHAR *section)
 {
-    if (!IsWindow(hwnd) || !section)
+    /* A NULL section means "clamp but do not remember": windows that keep no
+     * saved geometry still have to land somewhere the reader can see. */
+    if (!IsWindow(hwnd))
         return;
     RECT rc = {0};
     if (!GetWindowRect(hwnd, &rc))
@@ -296,7 +300,8 @@ void ensure_window_visible(HWND hwnd, const WCHAR *section)
             y = mi.rcWork.top;
         if (x != rc.left || y != rc.top) {
             SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-            save_window_geometry_config(section, x, y, w, h);
+            if (section)
+                save_window_geometry_config(section, x, y, w, h);
         }
     }
 }
@@ -432,6 +437,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
     update_monitor_enum();
     hg_refresh_all_monitor_brightness();
+    hg_notes_load();
     dispatch_pending_command_line();
 
     ACCEL accel[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP},
@@ -477,6 +483,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
 cleanup_finish:
     hg_config_flush_pending(); /* debounced settings must survive the exit */
+    hg_notes_shutdown();       /* an edit made a second ago must not be the one lost */
     restore_system_gamma();
     if (accel_table) {
         DestroyAcceleratorTable(accel_table);

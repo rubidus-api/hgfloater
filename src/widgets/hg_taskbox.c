@@ -3,6 +3,7 @@
 #include "../hg_config.h"
 #include "../hg_globals.h"
 #include "hg_taskbox_internal.h"
+#include "hg_note.h"
 
 void update_size(int delta)
 {
@@ -251,6 +252,9 @@ void activate_toolbar_item(int index)
     }
     case HG_TOOLBAR_CLICK_SHOW_COMMANDBOX:
         show_commandbox_window();
+        break;
+    case HG_TOOLBAR_CLICK_SHOW_NOTES:
+        show_note_list_window();
         break;
     case HG_TOOLBAR_CLICK_TOGGLE_MUTE:
         set_system_mute(!get_system_mute());
