@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29] - 2026-07-29
 
 ### Added
 - The note list starts with a `+Add Note` row and opens with it selected, so `N` then `Enter` writes a new note without a key to remember. It answers a single click rather than the double click a note row needs, and it is there even when there are no notes yet. `Insert` still works from any row.
