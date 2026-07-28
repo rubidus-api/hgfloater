@@ -49,6 +49,19 @@ extern const int hg_display_scale_options[HG_SCALE_OPTION_COUNT];
 
 BOOL hg_query_display_scale(HMONITOR monitor, HgDisplayScale *out);
 BOOL hg_set_display_scale(HMONITOR monitor, int percent);
+
+/* Per-monitor backlight. DDC/CI drives the real backlight where the display
+ * answers; the rest fall back to a gamma ramp on that display's own DC, so
+ * dimming one monitor no longer dims the whole desktop. */
+#define HG_BRIGHTNESS_OPTION_COUNT 5
+extern const int hg_brightness_options[HG_BRIGHTNESS_OPTION_COUNT];
+BOOL hg_query_monitor_brightness(HMONITOR monitor, int *out_percent);
+void hg_set_monitor_brightness(HMONITOR monitor, int percent);
+void hg_refresh_all_monitor_brightness(void);
+
+/* Menu label for a display: its number, the monitor name the driver reports
+ * from EDID, and the connector it hangs off. */
+void hg_describe_monitor(const WCHAR *gdi_name, WCHAR *out, size_t out_cch);
 void refresh_theme_surfaces(HWND hwnd);
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 void update_monitor_enum(void);

@@ -678,17 +678,49 @@ static BOOL floater_dispatch_monitor_command(UINT cmd)
     return TRUE;
 }
 
-static BOOL floater_dispatch_scale_command(UINT cmd)
+/* The per-display command blocks carry both halves of the choice: which monitor
+ * the submenu belonged to, and which step in it the user picked. */
+static BOOL floater_split_display_command(UINT cmd, UINT base, UINT step_count, int *out_monitor, int *out_step)
 {
-    if (cmd < HG_IDM_SCALE_BASE || cmd >= HG_IDM_SCALE_BASE + HG_SCALE_OPTION_COUNT)
+    UINT span = (UINT)HG_MAX_MONITORS * step_count;
+    if (cmd < base || cmd >= base + span)
         return FALSE;
 
-    int idx = (int)(cmd - HG_IDM_SCALE_BASE);
-    /* Apply to the monitor the taskbox is on now, matching the menu that built
-     * this command. */
-    HWND anchor = hg_g_taskbox_wnd ? hg_g_taskbox_wnd : hg_g_floater_wnd;
-    if (anchor)
-        hg_set_display_scale(MonitorFromWindow(anchor, MONITOR_DEFAULTTONEAREST), hg_display_scale_options[idx]);
+    UINT offset = cmd - base;
+    *out_monitor = (int)(offset / step_count);
+    *out_step = (int)(offset % step_count);
+    return TRUE;
+}
+
+static BOOL floater_dispatch_scale_command(UINT cmd)
+{
+    int idx = 0;
+    int step = 0;
+    if (!floater_split_display_command(cmd, HG_IDM_SCALE_BASE, HG_SCALE_OPTION_COUNT, &idx, &step))
+        return FALSE;
+
+    if (idx < hg_g_monitor_count && hg_g_monitors[idx].hMonitor) {
+        hg_set_display_scale(hg_g_monitors[idx].hMonitor, hg_display_scale_options[step]);
+    }
+    return TRUE;
+}
+
+static BOOL floater_dispatch_brightness_command(UINT cmd)
+{
+    int idx = 0;
+    int step = 0;
+    if (!floater_split_display_command(cmd, HG_IDM_BRIGHTNESS_BASE, HG_BRIGHTNESS_OPTION_COUNT, &idx, &step))
+        return FALSE;
+
+    if (idx < hg_g_monitor_count && hg_g_monitors[idx].hMonitor) {
+        hg_set_monitor_brightness(hg_g_monitors[idx].hMonitor, hg_brightness_options[step]);
+        /* The toolbar draws the brightness of the display under the pointer, so a
+         * change made from the menu has to reach its gauge. */
+        update_toolbar_tooltips(hg_g_toolbar_wnd);
+        if (hg_g_toolbar_wnd) {
+            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+        }
+    }
     return TRUE;
 }
 
@@ -746,7 +778,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
     UINT cmd = LOWORD(w_param);
 
     BOOL handled = floater_dispatch_monitor_command(cmd) || floater_dispatch_scale_command(cmd) ||
-                   floater_dispatch_audio_device_command(cmd) || floater_dispatch_volume_command(cmd);
+                   floater_dispatch_brightness_command(cmd) || floater_dispatch_audio_device_command(cmd) ||
+                   floater_dispatch_volume_command(cmd);
     if (!handled) {
         if (cmd == HG_IDM_CLOSE_APP) {
             DestroyWindow(hwnd);

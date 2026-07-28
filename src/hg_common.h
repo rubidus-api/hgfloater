@@ -177,8 +177,12 @@
 #define HG_IDM_VOLUME_SET_75 404
 #define HG_IDM_VOLUME_SET_100 405
 #define HG_IDM_AUDIO_DEVICE_BASE 5000
-#define HG_IDM_MONITOR_BASE 6000
-#define HG_IDM_SCALE_BASE 6100
+/* Every display owns a block in the two ranges below: monitor i takes
+ * BASE + i * (step count) .. + (step count - 1), so one command id carries both
+ * the display and the value the user picked. */
+#define HG_IDM_MONITOR_BASE 6000     /* preview toggle, one id per display */
+#define HG_IDM_SCALE_BASE 6100       /* 10 displays x 6 percentages -> 6100..6159 */
+#define HG_IDM_BRIGHTNESS_BASE 6200  /* 10 displays x 5 percentages -> 6200..6249 */
 
 #define HG_MAX_MONITORS 10
 
@@ -301,9 +305,11 @@ typedef struct {
 typedef struct {
     HMONITOR hMonitor;
     RECT rcMonitor;
-    WCHAR name[64];
+    WCHAR name[64];    /* GDI device name; also the key saved geometry hangs on */
+    WCHAR label[160];  /* display number, EDID monitor name, and connection port */
     HWND hwnd;
     BOOL active;
+    int brightness;    /* cached DDC/CI percentage, -1 while unknown */
 } MonitorInfo;
 
 typedef struct WindowClassSpec {
