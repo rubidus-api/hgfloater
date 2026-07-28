@@ -1,0 +1,4 @@
+# Generated from README.md by scripts/gen_about.py and written CRLF on purpose,
+# so the whitespace check must not police it: every regeneration would trip on
+# the carriage return at the end of its one long line.
+src/hg_about_text.h -whitespace
