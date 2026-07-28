@@ -331,15 +331,21 @@ recently changed and your archive by title. Each half remembers its own order.
 **The editors** are separate windows, and several can be open at once. Typing
 updates the title as soon as the first line changes. `Esc` closes an editor.
 
+**`Ctrl + Wheel`** over the list or over any editor changes the note text size.
+There is one size for all of them, so the list and every open editor follow the
+same wheel. It is stored unscaled, so a change made on a 200% display reads the
+same on a 100% one, and a note dragged between monitors is redrawn at that
+display's scale. A plain wheel still scrolls.
+
 **Saving** happens on its own. Edits are held in memory and written a couple of
 seconds after the typing settles, and only for the notes that actually changed,
 so holding a key down does not turn into one write per character. Closing an
 editor and quitting the app both flush whatever is still pending.
 
 Everything a text file cannot carry lives in `note\note.ini` beside the notes:
-which half of the list each note sits in, how each half is sorted, the size and
-position of the list window, and **where each note's own editor window was last
-left** - so a note reopens on the monitor and at the size you left it. The
+which half of the list each note sits in, how each half is sorted, the shared
+text size, the size and position of the list window, and **where each note's own
+editor window was last left** - so a note reopens on the monitor and at the size you left it. The
 creation time of day goes there too, since the file name only carries the day.
 
 ## 11. Keyboard Reference

@@ -23,6 +23,13 @@
 #define HG_NOTE_MSG_REFILL (WM_APP + 0) /* an editor closed; its row needs redrawing */
 #define HG_NOTE_MSG_ADD (WM_APP + 1)    /* the action row was clicked */
 
+/* One text size for the list and every editor, kept unscaled: each window turns
+ * it into pixels at its own display's scale, so the same note reads the same
+ * physical size whichever monitor it was dragged to. */
+#define HG_NOTE_FONT_MIN 8
+#define HG_NOTE_FONT_MAX 72
+#define HG_NOTE_FONT_DEFAULT 11
+
 /* What a list row stands for. Rows that are not notes carry a negative marker,
  * so nothing has to reason about row numbers to know what it is looking at. */
 #define HG_NOTE_ITEM_NONE (-1)
@@ -65,7 +72,8 @@ typedef struct HgNote {
     BOOL dirty;
     ULONGLONG changed_tick;
     HWND editor;
-    RECT editor_rect; /* where this note's editor was last left */
+    HFONT editor_font; /* this editor's own handle on the shared size */
+    RECT editor_rect;  /* where this note's editor was last left */
     BOOL editor_rect_valid;
 } HgNote;
 
@@ -74,6 +82,8 @@ static int s_note_count = 0;
 static HWND s_note_list_wnd = NULL;
 static BOOL s_notes_loaded = FALSE;
 static HgNoteSort s_sort[HG_NOTE_SECTION_COUNT];
+static int s_font_size = HG_NOTE_FONT_DEFAULT;
+static HFONT s_list_font = NULL;
 
 static void note_directory(WCHAR *out, size_t out_cch)
 {
@@ -156,8 +166,14 @@ static const WCHAR *note_section_desc_key(int section)
     return (section == HG_NOTE_SECTION_ARCHIVED) ? L"archived_desc" : L"active_desc";
 }
 
-static void note_load_sort_settings(void)
+static void note_load_settings(void)
 {
+    s_font_size = note_ini_get_int(L"font", L"size", HG_NOTE_FONT_DEFAULT);
+    if (s_font_size < HG_NOTE_FONT_MIN)
+        s_font_size = HG_NOTE_FONT_MIN;
+    if (s_font_size > HG_NOTE_FONT_MAX)
+        s_font_size = HG_NOTE_FONT_MAX;
+
     for (int section = 0; section < HG_NOTE_SECTION_COUNT; ++section) {
         WCHAR name[16];
         note_ini_get_str(L"list", note_section_key(section), L"modified", name, HG_ARRAYSIZE(name));
@@ -172,6 +188,77 @@ static void note_save_sort_settings(int section)
 {
     note_ini_set_str(L"list", note_section_key(section), note_sort_key_name(s_sort[section].key));
     note_ini_set_int(L"list", note_section_desc_key(section), s_sort[section].descending ? 1 : 0);
+}
+
+/* ---------------------------------------------------------------- text size */
+
+/* Negative height means "character height", the same bargain the rest of the
+ * app strikes with CreateFontW. */
+static HFONT note_make_font(HWND wnd)
+{
+    double ws = hg_window_scale(wnd);
+    return CreateFontW(-SCW(ws, s_font_size), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                       OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS,
+                       hg_g_font_name);
+}
+
+/* The new font is handed to the control before the old one is destroyed, so the
+ * control is never holding a dead handle. */
+static void note_apply_font(HWND wnd, int child_id, HFONT *slot)
+{
+    if (!wnd || !IsWindow(wnd))
+        return;
+
+    HFONT font = note_make_font(wnd);
+    if (!font)
+        return;
+
+    HWND child = GetDlgItem(wnd, child_id);
+    if (child)
+        SendMessageW(child, WM_SETFONT, (WPARAM)font, TRUE);
+
+    if (*slot)
+        DeleteObject(*slot);
+    *slot = font;
+}
+
+static void note_refresh_fonts(void)
+{
+    if (s_note_list_wnd && IsWindow(s_note_list_wnd)) {
+        note_apply_font(s_note_list_wnd, HG_NOTE_LIST_ID, &s_list_font);
+        InvalidateRect(s_note_list_wnd, NULL, TRUE);
+    }
+    for (int i = 0; i < s_note_count; ++i) {
+        if (s_notes[i].used && s_notes[i].editor && IsWindow(s_notes[i].editor))
+            note_apply_font(s_notes[i].editor, HG_NOTE_EDIT_ID, &s_notes[i].editor_font);
+    }
+}
+
+/* One wheel notch. The size is stored unscaled, so a change made on a 200%
+ * display lands at the same reading size on a 100% one. */
+static void note_font_step(int delta)
+{
+    int size = s_font_size + ((delta > 0) ? 1 : -1);
+    if (size < HG_NOTE_FONT_MIN)
+        size = HG_NOTE_FONT_MIN;
+    if (size > HG_NOTE_FONT_MAX)
+        size = HG_NOTE_FONT_MAX;
+    if (size == s_font_size)
+        return;
+
+    s_font_size = size;
+    note_ini_set_int(L"font", L"size", s_font_size);
+    note_refresh_fonts();
+}
+
+/* Ctrl and the wheel, wherever the pointer is, change the size for the list and
+ * every open editor at once. Returns TRUE when the message was the app's. */
+static BOOL note_handle_wheel(WPARAM w_param)
+{
+    if (!(GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL))
+        return FALSE;
+    note_font_step((short)HIWORD(w_param));
+    return TRUE;
 }
 
 /* qsort carries no context of its own, so the comparison reads the sort the
@@ -530,7 +617,7 @@ void hg_notes_load(void)
     note_directory(dir, HG_MAX_PATH);
     SHCreateDirectoryExW(NULL, dir, NULL);
 
-    note_load_sort_settings();
+    note_load_settings();
 
     WCHAR pattern[HG_MAX_PATH];
     hellgates_wsprintf(pattern, HG_MAX_PATH, L"%ls\\note-*.txt", dir);
@@ -673,6 +760,11 @@ static LRESULT CALLBACK note_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
         return 0;
     }
+    /* Only the Ctrl-held wheel is the window's; a plain one still scrolls. */
+    if (msg == WM_MOUSEWHEEL && (GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL)) {
+        SendMessageW(GetParent(hwnd), msg, w_param, l_param);
+        return 0;
+    }
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
@@ -753,6 +845,8 @@ static void note_open_editor(int index)
     SetWindowLongPtrW(wnd, GWLP_USERDATA, (LONG_PTR)index);
     note->editor = wnd;
 
+    note_apply_font(wnd, HG_NOTE_EDIT_ID, &note->editor_font);
+
     HWND edit = GetDlgItem(wnd, HG_NOTE_EDIT_ID);
     if (edit) {
         SetWindowTextW(edit, note->text ? note->text : L"");
@@ -775,10 +869,8 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
                                     WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL |
                                         ES_WANTRETURN | ES_NOHIDESEL,
                                     0, 0, 0, 0, hwnd, (HMENU)HG_NOTE_EDIT_ID, GetModuleHandle(NULL), NULL);
-        if (edit) {
-            SendMessageW(edit, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        if (edit)
             SetWindowSubclass(edit, note_edit_subclass_proc, 1, 0);
-        }
         SetTimer(hwnd, HG_NOTE_TIMER_SAVE, HG_NOTE_SAVE_DELAY_MS, NULL);
         return 0;
     }
@@ -821,13 +913,23 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         return 0;
     }
 
+    case WM_MOUSEWHEEL:
+        if (note_handle_wheel(w_param))
+            return 0;
+        break;
+
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
         return hg_on_ctlcolor_edit((HDC)w_param);
 
-    case WM_DPICHANGED:
+    case WM_DPICHANGED: {
         hg_apply_dpi_suggested_rect(hwnd, l_param);
+        /* The size is the same number; the display it renders on is not. */
+        HgNote *note = note_from_editor(hwnd);
+        if (note)
+            note_apply_font(hwnd, HG_NOTE_EDIT_ID, &note->editor_font);
         return 0;
+    }
 
     case WM_CLOSE:
         DestroyWindow(hwnd);
@@ -838,6 +940,10 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         if (note) {
             note_save_editor_rect(note);
             note->editor = NULL;
+            if (note->editor_font) {
+                DeleteObject(note->editor_font);
+                note->editor_font = NULL;
+            }
             if (note->dirty && note_write_file(note))
                 note->dirty = FALSE;
         }
@@ -1161,6 +1267,11 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         }
     }
 
+    if (msg == WM_MOUSEWHEEL && (GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL)) {
+        SendMessageW(GetParent(hwnd), msg, w_param, l_param);
+        return 0;
+    }
+
     if (msg == WM_RBUTTONUP) {
         int row = note_list_row_at(hwnd, l_param);
         if (row >= 0) {
@@ -1183,10 +1294,9 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         HWND list = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", NULL,
                                     WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOTIFY | LBS_HASSTRINGS, 0, 0, 0, 0,
                                     hwnd, (HMENU)HG_NOTE_LIST_ID, GetModuleHandle(NULL), NULL);
-        if (list) {
-            SendMessageW(list, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+        if (list)
             SetWindowSubclass(list, note_list_subclass_proc, 1, 0);
-        }
+        note_apply_font(hwnd, HG_NOTE_LIST_ID, &s_list_font);
         return 0;
     }
 
@@ -1245,6 +1355,11 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         note_list_create(hwnd);
         return 0;
 
+    case WM_MOUSEWHEEL:
+        if (note_handle_wheel(w_param))
+            return 0;
+        break;
+
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
     case WM_CTLCOLORLISTBOX:
@@ -1252,6 +1367,7 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
 
     case WM_DPICHANGED:
         hg_apply_dpi_suggested_rect(hwnd, l_param);
+        note_apply_font(hwnd, HG_NOTE_LIST_ID, &s_list_font);
         return 0;
 
     case WM_CLOSE:
@@ -1262,6 +1378,10 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_DESTROY:
         if (s_note_list_wnd == hwnd)
             s_note_list_wnd = NULL;
+        if (s_list_font) {
+            DeleteObject(s_list_font);
+            s_list_font = NULL;
+        }
         return 0;
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
