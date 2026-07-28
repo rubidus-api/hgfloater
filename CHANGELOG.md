@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29b] - 2026-07-29
 
 ### Added
 - Right-clicking a note in the list opens a menu for the half of the list it belongs to: open it, archive or restore it, and sort that half by creation time, modification time, or title, ascending or descending, with the order in force ticked. A section heading answers the same right-click, so a half can be sorted without picking a note out of it.
