@@ -431,7 +431,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     }
 
     update_monitor_enum();
-    hg_refresh_brightness_cache();
+    hg_refresh_all_monitor_brightness();
     dispatch_pending_command_line();
 
     ACCEL accel[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP},

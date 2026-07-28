@@ -58,49 +58,75 @@ static void init_dxva2(void)
     s_dxva2_initialized = TRUE;
 }
 
-static WORD s_original_gamma_ramp[3][256];
-static BOOL s_gamma_backup_valid = FALSE;
+/* Defined with the DisplayConfig helpers below; the brightness paths key their
+ * per-display state on the same GDI device name. */
+static BOOL hg_monitor_device_name(HMONITOR monitor, WCHAR *out, size_t out_cch);
+
+/* Gamma is the fallback path, so the untouched ramp is kept per display device
+ * rather than once for the desktop: dimming one monitor must leave its
+ * neighbours alone, and exiting must hand every one of them back. */
+typedef struct HgGammaBackup {
+    WCHAR device[64];
+    WORD ramp[3][256];
+    BOOL valid;
+} HgGammaBackup;
+
+static HgGammaBackup s_gamma_backups[HG_MAX_MONITORS];
+static int s_gamma_backup_count = 0;
+
+static HDC hg_monitor_dc(const WCHAR *device)
+{
+    if (!device || !device[0])
+        return NULL;
+    return CreateDCW(NULL, device, NULL, NULL);
+}
+
+static HgGammaBackup *hg_gamma_backup_for(const WCHAR *device, HDC hdc)
+{
+    for (int i = 0; i < s_gamma_backup_count; ++i) {
+        if (wcscmp(s_gamma_backups[i].device, device) == 0)
+            return &s_gamma_backups[i];
+    }
+    if (s_gamma_backup_count >= HG_MAX_MONITORS)
+        return NULL;
+
+    HgGammaBackup *slot = &s_gamma_backups[s_gamma_backup_count];
+    SecureZeroMemory(slot, sizeof(*slot));
+    StringCchCopyW(slot->device, HG_ARRAYSIZE(slot->device), device);
+    slot->valid = GetDeviceGammaRamp(hdc, slot->ramp) ? TRUE : FALSE;
+    s_gamma_backup_count++;
+    return slot;
+}
 
 void restore_system_gamma(void)
 {
-    if (s_gamma_backup_valid) {
-        HDC hdc = GetDC(NULL);
+    for (int i = 0; i < s_gamma_backup_count; ++i) {
+        if (!s_gamma_backups[i].valid)
+            continue;
+        HDC hdc = hg_monitor_dc(s_gamma_backups[i].device);
         if (hdc) {
-            SetDeviceGammaRamp(hdc, s_original_gamma_ramp);
-            ReleaseDC(NULL, hdc);
+            SetDeviceGammaRamp(hdc, s_gamma_backups[i].ramp);
+            DeleteDC(hdc);
         }
     }
 }
 
-static void backup_original_gamma(void)
+static BOOL hg_set_gamma_brightness(const WCHAR *device, int brightness)
 {
-    if (s_gamma_backup_valid)
-        return;
-    HDC hdc = GetDC(NULL);
-    if (hdc) {
-        if (GetDeviceGammaRamp(hdc, s_original_gamma_ramp)) {
-            s_gamma_backup_valid = TRUE;
-        }
-        ReleaseDC(NULL, hdc);
-    }
-}
-
-static BOOL set_software_brightness(int brightness)
-{
-    backup_original_gamma();
-    HDC hdc = GetDC(NULL);
+    HDC hdc = hg_monitor_dc(device);
     if (!hdc)
         return FALSE;
 
-    WORD ramp[3][256];
+    HgGammaBackup *backup = hg_gamma_backup_for(device, hdc);
     double factor = (double)brightness / 100.0;
     if (factor < 0.1)
         factor = 0.1; /* Prevent screen from becoming pitch black (min 10%) */
 
-    if (s_gamma_backup_valid) {
+    WORD ramp[3][256];
+    if (backup && backup->valid) {
         for (int c = 0; c < 3; c++) {
             for (int i = 0; i < 256; i++) {
-                double val = (double)s_original_gamma_ramp[c][i] * factor;
+                double val = (double)backup->ramp[c][i] * factor;
                 if (val > 65535.0)
                     val = 65535.0;
                 ramp[c][i] = (WORD)val;
@@ -116,33 +142,202 @@ static BOOL set_software_brightness(int brightness)
     }
 
     BOOL res = SetDeviceGammaRamp(hdc, ramp);
-    ReleaseDC(NULL, hdc);
+    DeleteDC(hdc);
     return res;
+}
+
+/* Undo a gamma dim on one display only, so a monitor that starts answering
+ * DDC/CI again is not left with a stacked software curve on top. */
+static void hg_restore_gamma_for(const WCHAR *device)
+{
+    for (int i = 0; i < s_gamma_backup_count; ++i) {
+        if (wcscmp(s_gamma_backups[i].device, device) != 0)
+            continue;
+        if (!s_gamma_backups[i].valid)
+            return;
+        HDC hdc = hg_monitor_dc(device);
+        if (hdc) {
+            SetDeviceGammaRamp(hdc, s_gamma_backups[i].ramp);
+            DeleteDC(hdc);
+        }
+        return;
+    }
+}
+
+/* Monitors are free to report any range, so a raw DDC/CI level is mapped onto
+ * 0..100 in both directions rather than assumed to be a percentage. */
+static int hg_level_to_percent(DWORD lo, DWORD cur, DWORD hi)
+{
+    if (hi <= lo)
+        return (int)((cur > 100) ? 100 : cur);
+    if (cur < lo)
+        cur = lo;
+    if (cur > hi)
+        cur = hi;
+    double span = (double)(hi - lo);
+    double pos = (double)(cur - lo) * 100.0 / span;
+    return (int)(pos + 0.5);
+}
+
+static DWORD hg_percent_to_level(DWORD lo, DWORD hi, int percent)
+{
+    if (hi <= lo)
+        return (DWORD)percent;
+    double span = (double)(hi - lo);
+    double val = (double)lo + span * (double)percent / 100.0;
+    return (DWORD)(val + 0.5);
+}
+
+static BOOL hg_ddc_ready(BOOL for_write)
+{
+    init_dxva2();
+    if (!s_hDxva2 || !s_pfnGetNum || !s_pfnGetPhys || !s_pfnDestroy)
+        return FALSE;
+    return for_write ? (s_pfnSetBright != NULL) : (s_pfnGetBright != NULL);
+}
+
+BOOL hg_query_monitor_brightness(HMONITOR monitor, int *out_percent)
+{
+    if (!monitor || !out_percent || !hg_ddc_ready(FALSE))
+        return FALSE;
+
+    DWORD count = 0;
+    if (!s_pfnGetNum(monitor, &count) || count == 0)
+        return FALSE;
+
+    HG_PHYSICAL_MONITOR *phys = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * count);
+    if (!phys)
+        return FALSE;
+
+    BOOL ok = FALSE;
+    if (s_pfnGetPhys(monitor, count, phys)) {
+        DWORD lo = 0, cur = 0, hi = 100;
+        if (s_pfnGetBright(phys[0].hPhysicalMonitor, &lo, &cur, &hi)) {
+            *out_percent = hg_level_to_percent(lo, cur, hi);
+            ok = TRUE;
+        }
+        s_pfnDestroy(count, phys);
+    }
+    free(phys);
+    return ok;
+}
+
+static BOOL hg_ddc_set_brightness(HMONITOR monitor, int percent)
+{
+    if (!monitor || !hg_ddc_ready(TRUE))
+        return FALSE;
+
+    DWORD count = 0;
+    if (!s_pfnGetNum(monitor, &count) || count == 0)
+        return FALSE;
+
+    HG_PHYSICAL_MONITOR *phys = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * count);
+    if (!phys)
+        return FALSE;
+
+    BOOL ok = FALSE;
+    if (s_pfnGetPhys(monitor, count, phys)) {
+        ok = TRUE;
+        for (DWORD i = 0; i < count; i++) {
+            DWORD lo = 0, cur = 0, hi = 100;
+            DWORD level = (DWORD)percent;
+            if (s_pfnGetBright && s_pfnGetBright(phys[i].hPhysicalMonitor, &lo, &cur, &hi)) {
+                level = hg_percent_to_level(lo, hi, percent);
+            }
+            if (!s_pfnSetBright(phys[i].hPhysicalMonitor, level)) {
+                ok = FALSE;
+            }
+        }
+        s_pfnDestroy(count, phys);
+    }
+    free(phys);
+    return ok;
+}
+
+/* Remember what a monitor now sits at so the menu can tick the right step
+ * without paying for another DDC/CI round trip. */
+static void hg_cache_monitor_brightness(HMONITOR monitor, int percent)
+{
+    for (int i = 0; i < hg_g_monitor_count; ++i) {
+        if (hg_g_monitors[i].hMonitor == monitor) {
+            hg_g_monitors[i].brightness = percent;
+            return;
+        }
+    }
+}
+
+static HMONITOR hg_cursor_monitor(void)
+{
+    POINT pt = {0, 0};
+    GetCursorPos(&pt);
+    return MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+}
+
+void hg_set_monitor_brightness(HMONITOR monitor, int percent)
+{
+    if (percent < 0)
+        percent = 0;
+    if (percent > 100)
+        percent = 100;
+
+    WCHAR device[64];
+    BOOL have_device = hg_monitor_device_name(monitor, device, HG_ARRAYSIZE(device));
+
+    if (hg_ddc_set_brightness(monitor, percent)) {
+        if (have_device)
+            hg_restore_gamma_for(device);
+    } else if (have_device) {
+        hg_set_gamma_brightness(device, percent);
+    }
+
+    hg_cache_monitor_brightness(monitor, percent);
+    /* The toolbar gauge reads one number for the display under the pointer, so
+     * keep it in step when that is the display just changed. */
+    if (monitor == hg_cursor_monitor()) {
+        hg_g_global_brightness = percent;
+    }
 }
 
 void hg_refresh_brightness_cache(void)
 {
-    init_dxva2();
-    if (!s_hDxva2 || !s_pfnGetNum || !s_pfnGetPhys || !s_pfnDestroy || !s_pfnGetBright)
+    HMONITOR cursor_monitor = hg_cursor_monitor();
+    int percent = 0;
+    BOOL cursor_known = hg_query_monitor_brightness(cursor_monitor, &percent);
+    if (cursor_known) {
+        hg_g_global_brightness = percent;
+        hg_cache_monitor_brightness(cursor_monitor, percent);
+    }
+
+    /* One further display per call, round-robin. A DDC/CI read blocks for tens of
+     * milliseconds and this runs on the taskbox timer, so the array converges
+     * over a few ticks instead of stalling the UI thread on every one. */
+    if (hg_g_monitor_count <= 0)
         return;
 
-    POINT ptCursor = {0};
-    GetCursorPos(&ptCursor);
-    HMONITOR hMonitor = MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
+    static int next_monitor = 0;
+    if (next_monitor >= hg_g_monitor_count)
+        next_monitor = 0;
+    int idx = next_monitor++;
 
-    DWORD numMonitors = 0;
-    if (s_pfnGetNum(hMonitor, &numMonitors) && numMonitors > 0) {
-        HG_PHYSICAL_MONITOR *pPhysicalMonitors = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * numMonitors);
-        if (pPhysicalMonitors) {
-            if (s_pfnGetPhys(hMonitor, numMonitors, pPhysicalMonitors)) {
-                DWORD minBright = 0, curBright = 55, maxBright = 100;
-                if (s_pfnGetBright(pPhysicalMonitors[0].hPhysicalMonitor, &minBright, &curBright, &maxBright)) {
-                    hg_g_global_brightness = (int)curBright;
-                }
-                s_pfnDestroy(numMonitors, pPhysicalMonitors);
-            }
-            free(pPhysicalMonitors);
-        }
+    HMONITOR monitor = hg_g_monitors[idx].hMonitor;
+    if (!monitor || monitor == cursor_monitor)
+        return;
+
+    int value = 0;
+    hg_g_monitors[idx].brightness = hg_query_monitor_brightness(monitor, &value) ? value : -1;
+}
+
+void hg_refresh_all_monitor_brightness(void)
+{
+    for (int i = 0; i < hg_g_monitor_count; ++i) {
+        int value = 0;
+        hg_g_monitors[i].brightness =
+            hg_query_monitor_brightness(hg_g_monitors[i].hMonitor, &value) ? value : -1;
+    }
+
+    int percent = 0;
+    if (hg_query_monitor_brightness(hg_cursor_monitor(), &percent)) {
+        hg_g_global_brightness = percent;
     }
 }
 
@@ -161,37 +356,12 @@ void set_system_brightness(int brightness)
         brightness = 100;
     hg_g_global_brightness = brightness;
 
-    init_dxva2();
-    BOOL hw_success = FALSE;
-    if (s_hDxva2 && s_pfnGetNum && s_pfnGetPhys && s_pfnDestroy && s_pfnSetBright) {
-        POINT ptCursor = {0};
-        GetCursorPos(&ptCursor);
-        HMONITOR hMonitor = MonitorFromPoint(ptCursor, MONITOR_DEFAULTTONEAREST);
-
-        DWORD numMonitors = 0;
-        if (s_pfnGetNum(hMonitor, &numMonitors) && numMonitors > 0) {
-            HG_PHYSICAL_MONITOR *pPhysicalMonitors = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * numMonitors);
-            if (pPhysicalMonitors) {
-                if (s_pfnGetPhys(hMonitor, numMonitors, pPhysicalMonitors)) {
-                    hw_success = TRUE;
-                    for (DWORD i = 0; i < numMonitors; i++) {
-                        if (!s_pfnSetBright(pPhysicalMonitors[i].hPhysicalMonitor, (DWORD)brightness)) {
-                            hw_success = FALSE;
-                        }
-                    }
-                    s_pfnDestroy(numMonitors, pPhysicalMonitors);
-                }
-                free(pPhysicalMonitors);
-            }
-        }
-    }
-
-    if (!hw_success) {
-        set_software_brightness(brightness);
-    } else {
-        restore_system_gamma();
-    }
+    /* The toolbar slider acts on the display the pointer is over; the O menu
+     * reaches any of them by name. */
+    hg_set_monitor_brightness(hg_cursor_monitor(), brightness);
 }
+
+const int hg_brightness_options[HG_BRIGHTNESS_OPTION_COUNT] = {0, 25, 50, 75, 100};
 
 /* Effective scale of the monitor hosting the window or point, falling back to
  * the process scale. Widgets outside the co-located floater/taskbox pair use
@@ -262,9 +432,10 @@ static int hg_ladder_index_of(int percent)
 }
 
 /* Locate the active DisplayConfig source (adapter + id) whose GDI device name
- * matches gdi_name, and, when out_name is given, its friendly monitor name. */
+ * matches gdi_name, and, when asked, its friendly monitor name and the connector
+ * technology the target reports. */
 static BOOL hg_find_display_source(const WCHAR *gdi_name, LUID *adapter_id, UINT32 *source_id, WCHAR *out_name,
-                                   size_t out_name_cch)
+                                   size_t out_name_cch, UINT32 *out_technology)
 {
     UINT32 path_count = 0;
     UINT32 mode_count = 0;
@@ -299,18 +470,27 @@ static BOOL hg_find_display_source(const WCHAR *gdi_name, LUID *adapter_id, UINT
             *source_id = paths[i].sourceInfo.id;
             found = TRUE;
 
-            if (out_name && out_name_cch > 0) {
+            if ((out_name && out_name_cch > 0) || out_technology) {
                 DISPLAYCONFIG_TARGET_DEVICE_NAME tgt;
                 SecureZeroMemory(&tgt, sizeof(tgt));
                 tgt.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
                 tgt.header.size = sizeof(tgt);
                 tgt.header.adapterId = paths[i].targetInfo.adapterId;
                 tgt.header.id = paths[i].targetInfo.id;
-                if (DisplayConfigGetDeviceInfo(&tgt.header) == ERROR_SUCCESS &&
-                    tgt.monitorFriendlyDeviceName[0] != L'\0') {
-                    StringCchCopyW(out_name, out_name_cch, tgt.monitorFriendlyDeviceName);
-                } else {
-                    StringCchCopyW(out_name, out_name_cch, gdi_name);
+                BOOL have_target = (DisplayConfigGetDeviceInfo(&tgt.header) == ERROR_SUCCESS);
+
+                if (out_name && out_name_cch > 0) {
+                    if (have_target && tgt.monitorFriendlyDeviceName[0] != L'\0') {
+                        StringCchCopyW(out_name, out_name_cch, tgt.monitorFriendlyDeviceName);
+                    } else {
+                        StringCchCopyW(out_name, out_name_cch, gdi_name);
+                    }
+                }
+                if (out_technology) {
+                    /* The path carries the technology too, and it is the value that
+                     * survives when the target name query fails. */
+                    *out_technology = have_target ? (UINT32)tgt.outputTechnology
+                                                  : (UINT32)paths[i].targetInfo.outputTechnology;
                 }
             }
         }
@@ -348,7 +528,7 @@ BOOL hg_query_display_scale(HMONITOR monitor, HgDisplayScale *out)
 
     LUID adapter_id;
     UINT32 source_id = 0;
-    if (!hg_find_display_source(device, &adapter_id, &source_id, out->name, HG_ARRAYSIZE(out->name)))
+    if (!hg_find_display_source(device, &adapter_id, &source_id, out->name, HG_ARRAYSIZE(out->name), NULL))
         return FALSE;
 
     HgDpiScaleGet get;
@@ -391,7 +571,7 @@ BOOL hg_set_display_scale(HMONITOR monitor, int percent)
 
     LUID adapter_id;
     UINT32 source_id = 0;
-    if (!hg_find_display_source(device, &adapter_id, &source_id, NULL, 0))
+    if (!hg_find_display_source(device, &adapter_id, &source_id, NULL, 0, NULL))
         return FALSE;
 
     HgDpiScaleGet get;
@@ -422,6 +602,112 @@ BOOL hg_set_display_scale(HMONITOR monitor, int percent)
     return DisplayConfigSetDeviceInfo(&set.header) == ERROR_SUCCESS;
 }
 
+/* =========================================================================
+ * Naming a display the way its owner recognises it.
+ *
+ * `\\.\DISPLAY2` says nothing, so the label is built from what the driver
+ * actually knows: the monitor name out of the EDID, plus the connector the
+ * target hangs off. Windows names the socket on the graphics adapter, not the
+ * cable, so a USB-C screen running DisplayPort alt mode reports plain
+ * DisplayPort and is indistinguishable from a DP socket; only DisplayPort
+ * tunnelled over USB4 or Thunderbolt reports separately, and that is the case
+ * labelled USB-C here.
+ * ========================================================================= */
+
+/* Spelled out numerically rather than by header constant: the enumeration has
+ * grown over Windows releases and the newest members are missing from older
+ * mingw-w64 headers. */
+static const WCHAR *hg_output_technology_label(UINT32 technology)
+{
+    switch (technology) {
+    case 0u:  return L"RGB"; /* HD15, the VGA connector */
+    case 1u:  return L"S-Video";
+    case 2u:  return L"Composite";
+    case 3u:  return L"Component";
+    case 4u:  return L"DVI";
+    case 5u:  return L"HDMI";
+    case 6u:  return L"LVDS";
+    case 8u:  return L"D-Jpn";
+    case 9u:  return L"SDI";
+    case 10u: return L"DP";
+    case 11u: return L"eDP";
+    case 12u: return L"UDI";
+    case 13u: return L"UDI";
+    case 14u: return L"SDTV";
+    case 15u: return L"Miracast";
+    case 16u: return L"Wired";
+    case 17u: return L"Virtual";
+    case 18u: return L"USB-C"; /* DisplayPort tunnelled over USB4 or Thunderbolt */
+    case 0x80000000u: return L"Internal";
+    default: return NULL;
+    }
+}
+
+/* `\\.\DISPLAY3` -> 3, matching the number the Settings app puts on the display. */
+static int hg_display_number(const WCHAR *gdi_name)
+{
+    int value = 0;
+    for (const WCHAR *p = gdi_name; *p; ++p) {
+        if (*p >= L'0' && *p <= L'9') {
+            value = value * 10 + (int)(*p - L'0');
+        } else {
+            value = 0; /* only a trailing run of digits counts */
+        }
+    }
+    return value;
+}
+
+/* Last resort before the raw device name: the PnP monitor string the display
+ * driver registers, which at least reads as a monitor. */
+static BOOL hg_monitor_pnp_name(const WCHAR *gdi_name, WCHAR *out, size_t out_cch)
+{
+    DISPLAY_DEVICEW dd;
+    SecureZeroMemory(&dd, sizeof(dd));
+    dd.cb = sizeof(dd);
+    if (!EnumDisplayDevicesW(gdi_name, 0, &dd, 0) || dd.DeviceString[0] == L'\0')
+        return FALSE;
+    StringCchCopyW(out, out_cch, dd.DeviceString);
+    return TRUE;
+}
+
+void hg_describe_monitor(const WCHAR *gdi_name, WCHAR *out, size_t out_cch)
+{
+    if (!out || out_cch == 0)
+        return;
+    out[0] = L'\0';
+    if (!gdi_name || !gdi_name[0])
+        return;
+
+    WCHAR friendly[128];
+    friendly[0] = L'\0';
+    UINT32 technology = 0xFFFFFFFFu;
+    LUID adapter_id;
+    UINT32 source_id = 0;
+    BOOL have_source =
+        hg_find_display_source(gdi_name, &adapter_id, &source_id, friendly, HG_ARRAYSIZE(friendly), &technology);
+
+    if (friendly[0] == L'\0' || wcscmp(friendly, gdi_name) == 0) {
+        WCHAR pnp[128];
+        if (hg_monitor_pnp_name(gdi_name, pnp, HG_ARRAYSIZE(pnp)))
+            StringCchCopyW(friendly, HG_ARRAYSIZE(friendly), pnp);
+    }
+    if (friendly[0] == L'\0')
+        StringCchCopyW(friendly, HG_ARRAYSIZE(friendly), gdi_name);
+
+    const WCHAR *port = have_source ? hg_output_technology_label(technology) : NULL;
+    int number = hg_display_number(gdi_name);
+
+    if (number > 0 && port) {
+        StringCchPrintfW(out, out_cch, L"%d. %ls (%ls)", number, friendly, port);
+    } else if (number > 0) {
+        StringCchPrintfW(out, out_cch, L"%d. %ls", number, friendly);
+    } else if (port) {
+        StringCchPrintfW(out, out_cch, L"%ls (%ls)", friendly, port);
+    } else {
+        StringCchCopyW(out, out_cch, friendly);
+    }
+}
+
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
     (void)hdcMonitor;
@@ -432,9 +718,12 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
     MONITORINFOEXW mi;
     mi.cbSize = sizeof(mi);
     if (GetMonitorInfoW(hMonitor, (MONITORINFO *)&mi)) {
-        hg_g_monitors[hg_g_monitor_count].hMonitor = hMonitor;
-        hg_g_monitors[hg_g_monitor_count].rcMonitor = mi.rcMonitor;
-        StringCchCopyW(hg_g_monitors[hg_g_monitor_count].name, 64, mi.szDevice);
+        MonitorInfo *slot = &hg_g_monitors[hg_g_monitor_count];
+        slot->hMonitor = hMonitor;
+        slot->rcMonitor = mi.rcMonitor;
+        StringCchCopyW(slot->name, HG_ARRAYSIZE(slot->name), mi.szDevice);
+        hg_describe_monitor(mi.szDevice, slot->label, HG_ARRAYSIZE(slot->label));
+        slot->brightness = -1;
         hg_g_monitor_count++;
     }
     return TRUE;
@@ -458,6 +747,7 @@ void update_monitor_enum()
             if (wcscmp(hg_g_monitors[i].name, saved_monitors[j].name) == 0) {
                 hg_g_monitors[i].active = saved_monitors[j].active;
                 hg_g_monitors[i].hwnd = saved_monitors[j].hwnd;
+                hg_g_monitors[i].brightness = saved_monitors[j].brightness;
                 saved_monitors[j].hwnd = NULL;
                 break;
             }

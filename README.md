@@ -210,14 +210,26 @@ Open it with the `O` toolbar button or by right-clicking the status line.
 - **Reset Settings** — restores default geometry, opacity, sizes, and colors.
 - **Select Audio Device** — lists the output devices with the current one
   checked, and offers a **Mute** toggle.
-- **Arrange Monitors** — turns the [monitor thumbnails](#9-monitor-thumbnails)
-  on and off.
-- **_(current display name)_** — a submenu named after the monitor the taskbox is
-  on, listing Windows display-scaling percentages (100, 125, 150, 175, 200, 225).
-  The current scale is checked; percentages the monitor cannot reach are greyed
-  out. Choosing one changes that monitor's scale system-wide, exactly as the
-  Settings app would. The floater and taskbox live on the same monitor, so this
-  is the scale for both.
+- **_(one entry per display)_** — every connected monitor gets its own submenu,
+  named the way you would name it: its number, the monitor name the driver reads
+  out of the display's EDID, and the connector it hangs off, as in
+  `2. DELL U2720Q (DP)`. Each submenu holds everything the app can do to that
+  one display:
+  - **Preview Window** — turns that display's
+    [thumbnail](#9-monitor-thumbnails) on and off.
+  - **Scale** — the Windows display-scaling percentages (100, 125, 150, 175,
+    200, 225). The current scale is checked; percentages the monitor cannot
+    reach are greyed out. Choosing one changes that monitor's scale
+    system-wide, exactly as the Settings app would.
+  - **Brightness** — the backlight in quarter steps (0, 25, 50, 75, 100). The
+    step nearest the monitor's current level is checked. Displays that answer
+    DDC/CI are driven directly; the rest fall back to a gamma curve applied to
+    that display alone, so dimming one screen leaves the others as they were.
+
+  The port is the socket on the graphics adapter, not the cable: a USB-C screen
+  running DisplayPort alt mode reports as `DP` and cannot be told apart from a
+  DisplayPort socket. `USB-C` appears when DisplayPort is tunnelled over USB4 or
+  Thunderbolt, which is the only case Windows reports separately.
 - **Lock Screen (Power Off)** — locks the workstation.
 - **Exit** — quits.
 
@@ -233,8 +245,8 @@ while the floater or taskbox has focus.
 
 ## 9. Monitor Thumbnails
 
-**Arrange Monitors** in the options menu opens a live thumbnail window per
-connected display.
+**Preview Window** in a display's submenu opens a live thumbnail of that
+display.
 
 - **Click and drag inside a thumbnail** to drive the real monitor: mouse input
   is forwarded to it, so you can operate a screen you are not looking at.

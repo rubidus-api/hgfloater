@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- The options menu (`O` button, or right-click the status line) now carries one submenu per connected display, each holding everything the app can do to that one monitor: its **Preview Window** thumbnail, **Scale** (100, 125, 150, 175, 200, 225), and **Brightness** in quarter steps (0, 25, 50, 75, 100). The current scale and the nearest brightness step are checked, and scaling percentages the monitor cannot reach stay greyed out.
+- Brightness is now per display. Monitors that answer DDC/CI are driven directly; the rest fall back to a gamma curve applied to that display's own device context, so dimming one screen leaves its neighbours alone. Every backed-up ramp is handed back at exit, not just the desktop's.
+
+### Changed
+- Displays are named the way their owner would name them - display number, the monitor name the driver reads out of the EDID, and the connector it hangs off, as in `2. DELL U2720Q (DP)` - in the options menu, the thumbnail window caption, and its tooltip. Reported connectors are RGB, DVI, HDMI, DP, eDP, USB-C, Internal, and the rest of the DisplayConfig set. The port is the socket on the graphics adapter rather than the cable, so a USB-C screen running DisplayPort alt mode reports as `DP`; `USB-C` appears when DisplayPort is tunnelled over USB4 or Thunderbolt.
+- `Arrange Monitors` is gone as a top-level entry; the thumbnail toggle it held now sits in each display's own submenu as **Preview Window**.
+- A DDC/CI brightness reading is normalised against the range the monitor reports instead of being read as a percentage outright, so displays that do not use 0..100 no longer show a misleading level.
+
 ## [v26.07.22] - 2026-07-22
 
 ### Added

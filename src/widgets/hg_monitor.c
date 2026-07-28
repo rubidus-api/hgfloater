@@ -80,8 +80,12 @@ static BOOL open_monitor_window(int idx)
     w = (int)GetPrivateProfileIntW(L"monitor", key_w, legacy_w, hg_g_config_path);
     h = (int)GetPrivateProfileIntW(L"monitor", key_h, legacy_h, hg_g_config_path);
 
+    /* Shown to the reader, so it carries the monitor's own name; saved geometry
+     * still hangs on the GDI device name above. */
+    WCHAR *caption = hg_g_monitors[idx].label[0] ? hg_g_monitors[idx].label : hg_g_monitors[idx].name;
+
     HWND mwnd =
-        CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, hg_g_monitors[idx].name,
+        CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_MONITOR, caption,
                         WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN, x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
 
     if (mwnd) {
@@ -94,7 +98,7 @@ static BOOL open_monitor_window(int idx)
             ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
             ti.hwnd = mwnd;
             ti.uId = (UINT_PTR)mwnd;
-            ti.lpszText = hg_g_monitors[idx].name;
+            ti.lpszText = caption;
             SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti);
         }
         return TRUE;

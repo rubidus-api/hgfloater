@@ -28,23 +28,19 @@ static HMENU taskbox_create_audio_submenu(void)
     return audio_menu;
 }
 
-/* Windows scaling percentage for the display the taskbox sits on, as a submenu
- * named after that monitor with the current value checked and any percentage the
- * monitor cannot reach greyed out. */
-static HMENU taskbox_create_scale_submenu(WCHAR *label_out, size_t label_cch)
+/* Windows scaling percentages for one display, with the current value checked
+ * and anything outside the range that monitor allows greyed out. */
+static HMENU taskbox_create_scale_submenu(int monitor_index)
 {
-    HWND anchor = hg_g_taskbox_wnd ? hg_g_taskbox_wnd : hg_g_floater_wnd;
-    if (!anchor)
-        return NULL;
-
     HgDisplayScale info;
-    if (!hg_query_display_scale(MonitorFromWindow(anchor, MONITOR_DEFAULTTONEAREST), &info) || !info.valid)
+    if (!hg_query_display_scale(hg_g_monitors[monitor_index].hMonitor, &info) || !info.valid)
         return NULL;
 
     HMENU scale_menu = CreatePopupMenu();
     if (!scale_menu)
         return NULL;
 
+    UINT base = (UINT)HG_IDM_SCALE_BASE + (UINT)monitor_index * HG_SCALE_OPTION_COUNT;
     for (int i = 0; i < HG_SCALE_OPTION_COUNT; ++i) {
         int percent = hg_display_scale_options[i];
         UINT flags = MF_STRING;
@@ -55,27 +51,70 @@ static HMENU taskbox_create_scale_submenu(WCHAR *label_out, size_t label_cch)
 
         WCHAR text[16];
         hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d%%", percent);
-        AppendMenuW(scale_menu, flags, (UINT_PTR)(HG_IDM_SCALE_BASE + (UINT)i), text);
+        AppendMenuW(scale_menu, flags, (UINT_PTR)(base + (UINT)i), text);
     }
-
-    if (label_out && label_cch > 0)
-        StringCchCopyW(label_out, label_cch, info.name);
     return scale_menu;
 }
 
-static HMENU taskbox_create_monitor_submenu(void)
+/* Backlight in quarter steps. The tick follows the cached DDC/CI reading rounded
+ * to the nearest step, so a monitor sitting at 60% shows 50% ticked rather than
+ * nothing at all; an unread monitor shows no tick. */
+static HMENU taskbox_create_brightness_submenu(int monitor_index)
 {
-    HMENU monitor_menu = CreatePopupMenu();
-    if (!monitor_menu)
+    HMENU brightness_menu = CreatePopupMenu();
+    if (!brightness_menu)
         return NULL;
 
-    for (int i = 0; i < hg_g_monitor_count; i++) {
+    int current = hg_g_monitors[monitor_index].brightness;
+    int nearest = (current >= 0) ? ((current + 12) / 25) * 25 : -1;
+    UINT base = (UINT)HG_IDM_BRIGHTNESS_BASE + (UINT)monitor_index * HG_BRIGHTNESS_OPTION_COUNT;
+
+    for (int i = 0; i < HG_BRIGHTNESS_OPTION_COUNT; ++i) {
+        int percent = hg_brightness_options[i];
         UINT flags = MF_STRING;
-        if (hg_g_monitors[i].active)
+        if (percent == nearest)
             flags |= MF_CHECKED;
-        AppendMenuW(monitor_menu, flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + (UINT)i), hg_g_monitors[i].name);
+
+        WCHAR text[16];
+        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d%%", percent);
+        AppendMenuW(brightness_menu, flags, (UINT_PTR)(base + (UINT)i), text);
     }
-    return monitor_menu;
+    return brightness_menu;
+}
+
+/* Everything this app can do to one display, gathered under that display's own
+ * name: its preview window, its scaling, and its backlight. */
+static HMENU taskbox_create_display_submenu(int monitor_index)
+{
+    HMENU display_menu = CreatePopupMenu();
+    if (!display_menu)
+        return NULL;
+
+    UINT preview_flags = MF_STRING;
+    if (hg_g_monitors[monitor_index].active)
+        preview_flags |= MF_CHECKED;
+    AppendMenuW(display_menu, preview_flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + (UINT)monitor_index),
+                L"Preview Window");
+    AppendMenuW(display_menu, MF_SEPARATOR, 0, NULL);
+
+    HMENU scale_menu = taskbox_create_scale_submenu(monitor_index);
+    if (scale_menu) {
+        if (!AppendMenuW(display_menu, MF_POPUP, (UINT_PTR)scale_menu, L"Scale")) {
+            DestroyMenu(scale_menu);
+        }
+    } else {
+        /* Kept visible but dead: a missing entry reads as a bug, a greyed one
+         * says the driver would not answer. */
+        AppendMenuW(display_menu, MF_STRING | MF_GRAYED, 0, L"Scale (unavailable)");
+    }
+
+    HMENU brightness_menu = taskbox_create_brightness_submenu(monitor_index);
+    if (brightness_menu) {
+        if (!AppendMenuW(display_menu, MF_POPUP, (UINT_PTR)brightness_menu, L"Brightness")) {
+            DestroyMenu(brightness_menu);
+        }
+    }
+    return display_menu;
 }
 
 int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND owner)
@@ -113,18 +152,16 @@ HMENU taskbox_create_main_popup_menu(void)
         }
     }
 
-    HMENU monitor_menu = taskbox_create_monitor_submenu();
-    if (monitor_menu) {
-        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)monitor_menu, L"Arrange Monitors")) {
-            DestroyMenu(monitor_menu);
-        }
-    }
+    /* One entry per display, named the way its owner would name it, off the
+     * enumeration WM_DISPLAYCHANGE keeps current. */
+    for (int i = 0; i < hg_g_monitor_count; ++i) {
+        HMENU display_menu = taskbox_create_display_submenu(i);
+        if (!display_menu)
+            continue;
 
-    WCHAR scale_label[128];
-    HMENU scale_menu = taskbox_create_scale_submenu(scale_label, HG_ARRAYSIZE(scale_label));
-    if (scale_menu) {
-        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)scale_menu, scale_label)) {
-            DestroyMenu(scale_menu);
+        const WCHAR *label = hg_g_monitors[i].label[0] ? hg_g_monitors[i].label : hg_g_monitors[i].name;
+        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)display_menu, label)) {
+            DestroyMenu(display_menu);
         }
     }
 
