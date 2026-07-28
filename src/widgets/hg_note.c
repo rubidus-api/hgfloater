@@ -33,6 +33,7 @@
 /* Context-menu commands. */
 #define HG_NOTE_CMD_OPEN 1
 #define HG_NOTE_CMD_ARCHIVE 2
+#define HG_NOTE_CMD_DELETE 3
 #define HG_NOTE_CMD_SORT_BASE 10 /* + key * 2, + 1 when descending */
 
 typedef enum HgNoteSortKey {
@@ -609,14 +610,45 @@ void hg_notes_shutdown(void)
     }
 }
 
+/* Deleting a note is one keystroke or one menu pick, so it goes to the Recycle
+ * Bin rather than straight off the disk: changing your mind is then Windows'
+ * problem, not something this app has to grow a dialog for. A path with no bin
+ * behind it - a network share, a removable drive - falls back to a plain
+ * delete. SHFileOperationW wants a plain path and a double terminator, so it
+ * cannot reuse the \\?\-prefixed form the other file calls take. */
+static BOOL note_recycle_file(const WCHAR *path)
+{
+    size_t len = wcslen(path);
+    if (len == 0)
+        return FALSE;
+
+    WCHAR *from = (WCHAR *)calloc(len + 2u, sizeof(WCHAR));
+    if (!from)
+        return FALSE;
+    memcpy(from, path, sizeof(WCHAR) * len); /* calloc leaves both terminators */
+
+    SHFILEOPSTRUCTW op;
+    SecureZeroMemory(&op, sizeof(op));
+    op.wFunc = FO_DELETE;
+    op.pFrom = from;
+    op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+
+    int result = SHFileOperationW(&op);
+    BOOL ok = (result == 0) && !op.fAnyOperationsAborted;
+    free(from);
+    return ok;
+}
+
 static void note_delete(HgNote *note)
 {
     if (note->editor && IsWindow(note->editor))
         DestroyWindow(note->editor);
 
-    WCHAR normalized[HG_MAX_PATH];
-    normalize_path_for_api(note->file, normalized, HG_MAX_PATH);
-    DeleteFileW(normalized);
+    if (!note_recycle_file(note->file)) {
+        WCHAR normalized[HG_MAX_PATH];
+        normalize_path_for_api(note->file, normalized, HG_MAX_PATH);
+        DeleteFileW(normalized);
+    }
 
     /* The note's whole section goes with it, so a recycled identifier cannot
      * inherit a dead note's position or archive state. */
@@ -989,6 +1021,16 @@ static void note_list_open_selected(HWND hwnd)
     }
 }
 
+/* Any note can be deleted, archived or not: archiving files a note away, it does
+ * not lock it. */
+static void note_list_delete(HWND hwnd, int index)
+{
+    if (index < 0 || index >= s_note_count || !s_notes[index].used)
+        return;
+    note_delete(&s_notes[index]);
+    note_list_fill(hwnd);
+}
+
 static void note_list_toggle_archived(HWND hwnd, int index)
 {
     if (index < 0 || index >= s_note_count || !s_notes[index].used)
@@ -1054,6 +1096,7 @@ static void note_list_show_context_menu(HWND hwnd, HWND list, int row, POINT scr
         AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_OPEN, L"Open");
         AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_ARCHIVE,
                     s_notes[note_index].archived ? L"Restore" : L"Archive");
+        AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_DELETE, L"Delete");
         AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
     }
 
@@ -1073,6 +1116,8 @@ static void note_list_show_context_menu(HWND hwnd, HWND list, int row, POINT scr
         note_open_editor(note_index);
     } else if (cmd == HG_NOTE_CMD_ARCHIVE) {
         note_list_toggle_archived(hwnd, note_index);
+    } else if (cmd == HG_NOTE_CMD_DELETE) {
+        note_list_delete(hwnd, note_index);
     } else if (cmd >= HG_NOTE_CMD_SORT_BASE && cmd < HG_NOTE_CMD_SORT_BASE + HG_NOTE_SORT_KEY_COUNT * 2) {
         int offset = cmd - HG_NOTE_CMD_SORT_BASE;
         s_sort[section].key = (HgNoteSortKey)(offset / 2);
@@ -1176,14 +1221,9 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         case VK_INSERT:
             note_list_create(hwnd);
             return 0;
-        case VK_DELETE: {
-            int index = note_list_selected(hwnd);
-            if (index >= 0) {
-                note_delete(&s_notes[index]);
-                note_list_fill(hwnd);
-            }
+        case VK_DELETE:
+            note_list_delete(hwnd, note_list_selected(hwnd));
             return 0;
-        }
         case 'K':
             note_list_toggle_archived(hwnd, note_list_selected(hwnd));
             return 0;
