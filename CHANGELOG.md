@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- Right-clicking a note in the list opens a menu for the half of the list it belongs to: open it, archive or restore it, and sort that half by creation time, modification time, or title, ascending or descending, with the order in force ticked. A section heading answers the same right-click, so a half can be sorted without picking a note out of it.
+- The list keeps notes being written above archived ones, with headings that appear once something has been archived. The two halves sort independently and each remembers its own order.
+
+### Changed
+- Note settings moved to `note\note.ini`, which now holds the archive flag and creation time of each note, both sort orders, the list window's geometry, and **each note's own editor window position and size** - so a note reopens on the monitor and at the size it was left. The old `note\index.ini` is no longer read; the notes themselves are untouched `.txt` files, so nothing is lost but the archive flags, which no released build ever wrote.
+- The archive flag replaces the keep flag. Archiving files a note away rather than protecting it, so `Delete` now works on any note.
+
 ## [v26.07.29] - 2026-07-29
 
 ### Added

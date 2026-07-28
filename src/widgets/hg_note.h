@@ -5,8 +5,9 @@
 
 /* Notes are plain .txt files under the config directory: the first line is the
  * title, the rest is the body, so a note stays readable and editable outside
- * this app. What a text file cannot carry - the keep flag - lives beside them
- * in note/index.ini. */
+ * this app. What a text file cannot carry - the archive flag, each section's
+ * sort order, and where every window was left - lives beside them in
+ * note/note.ini. */
 
 void hg_notes_load(void);
 void hg_notes_flush(BOOL force);

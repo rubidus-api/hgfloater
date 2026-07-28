@@ -296,21 +296,33 @@ body. Notes live in `%USERPROFILE%\.HellGates\hgfloater\note\` and are named
 `note-<id>-YYYYMMDD.txt`, where the date is the day the note was created.
 
 **The list** starts with **`+Add Note`** and then shows one note per row:
-creation date, last-modified date, and title, most recently changed first. A `*`
-before the title marks a kept note.
+creation date, last-modified date, and title.
 
 `+Add Note` is the row the list opens on, so `N` then `Enter` writes a new note
 without a key to remember. It answers a single click, unlike the note rows, and
 it is there even when there are no notes yet.
+
+**Active and archived notes are separate.** Notes you are still writing stay on
+top; archived ones settle underneath. Headings appear once something has been
+archived - until then the list is just notes, and a label would be noise.
 
 | Key | What it does |
 | :--- | :--- |
 | `Enter` on `+Add Note`, or one click on it | Create a note and open it. |
 | `Enter`, double click | Open the note in its own editor window. |
 | `Insert` | Create a note and open it, from any row. |
-| `K` | Keep or release the selected note. |
-| `Delete` | Delete the selected note. A kept note refuses; release it with `K` first. |
+| `K` | Archive the selected note, or restore it. |
+| `Delete` | Delete the selected note. |
 | `Esc` | Close the list. |
+
+**Right-click a note** (or a heading) for that half of the list:
+
+- **Open**, and **Archive** or **Restore**.
+- **Sort by** created, modified, or title, each ascending or descending, with
+  the one in force ticked.
+
+The two halves sort independently: you can keep what you are writing by most
+recently changed and your archive by title. Each half remembers its own order.
 
 **The editors** are separate windows, and several can be open at once. Typing
 updates the title as soon as the first line changes. `Esc` closes an editor.
@@ -320,8 +332,11 @@ seconds after the typing settles, and only for the notes that actually changed,
 so holding a key down does not turn into one write per character. Closing an
 editor and quitting the app both flush whatever is still pending.
 
-The only thing kept outside the text files is the keep flag, which lives in
-`note\index.ini` beside them.
+Everything a text file cannot carry lives in `note\note.ini` beside the notes:
+which half of the list each note sits in, how each half is sorted, the size and
+position of the list window, and **where each note's own editor window was last
+left** - so a note reopens on the monitor and at the size you left it. The
+creation time of day goes there too, since the file name only carries the day.
 
 ## 11. Keyboard Reference
 
@@ -437,7 +452,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 | `%USERPROFILE%\.HellGates\hgfloater\` | Base directory, created on first run |
 | `%USERPROFILE%\.HellGates\hgfloater\config.ini` | Every setting |
 | `%USERPROFILE%\.HellGates\hgfloater\shortcuts\` | Your `.lnk` and `.url` files |
-| `%USERPROFILE%\.HellGates\hgfloater\note\` | One `.txt` per [note](#10-notes), plus `index.ini` for the keep flags |
+| `%USERPROFILE%\.HellGates\hgfloater\note\` | One `.txt` per [note](#10-notes), plus `note.ini` for everything the text files cannot carry |
 
 That is the complete list. hgfloater writes no log files, no caches, and no
 temporary files, and nothing it writes grows without bound.

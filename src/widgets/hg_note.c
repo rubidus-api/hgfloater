@@ -2,8 +2,9 @@
  *
  * A note is a plain .txt file whose first line is the title and whose remaining
  * lines are the body, so Notepad or any other editor reads and writes them
- * without help. The only thing a text file cannot carry is the keep flag, and
- * that lives beside them in note/index.ini.
+ * without help. Everything a text file cannot carry - which section a note sits
+ * in, how each section is sorted, where each editor window was left - lives in
+ * note/note.ini beside them.
  *
  * Editing never touches the disk directly: the text lives in memory and a timer
  * writes out only the notes that actually changed, so holding a key down does
@@ -19,38 +20,201 @@
 #define HG_NOTE_EDIT_ID 100
 #define HG_NOTE_LIST_ID 101
 #define HG_NOTE_TIMER_SAVE 1
-#define HG_NOTE_ROW_ADD 0            /* the list's first row is the New Note action */
 #define HG_NOTE_MSG_REFILL (WM_APP + 0) /* an editor closed; its row needs redrawing */
 #define HG_NOTE_MSG_ADD (WM_APP + 1)    /* the action row was clicked */
+
+/* What a list row stands for. Rows that are not notes carry a negative marker,
+ * so nothing has to reason about row numbers to know what it is looking at. */
+#define HG_NOTE_ITEM_NONE (-1)
+#define HG_NOTE_ITEM_ADD (-2)
+#define HG_NOTE_ITEM_HEAD_ACTIVE (-3)
+#define HG_NOTE_ITEM_HEAD_ARCHIVED (-4)
+
+/* Context-menu commands. */
+#define HG_NOTE_CMD_OPEN 1
+#define HG_NOTE_CMD_ARCHIVE 2
+#define HG_NOTE_CMD_SORT_BASE 10 /* + key * 2, + 1 when descending */
+
+typedef enum HgNoteSortKey {
+    HG_NOTE_SORT_CREATED = 0,
+    HG_NOTE_SORT_MODIFIED,
+    HG_NOTE_SORT_TITLE,
+    HG_NOTE_SORT_KEY_COUNT
+} HgNoteSortKey;
+
+/* The two halves of the list sort independently, so each keeps its own order. */
+#define HG_NOTE_SECTION_ACTIVE 0
+#define HG_NOTE_SECTION_ARCHIVED 1
+#define HG_NOTE_SECTION_COUNT 2
+
+typedef struct HgNoteSort {
+    HgNoteSortKey key;
+    BOOL descending;
+} HgNoteSort;
 
 typedef struct HgNote {
     BOOL used;
     WCHAR id[16];
     WCHAR file[HG_MAX_PATH];
-    SYSTEMTIME created;  /* taken from the file name, which carries the date */
+    SYSTEMTIME created;  /* the date from the file name, refined by note.ini */
     SYSTEMTIME modified; /* the file's own last-write time, in local time */
     WCHAR title[HG_NOTE_TITLE_CCH];
     WCHAR *text; /* the whole note, title line included; never NULL once used */
-    BOOL keep;
+    BOOL archived;
     BOOL dirty;
     ULONGLONG changed_tick;
     HWND editor;
+    RECT editor_rect; /* where this note's editor was last left */
+    BOOL editor_rect_valid;
 } HgNote;
 
 static HgNote s_notes[HG_MAX_NOTES];
 static int s_note_count = 0;
 static HWND s_note_list_wnd = NULL;
 static BOOL s_notes_loaded = FALSE;
+static HgNoteSort s_sort[HG_NOTE_SECTION_COUNT];
 
 static void note_directory(WCHAR *out, size_t out_cch)
 {
     hellgates_wsprintf(out, out_cch, L"%ls\\note", hg_g_base_path);
 }
 
-static void note_index_path(WCHAR *out, size_t out_cch)
+/* One file holds everything about notes that is not the note text itself. */
+static void note_settings_path(WCHAR *out, size_t out_cch)
 {
-    hellgates_wsprintf(out, out_cch, L"%ls\\note\\index.ini", hg_g_base_path);
+    hellgates_wsprintf(out, out_cch, L"%ls\\note\\note.ini", hg_g_base_path);
 }
+
+static void note_section_name(const HgNote *note, WCHAR *out, size_t out_cch)
+{
+    hellgates_wsprintf(out, out_cch, L"note-%ls", note->id);
+}
+
+static int note_ini_get_int(const WCHAR *section, const WCHAR *key, int fallback)
+{
+    WCHAR path[HG_MAX_PATH];
+    note_settings_path(path, HG_MAX_PATH);
+    return (int)GetPrivateProfileIntW(section, key, fallback, path);
+}
+
+static void note_ini_set_int(const WCHAR *section, const WCHAR *key, int value)
+{
+    WCHAR path[HG_MAX_PATH];
+    WCHAR text[16];
+    note_settings_path(path, HG_MAX_PATH);
+    hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d", value);
+    WritePrivateProfileStringW(section, key, text, path);
+}
+
+static void note_ini_get_str(const WCHAR *section, const WCHAR *key, const WCHAR *fallback, WCHAR *out,
+                             DWORD out_cch)
+{
+    WCHAR path[HG_MAX_PATH];
+    note_settings_path(path, HG_MAX_PATH);
+    GetPrivateProfileStringW(section, key, fallback, out, out_cch, path);
+}
+
+static void note_ini_set_str(const WCHAR *section, const WCHAR *key, const WCHAR *value)
+{
+    WCHAR path[HG_MAX_PATH];
+    note_settings_path(path, HG_MAX_PATH);
+    WritePrivateProfileStringW(section, key, value, path);
+}
+
+/* ------------------------------------------------------------------- sorting */
+
+static const WCHAR *note_sort_key_name(HgNoteSortKey key)
+{
+    switch (key) {
+    case HG_NOTE_SORT_CREATED:
+        return L"created";
+    case HG_NOTE_SORT_TITLE:
+        return L"title";
+    case HG_NOTE_SORT_MODIFIED:
+    default:
+        return L"modified";
+    }
+}
+
+static HgNoteSortKey note_sort_key_from_name(const WCHAR *name)
+{
+    if (lstrcmpiW(name, L"created") == 0)
+        return HG_NOTE_SORT_CREATED;
+    if (lstrcmpiW(name, L"title") == 0)
+        return HG_NOTE_SORT_TITLE;
+    return HG_NOTE_SORT_MODIFIED;
+}
+
+static const WCHAR *note_section_key(int section)
+{
+    return (section == HG_NOTE_SECTION_ARCHIVED) ? L"archived_sort" : L"active_sort";
+}
+
+static const WCHAR *note_section_desc_key(int section)
+{
+    return (section == HG_NOTE_SECTION_ARCHIVED) ? L"archived_desc" : L"active_desc";
+}
+
+static void note_load_sort_settings(void)
+{
+    for (int section = 0; section < HG_NOTE_SECTION_COUNT; ++section) {
+        WCHAR name[16];
+        note_ini_get_str(L"list", note_section_key(section), L"modified", name, HG_ARRAYSIZE(name));
+        s_sort[section].key = note_sort_key_from_name(name);
+        /* Newest first is the useful default for dates and the harmless one for
+         * titles, so both sections start descending. */
+        s_sort[section].descending = (note_ini_get_int(L"list", note_section_desc_key(section), 1) != 0);
+    }
+}
+
+static void note_save_sort_settings(int section)
+{
+    note_ini_set_str(L"list", note_section_key(section), note_sort_key_name(s_sort[section].key));
+    note_ini_set_int(L"list", note_section_desc_key(section), s_sort[section].descending ? 1 : 0);
+}
+
+/* qsort carries no context of its own, so the comparison reads the sort the
+ * caller just installed. */
+static HgNoteSort s_sort_in_use;
+
+static int note_compare_time(const SYSTEMTIME *left, const SYSTEMTIME *right)
+{
+    FILETIME lft, rft;
+    if (!SystemTimeToFileTime(left, &lft) || !SystemTimeToFileTime(right, &rft))
+        return 0;
+    return CompareFileTime(&lft, &rft);
+}
+
+static int note_compare(const void *a, const void *b)
+{
+    const HgNote *left = &s_notes[*(const int *)a];
+    const HgNote *right = &s_notes[*(const int *)b];
+
+    int result = 0;
+    switch (s_sort_in_use.key) {
+    case HG_NOTE_SORT_CREATED:
+        result = note_compare_time(&left->created, &right->created);
+        break;
+    case HG_NOTE_SORT_TITLE:
+        result = lstrcmpiW(left->title, right->title);
+        break;
+    case HG_NOTE_SORT_MODIFIED:
+    default:
+        result = note_compare_time(&left->modified, &right->modified);
+        break;
+    }
+
+    /* Equal keys would otherwise shuffle between redraws, which reads as the
+     * list twitching for no reason. */
+    if (result == 0)
+        result = note_compare_time(&left->created, &right->created);
+    if (result == 0)
+        result = lstrcmpiW(left->id, right->id);
+
+    return s_sort_in_use.descending ? -result : result;
+}
+
+/* ------------------------------------------------------------ note text state */
 
 /* The title is whatever stands on the first line; an empty note still needs
  * something to show in the list. */
@@ -184,11 +348,90 @@ static BOOL note_write_file(HgNote *note)
     return ok;
 }
 
-static void note_save_keep_flag(const HgNote *note)
+static void note_save_archived_flag(const HgNote *note)
 {
-    WCHAR index[HG_MAX_PATH];
-    note_index_path(index, HG_MAX_PATH);
-    WritePrivateProfileStringW(L"keep", note->id, note->keep ? L"1" : L"0", index);
+    WCHAR section[32];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+    note_ini_set_int(section, L"archived", note->archived ? 1 : 0);
+}
+
+/* The file name only carries the day. Sorting by creation asked for the time of
+ * day too, so it is written out once and read back beside the note. */
+static void note_save_created(const HgNote *note)
+{
+    WCHAR section[32];
+    WCHAR stamp[24];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+    hellgates_wsprintf(stamp, HG_ARRAYSIZE(stamp), L"%04d%02d%02d%02d%02d%02d", note->created.wYear,
+                       note->created.wMonth, note->created.wDay, note->created.wHour, note->created.wMinute,
+                       note->created.wSecond);
+    note_ini_set_str(section, L"created", stamp);
+}
+
+static void note_load_created(HgNote *note)
+{
+    WCHAR section[32];
+    WCHAR stamp[24];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+    note_ini_get_str(section, L"created", L"", stamp, HG_ARRAYSIZE(stamp));
+    if (wcslen(stamp) != 14)
+        return; /* the file name's date stands on its own */
+
+    for (int i = 0; i < 14; ++i) {
+        if (stamp[i] < L'0' || stamp[i] > L'9')
+            return;
+    }
+
+    int parts[6] = {0, 0, 0, 0, 0, 0};
+    static const int widths[6] = {4, 2, 2, 2, 2, 2};
+    int at = 0;
+    for (int p = 0; p < 6; ++p) {
+        for (int i = 0; i < widths[p]; ++i)
+            parts[p] = parts[p] * 10 + (int)(stamp[at++] - L'0');
+    }
+
+    note->created.wYear = (WORD)parts[0];
+    note->created.wMonth = (WORD)parts[1];
+    note->created.wDay = (WORD)parts[2];
+    note->created.wHour = (WORD)parts[3];
+    note->created.wMinute = (WORD)parts[4];
+    note->created.wSecond = (WORD)parts[5];
+}
+
+static void note_save_editor_rect(HgNote *note)
+{
+    if (!note->editor || !IsWindow(note->editor) || IsIconic(note->editor))
+        return;
+
+    RECT rc;
+    if (!GetWindowRect(note->editor, &rc))
+        return;
+
+    note->editor_rect = rc;
+    note->editor_rect_valid = TRUE;
+
+    WCHAR section[32];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+    note_ini_set_int(section, L"x", (int)rc.left);
+    note_ini_set_int(section, L"y", (int)rc.top);
+    note_ini_set_int(section, L"w", (int)(rc.right - rc.left));
+    note_ini_set_int(section, L"h", (int)(rc.bottom - rc.top));
+}
+
+static void note_load_editor_rect(HgNote *note)
+{
+    WCHAR section[32];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+
+    int w = note_ini_get_int(section, L"w", 0);
+    int h = note_ini_get_int(section, L"h", 0);
+    if (w <= 0 || h <= 0)
+        return;
+
+    int x = note_ini_get_int(section, L"x", 0);
+    int y = note_ini_get_int(section, L"y", 0);
+    SetRect(&note->editor_rect, x, y, x + w, y + h);
+    note->editor_rect_valid = TRUE;
 }
 
 /* ------------------------------------------------------------ note lifetime */
@@ -234,6 +477,7 @@ static HgNote *note_create(void)
 
     note_set_text(note, L"");
     note_write_file(note);
+    note_save_created(note);
     return note;
 }
 
@@ -285,8 +529,7 @@ void hg_notes_load(void)
     note_directory(dir, HG_MAX_PATH);
     SHCreateDirectoryExW(NULL, dir, NULL);
 
-    WCHAR index[HG_MAX_PATH];
-    note_index_path(index, HG_MAX_PATH);
+    note_load_sort_settings();
 
     WCHAR pattern[HG_MAX_PATH];
     hellgates_wsprintf(pattern, HG_MAX_PATH, L"%ls\\note-*.txt", dir);
@@ -329,7 +572,11 @@ void hg_notes_load(void)
         note_set_text(note, text ? text : L"");
         free(text);
 
-        note->keep = (GetPrivateProfileIntW(L"keep", note->id, 0, index) != 0);
+        WCHAR section[32];
+        note_section_name(note, section, HG_ARRAYSIZE(section));
+        note->archived = (note_ini_get_int(section, L"archived", 0) != 0);
+        note_load_created(note);
+        note_load_editor_rect(note);
     } while (FindNextFileW(search, &find));
 
     FindClose(search);
@@ -351,6 +598,10 @@ void hg_notes_flush(BOOL force)
 
 void hg_notes_shutdown(void)
 {
+    for (int i = 0; i < s_note_count; ++i) {
+        if (s_notes[i].used)
+            note_save_editor_rect(&s_notes[i]);
+    }
     hg_notes_flush(TRUE);
     for (int i = 0; i < s_note_count; ++i) {
         free(s_notes[i].text);
@@ -360,9 +611,6 @@ void hg_notes_shutdown(void)
 
 static void note_delete(HgNote *note)
 {
-    if (note->keep)
-        return;
-
     if (note->editor && IsWindow(note->editor))
         DestroyWindow(note->editor);
 
@@ -370,9 +618,11 @@ static void note_delete(HgNote *note)
     normalize_path_for_api(note->file, normalized, HG_MAX_PATH);
     DeleteFileW(normalized);
 
-    WCHAR index[HG_MAX_PATH];
-    note_index_path(index, HG_MAX_PATH);
-    WritePrivateProfileStringW(L"keep", note->id, NULL, index);
+    /* The note's whole section goes with it, so a recycled identifier cannot
+     * inherit a dead note's position or archive state. */
+    WCHAR section[32];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+    note_ini_set_str(section, NULL, NULL);
 
     free(note->text);
     SecureZeroMemory(note, sizeof(*note));
@@ -439,18 +689,32 @@ static void note_open_editor(int index)
         return;
     }
 
-    /* Editors stack up as the reader opens more of them, so each one steps down
-     * and right instead of landing on top of the last. */
-    static int cascade = 0;
     POINT pt = {0, 0};
     GetCursorPos(&pt);
     double ws = hg_point_scale(pt);
-    int offset = SCW(ws, 28) * (cascade++ % 8);
+
+    int x, y, w, h;
+    if (note->editor_rect_valid) {
+        /* A note reopens where its own window was left, on whichever monitor
+         * that was. */
+        x = note->editor_rect.left;
+        y = note->editor_rect.top;
+        w = note->editor_rect.right - note->editor_rect.left;
+        h = note->editor_rect.bottom - note->editor_rect.top;
+    } else {
+        /* A note opened for the first time steps down and right from the last
+         * one instead of landing on top of it. */
+        static int cascade = 0;
+        int offset = SCW(ws, 28) * (cascade++ % 8);
+        x = pt.x + offset;
+        y = pt.y + offset;
+        w = SCW(ws, 380);
+        h = SCW(ws, 300);
+    }
 
     HWND wnd = CreateWindowExW(WS_EX_TOOLWINDOW, HG_CLASS_NOTE_EDIT, note->title,
-                               WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN,
-                               pt.x + offset, pt.y + offset, SCW(ws, 380), SCW(ws, 300), NULL, NULL,
-                               GetModuleHandle(NULL), NULL);
+                               WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN, x, y, w, h, NULL,
+                               NULL, GetModuleHandle(NULL), NULL);
     if (!wnd)
         return;
 
@@ -516,6 +780,15 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         }
         break;
 
+    /* Once per drag rather than per pixel, the same bargain the other widgets
+     * strike with the config file. */
+    case WM_EXITSIZEMOVE: {
+        HgNote *note = note_from_editor(hwnd);
+        if (note)
+            note_save_editor_rect(note);
+        return 0;
+    }
+
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
         return hg_on_ctlcolor_edit((HDC)w_param);
@@ -531,6 +804,7 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_DESTROY: {
         HgNote *note = note_from_editor(hwnd);
         if (note) {
+            note_save_editor_rect(note);
             note->editor = NULL;
             if (note->dirty && note_write_file(note))
                 note->dirty = FALSE;
@@ -546,15 +820,42 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
 
 /* --------------------------------------------------------------- list window */
 
-static int note_compare_recent(const void *a, const void *b)
+static void note_list_add_section(HWND list, int section, BOOL show_heading)
 {
-    const HgNote *left = &s_notes[*(const int *)a];
-    const HgNote *right = &s_notes[*(const int *)b];
+    int order[HG_MAX_NOTES];
+    int count = 0;
+    BOOL want_archived = (section == HG_NOTE_SECTION_ARCHIVED);
 
-    FILETIME lft, rft;
-    if (!SystemTimeToFileTime(&left->modified, &lft) || !SystemTimeToFileTime(&right->modified, &rft))
-        return 0;
-    return CompareFileTime(&rft, &lft); /* most recently touched first */
+    for (int i = 0; i < s_note_count; ++i) {
+        if (s_notes[i].used && (s_notes[i].archived ? TRUE : FALSE) == want_archived)
+            order[count++] = i;
+    }
+    if (count == 0)
+        return;
+
+    s_sort_in_use = s_sort[section];
+    if (count > 1)
+        qsort(order, (size_t)count, sizeof(order[0]), note_compare);
+
+    if (show_heading) {
+        int row = (int)SendMessageW(list, LB_ADDSTRING, 0,
+                                    (LPARAM)(want_archived ? L"-- Archived --" : L"-- Active --"));
+        if (row >= 0) {
+            SendMessageW(list, LB_SETITEMDATA, (WPARAM)row,
+                         (LPARAM)(want_archived ? HG_NOTE_ITEM_HEAD_ARCHIVED : HG_NOTE_ITEM_HEAD_ACTIVE));
+        }
+    }
+
+    for (int i = 0; i < count; ++i) {
+        const HgNote *note = &s_notes[order[i]];
+        WCHAR line[HG_NOTE_TITLE_CCH + 48];
+        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%02d%02d%02d  %02d%02d%02d  %ls", note->created.wYear % 100,
+                           note->created.wMonth, note->created.wDay, note->modified.wYear % 100,
+                           note->modified.wMonth, note->modified.wDay, note->title);
+        int row = (int)SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)line);
+        if (row >= 0)
+            SendMessageW(list, LB_SETITEMDATA, (WPARAM)row, (LPARAM)order[i]);
+    }
 }
 
 static void note_list_fill(HWND hwnd)
@@ -566,50 +867,51 @@ static void note_list_fill(HWND hwnd)
     int selected = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
     SendMessageW(list, LB_RESETCONTENT, 0, 0);
 
-    /* Row zero is always the action, never a note, so making a note needs no
+    /* The action comes first and is never a note, so making one needs no
      * remembered key and an empty list still offers something to do. */
-    SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)L"+Add Note");
-    SendMessageW(list, LB_SETITEMDATA, (WPARAM)HG_NOTE_ROW_ADD, (LPARAM)-1);
+    int add_row = (int)SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)L"+Add Note");
+    if (add_row >= 0)
+        SendMessageW(list, LB_SETITEMDATA, (WPARAM)add_row, (LPARAM)HG_NOTE_ITEM_ADD);
 
-    int order[HG_MAX_NOTES];
-    int count = 0;
-    for (int i = 0; i < s_note_count; ++i) {
-        if (s_notes[i].used)
-            order[count++] = i;
-    }
-    if (count > 1)
-        qsort(order, (size_t)count, sizeof(order[0]), note_compare_recent);
-
-    for (int i = 0; i < count; ++i) {
-        const HgNote *note = &s_notes[order[i]];
-        WCHAR line[HG_NOTE_TITLE_CCH + 48];
-        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%02d%02d%02d  %02d%02d%02d  %ls%ls",
-                           note->created.wYear % 100, note->created.wMonth, note->created.wDay,
-                           note->modified.wYear % 100, note->modified.wMonth, note->modified.wDay,
-                           note->keep ? L"* " : L"", note->title);
-        int row = (int)SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)line);
-        if (row >= 0)
-            SendMessageW(list, LB_SETITEMDATA, (WPARAM)row, (LPARAM)order[i]);
+    /* Headings only earn their rows once something has been archived; until then
+     * the list is just notes and a label would be noise. They are still what a
+     * right-click aims at to sort an empty-looking half, so they appear for both
+     * groups at once or not at all. */
+    BOOL show_headings = FALSE;
+    for (int i = 0; i < s_note_count && !show_headings; ++i) {
+        if (s_notes[i].used && s_notes[i].archived)
+            show_headings = TRUE;
     }
 
-    int last_row = count; /* the action row pushed every note down by one */
+    /* Notes being written stay on top; archived ones settle underneath. */
+    note_list_add_section(list, HG_NOTE_SECTION_ACTIVE, show_headings);
+    note_list_add_section(list, HG_NOTE_SECTION_ARCHIVED, show_headings);
+
+    int last_row = (int)SendMessageW(list, LB_GETCOUNT, 0, 0) - 1;
     if (selected < 0)
-        selected = HG_NOTE_ROW_ADD;
+        selected = 0;
     if (selected > last_row)
         selected = last_row;
-    SendMessageW(list, LB_SETCURSEL, (WPARAM)selected, 0);
+    if (selected >= 0)
+        SendMessageW(list, LB_SETCURSEL, (WPARAM)selected, 0);
 }
 
-/* The note the selection points at, or -1 when it rests on the action row. */
+static int note_list_item(HWND list, int row)
+{
+    if (!list || row < 0)
+        return HG_NOTE_ITEM_NONE;
+    return (int)SendMessageW(list, LB_GETITEMDATA, (WPARAM)row, 0);
+}
+
+/* The note the selection points at, or -1 when it rests on a row that is not
+ * one: the action row or a section heading. */
 static int note_list_selected(HWND hwnd)
 {
     HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
     if (!list)
         return -1;
-    int row = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
-    if (row <= HG_NOTE_ROW_ADD)
-        return -1;
-    return (int)SendMessageW(list, LB_GETITEMDATA, (WPARAM)row, 0);
+    int item = note_list_item(list, (int)SendMessageW(list, LB_GETCURSEL, 0, 0));
+    return (item >= 0) ? item : -1;
 }
 
 /* Make a note, show it in the list, and open it ready to type into. */
@@ -620,6 +922,19 @@ static void note_list_create(HWND hwnd)
         return;
     note_list_fill(hwnd);
     note_open_editor((int)(note - s_notes));
+}
+
+static void note_list_save_geometry(HWND hwnd)
+{
+    if (!IsWindowVisible(hwnd) || IsIconic(hwnd))
+        return;
+    RECT rc;
+    if (!GetWindowRect(hwnd, &rc))
+        return;
+    note_ini_set_int(L"list", L"x", (int)rc.left);
+    note_ini_set_int(L"list", L"y", (int)rc.top);
+    note_ini_set_int(L"list", L"w", (int)(rc.right - rc.left));
+    note_ini_set_int(L"list", L"h", (int)(rc.bottom - rc.top));
 }
 
 void show_note_list_window(void)
@@ -637,9 +952,20 @@ void show_note_list_window(void)
     GetCursorPos(&pt);
     double ws = hg_point_scale(pt);
 
+    int w = note_ini_get_int(L"list", L"w", 0);
+    int h = note_ini_get_int(L"list", L"h", 0);
+    int x = note_ini_get_int(L"list", L"x", pt.x);
+    int y = note_ini_get_int(L"list", L"y", pt.y);
+    if (w <= 0 || h <= 0) {
+        w = SCW(ws, 460);
+        h = SCW(ws, 320);
+        x = pt.x;
+        y = pt.y;
+    }
+
     s_note_list_wnd = CreateWindowExW(WS_EX_TOOLWINDOW, HG_CLASS_NOTE_LIST, L"Notes",
-                                      WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN, pt.x,
-                                      pt.y, SCW(ws, 460), SCW(ws, 320), NULL, NULL, GetModuleHandle(NULL), NULL);
+                                      WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN, x, y, w,
+                                      h, NULL, NULL, GetModuleHandle(NULL), NULL);
     if (!s_note_list_wnd)
         return;
 
@@ -649,21 +975,114 @@ void show_note_list_window(void)
     hg_force_foreground(s_note_list_wnd);
 }
 
-/* Enter on the action row makes a note; on any other row it opens one. */
+/* Enter on the action row makes a note; on a note row it opens one; on a
+ * heading it does nothing. */
 static void note_list_open_selected(HWND hwnd)
 {
     HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
-    if (list && (int)SendMessageW(list, LB_GETCURSEL, 0, 0) == HG_NOTE_ROW_ADD) {
-        note_list_create(hwnd);
-        return;
-    }
+    int item = note_list_item(list, (int)SendMessageW(list, LB_GETCURSEL, 0, 0));
 
-    int index = note_list_selected(hwnd);
-    if (index >= 0)
-        note_open_editor(index);
+    if (item == HG_NOTE_ITEM_ADD) {
+        note_list_create(hwnd);
+    } else if (item >= 0) {
+        note_open_editor(item);
+    }
 }
 
-/* The row under a click, or -1 when the pointer is past the last one. */
+static void note_list_toggle_archived(HWND hwnd, int index)
+{
+    if (index < 0 || index >= s_note_count || !s_notes[index].used)
+        return;
+    s_notes[index].archived = !s_notes[index].archived;
+    note_save_archived_flag(&s_notes[index]);
+    note_list_fill(hwnd);
+}
+
+/* ------------------------------------------------------------ context menu */
+
+/* Which half of the list a row belongs to, so a right-click sorts the group it
+ * was aimed at. -1 when the row belongs to neither. */
+static int note_row_section(HWND list, int row)
+{
+    int item = note_list_item(list, row);
+    if (item == HG_NOTE_ITEM_HEAD_ACTIVE)
+        return HG_NOTE_SECTION_ACTIVE;
+    if (item == HG_NOTE_ITEM_HEAD_ARCHIVED)
+        return HG_NOTE_SECTION_ARCHIVED;
+    if (item >= 0 && item < s_note_count && s_notes[item].used)
+        return s_notes[item].archived ? HG_NOTE_SECTION_ARCHIVED : HG_NOTE_SECTION_ACTIVE;
+    return -1;
+}
+
+static void note_append_sort_items(HMENU menu, int section)
+{
+    static const WCHAR *const labels[HG_NOTE_SORT_KEY_COUNT][2] = {
+        {L"Created, oldest first", L"Created, newest first"},
+        {L"Modified, oldest first", L"Modified, newest first"},
+        {L"Title, A to Z", L"Title, Z to A"},
+    };
+
+    for (int key = 0; key < HG_NOTE_SORT_KEY_COUNT; ++key) {
+        for (int desc = 0; desc < 2; ++desc) {
+            UINT flags = MF_STRING;
+            if (s_sort[section].key == (HgNoteSortKey)key && (s_sort[section].descending ? 1 : 0) == desc)
+                flags |= MF_CHECKED;
+            AppendMenuW(menu, flags, (UINT_PTR)(HG_NOTE_CMD_SORT_BASE + key * 2 + desc), labels[key][desc]);
+        }
+        if (key + 1 < HG_NOTE_SORT_KEY_COUNT)
+            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    }
+}
+
+static void note_list_show_context_menu(HWND hwnd, HWND list, int row, POINT screen_pt)
+{
+    int section = note_row_section(list, row);
+    if (section < 0)
+        return; /* the action row has nothing to offer */
+
+    int note_index = note_list_item(list, row);
+    if (note_index < 0)
+        note_index = -1;
+
+    HMENU menu = CreatePopupMenu();
+    if (!menu)
+        return;
+
+    SendMessageW(list, LB_SETCURSEL, (WPARAM)row, 0);
+
+    if (note_index >= 0) {
+        AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_OPEN, L"Open");
+        AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_ARCHIVE,
+                    s_notes[note_index].archived ? L"Restore" : L"Archive");
+        AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    }
+
+    /* The heading says which group the sort lands on, since the menu can be
+     * raised from either half. */
+    AppendMenuW(menu, MF_STRING | MF_GRAYED, 0,
+                (section == HG_NOTE_SECTION_ARCHIVED) ? L"Sort archived by" : L"Sort active by");
+    note_append_sort_items(menu, section);
+
+    if (note_index >= 0)
+        SetMenuDefaultItem(menu, HG_NOTE_CMD_OPEN, FALSE);
+
+    int cmd = TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, screen_pt.x, screen_pt.y, hwnd, NULL);
+    DestroyMenu(menu);
+
+    if (cmd == HG_NOTE_CMD_OPEN) {
+        note_open_editor(note_index);
+    } else if (cmd == HG_NOTE_CMD_ARCHIVE) {
+        note_list_toggle_archived(hwnd, note_index);
+    } else if (cmd >= HG_NOTE_CMD_SORT_BASE && cmd < HG_NOTE_CMD_SORT_BASE + HG_NOTE_SORT_KEY_COUNT * 2) {
+        int offset = cmd - HG_NOTE_CMD_SORT_BASE;
+        s_sort[section].key = (HgNoteSortKey)(offset / 2);
+        s_sort[section].descending = ((offset % 2) != 0);
+        note_save_sort_settings(section);
+        note_list_fill(hwnd);
+    }
+}
+
+/* The row under a point, or -1 when the pointer is past the last one. */
 static int note_list_row_at(HWND list, LPARAM l_param)
 {
     DWORD hit = (DWORD)SendMessageW(list, LB_ITEMFROMPOINT, 0, l_param);
@@ -687,10 +1106,23 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
     /* The action row reads as a button, so it answers a single click rather than
      * the double click a note needs. Both button messages are swallowed so a
      * quick second click cannot make a second note. */
-    if ((msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK) && note_list_row_at(hwnd, l_param) == HG_NOTE_ROW_ADD) {
-        SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)HG_NOTE_ROW_ADD, 0);
-        if (msg == WM_LBUTTONDOWN)
-            PostMessageW(GetParent(hwnd), HG_NOTE_MSG_ADD, 0, 0);
+    if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK) {
+        int row = note_list_row_at(hwnd, l_param);
+        if (note_list_item(hwnd, row) == HG_NOTE_ITEM_ADD) {
+            SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)row, 0);
+            if (msg == WM_LBUTTONDOWN)
+                PostMessageW(GetParent(hwnd), HG_NOTE_MSG_ADD, 0, 0);
+            return 0;
+        }
+    }
+
+    if (msg == WM_RBUTTONUP) {
+        int row = note_list_row_at(hwnd, l_param);
+        if (row >= 0) {
+            POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+            ClientToScreen(hwnd, &pt);
+            note_list_show_context_menu(GetParent(hwnd), hwnd, row, pt);
+        }
         return 0;
     }
 
@@ -725,6 +1157,10 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         return 0;
     }
 
+    case WM_EXITSIZEMOVE:
+        note_list_save_geometry(hwnd);
+        return 0;
+
     case WM_COMMAND:
         if (LOWORD(w_param) == HG_NOTE_LIST_ID && HIWORD(w_param) == LBN_DBLCLK) {
             note_list_open_selected(hwnd);
@@ -743,24 +1179,14 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         case VK_DELETE: {
             int index = note_list_selected(hwnd);
             if (index >= 0) {
-                if (s_notes[index].keep) {
-                    append_message(L"Note is kept; press K to release it first");
-                } else {
-                    note_delete(&s_notes[index]);
-                    note_list_fill(hwnd);
-                }
-            }
-            return 0;
-        }
-        case 'K': {
-            int index = note_list_selected(hwnd);
-            if (index >= 0) {
-                s_notes[index].keep = !s_notes[index].keep;
-                note_save_keep_flag(&s_notes[index]);
+                note_delete(&s_notes[index]);
                 note_list_fill(hwnd);
             }
             return 0;
         }
+        case 'K':
+            note_list_toggle_archived(hwnd, note_list_selected(hwnd));
+            return 0;
         case VK_ESCAPE:
             ShowWindow(hwnd, SW_HIDE);
             return 0;
@@ -789,6 +1215,7 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         return 0;
 
     case WM_CLOSE:
+        note_list_save_geometry(hwnd);
         ShowWindow(hwnd, SW_HIDE);
         return 0;
 
