@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- The note context menu gains **Delete**, so a note can be removed without knowing the `Delete` key. It is offered for every note, archived or not: archiving files a note away, it does not lock it.
+
+### Changed
+- Deleting a note now sends it to the Recycle Bin instead of unlinking it, so a mistaken `Delete` is recoverable where Windows would normally recover it. A path with no bin behind it falls back to a plain delete.
+
 ## [v26.07.29b] - 2026-07-29
 
 ### Added

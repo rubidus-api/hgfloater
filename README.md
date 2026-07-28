@@ -317,9 +317,13 @@ archived - until then the list is just notes, and a label would be noise.
 
 **Right-click a note** (or a heading) for that half of the list:
 
-- **Open**, and **Archive** or **Restore**.
+- **Open**, **Archive** or **Restore**, and **Delete**.
 - **Sort by** created, modified, or title, each ascending or descending, with
   the one in force ticked.
+
+Any note can be deleted, archived or not: archiving files a note away, it does
+not lock it. Deleted notes go to the **Recycle Bin**, so a mistaken `Delete` is
+recoverable where Windows would normally recover it.
 
 The two halves sort independently: you can keep what you are writing by most
 recently changed and your archive by title. Each half remembers its own order.
