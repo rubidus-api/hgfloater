@@ -119,11 +119,44 @@ one, and continuing to poll would spend a cross-process call on a certainty.
 A `stat_temp` colour in the `[colors]` section with a default, alongside
 `stat_cpu`, `stat_mem`, and `stat_bat`.
 
+## Addendum: the GPU, and why it gets a different answer
+
+The CPU has no driver-free path to its die. The **GPU does**, and it is the one
+Task Manager itself uses: `D3DKMTQueryAdapterInfo` with
+`KMTQAITYPE_ADAPTERPERFDATA`, whose `D3DKMT_ADAPTER_PERFDATA` carries the
+adapter's main temperature sensor in **tenths of a degree Celsius**. The
+functions are exported from `gdi32.dll`, so this costs no library, no driver,
+and no elevation, and it is vendor-neutral - no NVAPI, no ADL, no per-vendor
+branch.
+
+Two things had to be established rather than assumed:
+
+- **The structure layout**, transcribed from the Microsoft DDI reference. The
+  WDK header it normally lives in is not part of the mingw-w64 toolchain, so
+  every field is declared by hand - the same thing this project already does for
+  the undocumented DisplayConfig scaling interface.
+- **`KMTQAITYPE_ADAPTERPERFDATA` is 62**, which is its position in the
+  documented enumeration. That number appears in no prose documentation; it was
+  confirmed from two independent published declarations of the enumeration
+  before being used.
+
+The failure mode is the safe one. If the value or the layout were wrong,
+`D3DKMTQueryAdapterInfo` validates the size against the type and returns an
+error rather than writing anything, so the row would be absent instead of wrong.
+The same is true of the common real case: **many drivers report zero**, which is
+a machine without the sensor, not a fault. Adapters are enumerated with
+`D3DKMTEnumAdapters2` and every handle is closed; on a hybrid machine the
+warmest adapter that answers is the one shown, because that is the one doing
+work.
+
 ## Non-Goals
 
 - No kernel driver, no MSR reads, no SMBus, no elevation. Ever.
 - No .NET, no third-party sensor library, no bundled DLL.
-- No GPU, fan, voltage, or per-core sensors. One number.
+- No vendor SDKs. NVAPI and ADL would give a better GPU number on their own
+  hardware, at the cost of a hand-declared undocumented interface per vendor and
+  a third for Intel; the WDDM thunk covers all of them at once.
+- No fan, voltage, or per-core sensors.
 - No claim that this is the CPU die temperature. It is a thermal zone, and the
   README says so.
 

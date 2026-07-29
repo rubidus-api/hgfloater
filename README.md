@@ -118,7 +118,12 @@ of other windows.
   between 55 and 75 degrees matters more than a few pixels of bar length can
   say.
 
-  It is read from the **ACPI thermal zone** your firmware exposes. That is the
+  **`GPU`** follows it on the same scale, and it gets a better answer than the
+  CPU does: the adapter's own sensor, read through the same interface Task
+  Manager uses, with no vendor SDK and no driver. Plenty of drivers report
+  nothing, and those machines simply have no GPU row.
+
+  The CPU reading is read from the **ACPI thermal zone** your firmware exposes. That is the
   only temperature reachable without installing a kernel driver and running as
   administrator, and it is worth knowing what it is: **a sensor on the board
   near the CPU, not the CPU die**. It tracks the processor without being it, and
@@ -535,7 +540,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
   — the dark palette.
 - `focus_bg` — the keyboard/mouse focus highlight.
-- `stat_cpu`, `stat_temp`, `stat_mem`, `stat_bat` — the floater's status bars.
+- `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
   gradients behind the `A`, `B`, and `V` buttons.
