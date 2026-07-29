@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29g] - 2026-07-29
 
 ### Added
 - `help <command>` in the command box explains one command in full - its arguments, what they mean, and worked examples. `help` alone still lists everything, one line each. Short forms work too, so `h m` is `help move`.
