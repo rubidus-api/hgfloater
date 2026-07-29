@@ -43,16 +43,20 @@ and stays out of your way.
 ## 1. Overview
 
 hgfloater aims at one thing: making everyday desktop control faster than the
-stock taskbar allows. It currently works as a **quick launcher**, a **task
-switcher**, and a **system control panel** (volume, brightness, window opacity,
-screen lock), all reachable from a widget you can park anywhere on any monitor.
+stock taskbar allows. It works as a **quick launcher**, a **task switcher**, a
+**system control panel** (volume, per-display brightness and scaling, window
+opacity, screen lock), a **command box** for driving windows by name and number,
+and a **note pad** - all reachable from a widget you can park anywhere on any
+monitor.
 
 Design principles worth knowing before you use it:
 
 - **Nothing runs in the background but the app itself.** No services, no
   installers, no registry keys. A single `hgfloater.exe`.
-- **One file on disk.** Settings live in a plain `config.ini` under your user
-  profile. The program writes no logs, caches, or temporary files.
+- **Plain files on disk, in one folder.** Settings live in a plain `config.ini`
+  under your user profile, and notes are plain `.txt` files beside it. Nothing
+  is a database, everything is editable by hand, and the program writes no logs,
+  caches, or temporary files.
 - **Everything is adjustable in place.** Size, opacity, font size, grid shape,
   and colors change live with the wheel or the keyboard, and persist by
   themselves.
@@ -64,7 +68,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.29g)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.29)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -387,6 +391,25 @@ creation time of day goes there too, since the file name only carries the day.
 | `C` | Open the Command Box |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
+### Inside the note list
+
+| Key | Action |
+| :--- | :--- |
+| `Enter` on `+Add Note` | Create a note and open it |
+| `Enter` on a note | Open it in its own editor |
+| `Insert` | Create a note, from any row |
+| `K` | Archive the selected note, or restore it |
+| `Delete` | Delete the selected note (to the Recycle Bin) |
+| `Esc` | Close the list |
+
+### Inside a note editor
+
+| Key | Action |
+| :--- | :--- |
+| `Ctrl + Z` / `Ctrl + Y` | Undo / redo, a hundred levels deep |
+| `Ctrl + Wheel` | Note text size, shared with the list and every other editor |
+| `Esc` | Close the editor (pending edits are written first) |
+
 ### Window manipulation (focused or hovered floater/taskbox)
 
 | Key | Action |
@@ -405,6 +428,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Ctrl` + `Q` / `X`, `Alt + F4` | Quit |
 | `Ctrl + Enter` | Execute (inside the Command Box) |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
+| `Ctrl + Wheel` | Text size (inside the Command Box) |
 
 ## 12. Mouse Reference
 
@@ -424,6 +448,13 @@ creation time of day goes there too, since the file name only carries the day.
 | **Volume / mute** | Wheel over `V` / click `V` |
 | **Pin the taskbox** | Left-click `P` |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
+| **Open the notes** | Left-click `N` |
+| **New note** | Left-click `+Add Note` (a single click, unlike a note row) |
+| **Open a note** | Double-click it |
+| **Sort, archive, or delete a note** | Right-click it, or right-click a section heading |
+| **Note text size** | `Ctrl` + wheel over the list or an editor |
+| **Edit a note's text** | Right-click inside an editor |
+| **Command box text size** | `Ctrl` + wheel |
 | **Quit** | Left-click `X`, or Exit in the options menu |
 
 ## 13. Configuration File
