@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29d] - 2026-07-29
 
 ### Changed
 - Brightness now tries three paths per display and remembers which one answered. The **low-level DDC/CI** path comes first: it reads the monitor's capabilities string, checks that the luminance control is advertised, and drives it on the scale the monitor actually reports rather than assuming 0 to 100. The **high-level** call it used to use exclusively is now the second rung, and the gamma ramp the last. This reaches monitors that answer DDC/CI but not the high-level API, and it reports their level correctly.
