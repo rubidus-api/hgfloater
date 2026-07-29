@@ -10,6 +10,7 @@
  * writes out only the notes that actually changed, so holding a key down does
  * not turn into a write per character. */
 #include "hg_note.h"
+#include <richedit.h>
 #include "../hg_utils.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
@@ -48,7 +49,8 @@
 #define HG_NOTE_CMD_PASTE 7
 #define HG_NOTE_CMD_CLEAR 8
 #define HG_NOTE_CMD_SELECT_ALL 9
-#define HG_NOTE_CMD_SORT_BASE 10 /* + key * 2, + 1 when descending */
+#define HG_NOTE_CMD_REDO 10
+#define HG_NOTE_CMD_SORT_BASE 20 /* + key * 2, + 1 when descending */
 
 typedef enum HgNoteSortKey {
     HG_NOTE_SORT_CREATED = 0,
@@ -201,6 +203,92 @@ static void note_save_sort_settings(int section)
     note_ini_set_int(L"list", note_section_desc_key(section), s_sort[section].descending ? 1 : 0);
 }
 
+/* ------------------------------------------------------------- the edit host
+ *
+ * The stock EDIT control has a one-level undo that toggles: undo, then undo
+ * again, and you are back. There is no redo to offer. RichEdit keeps a real
+ * undo stack with a separate redo, so the note editor hosts one - and asks it
+ * for text with the line endings named explicitly, because the notes on disk
+ * are CRLF files and the control is free to hand back something else.
+ *
+ * If the library will not load, the editor falls back to EDIT and simply has no
+ * redo, which is worth more than no editor. */
+
+static BOOL s_richedit_tried = FALSE;
+static BOOL s_richedit_ready = FALSE;
+
+static BOOL note_richedit_available(void)
+{
+    if (!s_richedit_tried) {
+        s_richedit_tried = TRUE;
+        s_richedit_ready = (LoadLibraryW(L"Msftedit.dll") != NULL);
+    }
+    return s_richedit_ready;
+}
+
+static const WCHAR *note_edit_class(void)
+{
+    return note_richedit_available() ? MSFTEDIT_CLASS : L"EDIT";
+}
+
+/* Characters in the control, counting a line break as the two the file will
+ * hold. An overestimate is fine; it only sizes a buffer. */
+static int note_edit_text_length(HWND edit)
+{
+    if (!s_richedit_ready)
+        return GetWindowTextLengthW(edit);
+
+    GETTEXTLENGTHEX gtl;
+    gtl.flags = GTL_NUMCHARS | GTL_USECRLF;
+    gtl.codepage = 1200; /* UTF-16 */
+    LRESULT len = SendMessageW(edit, EM_GETTEXTLENGTHEX, (WPARAM)&gtl, 0);
+    return (len > 0) ? (int)len : 0;
+}
+
+/* Always CRLF, whichever control is hosting the text. */
+static WCHAR *note_edit_read_text(HWND edit)
+{
+    int len = note_edit_text_length(edit);
+    if (len < 0)
+        len = 0;
+
+    WCHAR *buffer = (WCHAR *)malloc(sizeof(WCHAR) * ((size_t)len + 1u));
+    if (!buffer)
+        return NULL;
+    buffer[0] = L'\0';
+
+    if (!s_richedit_ready) {
+        GetWindowTextW(edit, buffer, len + 1);
+        return buffer;
+    }
+
+    GETTEXTEX gt;
+    SecureZeroMemory(&gt, sizeof(gt));
+    gt.cb = (DWORD)((size_t)(len + 1) * sizeof(WCHAR));
+    gt.flags = GT_USECRLF;
+    gt.codepage = 1200;
+    SendMessageW(edit, EM_GETTEXTEX, (WPARAM)&gt, (LPARAM)buffer);
+    return buffer;
+}
+
+/* RichEdit never sends WM_CTLCOLOREDIT, so its colours are set rather than
+ * answered. Both the existing text and the default for what is typed next. */
+static void note_edit_apply_theme(HWND edit)
+{
+    if (!edit || !s_richedit_ready)
+        return;
+
+    SendMessageW(edit, EM_SETBKGNDCOLOR, 0, (LPARAM)hg_g_color_scheme_selected.bg);
+
+    CHARFORMAT2W cf;
+    SecureZeroMemory(&cf, sizeof(cf));
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_COLOR;
+    cf.crTextColor = hg_g_color_scheme_selected.text;
+    SendMessageW(edit, EM_SETCHARFORMAT, 0, (LPARAM)&cf);        /* what is typed next */
+    SendMessageW(edit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&cf);  /* what is already there */
+}
+
 /* ---------------------------------------------------------------- text size */
 
 /* Negative height means "character height", the same bargain the rest of the
@@ -240,8 +328,11 @@ static void note_refresh_fonts(void)
         InvalidateRect(s_note_list_wnd, NULL, TRUE);
     }
     for (int i = 0; i < s_note_count; ++i) {
-        if (s_notes[i].used && s_notes[i].editor && IsWindow(s_notes[i].editor))
-            note_apply_font(s_notes[i].editor, HG_NOTE_EDIT_ID, &s_notes[i].editor_font);
+        if (!s_notes[i].used || !s_notes[i].editor || !IsWindow(s_notes[i].editor))
+            continue;
+        note_apply_font(s_notes[i].editor, HG_NOTE_EDIT_ID, &s_notes[i].editor_font);
+        /* A new default font can take the character colour with it. */
+        note_edit_apply_theme(GetDlgItem(s_notes[i].editor, HG_NOTE_EDIT_ID));
     }
 }
 
@@ -782,6 +873,13 @@ static LRESULT CALLBACK note_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
         return 0;
     }
+
+    /* Ctrl+Z already reaches the control; Ctrl+Y is the half RichEdit does not
+     * bind by default. */
+    if (msg == WM_KEYDOWN && w_param == 'Y' && (GetKeyState(VK_CONTROL) < 0)) {
+        SendMessageW(hwnd, EM_REDO, 0, 0);
+        return 0;
+    }
     /* Only the Ctrl-held wheel is the window's; a plain one still scrolls. */
     if (msg == WM_MOUSEWHEEL && (GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL)) {
         SendMessageW(GetParent(hwnd), msg, w_param, l_param);
@@ -816,13 +914,9 @@ static void note_editor_pull_text(HgNote *note)
     if (!edit)
         return;
 
-    int len = GetWindowTextLengthW(edit);
-    if (len < 0)
-        len = 0;
-    WCHAR *buffer = (WCHAR *)malloc(sizeof(WCHAR) * ((size_t)len + 1u));
+    WCHAR *buffer = note_edit_read_text(edit);
     if (!buffer)
         return;
-    GetWindowTextW(edit, buffer, len + 1);
 
     free(note->text);
     note->text = buffer;
@@ -870,10 +964,14 @@ static void note_editor_show_context_menu(HWND editor, HWND edit, POINT screen_p
 
     UINT selection = note_menu_flags(sel_start != sel_end);
     UINT undo = note_menu_flags(SendMessageW(edit, EM_CANUNDO, 0, 0) != 0);
+    /* Redo is RichEdit's; the EDIT fallback has only the one-level toggle and
+     * says so by leaving the entry greyed. */
+    UINT redo = note_menu_flags(s_richedit_ready && SendMessageW(edit, EM_CANREDO, 0, 0) != 0);
     UINT paste = note_menu_flags(IsClipboardFormatAvailable(CF_UNICODETEXT));
-    UINT any_text = note_menu_flags(GetWindowTextLengthW(edit) > 0);
+    UINT any_text = note_menu_flags(note_edit_text_length(edit) > 0);
 
     AppendMenuW(menu, undo, HG_NOTE_CMD_UNDO, L"Undo");
+    AppendMenuW(menu, redo, HG_NOTE_CMD_REDO, L"Redo");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(menu, selection, HG_NOTE_CMD_CUT, L"Cut");
     AppendMenuW(menu, selection, HG_NOTE_CMD_COPY, L"Copy");
@@ -891,6 +989,9 @@ static void note_editor_show_context_menu(HWND editor, HWND edit, POINT screen_p
     switch (cmd) {
     case HG_NOTE_CMD_UNDO:
         SendMessageW(edit, WM_UNDO, 0, 0);
+        break;
+    case HG_NOTE_CMD_REDO:
+        SendMessageW(edit, EM_REDO, 0, 0);
         break;
     case HG_NOTE_CMD_CUT:
         SendMessageW(edit, WM_CUT, 0, 0);
@@ -969,6 +1070,9 @@ static void note_open_editor(int index)
     HWND edit = GetDlgItem(wnd, HG_NOTE_EDIT_ID);
     if (edit) {
         SetWindowTextW(edit, note->text ? note->text : L"");
+        /* After the text, so colouring all of it has something to colour. */
+        note_edit_apply_theme(edit);
+        SendMessageW(edit, EM_EMPTYUNDOBUFFER, 0, 0); /* loading is not an edit to undo */
     }
 
     ensure_window_visible(wnd, NULL);
@@ -984,12 +1088,21 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_CREATE: {
         hg_apply_class_background(hwnd);
         apply_dwm_attributes(hwnd);
-        HWND edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL,
+        HWND edit = CreateWindowExW(WS_EX_CLIENTEDGE, note_edit_class(), NULL,
                                     WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL |
                                         ES_WANTRETURN | ES_NOHIDESEL,
                                     0, 0, 0, 0, hwnd, (HMENU)HG_NOTE_EDIT_ID, GetModuleHandle(NULL), NULL);
-        if (edit)
+        if (edit) {
+            if (s_richedit_ready) {
+                /* RichEdit stays quiet unless asked for change notifications,
+                 * caps itself at 64K unless told otherwise, and keeps only a
+                 * shallow undo stack by default. */
+                SendMessageW(edit, EM_SETEVENTMASK, 0, ENM_CHANGE);
+                SendMessageW(edit, EM_EXLIMITTEXT, 0, (LPARAM)(4 * 1024 * 1024));
+                SendMessageW(edit, EM_SETUNDOLIMIT, 100, 0);
+            }
             SetWindowSubclass(edit, note_edit_subclass_proc, 1, 0);
+        }
         SetTimer(hwnd, HG_NOTE_TIMER_SAVE, HG_NOTE_SAVE_DELAY_MS, NULL);
         return 0;
     }
@@ -1046,8 +1159,16 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         return 0;
     }
 
+    /* The system theme can change while a note is open, and RichEdit does not
+     * ask for its colours the way an EDIT does. */
+    case WM_SETTINGCHANGE:
+        if (should_refresh_theme_on_setting_change(l_param))
+            note_edit_apply_theme(GetDlgItem(hwnd, HG_NOTE_EDIT_ID));
+        return 0;
+
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
+        /* Only reached on the EDIT fallback; RichEdit is coloured explicitly. */
         return hg_on_ctlcolor_edit((HDC)w_param);
 
     case WM_DPICHANGED: {

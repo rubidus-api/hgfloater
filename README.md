@@ -332,11 +332,16 @@ recently changed and your archive by title. Each half remembers its own order.
 updates the title as soon as the first line changes. `Esc` closes an editor.
 
 **Right-click inside an editor** for the text and for the note itself: **Undo**,
-**Cut**, **Copy**, **Paste**, **Delete** (the selection), **Select All**, then
+**Redo**, **Cut**, **Copy**, **Paste**, **Delete** (the selection), **Select All**, then
 **Archive** or **Restore**, and **Delete Note and Close**. Entries that would do
 nothing are greyed, so the menu says what is possible rather than failing
 quietly. It replaces the edit control's stock menu, which knows about the text
 but nothing about the note it belongs to.
+
+Undo goes back a hundred steps and **`Ctrl + Y`** or **Redo** comes forward
+again, because the editor hosts a rich edit control rather than the plain one,
+whose single undo level only toggles. If that control cannot be loaded the
+editor still opens on the plain one, with Redo greyed out.
 
 **`Ctrl + Wheel`** over the list or over any editor changes the note text size.
 There is one size for all of them, so the list and every open editor follow the
