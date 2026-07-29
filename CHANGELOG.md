@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **Start with Windows** in the options menu, checked when hgfloater launches at sign-in. It writes one value under the per-user `Run` key holding the quoted path of the running executable - no installer, no elevation, nothing else touched - and switching it on again after moving the executable re-registers where the file actually is. It is the only registry value the app writes, and `Reset Settings` leaves it alone.
+
 ## [v26.07.29] - 2026-07-29
 
 ### Added

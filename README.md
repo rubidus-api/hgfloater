@@ -52,7 +52,9 @@ monitor.
 Design principles worth knowing before you use it:
 
 - **Nothing runs in the background but the app itself.** No services, no
-  installers, no registry keys. A single `hgfloater.exe`.
+  installer. A single `hgfloater.exe`. It writes exactly one registry value, and
+  only if you switch **Start with Windows** on - the ordinary per-user `Run`
+  entry, which you can see and delete yourself.
 - **Plain files on disk, in one folder.** Settings live in a plain `config.ini`
   under your user profile, and notes are plain `.txt` files beside it. Nothing
   is a database, everything is editable by hand, and the program writes no logs,
@@ -212,6 +214,12 @@ Open it with the `O` toolbar button or by right-clicking the status line.
 
 - **Open Shortcuts Folder** — opens the shortcuts directory in Explorer.
 - **Edit Configuration** — opens `config.ini` in Notepad.
+- **Start with Windows** — checked when hgfloater launches at sign-in. Toggling
+  it writes or removes one value under
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, holding the quoted
+  path of the running executable. No installer, no elevation, nothing else
+  touched. Switching it on again after moving `hgfloater.exe` re-registers where
+  the file actually is. **Reset Settings** leaves it alone.
 - **About...** — this document, rendered inside the app.
 - **Reset Settings** — restores default geometry, opacity, sizes, and colors.
 - **Select Audio Device** — lists the output devices with the current one
@@ -516,7 +524,9 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 | `%USERPROFILE%\.HellGates\hgfloater\shortcuts\` | Your `.lnk` and `.url` files |
 | `%USERPROFILE%\.HellGates\hgfloater\note\` | One `.txt` per [note](#10-notes), plus `note.ini` for everything the text files cannot carry |
 
-That is the complete list. hgfloater writes no log files, no caches, and no
+That is the complete list on disk. The only thing written outside it is the
+`Run` registry value behind [Start with Windows](#7-the-options-menu), and only
+while that is switched on. hgfloater writes no log files, no caches, and no
 temporary files, and nothing it writes grows without bound.
 
 <!-- SKIP_START -->
