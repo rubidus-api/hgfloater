@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.29g] - 2026-07-29
+
+### Added
+- **A GPU temperature bar**, after the CPU one and on the same 20 to 100 degree scale, with its reading printed on it and its colour configurable as `stat_gpu`. It gets a better answer than the CPU row does: the adapter's own sensor, read through the same WDDM interface Task Manager uses, with no vendor SDK, no driver, and no elevation - so NVIDIA, AMD, and Intel all answer the same call. Drivers that report nothing leave the row absent, the way a missing thermal zone does.
+
 ## [v26.07.29f] - 2026-07-29
 
 ### Added
