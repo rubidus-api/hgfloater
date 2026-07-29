@@ -404,6 +404,8 @@ typedef struct HgFloaterMetrics {
     int value_x;     /* left edge of the reading strip */
     int rows_y;      /* top of the bar rows */
     int rows_h;      /* height the bars span */
+    int text_y;      /* top of the clock; the date follows it. Not rows_y: the
+                      * bars start above this, behind the host name. */
 } HgFloaterMetrics;
 
 static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR *date_str, HgFloaterMetrics *out)
@@ -448,6 +450,9 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
      * and text reads perfectly well over them. */
     out->rows_y = out->pad_y;
     out->rows_h = out->host_h + out->time_h + out->date_h;
+    /* The text stack is a separate thing and did not move: the host name owns
+     * the top, and the clock starts below it. */
+    out->text_y = out->pad_y + out->host_h;
 }
 
 /* Bars fill the column to the right of the labels; labels are centered in their
@@ -709,7 +714,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     }
 
                     /* Clock and date center in the column right of the labels. */
-                    int time_top = m.rows_y;
+                    int time_top = m.text_y;
                     int date_top = time_top + m.time_h;
                     int time_y = floater_ink_top(mem_dc, hg_g_floater_time_font, time_str, time_top, m.time_h);
                     int date_y = floater_ink_top(mem_dc, hg_g_floater_date_font, date_str, date_top, m.date_h);
