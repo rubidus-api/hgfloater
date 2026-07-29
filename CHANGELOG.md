@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- A note editor answers a right-click with its own menu: **Undo**, **Cut**, **Copy**, **Paste**, **Delete** the selection, **Select All**, **Archive** or **Restore**, and **Delete Note and Close**. Entries that would do nothing are greyed out. It replaces the edit control's stock menu, which knows about the text but nothing about the note it belongs to.
+
 ## [v26.07.29d] - 2026-07-29
 
 ### Added

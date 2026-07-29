@@ -331,6 +331,13 @@ recently changed and your archive by title. Each half remembers its own order.
 **The editors** are separate windows, and several can be open at once. Typing
 updates the title as soon as the first line changes. `Esc` closes an editor.
 
+**Right-click inside an editor** for the text and for the note itself: **Undo**,
+**Cut**, **Copy**, **Paste**, **Delete** (the selection), **Select All**, then
+**Archive** or **Restore**, and **Delete Note and Close**. Entries that would do
+nothing are greyed, so the menu says what is possible rather than failing
+quietly. It replaces the edit control's stock menu, which knows about the text
+but nothing about the note it belongs to.
+
 **`Ctrl + Wheel`** over the list or over any editor changes the note text size.
 There is one size for all of them, so the list and every open editor follow the
 same wheel. It is stored unscaled, so a change made on a 200% display reads the

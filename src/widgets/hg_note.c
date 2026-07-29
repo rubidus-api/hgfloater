@@ -22,6 +22,7 @@
 #define HG_NOTE_TIMER_SAVE 1
 #define HG_NOTE_MSG_REFILL (WM_APP + 0) /* an editor closed; its row needs redrawing */
 #define HG_NOTE_MSG_ADD (WM_APP + 1)    /* the action row was clicked */
+#define HG_NOTE_MSG_DELETE_SELF (WM_APP + 2) /* an editor was told to delete its own note */
 
 /* One text size for the list and every editor, kept unscaled: each window turns
  * it into pixels at its own display's scale, so the same note reads the same
@@ -37,10 +38,16 @@
 #define HG_NOTE_ITEM_HEAD_ACTIVE (-3)
 #define HG_NOTE_ITEM_HEAD_ARCHIVED (-4)
 
-/* Context-menu commands. */
+/* Context-menu commands, shared by the list's menu and the editor's. */
 #define HG_NOTE_CMD_OPEN 1
 #define HG_NOTE_CMD_ARCHIVE 2
 #define HG_NOTE_CMD_DELETE 3
+#define HG_NOTE_CMD_UNDO 4
+#define HG_NOTE_CMD_CUT 5
+#define HG_NOTE_CMD_COPY 6
+#define HG_NOTE_CMD_PASTE 7
+#define HG_NOTE_CMD_CLEAR 8
+#define HG_NOTE_CMD_SELECT_ALL 9
 #define HG_NOTE_CMD_SORT_BASE 10 /* + key * 2, + 1 when descending */
 
 typedef enum HgNoteSortKey {
@@ -84,6 +91,10 @@ static BOOL s_notes_loaded = FALSE;
 static HgNoteSort s_sort[HG_NOTE_SECTION_COUNT];
 static int s_font_size = HG_NOTE_FONT_DEFAULT;
 static HFONT s_list_font = NULL;
+
+/* Defined with the list window; the editor reaches back through it whenever it
+ * changes something the list is showing. */
+static void note_list_refresh(void);
 
 static void note_directory(WCHAR *out, size_t out_cch)
 {
@@ -747,7 +758,18 @@ static void note_delete(HgNote *note)
     SecureZeroMemory(note, sizeof(*note));
 }
 
+static void note_toggle_archived(HgNote *note)
+{
+    if (!note || !note->used)
+        return;
+    note->archived = !note->archived;
+    note_save_archived_flag(note);
+    note_list_refresh();
+}
+
 /* ------------------------------------------------------------- editor window */
+
+static void note_editor_show_context_menu(HWND editor, HWND edit, POINT screen_pt);
 
 /* The edit control eats Escape, so a subclass hands it back to the window that
  * knows what closing means. */
@@ -765,6 +787,24 @@ static LRESULT CALLBACK note_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         SendMessageW(GetParent(hwnd), msg, w_param, l_param);
         return 0;
     }
+
+    /* Handling this replaces the edit control's stock menu, which knows about
+     * the text but nothing about the note the text belongs to. */
+    if (msg == WM_CONTEXTMENU) {
+        POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        if (l_param == (LPARAM)-1) {
+            /* Raised from the keyboard: anchor it to the control, not to
+             * wherever the pointer happens to be resting. */
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            pt.x = rc.left;
+            pt.y = rc.top;
+            ClientToScreen(hwnd, &pt);
+        }
+        note_editor_show_context_menu(GetParent(hwnd), hwnd, pt);
+        return 0;
+    }
+
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
@@ -800,6 +840,85 @@ static HgNote *note_from_editor(HWND hwnd)
         return NULL;
     HgNote *note = &s_notes[index];
     return note->used ? note : NULL;
+}
+
+/* MF_* are long constants, so the enabled/greyed choice is made once here rather
+ * than casting at every AppendMenuW call site. */
+static UINT note_menu_flags(BOOL enabled)
+{
+    return enabled ? (UINT)MF_STRING : (UINT)(MF_STRING | MF_GRAYED);
+}
+
+/* The clipboard verbs the edit control already implements, plus the two that
+ * belong to the note rather than to its text. Each entry is greyed when it would
+ * do nothing, so the menu says what is possible instead of failing quietly. */
+static void note_editor_show_context_menu(HWND editor, HWND edit, POINT screen_pt)
+{
+    HgNote *note = note_from_editor(editor);
+    if (!note || !edit)
+        return;
+
+    HMENU menu = CreatePopupMenu();
+    if (!menu)
+        return;
+
+    /* Asked through pointers rather than the packed return value, which cannot
+     * describe a selection past 64K characters. */
+    DWORD sel_start = 0;
+    DWORD sel_end = 0;
+    SendMessageW(edit, EM_GETSEL, (WPARAM)&sel_start, (LPARAM)&sel_end);
+
+    UINT selection = note_menu_flags(sel_start != sel_end);
+    UINT undo = note_menu_flags(SendMessageW(edit, EM_CANUNDO, 0, 0) != 0);
+    UINT paste = note_menu_flags(IsClipboardFormatAvailable(CF_UNICODETEXT));
+    UINT any_text = note_menu_flags(GetWindowTextLengthW(edit) > 0);
+
+    AppendMenuW(menu, undo, HG_NOTE_CMD_UNDO, L"Undo");
+    AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(menu, selection, HG_NOTE_CMD_CUT, L"Cut");
+    AppendMenuW(menu, selection, HG_NOTE_CMD_COPY, L"Copy");
+    AppendMenuW(menu, paste, HG_NOTE_CMD_PASTE, L"Paste");
+    AppendMenuW(menu, selection, HG_NOTE_CMD_CLEAR, L"Delete");
+    AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(menu, any_text, HG_NOTE_CMD_SELECT_ALL, L"Select All");
+    AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_ARCHIVE, note->archived ? L"Restore" : L"Archive");
+    AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_DELETE, L"Delete Note and Close");
+
+    int cmd = TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, screen_pt.x, screen_pt.y, editor, NULL);
+    DestroyMenu(menu);
+
+    switch (cmd) {
+    case HG_NOTE_CMD_UNDO:
+        SendMessageW(edit, WM_UNDO, 0, 0);
+        break;
+    case HG_NOTE_CMD_CUT:
+        SendMessageW(edit, WM_CUT, 0, 0);
+        break;
+    case HG_NOTE_CMD_COPY:
+        SendMessageW(edit, WM_COPY, 0, 0);
+        break;
+    case HG_NOTE_CMD_PASTE:
+        SendMessageW(edit, WM_PASTE, 0, 0);
+        break;
+    case HG_NOTE_CMD_CLEAR:
+        SendMessageW(edit, WM_CLEAR, 0, 0);
+        break;
+    case HG_NOTE_CMD_SELECT_ALL:
+        SendMessageW(edit, EM_SETSEL, 0, (LPARAM)-1);
+        SetFocus(edit);
+        break;
+    case HG_NOTE_CMD_ARCHIVE:
+        note_toggle_archived(note);
+        break;
+    case HG_NOTE_CMD_DELETE:
+        /* Deleting takes this window down with it, and we are inside its child's
+         * message handling, so it waits for the stack to unwind. */
+        PostMessageW(editor, HG_NOTE_MSG_DELETE_SELF, 0, 0);
+        break;
+    default:
+        break;
+    }
 }
 
 static void note_open_editor(int index)
@@ -917,6 +1036,15 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         if (note_handle_wheel(w_param))
             return 0;
         break;
+
+    case HG_NOTE_MSG_DELETE_SELF: {
+        HgNote *note = note_from_editor(hwnd);
+        if (note) {
+            note_delete(note); /* closes this window on its way through */
+            note_list_refresh();
+        }
+        return 0;
+    }
 
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
@@ -1137,13 +1265,18 @@ static void note_list_delete(HWND hwnd, int index)
     note_list_fill(hwnd);
 }
 
+static void note_list_refresh(void)
+{
+    if (s_note_list_wnd && IsWindow(s_note_list_wnd))
+        note_list_fill(s_note_list_wnd);
+}
+
 static void note_list_toggle_archived(HWND hwnd, int index)
 {
-    if (index < 0 || index >= s_note_count || !s_notes[index].used)
+    (void)hwnd; /* the refresh finds the list itself */
+    if (index < 0 || index >= s_note_count)
         return;
-    s_notes[index].archived = !s_notes[index].archived;
-    note_save_archived_flag(&s_notes[index]);
-    note_list_fill(hwnd);
+    note_toggle_archived(&s_notes[index]);
 }
 
 /* ------------------------------------------------------------ context menu */
