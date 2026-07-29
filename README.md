@@ -242,6 +242,10 @@ while the floater or taskbox has focus.
 
 - Type a command and run it with **`Ctrl + Enter`** or the Execute button.
 - **`Ctrl + Space`** returns focus to the input field.
+- **`Ctrl + Wheel`** changes the text size, **`Alt + Wheel`** the opacity, and a
+  plain wheel scrolls.
+- Long lines **wrap** instead of running off the right edge, so a transcript of
+  window titles and help text reads without a horizontal scrollbar.
 - The window keeps its own position, size, opacity, font, and font size in
   `config.ini`, independent of the other widgets.
 
@@ -255,6 +259,7 @@ could come and go between the list you read and the number you typed.
 | Command | Short | What it does |
 | :--- | :--- | :--- |
 | `help` | `h` | The list below, inside the box. |
+| `help move` | `h m` | One command explained in full, with examples. |
 | `list` | `l` | Windows, numbered. |
 | `list windows` | `l w` | The same list. |
 | `list resize` | `l r` | The resize presets, numbered. |
@@ -271,6 +276,10 @@ the virtual desktop's, so the same pair of numbers means the same place on every
 screen. The display number is the one the options menu shows beside that
 monitor's name. A search term may contain spaces; everything after `windows` is
 the term.
+
+`help` on its own prints one line per command; **`help <command>`** prints that
+command's arguments, what they mean, and worked examples - `help move`,
+`h search`, and so on.
 
 The input field is multi-line, so pasting several lines runs them in order, each
 echoed behind a `>` prompt.
