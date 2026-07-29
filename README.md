@@ -6,11 +6,12 @@ hgfloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
-C against the Win32 API with zero external dependencies, so it starts instantly
-and stays out of your way.
+C against the Win32 API with zero external dependencies: the whole program is a
+single **executable of about 360 KB** that needs no installer and no runtime, so
+it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
-![screenshot](./screenshot/hgfloater-v26.04.30-screenshot.png)
+![screenshot](./screenshot/hgfloater-v26.07.29j-screenshot.png)
 <!-- SKIP_END -->
 
 ---
