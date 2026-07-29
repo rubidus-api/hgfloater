@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29f] - 2026-07-29
 
 ### Added
 - **Redo** in the note editor, on the context menu and on `Ctrl + Y`, with a hundred levels of undo behind it. The editor now hosts a rich edit control: the plain one Windows gives you has a single undo level that merely toggles, so there was nothing for a redo to do. If the rich edit library cannot be loaded the editor still opens on the plain control, with Redo greyed out.
