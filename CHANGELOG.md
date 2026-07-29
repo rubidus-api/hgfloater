@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.29o] - 2026-07-29
+
+### Added
+- **Clipboard history**, behind a new `L` toolbar button that toggles its window. It lists what you have copied, newest first; clicking a clip makes it the current one and pushes everything above it down a place, so the list ends up in the order it would have been in had you copied that text again. A search box filters the list, and a number box beside it sets how many clips to keep — 16 by default, 1 to 64.
+- Lowering that number takes effect immediately: 20 clips kept and a maximum of 16 drops the oldest 4 as you set it, because "at most 16" would otherwise be false the moment you asked for it. Raising it fills forward, since the dropped clips are gone and inventing history would be worse than not having it.
+
+### Notes
+- Capture runs whether or not the window is open — a history that only recorded while you were looking at it would not be one — so a message-only window holds a clipboard listener for the life of the process. Text only.
+- **Nothing is written to disk**, only the maximum. This is the one place the feature deliberately does less than the clipboard managers it was measured against: a clipboard history on disk is a file of every password and recovery code that passed through the clipboard, and a floating clock widget should not be the program that owns that file. Restarting hgfloater empties the history, and the README says so.
+
 ## [v26.07.29n] - 2026-07-29
 
 ### Added

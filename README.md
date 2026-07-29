@@ -7,7 +7,7 @@ translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 380 KB** that needs no installer and no runtime, so
+single **executable of about 390 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -202,7 +202,7 @@ A single-line read-only field across the top of the taskbox.
 
 ## 6. The Toolbar
 
-Twelve built-in buttons sit in the same grid as the icons. Their order is fixed.
+Thirteen built-in buttons sit in the same grid as the icons. Their order is fixed.
 
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
@@ -218,6 +218,7 @@ Twelve built-in buttons sit in the same grid as the icons. Their order is fixed.
 | **`F`** Floater | Collapses to the floater for tuning (see below). | — |
 | **`P`** Pin | Pins the taskbox open. | — |
 | **`N`** Note | Opens the [note list](#10-notes). | — |
+| **`L`** Clipboard | Opens the clipboard history; press again to close it. | — |
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -258,6 +259,46 @@ Click the floater without dragging to go back.
 **`P` — pin.** While pinned, moving the mouse away no longer collapses the
 taskbox, and the button carries an accent border. Explicit closes — `X`, `Esc`,
 the global hotkey, a floater click — still work. Click again to unpin.
+
+
+### The clipboard history
+
+**`L`** opens a window listing what you have copied, newest first. Press `L`
+again and it closes.
+
+Capture runs whether or not that window is open — a history that only recorded
+while you were looking at it would not be a history — so hgfloater keeps a
+clipboard listener alive for as long as it is running. **Text only.** Copying an
+image or a file leaves the history untouched rather than adding an empty row.
+
+| What | What it does |
+| :--- | :--- |
+| **Click** a row, or `Enter` | Makes that clip the current one and closes the window. |
+| **Search box**, top left | Shows only the clips containing what you type, ignoring case. Clear it to see them all again. |
+| **Number box**, top right | The most clips to keep. Default 16, set with the spin buttons, the arrow keys, or the wheel over it. |
+| `Esc` | Closes the window. |
+
+**Choosing an old clip moves it to the top and pushes everything above it down
+one.** Nothing is lost and nothing below your choice moves: the list ends up in
+the order it would have been in had you simply copied that text again. A clip
+identical to the one already at the top is never recorded twice, which is also
+what keeps your own choice from coming straight back as a new entry.
+
+**Lowering the maximum takes effect at once** — with 20 clips kept and the
+number set to 16, the oldest 4 are dropped as you set it, because "at most 16"
+would otherwise be false the moment you asked for it. **Raising it fills
+forward**: the dropped clips are gone, and new ones accumulate up to the new
+number.
+
+**Nothing is written to disk.** The history lives in memory and dies with the
+program; only the maximum is saved. This is deliberate, and it is the one place
+hgfloater does less than the clipboard managers it was measured against: a
+clipboard history on disk is a file containing every password and recovery code
+that passed through the clipboard, and a floating clock widget should not be the
+program that owns that file. The cost is stated rather than hidden — **restarting
+hgfloater empties the history.**
+
+---
 
 ## 7. The Options Menu
 
@@ -557,6 +598,14 @@ every wheel notch.
 | `icon_size` | Icon resolution (`[taskbox]` only) |
 | `show_stats` | `0` hides the CPU/memory/battery line (`[floater]` only, default `1`) |
 
+### `[clipboard]`
+
+| Key | Meaning |
+| :--- | :--- |
+| `max` | The most clips the history keeps, 1–64 (default `16`) |
+
+Only the number lives here. The clips themselves are never written to disk.
+
 ### `[commandbox]`
 
 Its own `x`, `y`, `w`, `h`, `alpha`, `font_size`, and `font_name`.
@@ -693,6 +742,7 @@ hgfloater/
 │       ├── hg_taskbox.c, hg_taskbox_menus.c, hg_toolbar.c, hg_window_list.c
 │       ├── hg_commandbox.c
 │       ├── hg_note.c
+│       ├── hg_clip.c         clipboard history
 │       ├── hg_monitor.c
 │       └── hg_about.c
 ├── test/                 console tests
