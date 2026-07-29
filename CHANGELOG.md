@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- The manuals had fallen behind the code in three places, all found by checking them against the tree rather than against memory. The project layout never listed `hg_wmi.c`, which has held the internal panel's backlight since v26.07.29e and the thermal zone since v26.07.29f; `hg_sysinfo.c` was still described as CPU, memory, and battery after it grew a GPU temperature reader; and the mouse reference had no entry for moving the floater at all, before or after v26.07.29j gave that gesture something to do.
+
 ## [v26.07.29j] - 2026-07-29
 
 ### Added
