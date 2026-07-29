@@ -7,7 +7,7 @@ translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 360 KB** that needs no installer and no runtime, so
+single **executable of about 370 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -126,7 +126,7 @@ of other windows.
   Manager uses, with no vendor SDK and no driver. Plenty of drivers report
   nothing, and those machines simply have no GPU row.
 
-  The CPU reading is read from the **ACPI thermal zone** your firmware exposes. That is the
+  The CPU reading is read from an **ACPI thermal zone** your firmware exposes. That is the
   only temperature reachable without installing a kernel driver and running as
   administrator, and it is worth knowing what it is: **a sensor on the board
   near the CPU, not the CPU die**. It tracks the processor without being it, and
@@ -134,6 +134,14 @@ of other windows.
   the row simply is not there, the same way the battery row is absent on a
   desktop. If you need true per-core readings, use a tool built around a
   hardware-monitoring driver; hgfloater will not become one.
+
+  Firmware usually declares **several** zones, and often puts one it never
+  updates in front of the live one, so a single reading taken blindly is a coin
+  toss. hgfloater reads **every** zone, from both surfaces Windows offers - the
+  WMI class and the thermal performance counters, which do not always agree
+  about being available - and prefers a zone it has watched change over one that
+  has only ever held the same number. Type **`list sensors`** in the command box
+  to see all of them and which one is on the bar.
 
 **What you can do to it**
 
@@ -319,6 +327,7 @@ could come and go between the list you read and the number you typed.
 | `list windows` | `l w` | The same list. |
 | `list resize` | `l r` | The resize presets, numbered. |
 | `list shortcut` | `l s` | The shortcut icons, numbered. |
+| `list sensors` | `l t` | Every temperature sensor found, and which one `TMP` and `GPU` show. |
 | `go 1` | — | Focus window 1, restoring it if it is minimised. |
 | `resize 1 1` | `r 1 1` | Resize window 1 to preset 1. |
 | `move 1 100 100` | `m 1 100 100` | Move window 1 to 100, 100 on the display it is already on. |
@@ -657,7 +666,7 @@ hgfloater/
 │   ├── hg_command.*      the command box language
 │   ├── hg_audio.c        volume and device selection
 │   ├── hg_display.c      monitors, DPI, the brightness path ladder
-│   ├── hg_wmi.c          root\WMI clients: panel backlight, thermal zone
+│   ├── hg_wmi.c          root\WMI clients: panel backlight, thermal zones
 │   ├── hg_shell.c        shortcuts, shell integration, start-with-Windows
 │   ├── hg_sysinfo.c      CPU, memory, battery, GPU temperature
 │   ├── hgfloater.rc      version info, icon, manifest

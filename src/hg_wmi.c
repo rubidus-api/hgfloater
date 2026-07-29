@@ -21,6 +21,8 @@
  * runs on the UI thread. */
 #include "hg_utils.h"
 #include <wbemidl.h>
+#include <pdh.h>
+#include <pdhmsg.h>
 
 /* Declared by hand for the same reason the audio GUIDs are: linking the uuid
  * import library clashes with this project's manual COM declarations. */
@@ -206,33 +208,238 @@ static BOOL hg_thermal_to_celsius(int tenths_kelvin, int *out_celsius)
     return TRUE;
 }
 
+/* Every zone the WMI class reports, not just the first. Firmware routinely
+ * declares several and puts a placeholder in front of the live one. */
+static int hg_wmi_zones(HgThermalZone *out, int max)
+{
+    IWbemServices *services = hg_wmi_services();
+    if (!services)
+        return 0;
+
+    BSTR language = SysAllocString(L"WQL");
+    BSTR query = SysAllocString(L"SELECT InstanceName, CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
+    IEnumWbemClassObject *rows = NULL;
+    HRESULT hr = (language && query)
+                     ? services->lpVtbl->ExecQuery(services, language, query,
+                                                   WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &rows)
+                     : E_OUTOFMEMORY;
+    if (language)
+        SysFreeString(language);
+    if (query)
+        SysFreeString(query);
+    if (FAILED(hr) || !rows)
+        return 0;
+
+    int count = 0;
+    while (count < max) {
+        IWbemClassObject *object = NULL;
+        ULONG returned = 0;
+        if (FAILED(rows->lpVtbl->Next(rows, HG_WMI_TIMEOUT_MS, 1, &object, &returned)) || returned != 1 || !object)
+            break;
+
+        VARIANT value;
+        VariantInit(&value);
+        int tenths = 0;
+        int celsius = 0;
+        if (SUCCEEDED(object->lpVtbl->Get(object, L"CurrentTemperature", 0, &value, NULL, NULL)) &&
+            hg_variant_to_int(&value, &tenths) && hg_thermal_to_celsius(tenths, &celsius)) {
+            out[count].celsius = celsius;
+            out[count].from_counter = FALSE;
+
+            VARIANT name;
+            VariantInit(&name);
+            if (SUCCEEDED(object->lpVtbl->Get(object, L"InstanceName", 0, &name, NULL, NULL)) &&
+                V_VT(&name) == VT_BSTR && V_BSTR(&name)) {
+                StringCchCopyW(out[count].name, HG_ARRAYSIZE(out[count].name), V_BSTR(&name));
+            } else {
+                StringCchCopyW(out[count].name, HG_ARRAYSIZE(out[count].name), L"(zone)");
+            }
+            VariantClear(&name);
+            count++;
+        }
+        VariantClear(&value);
+        HG_RELEASE_COM(object);
+    }
+
+    HG_RELEASE_COM(rows);
+    return count;
+}
+
+/* ------------------------------------------- the same zones, the other way
+ *
+ * Windows also publishes each ACPI thermal zone as a performance counter, in
+ * degrees Kelvin. It is the same firmware data behind a different window, and
+ * the two do not always agree about being available: a machine whose WMI class
+ * answers nothing sometimes has counters, and the reverse happens too.
+ *
+ * PdhAddEnglishCounter, not PdhAddCounter: the counter object's name is
+ * localised, so the literal path below would not resolve on a Windows whose
+ * display language is not English. */
+
+typedef PDH_STATUS (WINAPI *PFN_PdhOpenQueryW)(LPCWSTR, DWORD_PTR, PDH_HQUERY *);
+typedef PDH_STATUS (WINAPI *PFN_PdhAddEnglishCounterW)(PDH_HQUERY, LPCWSTR, DWORD_PTR, PDH_HCOUNTER *);
+typedef PDH_STATUS (WINAPI *PFN_PdhCollectQueryData)(PDH_HQUERY);
+typedef PDH_STATUS (WINAPI *PFN_PdhGetFormattedCounterArrayW)(PDH_HCOUNTER, DWORD, LPDWORD, LPDWORD,
+                                                              PPDH_FMT_COUNTERVALUE_ITEM_W);
+typedef PDH_STATUS (WINAPI *PFN_PdhCloseQuery)(PDH_HQUERY);
+
+static PFN_PdhOpenQueryW s_pfnPdhOpen = NULL;
+static PFN_PdhAddEnglishCounterW s_pfnPdhAdd = NULL;
+static PFN_PdhCollectQueryData s_pfnPdhCollect = NULL;
+static PFN_PdhGetFormattedCounterArrayW s_pfnPdhArray = NULL;
+static PFN_PdhCloseQuery s_pfnPdhClose = NULL;
+static BOOL s_pdh_initialized = FALSE;
+
+static BOOL hg_pdh_ready(void)
+{
+    if (!s_pdh_initialized) {
+        s_pdh_initialized = TRUE;
+        HMODULE pdh = LoadLibraryW(L"pdh.dll");
+        if (pdh) {
+            union {
+                FARPROC proc;
+                PFN_PdhOpenQueryW open;
+                PFN_PdhAddEnglishCounterW add;
+                PFN_PdhCollectQueryData collect;
+                PFN_PdhGetFormattedCounterArrayW array;
+                PFN_PdhCloseQuery close;
+            } loader;
+            loader.proc = GetProcAddress(pdh, "PdhOpenQueryW");
+            s_pfnPdhOpen = loader.open;
+            loader.proc = GetProcAddress(pdh, "PdhAddEnglishCounterW");
+            s_pfnPdhAdd = loader.add;
+            loader.proc = GetProcAddress(pdh, "PdhCollectQueryData");
+            s_pfnPdhCollect = loader.collect;
+            loader.proc = GetProcAddress(pdh, "PdhGetFormattedCounterArrayW");
+            s_pfnPdhArray = loader.array;
+            loader.proc = GetProcAddress(pdh, "PdhCloseQuery");
+            s_pfnPdhClose = loader.close;
+        }
+    }
+    return s_pfnPdhOpen && s_pfnPdhAdd && s_pfnPdhCollect && s_pfnPdhArray && s_pfnPdhClose;
+}
+
+static int hg_counter_zones(HgThermalZone *out, int max)
+{
+    if (!hg_pdh_ready())
+        return 0;
+
+    PDH_HQUERY query = NULL;
+    if (s_pfnPdhOpen(NULL, 0, &query) != ERROR_SUCCESS || !query)
+        return 0;
+
+    int count = 0;
+    PDH_HCOUNTER counter = NULL;
+    if (s_pfnPdhAdd(query, L"\\Thermal Zone Information(*)\\Temperature", 0, &counter) == ERROR_SUCCESS &&
+        s_pfnPdhCollect(query) == ERROR_SUCCESS) {
+        DWORD size = 0;
+        DWORD items = 0;
+        PDH_STATUS status = s_pfnPdhArray(counter, PDH_FMT_DOUBLE, &size, &items, NULL);
+        if (status == (PDH_STATUS)PDH_MORE_DATA && size > 0 && size < (1u << 20)) {
+            PDH_FMT_COUNTERVALUE_ITEM_W *values = (PDH_FMT_COUNTERVALUE_ITEM_W *)malloc(size);
+            if (values && s_pfnPdhArray(counter, PDH_FMT_DOUBLE, &size, &items, values) == ERROR_SUCCESS) {
+                for (DWORD i = 0; i < items && count < max; ++i) {
+                    double kelvin = values[i].FmtValue.doubleValue;
+                    int celsius = (int)(kelvin - 273.15 + 0.5);
+                    if (celsius < 1 || celsius > 150)
+                        continue;
+                    StringCchCopyW(out[count].name, HG_ARRAYSIZE(out[count].name),
+                                   values[i].szName ? values[i].szName : L"(zone)");
+                    out[count].celsius = celsius;
+                    out[count].from_counter = TRUE;
+                    count++;
+                }
+            }
+            free(values);
+        }
+    }
+
+    s_pfnPdhClose(query);
+    return count;
+}
+
+int hg_thermal_enumerate(HgThermalZone *out, int max)
+{
+    if (!out || max <= 0)
+        return 0;
+    int count = hg_wmi_zones(out, max);
+    if (count < max)
+        count += hg_counter_zones(out + count, max - count);
+    return count;
+}
+
+/* ------------------------------------------------------------ which zone
+ *
+ * Firmware commonly declares a zone it never updates. A reading that never
+ * moves is indistinguishable from a working sensor in any single sample, so
+ * the zones are remembered across samples and one that has been seen to change
+ * is preferred over one that has not. */
+typedef struct HgZoneMemory {
+    WCHAR name[64];
+    int first;
+    BOOL moved;
+    BOOL used;
+} HgZoneMemory;
+
+static HgZoneMemory s_zone_memory[HG_THERMAL_MAX_ZONES];
+
+static BOOL hg_zone_remember(const WCHAR *name, int celsius)
+{
+    for (int i = 0; i < (int)HG_ARRAYSIZE(s_zone_memory); ++i) {
+        if (!s_zone_memory[i].used)
+            continue;
+        if (wcscmp(s_zone_memory[i].name, name) != 0)
+            continue;
+        if (celsius != s_zone_memory[i].first)
+            s_zone_memory[i].moved = TRUE;
+        return s_zone_memory[i].moved;
+    }
+
+    for (int i = 0; i < (int)HG_ARRAYSIZE(s_zone_memory); ++i) {
+        if (s_zone_memory[i].used)
+            continue;
+        s_zone_memory[i].used = TRUE;
+        s_zone_memory[i].moved = FALSE;
+        s_zone_memory[i].first = celsius;
+        StringCchCopyW(s_zone_memory[i].name, HG_ARRAYSIZE(s_zone_memory[i].name), name);
+        return FALSE;
+    }
+    return FALSE;
+}
+
+/* A zone whose name says CPU is worth more than one that says nothing. */
+static BOOL hg_zone_names_cpu(const WCHAR *name)
+{
+    return StrStrIW(name, L"CPU") != NULL || StrStrIW(name, L"TZ0") != NULL;
+}
+
 BOOL hg_thermal_zone_celsius(int *out_celsius)
 {
     if (!out_celsius)
         return FALSE;
 
-    IWbemServices *services = hg_wmi_services();
-    if (!services)
+    HgThermalZone zones[HG_THERMAL_MAX_ZONES];
+    int count = hg_thermal_enumerate(zones, (int)HG_ARRAYSIZE(zones));
+    if (count <= 0)
         return FALSE;
 
-    BOOL ok = FALSE;
-    IWbemClassObject *zone =
-        hg_wmi_first_instance(services, L"SELECT CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
-    if (zone) {
-        VARIANT value;
-        VariantInit(&value);
-        if (SUCCEEDED(zone->lpVtbl->Get(zone, L"CurrentTemperature", 0, &value, NULL, NULL))) {
-            int tenths = 0;
-            if (hg_variant_to_int(&value, &tenths))
-                ok = hg_thermal_to_celsius(tenths, out_celsius);
+    int best = -1;
+    int best_score = -1;
+    for (int i = 0; i < count; ++i) {
+        BOOL moved = hg_zone_remember(zones[i].name, zones[i].celsius);
+        /* Having been seen to move outweighs being named after the CPU, which
+         * outweighs nothing at all; the hottest wins an outright tie. */
+        int score = (moved ? 4 : 0) + (hg_zone_names_cpu(zones[i].name) ? 2 : 0);
+        if (score > best_score || (score == best_score && best >= 0 && zones[i].celsius > zones[best].celsius)) {
+            best = i;
+            best_score = score;
         }
-        VariantClear(&value);
-        HG_RELEASE_COM(zone);
     }
 
-    /* A machine whose firmware exposes no zone is the common case, not a
-     * broken connection, so the connection is kept for the backlight's sake. */
-    return ok;
+    if (best < 0)
+        return FALSE;
+    *out_celsius = zones[best].celsius;
+    return TRUE;
 }
 
 /* ---------------------------------------------------------------- backlight */

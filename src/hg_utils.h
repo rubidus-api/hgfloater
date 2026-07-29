@@ -76,6 +76,17 @@ void hg_backlight_shutdown(void); /* release the cached WMI connection before Co
  * FALSE on the many machines whose firmware exposes no zone. It tracks CPU
  * temperature without being it; see docs/RFC-2026-07-temperature.md. */
 BOOL hg_thermal_zone_celsius(int *out_celsius);
+
+/* Every thermal zone the machine will admit to, from both surfaces, for the
+ * command box's `list sensors`. Firmware declares zones it never updates, so
+ * seeing the whole list is the only way to tell a dead one from a live one. */
+#define HG_THERMAL_MAX_ZONES 16
+typedef struct HgThermalZone {
+    WCHAR name[64];
+    int celsius;
+    BOOL from_counter; /* the performance counter rather than the WMI class */
+} HgThermalZone;
+int hg_thermal_enumerate(HgThermalZone *out, int max);
 /* TRUE when the display hangs off an internal connector (eDP, LVDS, or the
  * INTERNAL technology), which is what makes the WMI path the right one. */
 BOOL hg_monitor_is_internal(const WCHAR *gdi_name);

@@ -183,13 +183,20 @@ static const WCHAR *const cmd_help_list[] = {
     L"  Prints a numbered list. Without a kind, lists windows.",
     L"  The number beside a window is the one go, resize, and move take,",
     L"  so this is where those commands get their arguments.",
-    L"  Kinds: windows (w), resize (r), shortcut (s).",
+    L"  Kinds: windows (w), resize (r), shortcut (s), sensors (t).",
     L"",
     L"Examples:",
     L"  list                every window, numbered",
     L"  l w                 the same list",
     L"  l r                 the resize presets, numbered for 'resize'",
     L"  l s                 the shortcut icons",
+    L"  l t                 every temperature sensor, and which one is shown",
+    L"",
+    L"  'list sensors' is a diagnostic. The floater shows one CPU",
+    L"  temperature, chosen from whatever the firmware exposes; this",
+    L"  prints all of them so a reading that looks wrong can be checked",
+    L"  against its neighbours. A zone that never moves is firmware",
+    L"  filler, and is why the chosen one may not be the hottest.",
 };
 
 static const WCHAR *const cmd_help_go[] = {
@@ -258,7 +265,7 @@ static const WCHAR *const cmd_help_note[] = {
 
 static const HgCommandHelp cmd_help_table[] = {
     {L"help", L"h", L"this list, or one command in detail", cmd_help_help, HG_ARRAYSIZE(cmd_help_help)},
-    {L"list", L"l", L"windows, resize presets, or shortcuts, numbered", cmd_help_list, HG_ARRAYSIZE(cmd_help_list)},
+    {L"list", L"l", L"windows, resize presets, shortcuts, or sensors", cmd_help_list, HG_ARRAYSIZE(cmd_help_list)},
     {L"go", NULL, L"focus a window by its number", cmd_help_go, HG_ARRAYSIZE(cmd_help_go)},
     {L"resize", L"r", L"resize a window to a preset", cmd_help_resize, HG_ARRAYSIZE(cmd_help_resize)},
     {L"move", L"m", L"move a window, optionally to another display", cmd_help_move, HG_ARRAYSIZE(cmd_help_move)},
@@ -327,6 +334,34 @@ static void cmd_list_shortcuts(void)
     }
 }
 
+/* The diagnostic behind the TMP row. One number is shown; this is every
+ * number it was chosen from, so a suspicious reading can be judged. */
+static void cmd_list_sensors(void)
+{
+    HgThermalZone zones[HG_THERMAL_MAX_ZONES];
+    int count = hg_thermal_enumerate(zones, (int)HG_ARRAYSIZE(zones));
+    if (count <= 0) {
+        commandbox_print(L"no thermal zones - this machine's firmware exposes none");
+    } else {
+        for (int i = 0; i < count; ++i) {
+            cmd_printf(L"%3d  %-7ls %3d C  %ls", i + 1, zones[i].from_counter ? L"counter" : L"wmi",
+                       zones[i].celsius, zones[i].name);
+        }
+    }
+
+    int chosen = 0;
+    if (hg_thermal_zone_celsius(&chosen))
+        cmd_printf(L"     shown as TMP: %d C", chosen);
+    else
+        commandbox_print(L"     shown as TMP: nothing - the row is hidden");
+
+    int gpu = 0;
+    if (hg_get_gpu_temperature(&gpu))
+        cmd_printf(L"     shown as GPU: %d C", gpu);
+    else
+        commandbox_print(L"     shown as GPU: nothing - no adapter reports a sensor");
+}
+
 static void cmd_list(int argc, WCHAR *argv[])
 {
     if (argc < 2) {
@@ -339,8 +374,11 @@ static void cmd_list(int argc, WCHAR *argv[])
         cmd_list_resize();
     } else if (cmd_word_is(argv[1], L"shortcut", L"s") || cmd_word_is(argv[1], L"shortcuts", NULL)) {
         cmd_list_shortcuts();
+    } else if (cmd_word_is(argv[1], L"sensors", L"t") || cmd_word_is(argv[1], L"sensor", NULL) ||
+               cmd_word_is(argv[1], L"temp", NULL)) {
+        cmd_list_sensors();
     } else {
-        cmd_printf(L"list: unknown kind '%ls' (windows, resize, shortcut)", argv[1]);
+        cmd_printf(L"list: unknown kind '%ls' (windows, resize, shortcut, sensors)", argv[1]);
     }
 }
 

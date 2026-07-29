@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.29m] - 2026-07-29
+
+### Added
+- `list sensors` (`l t`) in the command box prints every thermal zone the machine exposes, with its source, its name, and its reading, followed by the two numbers actually on the `TMP` and `GPU` bars. The zone shown is picked by a heuristic over data the firmware controls, and a heuristic nobody can inspect is one nobody can report a bug against.
+
+### Changed
+- The CPU temperature now comes from **every** zone the machine exposes rather than the first one WMI happened to hand over. Firmware routinely declares several and puts one it never updates in front of the live one, so the old reading was as likely to be filler as a sensor on any machine with more than one.
+- Zones are now read from **two** surfaces, the WMI class and the `Thermal Zone Information` performance counters, because the two do not agree about being available: some machines answer one and not the other. PDH is part of Windows, so this costs no dependency — only the care to open the counter through `PdhAddEnglishCounterW`, since the object's name is localised and the English path would not resolve on a Korean or any other non-English Windows.
+- Which zone gets shown is now decided rather than assumed: a zone that has been watched change beats one named after the CPU, which beats one that is neither, and only an outright tie is settled by the hotter reading. Taking the hottest outright — the obvious rule — would have picked the filler zone on every machine whose filler is a high constant.
+
 ## [v26.07.29l] - 2026-07-29
 
 ### Changed
