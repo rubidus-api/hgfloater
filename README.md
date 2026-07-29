@@ -139,7 +139,9 @@ of other windows.
 - **Hover** — opens the taskbox in place. The floater hides itself while the
   taskbox is up.
 - **Left click** — toggles the taskbox.
-- **Left drag** — moves the floater anywhere on any monitor.
+- **Left drag** — in **`F` adjust mode**, moves the floater anywhere on any
+  monitor. Outside that mode the pointer arriving on the floater opens the
+  taskbox before a drag can begin, so press `F` first.
 - **Alt + Wheel** — opacity.
 - **Ctrl + Wheel** or **Ctrl + Left drag** — font size, which scales the whole
   widget with it.
@@ -240,8 +242,9 @@ picture.
 
 **`F` — floater adjust.** Collapses the dashboard and suspends hover-to-expand,
 so you can tune the floater with `Ctrl + Wheel` (size) and `Alt + Wheel`
-(opacity) without the taskbox reappearing under your cursor. Click the floater
-to go back.
+(opacity) without the taskbox reappearing under your cursor — and **drag it**
+to put it where you want, which is only possible here for the same reason.
+Click the floater without dragging to go back.
 
 **`P` — pin.** While pinned, moving the mouse away no longer collapses the
 taskbox, and the button carries an accent border. Explicit closes — `X`, `Esc`,
