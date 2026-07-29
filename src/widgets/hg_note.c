@@ -101,6 +101,10 @@ static HFONT s_list_font = NULL;
  * changes something the list is showing. */
 static void note_list_refresh(void);
 
+/* Defined with the editor; archiving a note from anywhere has to reach the
+ * window that is showing it, because that window stops being writable. */
+static void note_editor_apply_archived(HgNote *note);
+
 static void note_directory(WCHAR *out, size_t out_cch)
 {
     hellgates_wsprintf(out, out_cch, L"%ls\\note", hg_g_base_path);
@@ -331,10 +335,43 @@ static void note_apply_font(HWND wnd, int child_id, HFONT *slot)
     *slot = font;
 }
 
+/* A new size changes how much fits, not how big the window is. Both windows put
+ * a single control in their client area, so re-running that layout against the
+ * size the window already has is what fitting the new font means here: the list
+ * re-measures its rows, the editor re-wraps, and neither window moves or
+ * resizes under the reader. */
+static void note_relayout(HWND wnd, int child_id)
+{
+    if (!wnd || !IsWindow(wnd))
+        return;
+
+    RECT rc;
+    if (!GetClientRect(wnd, &rc))
+        return;
+
+    WORD w = (WORD)((rc.right > rc.left) ? (rc.right - rc.left) : 0);
+    WORD h = (WORD)((rc.bottom > rc.top) ? (rc.bottom - rc.top) : 0);
+    SendMessageW(wnd, WM_SIZE, (WPARAM)SIZE_RESTORED, (LPARAM)MAKELONG(w, h));
+
+    HWND child = GetDlgItem(wnd, child_id);
+    if (child)
+        InvalidateRect(child, NULL, TRUE);
+}
+
 static void note_refresh_fonts(void)
 {
     if (s_note_list_wnd && IsWindow(s_note_list_wnd)) {
         note_apply_font(s_note_list_wnd, HG_NOTE_LIST_ID, &s_list_font);
+        note_relayout(s_note_list_wnd, HG_NOTE_LIST_ID);
+        /* Row height follows the font, so how many rows fit has changed. Setting
+         * the selection to where it already is scrolls it back into view rather
+         * than leaving the reader looking at a different part of the list. */
+        HWND list = GetDlgItem(s_note_list_wnd, HG_NOTE_LIST_ID);
+        if (list) {
+            int selected = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
+            if (selected >= 0)
+                SendMessageW(list, LB_SETCURSEL, (WPARAM)selected, 0);
+        }
         InvalidateRect(s_note_list_wnd, NULL, TRUE);
     }
     for (int i = 0; i < s_note_count; ++i) {
@@ -343,6 +380,12 @@ static void note_refresh_fonts(void)
         note_apply_font(s_notes[i].editor, HG_NOTE_EDIT_ID, &s_notes[i].editor_font);
         /* A new default font can take the character colour with it. */
         note_edit_apply_theme(GetDlgItem(s_notes[i].editor, HG_NOTE_EDIT_ID));
+        note_relayout(s_notes[i].editor, HG_NOTE_EDIT_ID);
+        /* The text re-wrapped underneath the caret; put the caret back on
+         * screen so typing continues where it looked like it would. */
+        HWND edit = GetDlgItem(s_notes[i].editor, HG_NOTE_EDIT_ID);
+        if (edit)
+            SendMessageW(edit, EM_SCROLLCARET, 0, 0);
     }
 }
 
@@ -869,6 +912,7 @@ static void note_toggle_archived(HgNote *note)
         return;
     note->archived = !note->archived;
     note_save_archived_flag(note);
+    note_editor_apply_archived(note);
     note_list_refresh();
 }
 
@@ -891,7 +935,11 @@ static LRESULT CALLBACK note_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
     /* Ctrl+Z already reaches the control; Ctrl+Y is the half RichEdit does not
      * bind by default. */
     if (msg == WM_KEYDOWN && w_param == 'Y' && (GetKeyState(VK_CONTROL) < 0)) {
-        SendMessageW(hwnd, EM_REDO, 0, 0);
+        /* Read-only refuses the edit itself, but not the undo stack it kept
+         * from before it was archived, so the key is swallowed rather than
+         * forwarded. */
+        if (!(GetWindowLongPtrW(hwnd, GWL_STYLE) & ES_READONLY))
+            SendMessageW(hwnd, EM_REDO, 0, 0);
         return 0;
     }
     /* Only the Ctrl-held wheel is the window's; a plain one still scrolls. */
@@ -941,6 +989,31 @@ static void note_editor_pull_text(HgNote *note)
     SetWindowTextW(note->editor, note->title);
 }
 
+/* Archiving a note files it away, and something filed away has stopped being
+ * written: its editor becomes read-only rather than quietly accepting changes
+ * to a note the list is showing as finished. Restoring it makes it writable
+ * again, so this is a state and not a one-way door. The caption says which it
+ * is, because a window that ignores typing without explanation reads as broken.
+ *
+ * Copying and selecting stay available - reading an archived note is the whole
+ * point of keeping it. */
+static void note_editor_apply_archived(HgNote *note)
+{
+    if (!note || !note->used || !note->editor || !IsWindow(note->editor))
+        return;
+
+    HWND edit = GetDlgItem(note->editor, HG_NOTE_EDIT_ID);
+    if (edit)
+        SendMessageW(edit, EM_SETREADONLY, (WPARAM)(note->archived ? TRUE : FALSE), 0);
+
+    WCHAR caption[HG_NOTE_TITLE_CCH + 32];
+    if (note->archived)
+        hellgates_wsprintf(caption, HG_ARRAYSIZE(caption), L"%ls  [archived - read only]", note->title);
+    else
+        StringCchCopyW(caption, HG_ARRAYSIZE(caption), note->title);
+    SetWindowTextW(note->editor, caption);
+}
+
 static HgNote *note_from_editor(HWND hwnd)
 {
     LONG_PTR index = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
@@ -976,21 +1049,25 @@ static void note_editor_show_context_menu(HWND editor, HWND edit, POINT screen_p
     DWORD sel_end = 0;
     SendMessageW(edit, EM_GETSEL, (WPARAM)&sel_start, (LPARAM)&sel_end);
 
+    /* An archived note is read-only, so every entry that would change the text
+     * is greyed. Copy and Select All are not among them. */
+    BOOL writable = !note->archived;
     UINT selection = note_menu_flags(sel_start != sel_end);
-    UINT undo = note_menu_flags(SendMessageW(edit, EM_CANUNDO, 0, 0) != 0);
+    UINT change_sel = note_menu_flags(writable && sel_start != sel_end);
+    UINT undo = note_menu_flags(writable && SendMessageW(edit, EM_CANUNDO, 0, 0) != 0);
     /* Redo is RichEdit's; the EDIT fallback has only the one-level toggle and
      * says so by leaving the entry greyed. */
-    UINT redo = note_menu_flags(s_richedit_ready && SendMessageW(edit, EM_CANREDO, 0, 0) != 0);
-    UINT paste = note_menu_flags(IsClipboardFormatAvailable(CF_UNICODETEXT));
+    UINT redo = note_menu_flags(writable && s_richedit_ready && SendMessageW(edit, EM_CANREDO, 0, 0) != 0);
+    UINT paste = note_menu_flags(writable && IsClipboardFormatAvailable(CF_UNICODETEXT));
     UINT any_text = note_menu_flags(note_edit_text_length(edit) > 0);
 
     AppendMenuW(menu, undo, HG_NOTE_CMD_UNDO, L"Undo");
     AppendMenuW(menu, redo, HG_NOTE_CMD_REDO, L"Redo");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(menu, selection, HG_NOTE_CMD_CUT, L"Cut");
+    AppendMenuW(menu, change_sel, HG_NOTE_CMD_CUT, L"Cut");
     AppendMenuW(menu, selection, HG_NOTE_CMD_COPY, L"Copy");
     AppendMenuW(menu, paste, HG_NOTE_CMD_PASTE, L"Paste");
-    AppendMenuW(menu, selection, HG_NOTE_CMD_CLEAR, L"Delete");
+    AppendMenuW(menu, change_sel, HG_NOTE_CMD_CLEAR, L"Delete");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(menu, any_text, HG_NOTE_CMD_SELECT_ALL, L"Select All");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
@@ -1088,6 +1165,7 @@ static void note_open_editor(int index)
         note_edit_apply_theme(edit);
         SendMessageW(edit, EM_EMPTYUNDOBUFFER, 0, 0); /* loading is not an edit to undo */
     }
+    note_editor_apply_archived(note);
 
     ensure_window_visible(wnd, NULL);
     ShowWindow(wnd, SW_SHOWNORMAL);
@@ -1656,4 +1734,105 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         return 0;
     }
     return DefWindowProcW(hwnd, msg, w_param, l_param);
+}
+
+/* --------------------------------------------------- the command box's view
+ *
+ * Identifier order, for the reason the header gives: it is the one ordering
+ * nothing in the interface can change, so a number the reader wrote down still
+ * means the note they wrote it for. */
+static int note_command_order(int *out, int max)
+{
+    hg_notes_load();
+
+    int count = 0;
+    for (int i = 0; i < s_note_count && count < max; ++i) {
+        if (s_notes[i].used)
+            out[count++] = i;
+    }
+
+    /* Insertion sort: the table holds a couple of hundred slots at most and this
+     * runs when a human typed a command, so the simple one is the right one. */
+    for (int i = 1; i < count; ++i) {
+        int value = out[i];
+        int j = i - 1;
+        while (j >= 0 && wcscmp(s_notes[out[j]].id, s_notes[value].id) > 0) {
+            out[j + 1] = out[j];
+            --j;
+        }
+        out[j + 1] = value;
+    }
+    return count;
+}
+
+static HgNote *note_by_number(int number)
+{
+    int order[HG_MAX_NOTES];
+    int count = note_command_order(order, HG_MAX_NOTES);
+    if (number < 1 || number > count)
+        return NULL;
+    return &s_notes[order[number - 1]];
+}
+
+int hg_note_command_count(void)
+{
+    int order[HG_MAX_NOTES];
+    return note_command_order(order, HG_MAX_NOTES);
+}
+
+BOOL hg_note_command_brief(int number, HgNoteBrief *out)
+{
+    if (!out)
+        return FALSE;
+    const HgNote *note = note_by_number(number);
+    if (!note)
+        return FALSE;
+    StringCchCopyW(out->title, HG_ARRAYSIZE(out->title), note->title);
+    out->archived = note->archived;
+    return TRUE;
+}
+
+/* Title and body both, because a note is looked for by what is in it as often
+ * as by what it is called. */
+BOOL hg_note_command_matches(int number, const WCHAR *needle)
+{
+    if (!needle || !*needle)
+        return FALSE;
+    const HgNote *note = note_by_number(number);
+    if (!note)
+        return FALSE;
+    if (StrStrIW(note->title, needle))
+        return TRUE;
+    return note->text && StrStrIW(note->text, needle) != NULL;
+}
+
+BOOL hg_note_command_open(int number)
+{
+    HgNote *note = note_by_number(number);
+    if (!note)
+        return FALSE;
+    note_open_editor((int)(note - s_notes));
+    return TRUE;
+}
+
+BOOL hg_note_command_set_archived(int number, BOOL archived, BOOL *out_changed)
+{
+    HgNote *note = note_by_number(number);
+    if (!note)
+        return FALSE;
+    if (out_changed)
+        *out_changed = (note->archived != archived);
+    if (note->archived != archived)
+        note_toggle_archived(note); /* saves the flag and tells both windows */
+    return TRUE;
+}
+
+BOOL hg_note_command_delete(int number)
+{
+    HgNote *note = note_by_number(number);
+    if (!note)
+        return FALSE;
+    note_delete(note);
+    note_list_refresh();
+    return TRUE;
 }
