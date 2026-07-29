@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.29f] - 2026-07-29
+
+### Added
+- **A temperature bar on the floater**, directly after CPU. It is drawn on a fixed 20 to 100 degree Celsius scale rather than as a percentage, with the reading printed on its own bar, and its colour is configurable as `stat_temp`.
+- `docs/RFC-2026-07-temperature.md` records where the number comes from and, more to the point, where it does not. The accurate way to read a CPU die needs a kernel driver and administrator rights - the reference project named in the request uses a third-party .NET library for exactly that, and its own README reports crashes and hangs from the feature. hgfloater declines all three and reads the **ACPI thermal zone** the firmware exposes instead: a sensor on the board near the CPU, not the die. It tracks the processor without being it, and it lags under a sudden load.
+- Machines whose firmware exposes no thermal zone simply have no row, the way desktops have no battery row. The zone is read once every fifth refresh rather than every second, and once a run of reads has failed the asking stops for the session.
+
 ## [v26.07.29e] - 2026-07-29
 
 ### Added
