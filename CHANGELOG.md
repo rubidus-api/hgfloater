@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.29c] - 2026-07-29
+
+### Fixed
+- Dimming a display that does not answer DDC/CI no longer loses track of itself. The refresh timer was stamping "unknown" over the brightness the app had just set through the gamma fallback, so the menu ticked the step you chose and then, seconds later, ticked nothing.
+- A display whose original gamma ramp was never captured is no longer dimmed at all. Past the backup table's capacity it was being dimmed with no way back, and stayed dimmed after hgfloater exited; the table is also four times larger.
+- A note's modification time is the time it was saved. It was read from the file handle before Windows had committed the stamps, so every note showed - and sorted by - its previous save until a restart.
+- A command line of 1024 characters or more says it is too long instead of vanishing without a word.
+- The command box leaves the keyboard where a command put it. `note` and `go` hand the foreground to another window on purpose, and the box was pulling focus back over it immediately.
+- `move` with a display number nothing answers to is an error rather than a guess. Windows leaves gaps in display numbering after a monitor is unplugged, and the lookup was falling back to array position, so `move 1 0 0 2` could move a window to the display labelled 3.
+- The note list keeps a heading over an empty half, so the sort order of a half everything has been archived out of can still be reached by right-clicking it.
+
+### Changed
+- The note table no longer reserves about 16 MiB of memory that nothing used: it held each note's full path in a fixed 32768-character field when the directory is known and the name is short. Static memory drops from 29.6 MiB to 13.6 MiB, whether or not you ever open a note.
+
 ## [v26.07.29b] - 2026-07-29
 
 ### Added
