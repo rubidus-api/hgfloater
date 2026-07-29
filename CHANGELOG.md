@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29j] - 2026-07-29
 
 ### Added
 - **Dragging the floater moves it**, while `F` adjust mode is on. That mode is the one state where the floater stays put under the pointer instead of opening the taskbox, so it is the only state where dragging it anywhere was possible - and it did nothing until now. A drag neither toggles the taskbox nor drops out of adjust mode when the button comes up, so the floater can be positioned and tuned in one visit; a click that merely wobbles is still a click.
