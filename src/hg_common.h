@@ -71,7 +71,7 @@
 
 /* Build-time versioning */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v26.07.29n"
+#define HG_VERSION_W L"v26.07.29o"
 #endif
 
 /* Include generated About text from README.md if available */
@@ -124,7 +124,7 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 12
+#define HG_NUM_BASIC_ICONS 13
 
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
@@ -138,6 +138,7 @@
 #define HG_TOOL_ICON_FLOATER 9
 #define HG_TOOL_ICON_PIN 10
 #define HG_TOOL_ICON_NOTE 11
+#define HG_TOOL_ICON_CLIP 12
 
 #define HG_IDM_MINIMIZE 201
 #define HG_IDM_CLOSE 202
@@ -424,6 +425,7 @@ static const WCHAR HG_CLASS_MONITOR[] = L"hgmonitor_class";
 static const WCHAR HG_CLASS_COMMANDBOX[] = L"hgcommandbox_class";
 static const WCHAR HG_CLASS_NOTE_LIST[] = L"hgnotelist_class";
 static const WCHAR HG_CLASS_NOTE_EDIT[] = L"hgnoteedit_class";
+static const WCHAR HG_CLASS_CLIP[] = L"hgclip_class";
 static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";
 
 #endif /* HG_COMMON_H */

@@ -651,6 +651,8 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_NOTE, L'N', L"Notes", L"Notes", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_SHOW_NOTES,
      HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_CLIP, L'L', L"Clipboard History", L"Clipboard History", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_SHOW_CLIPBOARD, HG_TOOLBAR_DRAG_NONE},
 };
 
 enum {

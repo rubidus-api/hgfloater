@@ -1,6 +1,7 @@
 #include "hg_common.h"
 #include "hg_utils.h"
 #include "hg_config.h"
+#include "widgets/hg_clip.h"
 
 /* =========================================================================
  * 창 클래스 등록 기능 (Window Class Registration)
@@ -44,6 +45,7 @@ static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HI
          IDC_HAND},
         {HG_CLASS_NOTE_LIST, note_list_proc, hg_g_main_bg_brush, L"Failed to register note list class.", 0, NULL},
         {HG_CLASS_NOTE_EDIT, note_edit_proc, hg_g_main_bg_brush, L"Failed to register note editor class.", 0, NULL},
+        {HG_CLASS_CLIP, clip_wnd_proc, hg_g_main_bg_brush, L"Failed to register clipboard class.", 0, NULL},
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(specs); ++i) {
@@ -58,7 +60,7 @@ static void unregister_app_window_classes(HINSTANCE instance)
 {
     const WCHAR *classes[] = {
         HG_CLASS_FLOATER_WIDGET, HG_CLASS_ABOUT,     HG_CLASS_TASKBOX,   HG_CLASS_MONITOR, HG_CLASS_COMMANDBOX,
-        HG_CLASS_TOOLBAR,        HG_CLASS_NOTE_LIST, HG_CLASS_NOTE_EDIT,
+        HG_CLASS_TOOLBAR,        HG_CLASS_NOTE_LIST, HG_CLASS_NOTE_EDIT, HG_CLASS_CLIP,
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(classes); ++i) {
@@ -438,6 +440,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     update_monitor_enum();
     hg_refresh_all_monitor_brightness();
     hg_notes_load();
+    hg_clip_init(); /* capture starts with the app, not with the window */
     dispatch_pending_command_line();
 
     ACCEL accel[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP},
@@ -483,6 +486,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
 cleanup_finish:
     hg_config_flush_pending(); /* debounced settings must survive the exit */
+    hg_clip_shutdown();
     hg_notes_shutdown();       /* an edit made a second ago must not be the one lost */
     hg_backlight_shutdown();   /* the cached WMI connection, before COM goes away */
     restore_system_gamma();

@@ -4,6 +4,7 @@
 #include "../hg_globals.h"
 #include "hg_taskbox_internal.h"
 #include "hg_note.h"
+#include "hg_clip.h"
 
 void update_size(int delta)
 {
@@ -255,6 +256,9 @@ void activate_toolbar_item(int index)
         break;
     case HG_TOOLBAR_CLICK_SHOW_NOTES:
         show_note_list_window();
+        break;
+    case HG_TOOLBAR_CLICK_SHOW_CLIPBOARD:
+        hg_clip_toggle_window();
         break;
     case HG_TOOLBAR_CLICK_TOGGLE_MUTE:
         set_system_mute(!get_system_mute());
