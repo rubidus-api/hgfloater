@@ -311,7 +311,13 @@ typedef struct {
     WCHAR label[160];  /* display number, EDID monitor name, and connection port */
     HWND hwnd;
     BOOL active;
-    int brightness;    /* cached DDC/CI percentage, -1 while unknown */
+    int brightness;         /* cached percentage, -1 while unknown */
+    /* Which of the brightness paths this display answers to, and the scale it
+     * answers on. Resolved on first use and reset when the list is rebuilt;
+     * see docs/RFC-2026-07-brightness-control.md. */
+    int brightness_method;
+    DWORD brightness_min;
+    DWORD brightness_max;
 } MonitorInfo;
 
 typedef struct WindowClassSpec {
