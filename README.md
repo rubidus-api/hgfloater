@@ -108,11 +108,13 @@ of other windows.
 - **Clock and date**, refreshed every second, sized proportionally to the
   widget itself.
 - **Host name** in a thin line across the top.
-- **Status bars** for CPU, temperature, memory, and battery: horizontal bars
-  running the full width behind the text, with small labels on the left edge.
-  Full width means 100%. The battery row hides itself on desktops without one,
-  and a `+` on its label means charging. Set `show_stats=0` in `config.ini` to
-  hide the whole line.
+- **Status bars** for CPU, temperature, GPU, memory, and battery: horizontal
+  bars running behind everything - the host name included - with small labels
+  down the left edge and each row's **reading printed down the right**. Full
+  width means 100%; the two temperature rows use their own scale, below. A row
+  whose value the machine does not report is absent entirely, which is why
+  desktops have no battery row and machines without sensors have no `TMP` or
+  `GPU`. Set `show_stats=0` in `config.ini` to hide the whole panel.
 - **`TMP`** is drawn on a fixed **20 to 100 degree Celsius** scale rather than as
   a percentage, with the reading printed on its own bar, because the difference
   between 55 and 75 degrees matters more than a few pixels of bar length can

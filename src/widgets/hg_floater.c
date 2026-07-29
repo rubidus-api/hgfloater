@@ -375,6 +375,17 @@ static int floater_stats_label_width(HDC hdc)
     return sz.cx + floater_gap_x();
 }
 
+/* The strip on the right that holds each row's reading. Sized for the widest
+ * one any row can produce, so the column never moves as values change. */
+static int floater_stats_value_width(HDC hdc)
+{
+    SIZE sz = floater_text_extent(hdc, floater_label_font(), L"100%");
+
+    if (sz.cx <= 0)
+        return 0;
+    return sz.cx + floater_gap_x();
+}
+
 /* One place computes the geometry; both the layout pass and the paint pass use
  * it, so what is measured is exactly what is drawn. */
 typedef struct HgFloaterMetrics {
@@ -386,11 +397,13 @@ typedef struct HgFloaterMetrics {
     int time_h;      /* clock ink plus a breathing margin above and below */
     int date_h;
     int label_w;     /* 0 when the status bars are off */
+    int value_w;     /* right-hand strip holding each row's reading; 0 when off */
     int content_x;   /* left edge of the label strip / content column */
     int column_x;    /* left edge of the bars and the clock/date column */
     int column_w;    /* width of that column */
-    int rows_y;      /* top of the clock/date (and of the bar rows) */
-    int rows_h;      /* combined height of the clock and date */
+    int value_x;     /* left edge of the reading strip */
+    int rows_y;      /* top of the bar rows */
+    int rows_h;      /* height the bars span */
 } HgFloaterMetrics;
 
 static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR *date_str, HgFloaterMetrics *out)
@@ -412,11 +425,13 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
     out->time_h = sz_time.cy + time_margin * 2;
     out->date_h = sz_date.cy;
     out->label_w = hg_g_floater_show_stats ? floater_stats_label_width(hdc) : 0;
+    out->value_w = hg_g_floater_show_stats ? floater_stats_value_width(hdc) : 0;
 
-    /* Width: the label strip plus the widest of clock/date, and the host name
-     * spans the full inner width, so it only widens the box when it is wider. */
+    /* Width: the label strip, the widest of clock/date, and the reading strip
+     * on the right. The host name spans the full inner width, so it only
+     * widens the box when it is wider than all three together. */
     int text_w = (sz_time.cx > sz_date.cx) ? sz_time.cx : sz_date.cx;
-    int inner_w = out->label_w + text_w;
+    int inner_w = out->label_w + text_w + out->value_w;
     if (sz_host.cx > inner_w)
         inner_w = sz_host.cx;
     out->width = out->pad_x * 2 + inner_w;
@@ -426,15 +441,18 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
 
     out->content_x = out->pad_x;
     out->column_x = out->pad_x + out->label_w;
-    out->column_w = out->width - out->pad_x - out->column_x;
-    /* The bars and the clock/date share the area below the host name. */
-    out->rows_y = out->pad_y + out->host_h;
-    out->rows_h = out->time_h + out->date_h;
+    out->column_w = out->width - out->pad_x - out->value_w - out->column_x;
+    out->value_x = out->column_x + out->column_w;
+    /* The bars run behind everything, the host name included. Excluding that
+     * line cost a row's worth of height for nothing: the bars are background,
+     * and text reads perfectly well over them. */
+    out->rows_y = out->pad_y;
+    out->rows_h = out->host_h + out->time_h + out->date_h;
 }
 
 /* Bars fill the column to the right of the labels; labels are centered in their
  * row so they line up with the bar they belong to. */
-/* A temperature on the fixed 20-100 degree window, plus the text drawn over it.
+/* A temperature on the fixed 20-100 degree window, plus the reading as text.
  * Returns the bar fill, 0..100; a reading of -1 is absent and fills nothing. */
 static int floater_temperature_fill(int celsius, WCHAR *text, size_t text_cch)
 {
@@ -454,6 +472,19 @@ static int floater_temperature_fill(int celsius, WCHAR *text, size_t text_cch)
     return fill;
 }
 
+/* The three rows that really are percentages say so; the bar and the number
+ * carry the same value. */
+static void floater_percent_text(int percent, WCHAR *text, size_t text_cch)
+{
+    if (!text || text_cch == 0)
+        return;
+    if (percent < 0) {
+        text[0] = L'\0';
+        return;
+    }
+    hellgates_wsprintf(text, text_cch, L"%d%%", percent);
+}
+
 static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
 {
     /* `fill` is what the bar draws, 0..100. For the three percentages it is the
@@ -465,6 +496,11 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
     WCHAR gpu_text[8] = L"";
     int gpu_fill = floater_temperature_fill(s_stat_gpu, gpu_text, HG_ARRAYSIZE(gpu_text));
 
+    WCHAR cpu_text[8], mem_text[8], bat_text[8];
+    floater_percent_text(s_stat_cpu, cpu_text, HG_ARRAYSIZE(cpu_text));
+    floater_percent_text(s_stat_mem, mem_text, HG_ARRAYSIZE(mem_text));
+    floater_percent_text(s_stat_has_bat ? s_stat_bat : -1, bat_text, HG_ARRAYSIZE(bat_text));
+
     struct {
         const WCHAR *label;
         int fill;
@@ -472,12 +508,12 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
         BOOL present;
         const WCHAR *text;
     } rows[5] = {
-        {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, s_stat_cpu >= 0, NULL},
+        {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, s_stat_cpu >= 0, cpu_text},
         /* Directly after CPU, as the readings it belongs beside. */
         {L"TMP", temp_fill, hg_g_color_stat_temp, s_stat_temp >= 0, temp_text},
         {L"GPU", gpu_fill, hg_g_color_stat_gpu, s_stat_gpu >= 0, gpu_text},
-        {L"MEM", s_stat_mem, hg_g_color_stat_mem, s_stat_mem >= 0, NULL},
-        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, s_stat_has_bat, NULL},
+        {L"MEM", s_stat_mem, hg_g_color_stat_mem, s_stat_mem >= 0, mem_text},
+        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, s_stat_has_bat, bat_text},
     };
 
     int count = 0;
@@ -523,14 +559,14 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
             if (fill_brush && fill.right > fill.left)
                 FillRect(dc, &fill, fill_brush);
 
-            /* A row whose number carries more than its length does prints it.
-             * Right-aligned at the end of the track, so it sits clear of the
-             * fill at the temperatures worth reading. */
-            if (rows[i].text && rows[i].text[0]) {
-                int text_y = floater_ink_top(dc, font, rows[i].text, top, row_h);
-                RECT text_rc = {track.left, text_y, track.right, text_y + row_h * 4};
-                DrawTextW(dc, rows[i].text, -1, &text_rc, DT_RIGHT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
-            }
+        }
+
+        /* The reading lives in its own strip to the right of the bars, clear of
+         * both the fill and the clock, so every row can carry one. */
+        if (m->value_w > 0 && rows[i].text && rows[i].text[0]) {
+            int text_y = floater_ink_top(dc, font, rows[i].text, top, row_h);
+            RECT value_rc = {m->value_x, text_y, m->value_x + m->value_w, text_y + row_h * 4};
+            DrawTextW(dc, rows[i].text, -1, &value_rc, DT_RIGHT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
         }
         drawn++;
     }

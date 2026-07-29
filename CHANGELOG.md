@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **Every status row now prints its reading**, in a strip of its own down the right side of the floater: `NN%` for CPU, memory, and battery, `NN°` for the two temperatures. The strip is sized for the widest reading any row can produce, so the column does not shift as the numbers change, and the readings no longer sit on top of their own bars.
+- **The bars run behind the host name too.** Keeping that line clear of them cost a row's worth of height for nothing - the bars are background, and text reads perfectly well over them - so the panel now uses the floater's whole inner height and the rows are correspondingly less cramped.
+
 ## [v26.07.29g] - 2026-07-29
 
 ### Added
