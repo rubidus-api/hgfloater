@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29l] - 2026-07-29
 
 ### Changed
 - The README opens with what the program actually costs to have: a single executable of about 360 KB, no installer and no runtime. That was the point of writing it in C against Win32 with nothing else linked in, and it was nowhere on the page.
