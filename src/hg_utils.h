@@ -71,6 +71,11 @@ BOOL hg_backlight_available(void);
 BOOL hg_backlight_get(int *out_percent);
 BOOL hg_backlight_set(int percent);
 void hg_backlight_shutdown(void); /* release the cached WMI connection before CoUninitialize */
+
+/* An ACPI thermal zone in degrees Celsius, from the same root\WMI connection.
+ * FALSE on the many machines whose firmware exposes no zone. It tracks CPU
+ * temperature without being it; see docs/RFC-2026-07-temperature.md. */
+BOOL hg_thermal_zone_celsius(int *out_celsius);
 /* TRUE when the display hangs off an internal connector (eDP, LVDS, or the
  * INTERNAL technology), which is what makes the WMI path the right one. */
 BOOL hg_monitor_is_internal(const WCHAR *gdi_name);
