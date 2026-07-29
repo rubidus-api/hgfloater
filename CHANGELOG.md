@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **A laptop's internal panel now gets its real backlight changed**, not just its picture dimmed. A built-in display is not a DDC/CI device, so every path hgfloater had missed it and it fell through to the gamma ramp. It is now recognised by its connector and driven through Windows' own brightness service - the same one the system slider uses - which moves the lamp. Machines with two integrated panels are a limitation: the first one answers.
+
 ## [v26.07.29d] - 2026-07-29
 
 ### Changed

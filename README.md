@@ -212,9 +212,11 @@ or adapter that does not carry the channel, a KVM in the path, or a monitor that
 advertises a control it does not honour. That display shows
 **Brightness (unavailable)** rather than accepting a click that does nothing.
 
-An internal laptop panel is not a DDC/CI device and currently lands on the gamma
-ramp. Driving its real backlight needs a fourth path, described in
-`docs/RFC-2026-07-brightness-control.md`, which is not implemented yet.
+A **laptop's internal panel** is not a DDC/CI device at all, so none of that
+would reach it. It gets its own path: hgfloater recognises the built-in display
+by its connector and drives the real backlight through Windows' own brightness
+service, the same one the system slider uses. That moves the lamp, not the
+picture.
 
 **`F` — floater adjust.** Collapses the dashboard and suspends hover-to-expand,
 so you can tune the floater with `Ctrl + Wheel` (size) and `Alt + Wheel`
