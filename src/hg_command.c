@@ -145,23 +145,145 @@ static const MonitorInfo *cmd_monitor_by_number(int number)
 
 /* ---------------------------------------------------------------- commands */
 
-static void cmd_help(void)
+/* One entry per command: the summary the overview prints, and the lines
+ * `help <command>` prints. Keeping both here means the overview cannot list a
+ * command the detailed help has never heard of. */
+typedef struct HgCommandHelp {
+    const WCHAR *name;
+    const WCHAR *shorthand;
+    const WCHAR *summary;
+    const WCHAR *const *detail;
+    size_t detail_count;
+} HgCommandHelp;
+
+static const WCHAR *const cmd_help_help[] = {
+    L"help [command]      (h)",
+    L"",
+    L"  With no command, lists them all. With one, explains that one",
+    L"  and shows what it looks like in use.",
+    L"",
+    L"Examples:",
+    L"  help                everything, in one line each",
+    L"  h move              just move, in detail",
+};
+
+static const WCHAR *const cmd_help_list[] = {
+    L"list [kind]         (l)",
+    L"",
+    L"  Prints a numbered list. Without a kind, lists windows.",
+    L"  The number beside a window is the one go, resize, and move take,",
+    L"  so this is where those commands get their arguments.",
+    L"  Kinds: windows (w), resize (r), shortcut (s).",
+    L"",
+    L"Examples:",
+    L"  list                every window, numbered",
+    L"  l w                 the same list",
+    L"  l r                 the resize presets, numbered for 'resize'",
+    L"  l s                 the shortcut icons",
+};
+
+static const WCHAR *const cmd_help_go[] = {
+    L"go <window>",
+    L"",
+    L"  Brings a window to the front, restoring it first if it is",
+    L"  minimised. <window> is the number 'list' printed beside it.",
+    L"",
+    L"Examples:",
+    L"  list                read the numbers",
+    L"  go 3                switch to the third window",
+};
+
+static const WCHAR *const cmd_help_resize[] = {
+    L"resize <window> <preset>          (r)",
+    L"",
+    L"  Resizes a window to one of the fixed sizes. 'list resize'",
+    L"  numbers them; the same set the task context menu offers.",
+    L"  The window keeps its position; only its size changes.",
+    L"",
+    L"Examples:",
+    L"  l r                 see which preset is which number",
+    L"  resize 1 1          window 1 to 640x480",
+    L"  r 2 7               window 2 to 1280x720",
+};
+
+static const WCHAR *const cmd_help_move[] = {
+    L"move <window> <x> <y> [display]   (m)",
+    L"",
+    L"  Moves a window. X and Y are measured from a display's own",
+    L"  top-left corner rather than the virtual desktop's, so the same",
+    L"  pair means the same place on every screen.",
+    L"  Without a display, the one the window is already on.",
+    L"  The display number is the one the options menu shows beside",
+    L"  that monitor's name.",
+    L"  The window keeps its size; only its position changes.",
+    L"",
+    L"Examples:",
+    L"  move 1 100 100      100,100 on the display window 1 is on",
+    L"  m 1 0 0             flush into that display's top-left corner",
+    L"  m 1 0 0 2           the same corner, but on display 2",
+};
+
+static const WCHAR *const cmd_help_search[] = {
+    L"search windows <text>             (s w)",
+    L"",
+    L"  Lists the windows whose title contains <text>, ignoring case.",
+    L"  The numbers printed are the ones 'list' would give, not 1, 2, 3",
+    L"  among the matches, so a result can be handed straight to 'go'.",
+    L"  Everything after 'windows' is the text, spaces included.",
+    L"",
+    L"Examples:",
+    L"  search windows notepad",
+    L"  s w visual studio   the space is part of what is searched for",
+    L"  go 7                using a number the search printed",
+};
+
+static const WCHAR *const cmd_help_note[] = {
+    L"note                (n)",
+    L"",
+    L"  Opens the note list, the same one the N toolbar button opens.",
+    L"",
+    L"Examples:",
+    L"  note",
+};
+
+static const HgCommandHelp cmd_help_table[] = {
+    {L"help", L"h", L"this list, or one command in detail", cmd_help_help, HG_ARRAYSIZE(cmd_help_help)},
+    {L"list", L"l", L"windows, resize presets, or shortcuts, numbered", cmd_help_list, HG_ARRAYSIZE(cmd_help_list)},
+    {L"go", NULL, L"focus a window by its number", cmd_help_go, HG_ARRAYSIZE(cmd_help_go)},
+    {L"resize", L"r", L"resize a window to a preset", cmd_help_resize, HG_ARRAYSIZE(cmd_help_resize)},
+    {L"move", L"m", L"move a window, optionally to another display", cmd_help_move, HG_ARRAYSIZE(cmd_help_move)},
+    {L"search", L"s", L"find windows by title", cmd_help_search, HG_ARRAYSIZE(cmd_help_search)},
+    {L"note", L"n", L"open the note list", cmd_help_note, HG_ARRAYSIZE(cmd_help_note)},
+};
+
+static const HgCommandHelp *cmd_help_find(const WCHAR *word)
 {
-    static const WCHAR *lines[] = {
-        L"help, h                     this list",
-        L"list, l                      list windows, with the number each command uses",
-        L"list windows, l w            the same list",
-        L"list resize, l r             the resize presets",
-        L"list shortcut, l s           the shortcut icons",
-        L"go N                         focus window N",
-        L"resize N P, r N P            resize window N to preset P",
-        L"move N X Y, m N X Y          move window N to X, Y on the display it is on",
-        L"move N X Y M                 move window N to X, Y on display M",
-        L"search windows T, s w T      windows whose title contains T",
-        L"note                         open the note list",
-    };
-    for (size_t i = 0; i < HG_ARRAYSIZE(lines); ++i)
-        commandbox_print(lines[i]);
+    for (size_t i = 0; i < HG_ARRAYSIZE(cmd_help_table); ++i) {
+        if (cmd_word_is(word, cmd_help_table[i].name, cmd_help_table[i].shorthand))
+            return &cmd_help_table[i];
+    }
+    return NULL;
+}
+
+static void cmd_help(int argc, WCHAR *argv[])
+{
+    if (argc >= 2) {
+        const HgCommandHelp *entry = cmd_help_find(argv[1]);
+        if (!entry) {
+            cmd_printf(L"help: no command called '%ls' - type help for the list", argv[1]);
+            return;
+        }
+        for (size_t i = 0; i < entry->detail_count; ++i)
+            commandbox_print(entry->detail[i]);
+        return;
+    }
+
+    for (size_t i = 0; i < HG_ARRAYSIZE(cmd_help_table); ++i) {
+        const HgCommandHelp *entry = &cmd_help_table[i];
+        cmd_printf(L"%-8ls %-4ls %ls", entry->name, entry->shorthand ? entry->shorthand : L"", entry->summary);
+    }
+    commandbox_print(L"");
+    commandbox_print(L"'help <command>' explains one of them, with examples.");
 }
 
 static void cmd_list_windows(void)
@@ -346,7 +468,7 @@ void hg_command_execute(const WCHAR *line)
         return;
 
     if (cmd_word_is(argv[0], L"help", L"h")) {
-        cmd_help();
+        cmd_help(argc, argv);
     } else if (cmd_word_is(argv[0], L"list", L"l")) {
         cmd_list(argc, argv);
     } else if (cmd_word_is(argv[0], L"go", NULL)) {

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- `help <command>` in the command box explains one command in full - its arguments, what they mean, and worked examples. `help` alone still lists everything, one line each. Short forms work too, so `h m` is `help move`.
+
+### Fixed
+- Long lines in the command box wrap instead of running off the right edge. A multiline edit control treats `ES_AUTOHSCROLL` as the switch that turns word wrap off, and both fields were created with it.
+- A plain wheel scrolls the command box again. Every wheel message was being forwarded to the window, which acts only on `Ctrl` and `Alt`, so the transcript could not be scrolled at all.
+
 ## [v26.07.29f] - 2026-07-29
 
 ### Added

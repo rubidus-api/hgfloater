@@ -56,8 +56,13 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
         }
     }
     else if (msg == WM_MOUSEWHEEL) {
-        SendMessageW(parent, msg, w_param, l_param);
-        return 0;
+        /* Ctrl resizes the text and Alt changes the opacity, both the window's
+         * business. A plain wheel is the control's, and forwarding it too left
+         * the transcript unable to scroll. */
+        if ((GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL) || (GetKeyState(VK_MENU) < 0)) {
+            SendMessageW(parent, msg, w_param, l_param);
+            return 0;
+        }
     }
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
@@ -206,13 +211,16 @@ void show_commandbox_window()
         
         hg_g_commandbox_out_wnd = CreateWindowExW(
             WS_EX_CLIENTEDGE, L"EDIT", NULL,
-            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL,
+            /* No ES_AUTOHSCROLL: on a multiline edit that is the switch that
+             * turns word wrap off, and a transcript of window titles and help
+             * text is worth reading without a horizontal scrollbar. */
+            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL,
             0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)101, GetModuleHandle(NULL), NULL
         );
 
         hg_g_commandbox_in_wnd = CreateWindowExW(
             WS_EX_CLIENTEDGE, L"EDIT", NULL,
-            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | WS_VSCROLL,
+            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
             0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)102, GetModuleHandle(NULL), NULL
         );
 
