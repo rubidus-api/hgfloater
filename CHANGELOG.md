@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- The README opens with what the program actually costs to have: a single executable of about 360 KB, no installer and no runtime. That was the point of writing it in C against Win32 with nothing else linked in, and it was nowhere on the page.
+- The screenshot is current again, taken on v26.07.29j. The one it replaces was from v26.04.30 and predates the status bars, the note system, the command language, and every per-display menu.
+
 ## [v26.07.29k] - 2026-07-29
 
 ### Fixed
