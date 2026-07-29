@@ -3,6 +3,66 @@
 #include "hg_utils.h"
 #include <knownfolders.h>
 
+/* =========================================================================
+ * Start with Windows.
+ *
+ * The per-user Run key, which needs no installer and no elevation, and which
+ * the reader can inspect and delete without this app's help. It is the only
+ * registry value hgfloater ever writes, and only when asked.
+ * ========================================================================= */
+
+static const WCHAR HG_RUN_KEY[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+static const WCHAR HG_RUN_VALUE[] = L"hgfloater";
+
+/* Quoted, because an unquoted path with a space in it is read as a command and
+ * its first word as the program. */
+static BOOL hg_startup_command(WCHAR *out, size_t out_cch)
+{
+    WCHAR path[HG_MAX_PATH];
+    DWORD len = GetModuleFileNameW(NULL, path, (DWORD)HG_ARRAYSIZE(path));
+    if (len == 0 || len >= HG_ARRAYSIZE(path))
+        return FALSE;
+    return SUCCEEDED(StringCchPrintfW(out, out_cch, L"\"%ls\"", path));
+}
+
+BOOL hg_startup_is_enabled(void)
+{
+    HKEY key;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, HG_RUN_KEY, 0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS)
+        return FALSE;
+
+    LSTATUS status = RegQueryValueExW(key, HG_RUN_VALUE, NULL, NULL, NULL, NULL);
+    RegCloseKey(key);
+    return (status == ERROR_SUCCESS);
+}
+
+BOOL hg_startup_set_enabled(BOOL enabled)
+{
+    HKEY key;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, HG_RUN_KEY, 0, KEY_SET_VALUE, &key) != ERROR_SUCCESS)
+        return FALSE;
+
+    LSTATUS status;
+    if (enabled) {
+        WCHAR command[HG_MAX_PATH + 4];
+        if (!hg_startup_command(command, HG_ARRAYSIZE(command))) {
+            RegCloseKey(key);
+            return FALSE;
+        }
+        /* Written every time it is switched on, so an executable that has since
+         * moved re-registers where it actually is. */
+        DWORD bytes = (DWORD)((wcslen(command) + 1) * sizeof(WCHAR));
+        status = RegSetValueExW(key, HG_RUN_VALUE, 0, REG_SZ, (const BYTE *)command, bytes);
+    } else {
+        status = RegDeleteValueW(key, HG_RUN_VALUE);
+        if (status == ERROR_FILE_NOT_FOUND)
+            status = ERROR_SUCCESS; /* already gone is the state that was asked for */
+    }
+
+    RegCloseKey(key);
+    return (status == ERROR_SUCCESS);
+}
+
 BOOL is_alt_tab_window(HWND hwnd)
 {
     if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd || hwnd == hg_g_about_wnd)

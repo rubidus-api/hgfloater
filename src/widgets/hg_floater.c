@@ -790,6 +790,13 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
         } else if (cmd == HG_IDM_EDIT_CONFIG) {
             ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
+        } else if (cmd == HG_IDM_STARTUP) {
+            BOOL wanted = !hg_startup_is_enabled();
+            if (hg_startup_set_enabled(wanted)) {
+                append_message(wanted ? L"Start with Windows: on" : L"Start with Windows: off");
+            } else {
+                append_message(L"Start with Windows: the registry refused the change");
+            }
         } else if (cmd == HG_IDM_ABOUT) {
             show_about_window();
         } else if (cmd == HG_IDM_RESET_ALL) {

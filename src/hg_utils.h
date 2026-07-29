@@ -76,6 +76,11 @@ typedef struct HgResizePreset {
 } HgResizePreset;
 #define HG_RESIZE_PRESET_COUNT 11
 extern const HgResizePreset hg_resize_presets[HG_RESIZE_PRESET_COUNT];
+/* Start with Windows: one value under the per-user Run key, holding the quoted
+ * path of the running executable. */
+BOOL hg_startup_is_enabled(void);
+BOOL hg_startup_set_enabled(BOOL enabled);
+
 void refresh_theme_surfaces(HWND hwnd);
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 void update_monitor_enum(void);
