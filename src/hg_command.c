@@ -183,13 +183,14 @@ static const WCHAR *const cmd_help_list[] = {
     L"  Prints a numbered list. Without a kind, lists windows.",
     L"  The number beside a window is the one go, resize, and move take,",
     L"  so this is where those commands get their arguments.",
-    L"  Kinds: windows (w), resize (r), shortcut (s), sensors (t).",
+    L"  Kinds: windows (w), resize (r), shortcut (s), note (n), sensors (t).",
     L"",
     L"Examples:",
     L"  list                every window, numbered",
     L"  l w                 the same list",
     L"  l r                 the resize presets, numbered for 'resize'",
     L"  l s                 the shortcut icons",
+    L"  l n                 every note, numbered for the 'note' command",
     L"  l t                 every temperature sensor, and which one is shown",
     L"",
     L"  'list sensors' is a diagnostic. The floater shows one CPU",
@@ -242,35 +243,60 @@ static const WCHAR *const cmd_help_move[] = {
 
 static const WCHAR *const cmd_help_search[] = {
     L"search windows <text>             (s w)",
+    L"search note <text>                (s n)",
     L"",
-    L"  Lists the windows whose title contains <text>, ignoring case.",
-    L"  The numbers printed are the ones 'list' would give, not 1, 2, 3",
-    L"  among the matches, so a result can be handed straight to 'go'.",
-    L"  Everything after 'windows' is the text, spaces included.",
+    L"  Lists what contains <text>, ignoring case. Windows are matched on",
+    L"  their title; notes on their title and their body both, because a",
+    L"  note is looked for by what is in it as often as by its name.",
+    L"",
+    L"  The numbers printed are the ones 'list' and 'list note' would",
+    L"  give, not 1, 2, 3 among the matches, so a result can be handed",
+    L"  straight to 'go' or 'note'.",
+    L"  Everything after the kind is the text, spaces included.",
     L"",
     L"Examples:",
     L"  search windows notepad",
     L"  s w visual studio   the space is part of what is searched for",
     L"  go 7                using a number the search printed",
+    L"  s n groceries       notes mentioning groceries anywhere",
+    L"  note 4              opening one the search printed",
 };
 
 static const WCHAR *const cmd_help_note[] = {
-    L"note                (n)",
+    L"note [<note> [action]]            (n)",
     L"",
-    L"  Opens the note list, the same one the N toolbar button opens.",
+    L"  With nothing after it, opens the note list - the same window the",
+    L"  N toolbar button opens.",
+    L"",
+    L"  <note> is the number 'list note' prints. That numbering does not",
+    L"  follow the window's sorting, so a number stays the note it was.",
+    L"",
+    L"  Actions: archive (a), restore (r), delete (d). Without one, the",
+    L"  note opens in its own editor. An archived note opens read-only;",
+    L"  restore it first to write in it again.",
+    L"",
+    L"  delete is not undoable from here. The file goes to the Recycle",
+    L"  Bin, which is where it can be got back from. It also renumbers",
+    L"  the notes after it, so run 'list note' again before typing",
+    L"  another number.",
     L"",
     L"Examples:",
-    L"  note",
+    L"  note                the list window",
+    L"  l n                 every note, with its number",
+    L"  note 3              open note 3",
+    L"  n 3 a               file note 3 away, read-only from then on",
+    L"  n 3 r               put it back among the active notes",
+    L"  n 3 d               delete note 3",
 };
 
 static const HgCommandHelp cmd_help_table[] = {
     {L"help", L"h", L"this list, or one command in detail", cmd_help_help, HG_ARRAYSIZE(cmd_help_help)},
-    {L"list", L"l", L"windows, resize presets, shortcuts, or sensors", cmd_help_list, HG_ARRAYSIZE(cmd_help_list)},
+    {L"list", L"l", L"windows, resize presets, shortcuts, notes, or sensors", cmd_help_list, HG_ARRAYSIZE(cmd_help_list)},
     {L"go", NULL, L"focus a window by its number", cmd_help_go, HG_ARRAYSIZE(cmd_help_go)},
     {L"resize", L"r", L"resize a window to a preset", cmd_help_resize, HG_ARRAYSIZE(cmd_help_resize)},
     {L"move", L"m", L"move a window, optionally to another display", cmd_help_move, HG_ARRAYSIZE(cmd_help_move)},
-    {L"search", L"s", L"find windows by title", cmd_help_search, HG_ARRAYSIZE(cmd_help_search)},
-    {L"note", L"n", L"open the note list", cmd_help_note, HG_ARRAYSIZE(cmd_help_note)},
+    {L"search", L"s", L"find windows or notes by their text", cmd_help_search, HG_ARRAYSIZE(cmd_help_search)},
+    {L"note", L"n", L"the note list, or one note by number", cmd_help_note, HG_ARRAYSIZE(cmd_help_note)},
 };
 
 static const HgCommandHelp *cmd_help_find(const WCHAR *word)
@@ -334,6 +360,24 @@ static void cmd_list_shortcuts(void)
     }
 }
 
+/* The numbering here is the one `note` and `search note` take, and it is not
+ * the order the note window shows: that window sorts however the reader left
+ * it, and a number that moves when a sort changes is a number nobody can
+ * write down. */
+static void cmd_list_notes(void)
+{
+    int count = hg_note_command_count();
+    if (count <= 0) {
+        commandbox_print(L"no notes yet - 'note' opens the list, where +Add Note makes one");
+        return;
+    }
+    for (int i = 1; i <= count; ++i) {
+        HgNoteBrief brief;
+        if (hg_note_command_brief(i, &brief))
+            cmd_printf(L"%3d  %-9ls %ls", i, brief.archived ? L"archived" : L"", brief.title);
+    }
+}
+
 /* The diagnostic behind the TMP row. One number is shown; this is every
  * number it was chosen from, so a suspicious reading can be judged. */
 static void cmd_list_sensors(void)
@@ -374,11 +418,13 @@ static void cmd_list(int argc, WCHAR *argv[])
         cmd_list_resize();
     } else if (cmd_word_is(argv[1], L"shortcut", L"s") || cmd_word_is(argv[1], L"shortcuts", NULL)) {
         cmd_list_shortcuts();
+    } else if (cmd_word_is(argv[1], L"note", L"n") || cmd_word_is(argv[1], L"notes", NULL)) {
+        cmd_list_notes();
     } else if (cmd_word_is(argv[1], L"sensors", L"t") || cmd_word_is(argv[1], L"sensor", NULL) ||
                cmd_word_is(argv[1], L"temp", NULL)) {
         cmd_list_sensors();
     } else {
-        cmd_printf(L"list: unknown kind '%ls' (windows, resize, shortcut, sensors)", argv[1]);
+        cmd_printf(L"list: unknown kind '%ls' (windows, resize, shortcut, note, sensors)", argv[1]);
     }
 }
 
@@ -475,16 +521,42 @@ static void cmd_move(int argc, WCHAR *argv[])
     }
 }
 
+/* The numbers printed are the ones `list note` gives, not 1, 2, 3 among the
+ * matches, so a result can be handed straight back to `note`. */
+static void cmd_search_notes(const WCHAR *needle)
+{
+    int count = hg_note_command_count();
+    int found = 0;
+    for (int i = 1; i <= count; ++i) {
+        if (!hg_note_command_matches(i, needle))
+            continue;
+        HgNoteBrief brief;
+        if (hg_note_command_brief(i, &brief)) {
+            cmd_printf(L"%3d  %-9ls %ls", i, brief.archived ? L"archived" : L"", brief.title);
+            ++found;
+        }
+    }
+    if (found == 0)
+        cmd_printf(L"no note matches '%ls'", needle);
+}
+
 static void cmd_search(int argc, WCHAR *argv[], const WCHAR *line)
 {
-    if (argc < 3 || !cmd_word_is(argv[1], L"windows", L"w")) {
-        commandbox_print(L"search: only windows so far, as in 'search windows notepad'");
+    BOOL windows = (argc >= 2) && cmd_word_is(argv[1], L"windows", L"w");
+    BOOL notes = (argc >= 2) && (cmd_word_is(argv[1], L"note", L"n") || cmd_word_is(argv[1], L"notes", NULL));
+    if (argc < 3 || (!windows && !notes)) {
+        commandbox_print(L"search: windows or note, as in 'search windows notepad' or 's n groceries'");
         return;
     }
 
     const WCHAR *needle = cmd_tail(line, 2);
     if (!needle || !*needle) {
         commandbox_print(L"search: needs something to look for");
+        return;
+    }
+
+    if (notes) {
+        cmd_search_notes(needle);
         return;
     }
 
@@ -501,6 +573,65 @@ static void cmd_search(int argc, WCHAR *argv[], const WCHAR *line)
     }
     if (found == 0)
         cmd_printf(L"no window matches '%ls'", needle);
+}
+
+/* Returns TRUE when a note window was put in front, which is what stops the
+ * command box from pulling the keyboard straight back off it. */
+static BOOL cmd_note(int argc, WCHAR *argv[])
+{
+    if (argc < 2) {
+        show_note_list_window();
+        commandbox_print(L"note: opened the note list");
+        return TRUE;
+    }
+
+    int number = 0;
+    if (!cmd_parse_int(argv[1], &number)) {
+        cmd_printf(L"note: '%ls' is not a note number - see 'list note'", argv[1]);
+        return FALSE;
+    }
+
+    HgNoteBrief brief;
+    if (!hg_note_command_brief(number, &brief)) {
+        cmd_printf(L"note: no note %d (see 'list note')", number);
+        return FALSE;
+    }
+
+    if (argc < 3) {
+        if (!hg_note_command_open(number))
+            return FALSE;
+        if (brief.archived)
+            cmd_printf(L"note %d: %ls - archived, so read only", number, brief.title);
+        else
+            cmd_printf(L"note %d: %ls", number, brief.title);
+        return TRUE;
+    }
+
+    if (cmd_word_is(argv[2], L"archive", L"a") || cmd_word_is(argv[2], L"restore", L"r")) {
+        BOOL archive = cmd_word_is(argv[2], L"archive", L"a");
+        BOOL changed = FALSE;
+        if (!hg_note_command_set_archived(number, archive, &changed))
+            return FALSE;
+        if (!changed)
+            cmd_printf(L"note %d: already %ls", number, archive ? L"archived" : L"active");
+        else if (archive)
+            cmd_printf(L"note %d archived: %ls - read only until restored", number, brief.title);
+        else
+            cmd_printf(L"note %d restored: %ls", number, brief.title);
+        return FALSE;
+    }
+
+    if (cmd_word_is(argv[2], L"delete", L"d")) {
+        /* The title is read before the note is gone, so the line that confirms
+         * the deletion can still say what was deleted. */
+        if (!hg_note_command_delete(number))
+            return FALSE;
+        cmd_printf(L"note %d deleted: %ls - it is in the Recycle Bin", number, brief.title);
+        return FALSE;
+    }
+
+    cmd_printf(L"note: unknown action '%ls' (archive, restore, delete)", argv[2]);
+    return FALSE;
 }
 
 BOOL hg_command_execute(const WCHAR *line)
@@ -539,9 +670,7 @@ BOOL hg_command_execute(const WCHAR *line)
     } else if (cmd_word_is(argv[0], L"search", L"s")) {
         cmd_search(argc, argv, line);
     } else if (cmd_word_is(argv[0], L"note", L"n")) {
-        show_note_list_window();
-        commandbox_print(L"note: opened the note list");
-        moved_focus = TRUE;
+        moved_focus = cmd_note(argc, argv);
     } else {
         cmd_printf(L"unknown command '%ls' - type help", argv[0]);
     }

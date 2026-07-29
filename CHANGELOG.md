@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.29n] - 2026-07-29
+
+### Added
+- The command box can work the notes without the list window: `list note` (`l n`) numbers every note, `note 3` opens one, `note 3 archive` / `restore` / `delete` (`n 3 a` / `r` / `d`) act on it, and `search note <text>` (`s n`) finds notes by their **title or their body**. Numbers come from `list note` and are identifier order, not the window's — the window sorts however you left it, so a number taken from it would mean a different note after the next sort.
+
+### Changed
+- **An archived note is now read-only.** Archiving files a note away, and something filed away has stopped being written; its editor opens read-only and the caption says so, rather than being a window that ignores typing without explanation. Copy and Select All stay — reading an archived note is the point of keeping it — and Restore makes it writable again. Deleting is unchanged: any note can be deleted, archived or not.
+- Changing the note text size now re-fits what is on screen to the window you already have. The list re-measures its rows and scrolls the selected one back into view; every open editor re-wraps and keeps the caret on screen. Before, the new font was applied and the layout was left where the old one had put it.
+
 ## [v26.07.29m] - 2026-07-29
 
 ### Added

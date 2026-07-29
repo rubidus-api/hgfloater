@@ -7,7 +7,7 @@ translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 370 KB** that needs no installer and no runtime, so
+single **executable of about 380 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -327,13 +327,19 @@ could come and go between the list you read and the number you typed.
 | `list windows` | `l w` | The same list. |
 | `list resize` | `l r` | The resize presets, numbered. |
 | `list shortcut` | `l s` | The shortcut icons, numbered. |
+| `list note` | `l n` | Every note, numbered for the `note` command. |
 | `list sensors` | `l t` | Every temperature sensor found, and which one `TMP` and `GPU` show. |
 | `go 1` | — | Focus window 1, restoring it if it is minimised. |
 | `resize 1 1` | `r 1 1` | Resize window 1 to preset 1. |
 | `move 1 100 100` | `m 1 100 100` | Move window 1 to 100, 100 on the display it is already on. |
 | `move 1 100 100 2` | `m 1 100 100 2` | Move window 1 to 100, 100 on display 2. |
 | `search windows word` | `s w word` | Windows whose title contains `word`, listed under their `list` numbers rather than renumbered. |
-| `note` | — | Open the [note list](#10-notes). |
+| `note` | `n` | Open the [note list](#10-notes). |
+| `note 3` | `n 3` | Open note 3 in its own editor. An archived note opens read-only. |
+| `note 3 archive` | `n 3 a` | File note 3 away. |
+| `note 3 restore` | `n 3 r` | Put it back among the active notes. |
+| `note 3 delete` | `n 3 d` | Delete note 3, to the Recycle Bin. |
+| `search note word` | `s n word` | Notes whose title **or body** contains `word`, under their `list note` numbers. |
 
 `X` and `Y` are measured from the target display's own top-left corner, not from
 the virtual desktop's, so the same pair of numbers means the same place on every
@@ -394,9 +400,16 @@ archived - until then the list is just notes, and a label would be noise.
 - **Sort by** created, modified, or title, each ascending or descending, with
   the one in force ticked.
 
-Any note can be deleted, archived or not: archiving files a note away, it does
-not lock it. Deleted notes go to the **Recycle Bin**, so a mistaken `Delete` is
-recoverable where Windows would normally recover it.
+**An archived note is read-only.** Archiving files a note away, and something
+filed away has stopped being written: its editor opens read-only, and the
+caption says so rather than leaving a window that silently ignores typing.
+Copying and selecting still work - reading an archived note is the point of
+keeping it - and **Restore** makes it writable again, so this is a state and not
+a one-way door.
+
+Deleting is the exception: any note can be deleted, archived or not. Deleted
+notes go to the **Recycle Bin**, so a mistaken `Delete` is recoverable where
+Windows would normally recover it.
 
 The two halves sort independently: you can keep what you are writing by most
 recently changed and your archive by title. Each half remembers its own order.
@@ -421,6 +434,11 @@ There is one size for all of them, so the list and every open editor follow the
 same wheel. It is stored unscaled, so a change made on a 200% display reads the
 same on a 100% one, and a note dragged between monitors is redrawn at that
 display's scale. A plain wheel still scrolls.
+
+Changing the size **re-fits what is on screen to the window you already have**:
+the list re-measures its rows and scrolls the selected one back into view, and
+every open editor re-wraps its text and keeps the caret on screen. No window
+moves or changes size - only how much of it you can read at once does.
 
 **Saving** happens on its own. Edits are held in memory and written a couple of
 seconds after the typing settles, and only for the notes that actually changed,
