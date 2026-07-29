@@ -71,7 +71,10 @@ typedef struct HgGammaBackup {
     BOOL valid;
 } HgGammaBackup;
 
-static HgGammaBackup s_gamma_backups[HG_MAX_MONITORS];
+/* Keyed on device name and never pruned, so a session that docks and undocks
+ * can present more distinct names than there are displays at any one moment. */
+#define HG_GAMMA_BACKUP_SLOTS (HG_MAX_MONITORS * 4)
+static HgGammaBackup s_gamma_backups[HG_GAMMA_BACKUP_SLOTS];
 static int s_gamma_backup_count = 0;
 
 static HDC hg_monitor_dc(const WCHAR *device)
@@ -87,7 +90,7 @@ static HgGammaBackup *hg_gamma_backup_for(const WCHAR *device, HDC hdc)
         if (wcscmp(s_gamma_backups[i].device, device) == 0)
             return &s_gamma_backups[i];
     }
-    if (s_gamma_backup_count >= HG_MAX_MONITORS)
+    if (s_gamma_backup_count >= HG_GAMMA_BACKUP_SLOTS)
         return NULL;
 
     HgGammaBackup *slot = &s_gamma_backups[s_gamma_backup_count];
@@ -117,27 +120,25 @@ static BOOL hg_set_gamma_brightness(const WCHAR *device, int brightness)
     if (!hdc)
         return FALSE;
 
+    /* Without a captured ramp there is no way back, and a display left dimmed
+     * after this process exits is worse than one that refused to dim. */
     HgGammaBackup *backup = hg_gamma_backup_for(device, hdc);
+    if (!backup || !backup->valid) {
+        DeleteDC(hdc);
+        return FALSE;
+    }
+
     double factor = (double)brightness / 100.0;
     if (factor < 0.1)
         factor = 0.1; /* Prevent screen from becoming pitch black (min 10%) */
 
     WORD ramp[3][256];
-    if (backup && backup->valid) {
-        for (int c = 0; c < 3; c++) {
-            for (int i = 0; i < 256; i++) {
-                double val = (double)backup->ramp[c][i] * factor;
-                if (val > 65535.0)
-                    val = 65535.0;
-                ramp[c][i] = (WORD)val;
-            }
-        }
-    } else {
+    for (int c = 0; c < 3; c++) {
         for (int i = 0; i < 256; i++) {
-            double val = (double)i * 256.0 * factor;
+            double val = (double)backup->ramp[c][i] * factor;
             if (val > 65535.0)
                 val = 65535.0;
-            ramp[0][i] = ramp[1][i] = ramp[2][i] = (WORD)val;
+            ramp[c][i] = (WORD)val;
         }
     }
 
@@ -323,16 +324,20 @@ void hg_refresh_brightness_cache(void)
     if (!monitor || monitor == cursor_monitor)
         return;
 
+    /* Only a successful read is news. A display driven by the gamma fallback
+     * never answers DDC/CI, and stamping -1 over the value we set would leave
+     * the menu claiming it does not know a brightness it is still applying. */
     int value = 0;
-    hg_g_monitors[idx].brightness = hg_query_monitor_brightness(monitor, &value) ? value : -1;
+    if (hg_query_monitor_brightness(monitor, &value))
+        hg_g_monitors[idx].brightness = value;
 }
 
 void hg_refresh_all_monitor_brightness(void)
 {
     for (int i = 0; i < hg_g_monitor_count; ++i) {
         int value = 0;
-        hg_g_monitors[i].brightness =
-            hg_query_monitor_brightness(hg_g_monitors[i].hMonitor, &value) ? value : -1;
+        if (hg_query_monitor_brightness(hg_g_monitors[i].hMonitor, &value))
+            hg_g_monitors[i].brightness = value;
     }
 
     int percent = 0;
