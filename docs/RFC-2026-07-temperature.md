@@ -1,6 +1,6 @@
 # RFC 2026-07: CPU Temperature on the Floater
 
-Status: Implemented (v26.07.29f)
+Status: Implemented (v26.07.29f; zone coverage and selection in v26.07.29m)
 Date: 2026-07-29
 
 ## Summary
@@ -149,6 +149,64 @@ a machine without the sensor, not a fault. Adapters are enumerated with
 warmest adapter that answers is the one shown, because that is the one doing
 work.
 
+## D6. Every zone, from both surfaces, and a rule for choosing (v26.07.29m)
+
+The first implementation took the **first** WMI instance. That was the smallest
+thing that could work, and on a machine with one live zone it does. It fails on
+the common case the "constant reading" risk above describes: firmware routinely
+declares several zones and puts one it never updates in front, so the first
+instance is as likely to be filler as a sensor.
+
+Three changes, none of which needs anything the project did not already have.
+
+**More instances.** The WMI query enumerates every `MSAcpi_ThermalZoneTemperature`
+instance rather than stopping at the first, and carries each one's
+`InstanceName` alongside its value. Names are firmware's choice and cannot be
+relied on, but they can be *preferred*.
+
+**A second surface.** Windows also publishes each ACPI zone as a performance
+counter, `\Thermal Zone Information(*)\Temperature`, in whole degrees Kelvin.
+It is the same firmware data seen through a different window, and the two do not
+always agree about being available: a machine whose WMI class answers nothing
+sometimes has counters, and the reverse happens too. Both are read and the
+results pooled.
+
+This is reached through **PDH**, which is part of Windows (`pdh.dll`) - not a
+library, not a dependency, nothing to license. The one thing that had to be got
+right is the entry point: the counter object's name is **localised**, so
+`PdhAddCounterW` cannot resolve the English path above on a Windows whose
+display language is not English. `PdhAddEnglishCounterW` exists for exactly this
+and is what the implementation calls. The DLL is loaded at run time by name, the
+same pattern the project already uses for `dxva2` and `Msftedit`.
+
+**A rule.** With several candidates the question becomes which to show. A
+reading that never moves is indistinguishable from a working sensor *in any
+single sample*, so the zones are remembered by name across samples and one that
+has been observed to change is worth more than one that has not:
+
+    moved at least once   4
+    name contains CPU or TZ0   2
+    otherwise   0
+    ties broken by the hotter reading
+
+Movement outranks the name because a name is firmware's claim and a change is
+evidence. The hottest-wins tiebreak is deliberate and only a tiebreak: taking
+the hottest outright would have picked the filler zone on any machine whose
+filler is a high constant.
+
+### The diagnostic
+
+`list sensors` (`l t`) in the command box prints every zone from both surfaces
+with its source, name, and value, followed by the two readings actually on the
+bars. This exists because the selection rule above is a heuristic over data the
+firmware controls, and a heuristic that cannot be inspected is one nobody can
+report a bug against.
+
+### What this still is not
+
+It is still a thermal zone. Reading more of them, more reliably, does not turn a
+board sensor into a die temperature, and the README continues to say so.
+
 ## Non-Goals
 
 - No kernel driver, no MSR reads, no SMBus, no elevation. Ever.
@@ -157,6 +215,11 @@ work.
   hardware, at the cost of a hand-declared undocumented interface per vendor and
   a third for Intel; the WDDM thunk covers all of them at once.
 - No fan, voltage, or per-core sensors.
+- No third-party sensor library, and none was needed: the search for one
+  confirmed that what exists for this on Windows (LibreHardwareMonitor, Open
+  Hardware Monitor) is .NET and driver-backed, which the first section of this
+  RFC already rules out. The driver-free paths are Windows components, so there
+  is no licence question to answer.
 - No claim that this is the CPU die temperature. It is a thermal zone, and the
   README says so.
 
@@ -169,9 +232,10 @@ work.
 - **WMI on the UI thread.** Already solved for the backlight: one cached
   connection, bounded waits, and the refresh happens on the existing timer
   rather than in paint.
-- **A machine that reports a constant.** Indistinguishable from a working
-  sensor. Not solvable without a second source; noted in the README so a reader
-  who sees a number that never moves knows what they are looking at.
+- **A machine that reports a constant.** Addressed in v26.07.29m by D6 below,
+  which is what a second source bought. A zone that has never been seen to move
+  is still shown if it is the only one there is, so the caveat has not vanished
+  entirely - it has become a last resort instead of a coin toss.
 
 ## References
 
