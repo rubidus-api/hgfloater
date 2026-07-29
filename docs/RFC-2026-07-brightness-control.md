@@ -1,6 +1,6 @@
 # RFC 2026-07: Per-Monitor Brightness Control
 
-Status: Partly implemented (P1, P2, P4 in v26.07.29d; P3 outstanding)
+Status: Implemented (P1, P2, P4, P5 in v26.07.29d; P3 in v26.07.29e)
 Date: 2026-07-29
 
 ## Summary
@@ -140,10 +140,19 @@ path may leave a display in a state this app cannot restore at exit.
 - **P2 (done, v26.07.29d)** - Low-level VCP path with capabilities parsing,
   above the high-level one. The probe also removed the extra read per write:
   the scale is known from the probe, so a write is one round trip.
-- **P3 (outstanding)** - The WMI path for the internal panel, above VCP. This is
-  the laptop case, where the gamma fallback currently dims the picture and
-  leaves the backlight alone. It needs COM against `root\wmi`, which is a larger
-  piece than P1/P2 and has not been attempted.
+- **P3 (done, v26.07.29e)** - The WMI path for the internal panel, above VCP, in
+  `src/hg_backlight.c`. A display is taken to be internal when its DisplayConfig
+  output technology is eDP, LVDS, embedded UDI, or INTERNAL - the same reading
+  that already names the connector in the options menu - and the panel is then
+  driven through `WmiMonitorBrightness` and `WmiSetBrightness` rather than being
+  asked over a bus it is not on.
+  - The connection is made once and kept: the refresh timer asks every few
+    seconds and a COM activation per ask is not worth paying. Any failure drops
+    it, so a session that lost the service reconnects on the next call.
+  - Every wait is bounded, because this runs on the UI thread.
+  - **Limitation:** the first WMI instance is used. A machine with two
+    integrated panels would need `InstanceName` matched against the display's
+    device path; that is written down here rather than guessed at.
 - **P4 (done, v26.07.29d)** - The wheel over `B` moves brightness in 1% steps
   where opacity and volume keep their coarse 5%, and a display that has been
   probed and answered nothing shows `Brightness (unavailable)`.

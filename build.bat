@@ -75,7 +75,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command
 windres src\hgfloater.rc -O coff -o hgfloater_res.o -DHG_RC_VER_MAJOR=!VER_NUM_Y! -DHG_RC_VER_MINOR=!VER_NUM_M! -DHG_RC_VER_PATCH=!VER_NUM_D! -DHG_RC_VER_MINOR_STR=!ver_m! -DHG_RC_VER_PATCH_STR=!ver_d!
-gcc src\hgfloater.c src\hg_globals.c src\hg_utils.c src\hg_audio.c src\hg_display.c src\hg_shell.c src\hg_sysinfo.c src\hg_config.c src\hg_calc.c src\hg_command.c src\widgets\hg_floater.c src\widgets\hg_taskbox.c src\widgets\hg_toolbar.c src\widgets\hg_taskbox_menus.c src\widgets\hg_window_list.c src\widgets\hg_monitor.c src\widgets\hg_commandbox.c src\widgets\hg_note.c src\widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
+gcc src\hgfloater.c src\hg_globals.c src\hg_utils.c src\hg_audio.c src\hg_display.c src\hg_backlight.c src\hg_shell.c src\hg_sysinfo.c src\hg_config.c src\hg_calc.c src\hg_command.c src\widgets\hg_floater.c src\widgets\hg_taskbox.c src\widgets\hg_toolbar.c src\widgets\hg_taskbox_menus.c src\widgets\hg_window_list.c src\widgets\hg_monitor.c src\widgets\hg_commandbox.c src\widgets\hg_note.c src\widgets\hg_about.c hgfloater_res.o -o hgfloater.exe %FLAGS% -Wno-overlength-strings -DHG_VERSION_W=L\"!VERSION_STRING!\" -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -mwindows -municode -lshell32 -lole32 -loleaut32 -luuid -lpsapi -lpathcch -lshlwapi -static -lshcore -lpropsys -limm32
 set BUILD_RESULT=%errorlevel%
 if exist hgfloater_res.o del hgfloater_res.o
 

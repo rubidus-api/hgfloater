@@ -26,6 +26,7 @@ typedef BOOL (WINAPI *PFN_SetVCPFeature)(HANDLE, BYTE, DWORD);
 typedef enum HgBrightnessMethod {
     HG_BRIGHT_UNKNOWN = 0, /* not probed yet */
     HG_BRIGHT_NONE,        /* the display answers nothing this app can undo */
+    HG_BRIGHT_WMI,         /* the integrated panel's backlight, already in percent */
     HG_BRIGHT_VCP,         /* low-level, on the monitor's own scale */
     HG_BRIGHT_HIGH,        /* high-level Get/SetMonitorBrightness */
     HG_BRIGHT_GAMMA        /* not brightness at all - the picture, not the lamp */
@@ -381,6 +382,13 @@ static HgBrightnessMethod hg_probe_method(HMONITOR monitor, DWORD *out_min, DWOR
     *out_min = 0;
     *out_max = 100;
 
+    /* The integrated panel first: it is not a DDC/CI device, so asking the bus
+     * about it only wastes the round trips before falling through to gamma. */
+    WCHAR gdi_name[64];
+    BOOL have_name = hg_monitor_device_name(monitor, gdi_name, HG_ARRAYSIZE(gdi_name));
+    if (have_name && hg_monitor_is_internal(gdi_name) && hg_backlight_available())
+        return HG_BRIGHT_WMI;
+
     HG_PHYSICAL_MONITOR *phys = NULL;
     DWORD count = 0;
     if (hg_open_physical(monitor, &phys, &count)) {
@@ -407,9 +415,8 @@ static HgBrightnessMethod hg_probe_method(HMONITOR monitor, DWORD *out_min, DWOR
 
     /* Gamma is only worth claiming where the original ramp can be captured, or
      * the display would be dimmed with no way back. */
-    WCHAR device[64];
-    if (hg_monitor_device_name(monitor, device, HG_ARRAYSIZE(device))) {
-        HDC hdc = hg_monitor_dc(device);
+    if (have_name) {
+        HDC hdc = hg_monitor_dc(gdi_name);
         if (hdc) {
             WORD probe[3][256];
             BOOL can = GetDeviceGammaRamp(hdc, probe) ? TRUE : FALSE;
@@ -468,6 +475,8 @@ BOOL hg_query_monitor_brightness(HMONITOR monitor, int *out_percent)
 
     DWORD lo = 0, hi = 100;
     HgBrightnessMethod method = hg_method_for(monitor, &lo, &hi);
+    if (method == HG_BRIGHT_WMI)
+        return hg_backlight_get(out_percent);
     if (method != HG_BRIGHT_VCP && method != HG_BRIGHT_HIGH)
         return FALSE; /* gamma has nothing to read back, and none has nothing */
 
@@ -558,6 +567,16 @@ void hg_set_monitor_brightness(HMONITOR monitor, int percent)
 
     DWORD lo = 0, hi = 100;
     HgBrightnessMethod method = hg_method_for(monitor, &lo, &hi);
+
+    if (method == HG_BRIGHT_WMI) {
+        if (hg_backlight_set(percent)) {
+            hg_cache_monitor_brightness(monitor, percent);
+            if (monitor == hg_cursor_monitor())
+                hg_g_global_brightness = percent;
+            return;
+        }
+        /* The panel stopped answering; the ladder still has a rung left. */
+    }
 
     /* A monitor can advertise a code it then refuses to set, so a failed write
      * falls through the ladder rather than being taken at its word. */
@@ -923,6 +942,26 @@ static const WCHAR *hg_output_technology_label(UINT32 technology)
     case 0x80000000u: return L"Internal";
     default: return NULL;
     }
+}
+
+/* eDP, LVDS, and the INTERNAL technology are the connectors a built-in panel
+ * hangs off. DisplayPort-embedded counts: it is the connector a laptop's own
+ * screen uses, not an external DisplayPort socket. */
+BOOL hg_monitor_is_internal(const WCHAR *gdi_name)
+{
+    if (!gdi_name || !gdi_name[0])
+        return FALSE;
+
+    LUID adapter_id;
+    UINT32 source_id = 0;
+    UINT32 technology = 0xFFFFFFFFu;
+    if (!hg_find_display_source(gdi_name, &adapter_id, &source_id, NULL, 0, &technology))
+        return FALSE;
+
+    return (technology == 6u ||          /* LVDS */
+            technology == 11u ||         /* DisplayPort embedded (eDP) */
+            technology == 13u ||         /* UDI embedded */
+            technology == 0x80000000u);  /* INTERNAL */
 }
 
 /* `\\.\DISPLAY3` -> 3, matching the number the Settings app puts on the display. */

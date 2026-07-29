@@ -63,6 +63,18 @@ BOOL hg_monitor_brightness_unavailable(HMONITOR monitor);
 void hg_set_monitor_brightness(HMONITOR monitor, int percent);
 void hg_refresh_all_monitor_brightness(void);
 
+/* The internal panel's real backlight, over WMI. It is not a DDC/CI device, so
+ * none of the paths above reach it; see docs/RFC-2026-07-brightness-control.md.
+ * Percentages here are already percentages - unlike DDC/CI, which speaks the
+ * monitor's own scale. */
+BOOL hg_backlight_available(void);
+BOOL hg_backlight_get(int *out_percent);
+BOOL hg_backlight_set(int percent);
+void hg_backlight_shutdown(void); /* release the cached WMI connection before CoUninitialize */
+/* TRUE when the display hangs off an internal connector (eDP, LVDS, or the
+ * INTERNAL technology), which is what makes the WMI path the right one. */
+BOOL hg_monitor_is_internal(const WCHAR *gdi_name);
+
 /* Menu label for a display: its number, the monitor name the driver reports
  * from EDID, and the connector it hangs off. */
 void hg_describe_monitor(const WCHAR *gdi_name, WCHAR *out, size_t out_cch);
