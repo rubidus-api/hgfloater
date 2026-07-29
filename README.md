@@ -195,9 +195,26 @@ window across the screen; when that heading runs out of room it turns
 counter-clockwise — north, west, south, east, and back to north. If no direction
 has room, nothing moves.
 
-**`B` — brightness.** Laptop panels and external monitors are both supported:
-hgfloater asks the monitor over DDC/CI first and falls back to a gamma ramp when
-the hardware refuses.
+**`B` — brightness.** The wheel moves brightness in **1% steps**, finer than the
+5% opacity and volume use, because a monitor's real scale is known rather than
+assumed.
+
+hgfloater tries three things per display, in order, and remembers which one
+answered. First the **low-level DDC/CI** path: it reads the monitor's
+capabilities string and, if that advertises the luminance control, drives it on
+whatever scale the monitor actually reports — which is often not 0 to 100. Then
+the **high-level** brightness call, for monitors that support that but not the
+first. Last a **gamma ramp**, which is worth being honest about: it dims the
+picture, not the backlight, and costs contrast.
+
+A monitor can refuse all of them — DDC/CI switched off in its own menu, a cable
+or adapter that does not carry the channel, a KVM in the path, or a monitor that
+advertises a control it does not honour. That display shows
+**Brightness (unavailable)** rather than accepting a click that does nothing.
+
+An internal laptop panel is not a DDC/CI device and currently lands on the gamma
+ramp. Driving its real backlight needs a fourth path, described in
+`docs/RFC-2026-07-brightness-control.md`, which is not implemented yet.
 
 **`F` — floater adjust.** Collapses the dashboard and suspends hover-to-expand,
 so you can tune the floater with `Ctrl + Wheel` (size) and `Alt + Wheel`

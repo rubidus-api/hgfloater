@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- Brightness now tries three paths per display and remembers which one answered. The **low-level DDC/CI** path comes first: it reads the monitor's capabilities string, checks that the luminance control is advertised, and drives it on the scale the monitor actually reports rather than assuming 0 to 100. The **high-level** call it used to use exclusively is now the second rung, and the gamma ramp the last. This reaches monitors that answer DDC/CI but not the high-level API, and it reports their level correctly.
+- The wheel over `B` moves brightness in **1% steps**, where opacity and volume keep their coarse 5%. A monitor's real scale is known now, so the finer step means something.
+- A display that has been asked and answered nothing shows **Brightness (unavailable)** in its submenu, the way an unreachable Scale already did, instead of accepting a click that does nothing.
+- Writing a brightness no longer costs an extra read: the scale comes from the one-time probe. A monitor that advertises the control and then refuses to set it falls through to the next path rather than being taken at its word.
+
+### Added
+- `docs/RFC-2026-07-brightness-control.md` records how brightness control works on Windows - the high-level, low-level, and WMI paths, what each reaches, and why gamma is not brightness - and what remains: the WMI path for internal laptop panels, which is the one case still landing on the gamma fallback.
+
 ## [v26.07.29c] - 2026-07-29
 
 ### Fixed

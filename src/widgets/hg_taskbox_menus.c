@@ -61,6 +61,11 @@ static HMENU taskbox_create_scale_submenu(int monitor_index)
  * nothing at all; an unread monitor shows no tick. */
 static HMENU taskbox_create_brightness_submenu(int monitor_index)
 {
+    /* Only once the display has actually been probed and refused everything;
+     * one not yet asked is offered normally. */
+    if (hg_monitor_brightness_unavailable(hg_g_monitors[monitor_index].hMonitor))
+        return NULL;
+
     HMENU brightness_menu = CreatePopupMenu();
     if (!brightness_menu)
         return NULL;
@@ -113,6 +118,10 @@ static HMENU taskbox_create_display_submenu(int monitor_index)
         if (!AppendMenuW(display_menu, MF_POPUP, (UINT_PTR)brightness_menu, L"Brightness")) {
             DestroyMenu(brightness_menu);
         }
+    } else {
+        /* Same bargain as Scale: kept visible but dead, because a missing entry
+         * reads as a bug and a greyed one says the display would not answer. */
+        AppendMenuW(display_menu, MF_STRING | MF_GRAYED, 0, L"Brightness (unavailable)");
     }
     return display_menu;
 }

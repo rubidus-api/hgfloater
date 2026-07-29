@@ -12,6 +12,24 @@ typedef BOOL (WINAPI *PFN_GetPhysicalMonitorsFromHMONITOR)(HMONITOR, DWORD, HG_P
 typedef BOOL (WINAPI *PFN_DestroyPhysicalMonitors)(DWORD, HG_PHYSICAL_MONITOR*);
 typedef BOOL (WINAPI *PFN_GetMonitorBrightness)(HANDLE, LPDWORD, LPDWORD, LPDWORD);
 typedef BOOL (WINAPI *PFN_SetMonitorBrightness)(HANDLE, DWORD);
+/* The low-level half of the same DLL. The high-level pair above is a
+ * convenience layer over these, and a monitor that refuses it often still
+ * answers here; see docs/RFC-2026-07-brightness-control.md. */
+typedef BOOL (WINAPI *PFN_GetCapabilitiesStringLength)(HANDLE, LPDWORD);
+typedef BOOL (WINAPI *PFN_CapabilitiesRequestAndCapabilitiesReply)(HANDLE, LPSTR, DWORD);
+typedef BOOL (WINAPI *PFN_GetVCPFeatureAndVCPFeatureReply)(HANDLE, BYTE, LPVOID, LPDWORD, LPDWORD);
+typedef BOOL (WINAPI *PFN_SetVCPFeature)(HANDLE, BYTE, DWORD);
+
+/* Luminance, in the VESA Monitor Control Command Set. */
+#define HG_VCP_LUMINANCE 0x10
+
+typedef enum HgBrightnessMethod {
+    HG_BRIGHT_UNKNOWN = 0, /* not probed yet */
+    HG_BRIGHT_NONE,        /* the display answers nothing this app can undo */
+    HG_BRIGHT_VCP,         /* low-level, on the monitor's own scale */
+    HG_BRIGHT_HIGH,        /* high-level Get/SetMonitorBrightness */
+    HG_BRIGHT_GAMMA        /* not brightness at all - the picture, not the lamp */
+} HgBrightnessMethod;
 
 static FARPROC hg_get_proc_address(HMODULE module, LPCSTR name)
 {
@@ -27,6 +45,10 @@ static PFN_GetPhysicalMonitorsFromHMONITOR s_pfnGetPhys = NULL;
 static PFN_DestroyPhysicalMonitors s_pfnDestroy = NULL;
 static PFN_GetMonitorBrightness s_pfnGetBright = NULL;
 static PFN_SetMonitorBrightness s_pfnSetBright = NULL;
+static PFN_GetCapabilitiesStringLength s_pfnCapsLen = NULL;
+static PFN_CapabilitiesRequestAndCapabilitiesReply s_pfnCaps = NULL;
+static PFN_GetVCPFeatureAndVCPFeatureReply s_pfnGetVCP = NULL;
+static PFN_SetVCPFeature s_pfnSetVCP = NULL;
 static BOOL s_dxva2_initialized = FALSE;
 
 static void init_dxva2(void)
@@ -42,6 +64,10 @@ static void init_dxva2(void)
             PFN_DestroyPhysicalMonitors destroy;
             PFN_GetMonitorBrightness get_bright;
             PFN_SetMonitorBrightness set_bright;
+            PFN_GetCapabilitiesStringLength caps_len;
+            PFN_CapabilitiesRequestAndCapabilitiesReply caps;
+            PFN_GetVCPFeatureAndVCPFeatureReply get_vcp;
+            PFN_SetVCPFeature set_vcp;
         } loader;
 
         loader.proc = hg_get_proc_address(s_hDxva2, "GetNumberOfPhysicalMonitorsFromHMONITOR");
@@ -54,6 +80,14 @@ static void init_dxva2(void)
         s_pfnGetBright = loader.get_bright;
         loader.proc = hg_get_proc_address(s_hDxva2, "SetMonitorBrightness");
         s_pfnSetBright = loader.set_bright;
+        loader.proc = hg_get_proc_address(s_hDxva2, "GetCapabilitiesStringLength");
+        s_pfnCapsLen = loader.caps_len;
+        loader.proc = hg_get_proc_address(s_hDxva2, "CapabilitiesRequestAndCapabilitiesReply");
+        s_pfnCaps = loader.caps;
+        loader.proc = hg_get_proc_address(s_hDxva2, "GetVCPFeatureAndVCPFeatureReply");
+        s_pfnGetVCP = loader.get_vcp;
+        loader.proc = hg_get_proc_address(s_hDxva2, "SetVCPFeature");
+        s_pfnSetVCP = loader.set_vcp;
     }
     s_dxva2_initialized = TRUE;
 }
@@ -197,9 +231,17 @@ static BOOL hg_ddc_ready(BOOL for_write)
     return for_write ? (s_pfnSetBright != NULL) : (s_pfnGetBright != NULL);
 }
 
-BOOL hg_query_monitor_brightness(HMONITOR monitor, int *out_percent)
+/* ---------------------------------------------------------- the DDC/CI ladder
+ *
+ * One HMONITOR can front several physical panels; brightness is asked of the
+ * display as a whole, so the first one answers for it. Handles are opened and
+ * closed per operation rather than held: a driver handle kept open across a
+ * display change is a handle to something that may no longer be there. */
+static BOOL hg_open_physical(HMONITOR monitor, HG_PHYSICAL_MONITOR **out, DWORD *out_count)
 {
-    if (!monitor || !out_percent || !hg_ddc_ready(FALSE))
+    *out = NULL;
+    *out_count = 0;
+    if (!monitor || !hg_ddc_ready(FALSE))
         return FALSE;
 
     DWORD count = 0;
@@ -209,49 +251,279 @@ BOOL hg_query_monitor_brightness(HMONITOR monitor, int *out_percent)
     HG_PHYSICAL_MONITOR *phys = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * count);
     if (!phys)
         return FALSE;
+    if (!s_pfnGetPhys(monitor, count, phys)) {
+        free(phys);
+        return FALSE;
+    }
 
+    *out = phys;
+    *out_count = count;
+    return TRUE;
+}
+
+static void hg_close_physical(HG_PHYSICAL_MONITOR *phys, DWORD count)
+{
+    if (!phys)
+        return;
+    if (s_pfnDestroy)
+        s_pfnDestroy(count, phys);
+    free(phys);
+}
+
+static int hg_hex_value(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
+/* Case-insensitive search for the "vcp(" section opener. */
+static const char *hg_caps_find_vcp(const char *caps)
+{
+    for (const char *p = caps; p[0] && p[1] && p[2] && p[3]; ++p) {
+        if ((p[0] == 'v' || p[0] == 'V') && (p[1] == 'c' || p[1] == 'C') && (p[2] == 'p' || p[2] == 'P') &&
+            p[3] == '(') {
+            return p + 4;
+        }
+    }
+    return NULL;
+}
+
+/* Does the capabilities string advertise this VCP code?
+ *
+ * The string is vendor data, so it is read defensively: only the top level of
+ * the vcp() section lists codes, and the parenthesised groups nested inside it
+ * are the permitted values of a noncontinuous code, not codes themselves. */
+static BOOL hg_caps_has_vcp(const char *caps, unsigned char code)
+{
+    const char *p = hg_caps_find_vcp(caps);
+    if (!p)
+        return FALSE;
+
+    int depth = 1;
+    while (*p && depth > 0) {
+        if (*p == '(') {
+            ++depth;
+            ++p;
+            continue;
+        }
+        if (*p == ')') {
+            --depth;
+            ++p;
+            continue;
+        }
+        if (depth == 1 && hg_hex_value(*p) >= 0) {
+            unsigned value = 0;
+            int digits = 0;
+            while (digits < 2 && hg_hex_value(*p) >= 0) {
+                value = value * 16u + (unsigned)hg_hex_value(*p);
+                ++p;
+                ++digits;
+            }
+            if (value == (unsigned)code)
+                return TRUE;
+            continue;
+        }
+        ++p;
+    }
+    return FALSE;
+}
+
+static BOOL hg_vcp_supports_luminance(HANDLE phys)
+{
+    if (!s_pfnCapsLen || !s_pfnCaps)
+        return FALSE;
+
+    DWORD len = 0;
+    if (!s_pfnCapsLen(phys, &len) || len == 0)
+        return FALSE;
+    /* The reported length is vendor data too, so it is capped rather than
+     * trusted with an allocation. */
+    if (len > 65536u)
+        return FALSE;
+
+    char *caps = (char *)malloc(len + 1u);
+    if (!caps)
+        return FALSE;
+    caps[0] = '\0';
+
+    BOOL ok = s_pfnCaps(phys, caps, len) ? TRUE : FALSE;
+    caps[len] = '\0'; /* the reply is not guaranteed to terminate itself */
+
+    BOOL has = ok ? hg_caps_has_vcp(caps, HG_VCP_LUMINANCE) : FALSE;
+    free(caps);
+    return has;
+}
+
+static BOOL hg_vcp_get_luminance(HANDLE phys, DWORD *out_current, DWORD *out_max)
+{
+    if (!s_pfnGetVCP)
+        return FALSE;
+    DWORD current = 0;
+    DWORD maximum = 0;
+    /* The code-type argument is optional and luminance is continuous by
+     * definition, so nothing is asked of it. */
+    if (!s_pfnGetVCP(phys, HG_VCP_LUMINANCE, NULL, &current, &maximum) || maximum == 0)
+        return FALSE;
+    *out_current = current;
+    *out_max = maximum;
+    return TRUE;
+}
+
+/* Walks the ladder once for a display and reports which rung answered, plus the
+ * scale that rung speaks in. */
+static HgBrightnessMethod hg_probe_method(HMONITOR monitor, DWORD *out_min, DWORD *out_max)
+{
+    *out_min = 0;
+    *out_max = 100;
+
+    HG_PHYSICAL_MONITOR *phys = NULL;
+    DWORD count = 0;
+    if (hg_open_physical(monitor, &phys, &count)) {
+        HANDLE first = phys[0].hPhysicalMonitor;
+
+        DWORD current = 0, maximum = 0;
+        if (hg_vcp_supports_luminance(first) && hg_vcp_get_luminance(first, &current, &maximum)) {
+            *out_min = 0;
+            *out_max = maximum;
+            hg_close_physical(phys, count);
+            return HG_BRIGHT_VCP;
+        }
+
+        DWORD lo = 0, cur = 0, hi = 0;
+        if (s_pfnGetBright && s_pfnGetBright(first, &lo, &cur, &hi) && hi > lo) {
+            *out_min = lo;
+            *out_max = hi;
+            hg_close_physical(phys, count);
+            return HG_BRIGHT_HIGH;
+        }
+
+        hg_close_physical(phys, count);
+    }
+
+    /* Gamma is only worth claiming where the original ramp can be captured, or
+     * the display would be dimmed with no way back. */
+    WCHAR device[64];
+    if (hg_monitor_device_name(monitor, device, HG_ARRAYSIZE(device))) {
+        HDC hdc = hg_monitor_dc(device);
+        if (hdc) {
+            WORD probe[3][256];
+            BOOL can = GetDeviceGammaRamp(hdc, probe) ? TRUE : FALSE;
+            DeleteDC(hdc);
+            if (can)
+                return HG_BRIGHT_GAMMA;
+        }
+    }
+    return HG_BRIGHT_NONE;
+}
+
+static MonitorInfo *hg_monitor_record(HMONITOR monitor)
+{
+    for (int i = 0; i < hg_g_monitor_count; ++i) {
+        if (hg_g_monitors[i].hMonitor == monitor)
+            return &hg_g_monitors[i];
+    }
+    return NULL;
+}
+
+/* Probing costs DDC/CI round trips, so the answer is kept beside the display
+ * and only recomputed when the monitor list is rebuilt. A display that is not
+ * in the list - the cursor is over one mid-reconfiguration, say - is probed
+ * without being remembered. */
+static HgBrightnessMethod hg_method_for(HMONITOR monitor, DWORD *out_min, DWORD *out_max)
+{
+    MonitorInfo *record = hg_monitor_record(monitor);
+    if (record && record->brightness_method != HG_BRIGHT_UNKNOWN) {
+        *out_min = record->brightness_min;
+        *out_max = record->brightness_max;
+        return (HgBrightnessMethod)record->brightness_method;
+    }
+
+    DWORD lo = 0, hi = 100;
+    HgBrightnessMethod method = hg_probe_method(monitor, &lo, &hi);
+    if (record) {
+        record->brightness_method = (int)method;
+        record->brightness_min = lo;
+        record->brightness_max = hi;
+    }
+    *out_min = lo;
+    *out_max = hi;
+    return method;
+}
+
+BOOL hg_monitor_brightness_unavailable(HMONITOR monitor)
+{
+    const MonitorInfo *record = hg_monitor_record(monitor);
+    return record && record->brightness_method == HG_BRIGHT_NONE;
+}
+
+BOOL hg_query_monitor_brightness(HMONITOR monitor, int *out_percent)
+{
+    if (!monitor || !out_percent)
+        return FALSE;
+
+    DWORD lo = 0, hi = 100;
+    HgBrightnessMethod method = hg_method_for(monitor, &lo, &hi);
+    if (method != HG_BRIGHT_VCP && method != HG_BRIGHT_HIGH)
+        return FALSE; /* gamma has nothing to read back, and none has nothing */
+
+    HG_PHYSICAL_MONITOR *phys = NULL;
+    DWORD count = 0;
+    if (!hg_open_physical(monitor, &phys, &count))
+        return FALSE;
+
+    HANDLE first = phys[0].hPhysicalMonitor;
     BOOL ok = FALSE;
-    if (s_pfnGetPhys(monitor, count, phys)) {
-        DWORD lo = 0, cur = 0, hi = 100;
-        if (s_pfnGetBright(phys[0].hPhysicalMonitor, &lo, &cur, &hi)) {
-            *out_percent = hg_level_to_percent(lo, cur, hi);
+    DWORD current = 0;
+
+    if (method == HG_BRIGHT_VCP) {
+        DWORD maximum = 0;
+        if (hg_vcp_get_luminance(first, &current, &maximum) && maximum > 0) {
+            *out_percent = hg_level_to_percent(0, current, maximum);
             ok = TRUE;
         }
-        s_pfnDestroy(count, phys);
+    } else {
+        DWORD min_value = 0, max_value = 100;
+        if (s_pfnGetBright && s_pfnGetBright(first, &min_value, &current, &max_value)) {
+            *out_percent = hg_level_to_percent(min_value, current, max_value);
+            ok = TRUE;
+        }
     }
-    free(phys);
+
+    hg_close_physical(phys, count);
     return ok;
 }
 
-static BOOL hg_ddc_set_brightness(HMONITOR monitor, int percent)
+/* Writes a percentage on the display's own scale, by whichever rung of the
+ * ladder that display answered to. The scale came from the probe, so no extra
+ * read is paid per write. */
+static BOOL hg_ddc_set_brightness(HMONITOR monitor, int percent, HgBrightnessMethod method, DWORD lo, DWORD hi)
 {
-    if (!monitor || !hg_ddc_ready(TRUE))
+    if (method != HG_BRIGHT_VCP && method != HG_BRIGHT_HIGH)
         return FALSE;
 
+    HG_PHYSICAL_MONITOR *phys = NULL;
     DWORD count = 0;
-    if (!s_pfnGetNum(monitor, &count) || count == 0)
+    if (!hg_open_physical(monitor, &phys, &count))
         return FALSE;
 
-    HG_PHYSICAL_MONITOR *phys = (HG_PHYSICAL_MONITOR *)malloc(sizeof(HG_PHYSICAL_MONITOR) * count);
-    if (!phys)
-        return FALSE;
-
-    BOOL ok = FALSE;
-    if (s_pfnGetPhys(monitor, count, phys)) {
-        ok = TRUE;
-        for (DWORD i = 0; i < count; i++) {
-            DWORD lo = 0, cur = 0, hi = 100;
-            DWORD level = (DWORD)percent;
-            if (s_pfnGetBright && s_pfnGetBright(phys[i].hPhysicalMonitor, &lo, &cur, &hi)) {
-                level = hg_percent_to_level(lo, hi, percent);
-            }
-            if (!s_pfnSetBright(phys[i].hPhysicalMonitor, level)) {
+    BOOL ok = TRUE;
+    for (DWORD i = 0; i < count; i++) {
+        HANDLE panel = phys[i].hPhysicalMonitor;
+        if (method == HG_BRIGHT_VCP) {
+            if (!s_pfnSetVCP || !s_pfnSetVCP(panel, HG_VCP_LUMINANCE, hg_percent_to_level(0, hi, percent)))
                 ok = FALSE;
-            }
+        } else {
+            if (!s_pfnSetBright || !s_pfnSetBright(panel, hg_percent_to_level(lo, hi, percent)))
+                ok = FALSE;
         }
-        s_pfnDestroy(count, phys);
     }
-    free(phys);
+
+    hg_close_physical(phys, count);
     return ok;
 }
 
@@ -284,10 +556,15 @@ void hg_set_monitor_brightness(HMONITOR monitor, int percent)
     WCHAR device[64];
     BOOL have_device = hg_monitor_device_name(monitor, device, HG_ARRAYSIZE(device));
 
-    if (hg_ddc_set_brightness(monitor, percent)) {
+    DWORD lo = 0, hi = 100;
+    HgBrightnessMethod method = hg_method_for(monitor, &lo, &hi);
+
+    /* A monitor can advertise a code it then refuses to set, so a failed write
+     * falls through the ladder rather than being taken at its word. */
+    if (hg_ddc_set_brightness(monitor, percent, method, lo, hi)) {
         if (have_device)
             hg_restore_gamma_for(device);
-    } else if (have_device) {
+    } else if (have_device && method != HG_BRIGHT_NONE) {
         hg_set_gamma_brightness(device, percent);
     }
 
@@ -731,6 +1008,9 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
         StringCchCopyW(slot->name, HG_ARRAYSIZE(slot->name), mi.szDevice);
         hg_describe_monitor(mi.szDevice, slot->label, HG_ARRAYSIZE(slot->label));
         slot->brightness = -1;
+        slot->brightness_method = HG_BRIGHT_UNKNOWN;
+        slot->brightness_min = 0;
+        slot->brightness_max = 100;
         hg_g_monitor_count++;
     }
     return TRUE;

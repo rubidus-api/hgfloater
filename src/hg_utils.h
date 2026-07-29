@@ -56,6 +56,10 @@ BOOL hg_set_display_scale(HMONITOR monitor, int percent);
 #define HG_BRIGHTNESS_OPTION_COUNT 5
 extern const int hg_brightness_options[HG_BRIGHTNESS_OPTION_COUNT];
 BOOL hg_query_monitor_brightness(HMONITOR monitor, int *out_percent);
+/* TRUE only once a display has been probed and answered nothing at all, so a
+ * menu can grey the entry instead of accepting a click that does nothing.
+ * A display not yet probed is not claimed to be unavailable. */
+BOOL hg_monitor_brightness_unavailable(HMONITOR monitor);
 void hg_set_monitor_brightness(HMONITOR monitor, int percent);
 void hg_refresh_all_monitor_brightness(void);
 
