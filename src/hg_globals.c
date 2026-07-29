@@ -7,6 +7,7 @@ COLORREF hg_g_color_stat_cpu = HG_COLOR_STAT_CPU_DEFAULT;
 COLORREF hg_g_color_stat_mem = HG_COLOR_STAT_MEM_DEFAULT;
 COLORREF hg_g_color_stat_bat = HG_COLOR_STAT_BAT_DEFAULT;
 COLORREF hg_g_color_stat_temp = HG_COLOR_STAT_TEMP_DEFAULT;
+COLORREF hg_g_color_stat_gpu = HG_COLOR_STAT_GPU_DEFAULT;
 COLORREF hg_g_color_value_alpha_lo = HG_COLOR_VALUE_ALPHA_LO_DEFAULT;
 COLORREF hg_g_color_value_alpha_hi = HG_COLOR_VALUE_ALPHA_HI_DEFAULT;
 COLORREF hg_g_color_value_bright_lo = HG_COLOR_VALUE_BRIGHT_LO_DEFAULT;

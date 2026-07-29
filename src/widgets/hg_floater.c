@@ -59,6 +59,8 @@ static int s_stat_bat = -1;
 static int s_stat_temp = -1;
 static int s_stat_temp_misses = 0;
 static int s_stat_temp_ticks = HG_TEMP_TICKS_PER_READ; /* ask on the first refresh */
+static int s_stat_gpu = -1;
+static int s_stat_gpu_misses = 0;
 static BOOL s_stat_has_bat = FALSE;
 static BOOL s_stat_charging = FALSE;
 
@@ -72,6 +74,8 @@ static BOOL floater_refresh_stats(void)
 
     int temp = s_stat_temp;
     int temp_misses = s_stat_temp_misses;
+    int gpu = s_stat_gpu;
+    int gpu_misses = s_stat_gpu_misses;
 
     if (hg_g_floater_show_stats) {
         cpu = hg_get_cpu_percent();
@@ -95,17 +99,36 @@ static BOOL floater_refresh_stats(void)
         }
         if (temp_misses >= HG_TEMP_MISSES_BEFORE_HIDDEN)
             temp = -1;
+
+        /* The adapter is read on the same throttled tick as the thermal zone,
+         * and gives up the same way: plenty of drivers report nothing, and
+         * that is a machine without the sensor rather than a failure. */
+        if (gpu_misses < HG_TEMP_MISSES_BEFORE_HIDDEN && s_stat_temp_ticks == 0) {
+            int reading = 0;
+            if (hg_get_gpu_temperature(&reading)) {
+                gpu = reading;
+                gpu_misses = 0;
+            } else {
+                gpu_misses++;
+            }
+        }
+        if (gpu_misses >= HG_TEMP_MISSES_BEFORE_HIDDEN)
+            gpu = -1;
     } else {
         temp = -1;
+        gpu = -1;
     }
 
     if (cpu == s_stat_cpu && mem == s_stat_mem && has_bat == s_stat_has_bat && temp == s_stat_temp &&
-        (!has_bat || (bat == s_stat_bat && charging == s_stat_charging))) {
+        gpu == s_stat_gpu && (!has_bat || (bat == s_stat_bat && charging == s_stat_charging))) {
         s_stat_temp_misses = temp_misses;
+        s_stat_gpu_misses = gpu_misses;
         return FALSE;
     }
     s_stat_temp = temp;
     s_stat_temp_misses = temp_misses;
+    s_stat_gpu = gpu;
+    s_stat_gpu_misses = gpu_misses;
     s_stat_cpu = cpu;
     s_stat_mem = mem;
     s_stat_has_bat = has_bat;
@@ -411,6 +434,26 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
 
 /* Bars fill the column to the right of the labels; labels are centered in their
  * row so they line up with the bar they belong to. */
+/* A temperature on the fixed 20-100 degree window, plus the text drawn over it.
+ * Returns the bar fill, 0..100; a reading of -1 is absent and fills nothing. */
+static int floater_temperature_fill(int celsius, WCHAR *text, size_t text_cch)
+{
+    if (text && text_cch > 0)
+        text[0] = L'\0';
+    if (celsius < 0)
+        return 0;
+
+    if (text && text_cch > 0)
+        hellgates_wsprintf(text, text_cch, L"%d\u00b0", celsius);
+
+    int fill = ((celsius - HG_TEMP_MIN_C) * 100) / (HG_TEMP_MAX_C - HG_TEMP_MIN_C);
+    if (fill < 0)
+        fill = 0;
+    if (fill > 100)
+        fill = 100;
+    return fill;
+}
+
 static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
 {
     /* `fill` is what the bar draws, 0..100. For the three percentages it is the
@@ -418,15 +461,9 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
      * degree window instead. `text` is drawn over the bar where the number
      * matters more than the length does. */
     WCHAR temp_text[8] = L"";
-    int temp_fill = 0;
-    if (s_stat_temp >= 0) {
-        hellgates_wsprintf(temp_text, HG_ARRAYSIZE(temp_text), L"%d\u00b0", s_stat_temp);
-        temp_fill = ((s_stat_temp - HG_TEMP_MIN_C) * 100) / (HG_TEMP_MAX_C - HG_TEMP_MIN_C);
-        if (temp_fill < 0)
-            temp_fill = 0;
-        if (temp_fill > 100)
-            temp_fill = 100;
-    }
+    int temp_fill = floater_temperature_fill(s_stat_temp, temp_text, HG_ARRAYSIZE(temp_text));
+    WCHAR gpu_text[8] = L"";
+    int gpu_fill = floater_temperature_fill(s_stat_gpu, gpu_text, HG_ARRAYSIZE(gpu_text));
 
     struct {
         const WCHAR *label;
@@ -434,10 +471,11 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
         COLORREF color;
         BOOL present;
         const WCHAR *text;
-    } rows[4] = {
+    } rows[5] = {
         {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, s_stat_cpu >= 0, NULL},
-        /* Directly after CPU, as the reading it belongs beside. */
+        /* Directly after CPU, as the readings it belongs beside. */
         {L"TMP", temp_fill, hg_g_color_stat_temp, s_stat_temp >= 0, temp_text},
+        {L"GPU", gpu_fill, hg_g_color_stat_gpu, s_stat_gpu >= 0, gpu_text},
         {L"MEM", s_stat_mem, hg_g_color_stat_mem, s_stat_mem >= 0, NULL},
         {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, s_stat_has_bat, NULL},
     };

@@ -196,5 +196,9 @@ BOOL hg_readonly_edit_common(HWND hwnd, UINT msg, WPARAM w_param);
 BOOL hg_get_battery_percent(int *out_percent, BOOL *out_charging);
 int hg_get_cpu_percent(void);
 int hg_get_memory_percent(void);
+/* The adapter's own temperature sensor, through the same WDDM thunk Task
+ * Manager reads. FALSE when no adapter reports one, which is common.
+ * See docs/RFC-2026-07-temperature.md. */
+BOOL hg_get_gpu_temperature(int *out_celsius);
 
 #endif /* HG_UTILS_H */

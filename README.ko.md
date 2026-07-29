@@ -105,7 +105,11 @@ hgfloater는 서로 자리를 바꾸는 두 개의 창으로 이루어집니다.
 - **`TMP`**는 퍼센트가 아니라 **섭씨 20~100도 고정 눈금**으로 그리고, 막대 위에 숫자를 함께
   찍습니다. 55도와 75도의 차이는 막대 길이 몇 픽셀보다 숫자가 더 잘 말해 주기 때문입니다.
 
-  값은 펌웨어가 노출하는 **ACPI 열 영역(thermal zone)**에서 읽습니다. 커널 드라이버를 설치하고
+  **`GPU`**가 같은 눈금으로 그 뒤를 잇습니다. 이쪽은 CPU보다 사정이 낫습니다 — 작업 관리자가
+  쓰는 것과 같은 인터페이스로 **어댑터 자체 센서**를 읽고, 벤더 SDK도 드라이버도 필요 없습니다.
+  아무것도 보고하지 않는 드라이버도 많고, 그런 기계에는 GPU 줄이 그냥 없습니다.
+
+  CPU 값은 펌웨어가 노출하는 **ACPI 열 영역(thermal zone)**에서 읽습니다. 커널 드라이버를 설치하고
   관리자 권한으로 돌리지 않고 닿을 수 있는 유일한 온도이고, 그게 무엇인지는 알아 둘 값이
   있습니다. **CPU 다이가 아니라 그 근처 보드 위의 센서**입니다. 프로세서를 따라가되 그것 자체는
   아니며, 부하가 갑자기 걸리면 늦게 따라옵니다. 열 영역을 아예 노출하지 않는 기계도 많고,
@@ -495,7 +499,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
   — 다크 팔레트
 - `focus_bg` — 키보드/마우스 포커스 강조
-- `stat_cpu`, `stat_temp`, `stat_mem`, `stat_bat` — 플로터 상태 막대
+- `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — 플로터 상태 막대
 - `value_alpha_low`/`value_alpha_high`, `value_brightness_low`/`value_brightness_high`,
   `value_volume_low`/`value_volume_high` — `A`·`B`·`V` 버튼의 그라데이션
 

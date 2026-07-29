@@ -199,6 +199,7 @@ void load_colors_config(void)
     hg_g_color_stat_mem = load_color_value(L"stat_mem", HG_COLOR_STAT_MEM_DEFAULT);
     hg_g_color_stat_bat = load_color_value(L"stat_bat", HG_COLOR_STAT_BAT_DEFAULT);
     hg_g_color_stat_temp = load_color_value(L"stat_temp", HG_COLOR_STAT_TEMP_DEFAULT);
+    hg_g_color_stat_gpu = load_color_value(L"stat_gpu", HG_COLOR_STAT_GPU_DEFAULT);
     hg_g_color_value_alpha_lo = load_color_value(L"value_alpha_low", HG_COLOR_VALUE_ALPHA_LO_DEFAULT);
     hg_g_color_value_alpha_hi = load_color_value(L"value_alpha_high", HG_COLOR_VALUE_ALPHA_HI_DEFAULT);
     hg_g_color_value_bright_lo = load_color_value(L"value_brightness_low", HG_COLOR_VALUE_BRIGHT_LO_DEFAULT);
@@ -217,6 +218,7 @@ void reset_colors_config(void)
     hg_g_color_stat_mem = HG_COLOR_STAT_MEM_DEFAULT;
     hg_g_color_stat_bat = HG_COLOR_STAT_BAT_DEFAULT;
     hg_g_color_stat_temp = HG_COLOR_STAT_TEMP_DEFAULT;
+    hg_g_color_stat_gpu = HG_COLOR_STAT_GPU_DEFAULT;
     hg_g_color_value_alpha_lo = HG_COLOR_VALUE_ALPHA_LO_DEFAULT;
     hg_g_color_value_alpha_hi = HG_COLOR_VALUE_ALPHA_HI_DEFAULT;
     hg_g_color_value_bright_lo = HG_COLOR_VALUE_BRIGHT_LO_DEFAULT;
@@ -234,6 +236,7 @@ void reset_colors_config(void)
     save_color_value(L"stat_mem", hg_g_color_stat_mem);
     save_color_value(L"stat_bat", hg_g_color_stat_bat);
     save_color_value(L"stat_temp", hg_g_color_stat_temp);
+    save_color_value(L"stat_gpu", hg_g_color_stat_gpu);
     save_color_value(L"value_alpha_low", hg_g_color_value_alpha_lo);
     save_color_value(L"value_alpha_high", hg_g_color_value_alpha_hi);
     save_color_value(L"value_brightness_low", hg_g_color_value_bright_lo);
