@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **Redo** in the note editor, on the context menu and on `Ctrl + Y`, with a hundred levels of undo behind it. The editor now hosts a rich edit control: the plain one Windows gives you has a single undo level that merely toggles, so there was nothing for a redo to do. If the rich edit library cannot be loaded the editor still opens on the plain control, with Redo greyed out.
+
+### Changed
+- The note editor asks for its text with the line endings named explicitly, so notes stay CRLF files on disk whichever control is hosting them, and colours the rich edit control directly since it does not ask the way a plain edit does.
+
 ## [v26.07.29e] - 2026-07-29
 
 ### Added
