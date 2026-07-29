@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.07.29i] - 2026-07-29
 
 ### Fixed
 - The clock no longer sits on top of the computer name. Running the bars up behind the host name in v26.07.29h moved the top of the bar area to the top of the floater, and the clock was taking its own starting point from that same number - so it rose onto the host line. The bars and the text stack now have separate origins: the bars still span the whole inner height, and the clock and date sit below the host name where they belong.
