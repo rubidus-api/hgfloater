@@ -490,6 +490,7 @@ creation time of day goes there too, since the file name only carries the day.
 | **Item context menu** | Right-click an icon |
 | **Options menu** | Left-click `O`, or right-click the status line |
 | **Move a window** | Left-drag empty space, the status line, or the `M` button |
+| **Move the floater** | Left-click `F`, then drag the floater |
 | **Move the taskbox aside** | Left-click the `M` button |
 | **Resize the taskbox grid** | Drag a border, or drag the `R` button |
 | **Font / icon size** | `Ctrl` + wheel |
@@ -654,9 +655,10 @@ hgfloater/
 │   ├── hg_calc.*         pure math: layout, placement, clock formatting
 │   ├── hg_command.*      the command box language
 │   ├── hg_audio.c        volume and device selection
-│   ├── hg_display.c      monitors, DPI, brightness
-│   ├── hg_shell.c        shortcuts and shell integration
-│   ├── hg_sysinfo.c      CPU, memory, battery
+│   ├── hg_display.c      monitors, DPI, the brightness path ladder
+│   ├── hg_wmi.c          root\WMI clients: panel backlight, thermal zone
+│   ├── hg_shell.c        shortcuts, shell integration, start-with-Windows
+│   ├── hg_sysinfo.c      CPU, memory, battery, GPU temperature
 │   ├── hgfloater.rc      version info, icon, manifest
 │   └── widgets/          one file per window
 │       ├── hg_floater.c
