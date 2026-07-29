@@ -48,7 +48,7 @@ SRC := \
 	src/hg_utils.c \
 	src/hg_audio.c \
 	src/hg_display.c \
-	src/hg_backlight.c \
+	src/hg_wmi.c \
 	src/hg_shell.c \
 	src/hg_sysinfo.c \
 	src/hg_config.c \

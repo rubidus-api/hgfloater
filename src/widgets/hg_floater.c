@@ -42,9 +42,23 @@ void update_floater_alpha(int delta)
 /* Compact status panel on the floater's left side: CPU/MEM/BAT horizontal bar
  * graphs (top to bottom, red/blue/green) with tiny labels. The panel keeps the
  * floater at its clock height; the battery row hides on systems without one. */
+/* Temperature is not a percentage, so it is scaled against a fixed window
+ * rather than against itself; see docs/RFC-2026-07-temperature.md. */
+#define HG_TEMP_MIN_C 20
+#define HG_TEMP_MAX_C 100
+/* Firmware that exposes no thermal zone is the common case, so a single failed
+ * read does not retire the row - a run of them does. */
+#define HG_TEMP_MISSES_BEFORE_HIDDEN 3
+/* The panel refreshes every second; WMI is a cross-process call and a die does
+ * not change meaningfully that fast, so the zone is asked once every few. */
+#define HG_TEMP_TICKS_PER_READ 5
+
 static int s_stat_cpu = -1;
 static int s_stat_mem = -1;
 static int s_stat_bat = -1;
+static int s_stat_temp = -1;
+static int s_stat_temp_misses = 0;
+static int s_stat_temp_ticks = HG_TEMP_TICKS_PER_READ; /* ask on the first refresh */
 static BOOL s_stat_has_bat = FALSE;
 static BOOL s_stat_charging = FALSE;
 
@@ -56,15 +70,42 @@ static BOOL floater_refresh_stats(void)
     BOOL has_bat = FALSE;
     BOOL charging = FALSE;
 
+    int temp = s_stat_temp;
+    int temp_misses = s_stat_temp_misses;
+
     if (hg_g_floater_show_stats) {
         cpu = hg_get_cpu_percent();
         mem = hg_get_memory_percent();
         has_bat = hg_get_battery_percent(&bat, &charging);
+
+        /* Cached and read off the paint path, because paint may not talk to
+         * WMI. Once a run of reads has failed the asking stops for good: ACPI
+         * thermal zones are declared by firmware at boot, so a machine that has
+         * none will not grow one, and polling it forever would be spending a
+         * cross-process call on a certainty. */
+        if (temp_misses < HG_TEMP_MISSES_BEFORE_HIDDEN && ++s_stat_temp_ticks >= HG_TEMP_TICKS_PER_READ) {
+            s_stat_temp_ticks = 0;
+            int reading = 0;
+            if (hg_thermal_zone_celsius(&reading)) {
+                temp = reading;
+                temp_misses = 0;
+            } else {
+                temp_misses++;
+            }
+        }
+        if (temp_misses >= HG_TEMP_MISSES_BEFORE_HIDDEN)
+            temp = -1;
+    } else {
+        temp = -1;
     }
-    if (cpu == s_stat_cpu && mem == s_stat_mem && has_bat == s_stat_has_bat &&
+
+    if (cpu == s_stat_cpu && mem == s_stat_mem && has_bat == s_stat_has_bat && temp == s_stat_temp &&
         (!has_bat || (bat == s_stat_bat && charging == s_stat_charging))) {
+        s_stat_temp_misses = temp_misses;
         return FALSE;
     }
+    s_stat_temp = temp;
+    s_stat_temp_misses = temp_misses;
     s_stat_cpu = cpu;
     s_stat_mem = mem;
     s_stat_has_bat = has_bat;
@@ -372,19 +413,37 @@ static void floater_compute_metrics(HDC hdc, const WCHAR *time_str, const WCHAR 
  * row so they line up with the bar they belong to. */
 static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
 {
+    /* `fill` is what the bar draws, 0..100. For the three percentages it is the
+     * value; temperature is not a percentage, so it is placed on a fixed 20-100
+     * degree window instead. `text` is drawn over the bar where the number
+     * matters more than the length does. */
+    WCHAR temp_text[8] = L"";
+    int temp_fill = 0;
+    if (s_stat_temp >= 0) {
+        hellgates_wsprintf(temp_text, HG_ARRAYSIZE(temp_text), L"%d\u00b0", s_stat_temp);
+        temp_fill = ((s_stat_temp - HG_TEMP_MIN_C) * 100) / (HG_TEMP_MAX_C - HG_TEMP_MIN_C);
+        if (temp_fill < 0)
+            temp_fill = 0;
+        if (temp_fill > 100)
+            temp_fill = 100;
+    }
+
     struct {
         const WCHAR *label;
-        int value;
+        int fill;
         COLORREF color;
         BOOL present;
-    } rows[3] = {
-        {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, s_stat_cpu >= 0},
-        {L"MEM", s_stat_mem, hg_g_color_stat_mem, s_stat_mem >= 0},
-        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, s_stat_has_bat},
+        const WCHAR *text;
+    } rows[4] = {
+        {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, s_stat_cpu >= 0, NULL},
+        /* Directly after CPU, as the reading it belongs beside. */
+        {L"TMP", temp_fill, hg_g_color_stat_temp, s_stat_temp >= 0, temp_text},
+        {L"MEM", s_stat_mem, hg_g_color_stat_mem, s_stat_mem >= 0, NULL},
+        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, s_stat_has_bat, NULL},
     };
 
     int count = 0;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < (int)HG_ARRAYSIZE(rows); i++) {
         if (rows[i].present)
             count++;
     }
@@ -401,7 +460,7 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
     int row_h = m->rows_h / count;
     int bar_gap = floater_bar_inset();
     int drawn = 0;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < (int)HG_ARRAYSIZE(rows); i++) {
         if (!rows[i].present)
             continue;
         int top = m->rows_y + drawn * row_h;
@@ -415,7 +474,7 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
             /* No track fill: the floater background shows through, so the bars
              * never clash with theme colors (the blue system highlight used to
              * hide the blue MEM bar in dark mode). */
-            int value = rows[i].value;
+            int value = rows[i].fill;
             if (value < 0)
                 value = 0;
             if (value > 100)
@@ -425,6 +484,15 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
             HBRUSH fill_brush = hg_cached_solid_brush(rows[i].color);
             if (fill_brush && fill.right > fill.left)
                 FillRect(dc, &fill, fill_brush);
+
+            /* A row whose number carries more than its length does prints it.
+             * Right-aligned at the end of the track, so it sits clear of the
+             * fill at the temperatures worth reading. */
+            if (rows[i].text && rows[i].text[0]) {
+                int text_y = floater_ink_top(dc, font, rows[i].text, top, row_h);
+                RECT text_rc = {track.left, text_y, track.right, text_y + row_h * 4};
+                DrawTextW(dc, rows[i].text, -1, &text_rc, DT_RIGHT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
+            }
         }
         drawn++;
     }

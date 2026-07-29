@@ -7,6 +7,7 @@ extern COLORREF hg_g_color_focus_bg;
 extern COLORREF hg_g_color_stat_cpu;
 extern COLORREF hg_g_color_stat_mem;
 extern COLORREF hg_g_color_stat_bat;
+extern COLORREF hg_g_color_stat_temp;
 extern COLORREF hg_g_color_value_alpha_lo;
 extern COLORREF hg_g_color_value_alpha_hi;
 extern COLORREF hg_g_color_value_bright_lo;

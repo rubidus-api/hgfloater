@@ -1,16 +1,24 @@
-/* The internal panel's backlight, over WMI.
+/* The root\WMI clients, sharing one connection.
  *
- * A laptop's built-in display is not a DDC/CI device, so every path in
- * hg_display.c's ladder misses it and it lands on the gamma ramp - which dims
- * the picture while the lamp stays where it was. Windows exposes the real
- * backlight through WMI in root\WMI, which is what its own brightness slider
- * drives:
+ * Two unrelated things this app needs live in the same namespace, and a COM
+ * activation each would be wasteful, so they sit together behind one cached
+ * connection rather than in two modules that each open their own.
  *
- *   WmiMonitorBrightness              - CurrentBrightness, already a percentage
- *   WmiMonitorBrightnessMethods       - WmiSetBrightness(Timeout, Brightness)
+ *   WmiMonitorBrightness / WmiMonitorBrightnessMethods
+ *       The internal panel's backlight. A laptop's built-in display is not a
+ *       DDC/CI device, so every path in hg_display.c's ladder misses it and it
+ *       would land on the gamma ramp - which dims the picture while the lamp
+ *       stays where it was. This is what Windows' own slider drives.
+ *       See docs/RFC-2026-07-brightness-control.md.
  *
- * See docs/RFC-2026-07-brightness-control.md. Everything here is bounded in
- * time: WMI is a cross-process call and this code runs on the UI thread. */
+ *   MSAcpi_ThermalZoneTemperature
+ *       An ACPI thermal zone, in tenths of a degree Kelvin. It is the only way
+ *       to a temperature that needs no driver and no elevation - and it is a
+ *       zone on the board, not the CPU die. See docs/RFC-2026-07-temperature.md,
+ *       which says why the accurate path is the one being declined.
+ *
+ * Everything here is bounded in time: WMI is a cross-process call and this code
+ * runs on the UI thread. */
 #include "hg_utils.h"
 #include <wbemidl.h>
 
@@ -174,6 +182,60 @@ BOOL hg_backlight_available(void)
     int percent = 0;
     return hg_backlight_get(&percent);
 }
+
+/* ------------------------------------------------------------- thermal zone */
+
+/* Tenths of a degree Kelvin is what the class holds; nothing outside wants to
+ * know that. Zero Celsius is 2731.5 tenths, and rounding is to nearest so a
+ * reading does not drift a degree low. */
+static BOOL hg_thermal_to_celsius(int tenths_kelvin, int *out_celsius)
+{
+    if (tenths_kelvin <= 0)
+        return FALSE;
+
+    int tenths_celsius = tenths_kelvin - 2732; /* 273.15 K, rounded to the tenth */
+    int celsius = (tenths_celsius >= 0) ? (tenths_celsius + 5) / 10 : (tenths_celsius - 5) / 10;
+
+    /* Firmware that answers with a placeholder rather than a sensor is common
+     * enough to be worth refusing here; a reading outside this is not a
+     * temperature this app should draw. */
+    if (celsius < -50 || celsius > 200)
+        return FALSE;
+
+    *out_celsius = celsius;
+    return TRUE;
+}
+
+BOOL hg_thermal_zone_celsius(int *out_celsius)
+{
+    if (!out_celsius)
+        return FALSE;
+
+    IWbemServices *services = hg_wmi_services();
+    if (!services)
+        return FALSE;
+
+    BOOL ok = FALSE;
+    IWbemClassObject *zone =
+        hg_wmi_first_instance(services, L"SELECT CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
+    if (zone) {
+        VARIANT value;
+        VariantInit(&value);
+        if (SUCCEEDED(zone->lpVtbl->Get(zone, L"CurrentTemperature", 0, &value, NULL, NULL))) {
+            int tenths = 0;
+            if (hg_variant_to_int(&value, &tenths))
+                ok = hg_thermal_to_celsius(tenths, out_celsius);
+        }
+        VariantClear(&value);
+        HG_RELEASE_COM(zone);
+    }
+
+    /* A machine whose firmware exposes no zone is the common case, not a
+     * broken connection, so the connection is kept for the backlight's sake. */
+    return ok;
+}
+
+/* ---------------------------------------------------------------- backlight */
 
 BOOL hg_backlight_set(int percent)
 {

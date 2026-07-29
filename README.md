@@ -108,11 +108,24 @@ of other windows.
 - **Clock and date**, refreshed every second, sized proportionally to the
   widget itself.
 - **Host name** in a thin line across the top.
-- **Status bars** for CPU, memory, and battery: horizontal bars (red, blue,
-  green) running the full width behind the text, with small labels on the left
-  edge. Full width means 100%. The battery row hides itself on desktops without
-  one, and a `+` on its label means charging. Set `show_stats=0` in `config.ini`
-  to hide the whole line.
+- **Status bars** for CPU, temperature, memory, and battery: horizontal bars
+  running the full width behind the text, with small labels on the left edge.
+  Full width means 100%. The battery row hides itself on desktops without one,
+  and a `+` on its label means charging. Set `show_stats=0` in `config.ini` to
+  hide the whole line.
+- **`TMP`** is drawn on a fixed **20 to 100 degree Celsius** scale rather than as
+  a percentage, with the reading printed on its own bar, because the difference
+  between 55 and 75 degrees matters more than a few pixels of bar length can
+  say.
+
+  It is read from the **ACPI thermal zone** your firmware exposes. That is the
+  only temperature reachable without installing a kernel driver and running as
+  administrator, and it is worth knowing what it is: **a sensor on the board
+  near the CPU, not the CPU die**. It tracks the processor without being it, and
+  it lags under a sudden load. Many machines expose no zone at all - on those
+  the row simply is not there, the same way the battery row is absent on a
+  desktop. If you need true per-core readings, use a tool built around a
+  hardware-monitoring driver; hgfloater will not become one.
 
 **What you can do to it**
 
@@ -522,7 +535,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
   — the dark palette.
 - `focus_bg` — the keyboard/mouse focus highlight.
-- `stat_cpu`, `stat_mem`, `stat_bat` — the floater's status bars.
+- `stat_cpu`, `stat_temp`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
   gradients behind the `A`, `B`, and `V` buttons.
