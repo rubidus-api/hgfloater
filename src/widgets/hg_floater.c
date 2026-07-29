@@ -989,6 +989,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 {
     static int initial_floater_font_size = 0;
     static BOOL font_drag_active = FALSE;
+    static BOOL move_drag_active = FALSE;
     switch (msg) {
     case WM_DISPLAYCHANGE: {
         update_monitor_enum();
@@ -1047,6 +1048,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         hg_g_drag_start_pt.x = GET_X_LPARAM(l_param);
         hg_g_drag_start_pt.y = GET_Y_LPARAM(l_param);
         font_drag_active = FALSE;
+        move_drag_active = FALSE;
         if (GetKeyState(VK_CONTROL) < 0) {
             initial_floater_font_size = hg_g_floater_font_size;
         }
@@ -1076,6 +1078,27 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     InvalidateRect(hwnd, NULL, TRUE);
                     save_floater_font_config();
                 }
+            } else if (hg_g_floater_adjust_mode) {
+                /* Adjust mode is the one state where the floater stays put
+                 * under the pointer instead of expanding, which makes it the
+                 * only state where dragging it somewhere is possible at all.
+                 * The delta is measured in client coordinates, which move with
+                 * the window, so the grab point stays under the cursor. */
+                int dx = pt.x - hg_g_drag_start_pt.x;
+                int dy = pt.y - hg_g_drag_start_pt.y;
+                if (!move_drag_active) {
+                    /* A few pixels of slop, so a click that wobbles is still a
+                     * click and still leaves adjust mode. */
+                    int threshold = SC(3);
+                    if (threshold < 2)
+                        threshold = 2;
+                    if (ABS(dx) >= threshold || ABS(dy) >= threshold)
+                        move_drag_active = TRUE;
+                }
+                if (move_drag_active && (dx != 0 || dy != 0)) {
+                    move_window_by_offset(hwnd, dx, dy);
+                    ensure_window_visible(hwnd, L"floater");
+                }
             }
         } else if (!hg_g_floater_adjust_mode) {
             // Hover logic (suppressed in F floater-adjust mode so Ctrl/Alt+Wheel can
@@ -1100,6 +1123,12 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     case WM_LBUTTONUP: {
         if (GetCapture() == hwnd) {
             ReleaseCapture();
+            if (move_drag_active) {
+                /* Placing the floater is not a click: it must neither toggle
+                 * the taskbox nor drop out of the mode being worked in. */
+                move_drag_active = FALSE;
+                return 0;
+            }
             hg_g_floater_adjust_mode = FALSE;   /* a click leaves floater-adjust mode */
             if (font_drag_active) {
                 /* Releasing a Ctrl+drag font-resize gesture must not toggle the taskbox. */
