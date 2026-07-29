@@ -72,7 +72,10 @@ typedef struct HgNoteSort {
 typedef struct HgNote {
     BOOL used;
     WCHAR id[16];
-    WCHAR file[HG_MAX_PATH];
+    /* The file name only. Holding a whole HG_MAX_PATH here cost 64 KiB per slot
+     * and about 16 MiB of BSS across the table, paid by every user whether or
+     * not a note exists; the directory is known and the name is short. */
+    WCHAR file_name[64];
     SYSTEMTIME created;  /* the date from the file name, refined by note.ini */
     SYSTEMTIME modified; /* the file's own last-write time, in local time */
     WCHAR title[HG_NOTE_TITLE_CCH];
@@ -107,6 +110,13 @@ static void note_directory(WCHAR *out, size_t out_cch)
 static void note_settings_path(WCHAR *out, size_t out_cch)
 {
     hellgates_wsprintf(out, out_cch, L"%ls\\note\\note.ini", hg_g_base_path);
+}
+
+static void note_file_path(const HgNote *note, WCHAR *out, size_t out_cch)
+{
+    WCHAR dir[HG_MAX_PATH];
+    note_directory(dir, HG_MAX_PATH);
+    hellgates_wsprintf(out, out_cch, L"%ls\\%ls", dir, note->file_name);
 }
 
 static void note_section_name(const HgNote *note, WCHAR *out, size_t out_cch)
@@ -501,7 +511,9 @@ static WCHAR *note_read_file(const WCHAR *path)
 static BOOL note_write_file(HgNote *note)
 {
     WCHAR normalized[HG_MAX_PATH];
-    normalize_path_for_api(note->file, normalized, HG_MAX_PATH);
+    WCHAR path[HG_MAX_PATH];
+    note_file_path(note, path, HG_MAX_PATH);
+    normalize_path_for_api(path, normalized, HG_MAX_PATH);
 
     const WCHAR *text = note->text ? note->text : L"";
     int cb = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
@@ -526,12 +538,12 @@ static BOOL note_write_file(HgNote *note)
     DWORD written = 0;
     BOOL ok = WriteFile(file, utf8, total, &written, NULL) && written == total;
 
-    FILETIME write_time;
-    if (ok && GetFileTime(file, NULL, NULL, &write_time)) {
-        FILETIME local;
-        if (FileTimeToLocalFileTime(&write_time, &local))
-            FileTimeToSystemTime(&local, &note->modified);
-    }
+    /* Not GetFileTime on this handle: Windows does not commit a file's time
+     * stamps until it is closed, so asking here answers with the time of the
+     * previous save and the list would show every note one edit behind. The
+     * write just happened, so now is the answer. */
+    if (ok)
+        GetLocalTime(&note->modified);
 
     CloseHandle(file);
     free(utf8);
@@ -660,10 +672,8 @@ static HgNote *note_create(void)
     note->modified = note->created;
     note_make_id(note->id, HG_ARRAYSIZE(note->id));
 
-    WCHAR dir[HG_MAX_PATH];
-    note_directory(dir, HG_MAX_PATH);
-    hellgates_wsprintf(note->file, HG_MAX_PATH, L"%ls\\note-%ls-%04d%02d%02d.txt", dir, note->id, note->created.wYear,
-                       note->created.wMonth, note->created.wDay);
+    hellgates_wsprintf(note->file_name, HG_ARRAYSIZE(note->file_name), L"note-%ls-%04d%02d%02d.txt", note->id,
+                       note->created.wYear, note->created.wMonth, note->created.wDay);
 
     note_set_text(note, L"");
     note_write_file(note);
@@ -749,7 +759,7 @@ void hg_notes_load(void)
         note->used = TRUE;
         note->created = created;
         StringCchCopyW(note->id, HG_ARRAYSIZE(note->id), id);
-        hellgates_wsprintf(note->file, HG_MAX_PATH, L"%ls\\%ls", dir, find.cFileName);
+        StringCchCopyW(note->file_name, HG_ARRAYSIZE(note->file_name), find.cFileName);
 
         FILETIME local;
         if (FileTimeToLocalFileTime(&find.ftLastWriteTime, &local)) {
@@ -758,7 +768,9 @@ void hg_notes_load(void)
             note->modified = created;
         }
 
-        WCHAR *text = note_read_file(note->file);
+        WCHAR path[HG_MAX_PATH];
+        note_file_path(note, path, HG_MAX_PATH);
+        WCHAR *text = note_read_file(path);
         note_set_text(note, text ? text : L"");
         free(text);
 
@@ -833,9 +845,11 @@ static void note_delete(HgNote *note)
     if (note->editor && IsWindow(note->editor))
         DestroyWindow(note->editor);
 
-    if (!note_recycle_file(note->file)) {
+    WCHAR path[HG_MAX_PATH];
+    note_file_path(note, path, HG_MAX_PATH);
+    if (!note_recycle_file(path)) {
         WCHAR normalized[HG_MAX_PATH];
-        normalize_path_for_api(note->file, normalized, HG_MAX_PATH);
+        normalize_path_for_api(path, normalized, HG_MAX_PATH);
         DeleteFileW(normalized);
     }
 
@@ -1217,13 +1231,13 @@ static void note_list_add_section(HWND list, int section, BOOL show_heading)
         if (s_notes[i].used && (s_notes[i].archived ? TRUE : FALSE) == want_archived)
             order[count++] = i;
     }
-    if (count == 0)
-        return;
-
     s_sort_in_use = s_sort[section];
     if (count > 1)
         qsort(order, (size_t)count, sizeof(order[0]), note_compare);
 
+    /* Before the early return for an empty half: the heading is the only row a
+     * right-click can reach to set that half's order, so a half with nothing in
+     * it yet still has to be nameable. */
     if (show_heading) {
         int row = (int)SendMessageW(list, LB_ADDSTRING, 0,
                                     (LPARAM)(want_archived ? L"-- Archived --" : L"-- Active --"));
@@ -1232,6 +1246,9 @@ static void note_list_add_section(HWND list, int section, BOOL show_heading)
                          (LPARAM)(want_archived ? HG_NOTE_ITEM_HEAD_ARCHIVED : HG_NOTE_ITEM_HEAD_ACTIVE));
         }
     }
+
+    if (count == 0)
+        return;
 
     for (int i = 0; i < count; ++i) {
         const HgNote *note = &s_notes[order[i]];

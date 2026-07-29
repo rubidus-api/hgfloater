@@ -115,6 +115,7 @@ void commandbox_execute()
 
     /* The input field is multi-line, so a paste can carry several commands: each
      * line is echoed behind a prompt and then run, in the order given. */
+    BOOL moved_focus = FALSE;
     WCHAR *cursor = in_buf;
     while (*cursor) {
         WCHAR *end = cursor;
@@ -127,7 +128,8 @@ void commandbox_execute()
             WCHAR echo[HG_MAX_STR];
             StringCchPrintfW(echo, HG_ARRAYSIZE(echo), L"> %ls", cursor);
             commandbox_print(echo);
-            hg_command_execute(cursor);
+            if (hg_command_execute(cursor))
+                moved_focus = TRUE;
         }
 
         if (saved == L'\0')
@@ -139,7 +141,10 @@ void commandbox_execute()
     }
 
     SetWindowTextW(hg_g_commandbox_in_wnd, L"");
-    SetFocus(hg_g_commandbox_in_wnd);
+    /* Taking the keyboard back is right after a command that only printed, and
+     * wrong after one that opened a window for the reader to work in. */
+    if (!moved_focus)
+        SetFocus(hg_g_commandbox_in_wnd);
     free(in_buf);
 }
 

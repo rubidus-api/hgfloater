@@ -33,10 +33,13 @@ static BOOL cmd_is_space(WCHAR c)
 /* Splits into at most max_args tokens. The line is copied first, so the caller's
  * text is untouched and the tail of the line stays available for arguments that
  * are allowed to contain spaces. */
+/* Returns the token count, or -1 when the line does not fit the store: the
+ * caller has to tell the reader, because a command that vanishes without a word
+ * reads as one that ran and found nothing. */
 static int cmd_tokenize(const WCHAR *line, WCHAR *store, size_t store_cch, WCHAR *argv[], int max_args)
 {
     if (FAILED(StringCchCopyW(store, store_cch, line)))
-        return 0;
+        return -1;
 
     int argc = 0;
     WCHAR *p = store;
@@ -130,15 +133,22 @@ static HWND cmd_window_by_number(int number)
 }
 
 /* Monitors answer to the number their menu entry shows, which is the number
- * Windows itself puts on the display; the array position is the fallback for
- * the odd setup where the device name carries no number. */
+ * Windows itself puts on the display. The array position is a fallback only for
+ * the odd setup where no device name carries a number at all: Windows leaves
+ * gaps after a monitor is unplugged, and answering 'display 2' with whichever
+ * monitor happens to sit second in the array would move a window to a display
+ * the reader did not name. */
 static const MonitorInfo *cmd_monitor_by_number(int number)
 {
+    BOOL any_numbered = FALSE;
     for (int i = 0; i < hg_g_monitor_count; ++i) {
-        if (hg_monitor_display_number(hg_g_monitors[i].name) == number)
+        int labelled = hg_monitor_display_number(hg_g_monitors[i].name);
+        if (labelled > 0)
+            any_numbered = TRUE;
+        if (labelled == number)
             return &hg_g_monitors[i];
     }
-    if (number >= 1 && number <= hg_g_monitor_count)
+    if (!any_numbered && number >= 1 && number <= hg_g_monitor_count)
         return &hg_g_monitors[number - 1];
     return NULL;
 }
@@ -334,24 +344,27 @@ static void cmd_list(int argc, WCHAR *argv[])
     }
 }
 
-static void cmd_go(int argc, WCHAR *argv[])
+/* TRUE when a window really was brought forward, so the caller can leave the
+ * keyboard where this command just put it. */
+static BOOL cmd_go(int argc, WCHAR *argv[])
 {
     int number = 0;
     if (argc < 2 || !cmd_parse_int(argv[1], &number)) {
         commandbox_print(L"go: needs a window number, as in 'go 1'");
-        return;
+        return FALSE;
     }
 
     HWND target = cmd_window_by_number(number);
     if (!target) {
         cmd_printf(L"go: no window %d", number);
-        return;
+        return FALSE;
     }
 
     if (IsIconic(target))
         ShowWindow(target, SW_RESTORE);
     SetForegroundWindow(target);
     cmd_printf(L"go %d: %ls", number, hg_g_window_items[number - 1].title);
+    return TRUE;
 }
 
 static void cmd_resize(int argc, WCHAR *argv[])
@@ -452,27 +465,35 @@ static void cmd_search(int argc, WCHAR *argv[], const WCHAR *line)
         cmd_printf(L"no window matches '%ls'", needle);
 }
 
-void hg_command_execute(const WCHAR *line)
+BOOL hg_command_execute(const WCHAR *line)
 {
     if (!line)
-        return;
+        return FALSE;
     while (*line && cmd_is_space(*line))
         ++line;
     if (!*line)
-        return;
+        return FALSE;
 
     WCHAR store[HG_MAX_STR];
     WCHAR *argv[HG_CMD_MAX_ARGS];
     int argc = cmd_tokenize(line, store, HG_ARRAYSIZE(store), argv, HG_CMD_MAX_ARGS);
-    if (argc <= 0)
-        return;
+    if (argc < 0) {
+        cmd_printf(L"that line is too long - the limit is %d characters", (int)HG_ARRAYSIZE(store) - 1);
+        return FALSE;
+    }
+    if (argc == 0)
+        return FALSE;
+
+    /* `go` and `note` put another window in front on purpose; saying so is what
+     * stops the command box from pulling the keyboard straight back. */
+    BOOL moved_focus = FALSE;
 
     if (cmd_word_is(argv[0], L"help", L"h")) {
         cmd_help(argc, argv);
     } else if (cmd_word_is(argv[0], L"list", L"l")) {
         cmd_list(argc, argv);
     } else if (cmd_word_is(argv[0], L"go", NULL)) {
-        cmd_go(argc, argv);
+        moved_focus = cmd_go(argc, argv);
     } else if (cmd_word_is(argv[0], L"resize", L"r")) {
         cmd_resize(argc, argv);
     } else if (cmd_word_is(argv[0], L"move", L"m")) {
@@ -482,7 +503,10 @@ void hg_command_execute(const WCHAR *line)
     } else if (cmd_word_is(argv[0], L"note", L"n")) {
         show_note_list_window();
         commandbox_print(L"note: opened the note list");
+        moved_focus = TRUE;
     } else {
         cmd_printf(L"unknown command '%ls' - type help", argv[0]);
     }
+
+    return moved_focus;
 }
