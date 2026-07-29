@@ -4,70 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [v26.07.29g] - 2026-07-29
-
-### Added
-- `help <command>` in the command box explains one command in full - its arguments, what they mean, and worked examples. `help` alone still lists everything, one line each. Short forms work too, so `h m` is `help move`.
-
-### Fixed
-- Long lines in the command box wrap instead of running off the right edge. A multiline edit control treats `ES_AUTOHSCROLL` as the switch that turns word wrap off, and both fields were created with it.
-- A plain wheel scrolls the command box again. Every wheel message was being forwarded to the window, which acts only on `Ctrl` and `Alt`, so the transcript could not be scrolled at all.
-
-## [v26.07.29f] - 2026-07-29
-
-### Added
-- **Redo** in the note editor, on the context menu and on `Ctrl + Y`, with a hundred levels of undo behind it. The editor now hosts a rich edit control: the plain one Windows gives you has a single undo level that merely toggles, so there was nothing for a redo to do. If the rich edit library cannot be loaded the editor still opens on the plain control, with Redo greyed out.
-
-### Changed
-- The note editor asks for its text with the line endings named explicitly, so notes stay CRLF files on disk whichever control is hosting them, and colours the rich edit control directly since it does not ask the way a plain edit does.
-
-## [v26.07.29e] - 2026-07-29
-
-### Added
-- A note editor answers a right-click with its own menu: **Undo**, **Cut**, **Copy**, **Paste**, **Delete** the selection, **Select All**, **Archive** or **Restore**, and **Delete Note and Close**. Entries that would do nothing are greyed out. It replaces the edit control's stock menu, which knows about the text but nothing about the note it belongs to.
-
-## [v26.07.29d] - 2026-07-29
-
-### Added
-- `Ctrl + Wheel` over the note list or any note editor changes the note text size. One size covers the list and every open editor, and it is stored in `note\note.ini` unscaled, so a change made on a 200% display reads the same on a 100% one and a note dragged between monitors is redrawn at that display's scale. A plain wheel still scrolls.
-
-## [v26.07.29c] - 2026-07-29
-
-### Added
-- The note context menu gains **Delete**, so a note can be removed without knowing the `Delete` key. It is offered for every note, archived or not: archiving files a note away, it does not lock it.
-
-### Changed
-- Deleting a note now sends it to the Recycle Bin instead of unlinking it, so a mistaken `Delete` is recoverable where Windows would normally recover it. A path with no bin behind it falls back to a plain delete.
-
-## [v26.07.29b] - 2026-07-29
-
-### Added
-- Right-clicking a note in the list opens a menu for the half of the list it belongs to: open it, archive or restore it, and sort that half by creation time, modification time, or title, ascending or descending, with the order in force ticked. A section heading answers the same right-click, so a half can be sorted without picking a note out of it.
-- The list keeps notes being written above archived ones, with headings that appear once something has been archived. The two halves sort independently and each remembers its own order.
-
-### Changed
-- Note settings moved to `note\note.ini`, which now holds the archive flag and creation time of each note, both sort orders, the list window's geometry, and **each note's own editor window position and size** - so a note reopens on the monitor and at the size it was left. The old `note\index.ini` is no longer read; the notes themselves are untouched `.txt` files, so nothing is lost but the archive flags, which no released build ever wrote.
-- The archive flag replaces the keep flag. Archiving files a note away rather than protecting it, so `Delete` now works on any note.
-
 ## [v26.07.29] - 2026-07-29
 
 ### Added
-- The note list starts with a `+Add Note` row and opens with it selected, so `N` then `Enter` writes a new note without a key to remember. It answers a single click rather than the double click a note row needs, and it is there even when there are no notes yet. `Insert` still works from any row.
 
-## [v26.07.28] - 2026-07-28
+- **Notes.** A new `N` toolbar button (and the `note` command) opens a note list.
+  - Each note is a plain UTF-8 `.txt` file under `note\` whose **first line is the title**, so Notepad or any other editor reads and writes them without help. Edits are held in memory and written a couple of seconds after the typing settles, for the changed notes only; closing an editor or quitting flushes the rest.
+  - The list starts with a **`+Add Note`** row and opens with it selected, so `N` then `Enter` writes a new note without a key to remember. It answers a single click, unlike the note rows, and it is there even when there are no notes yet.
+  - Notes being written stay above **archived** ones, under headings that appear once something has been archived. Right-clicking a note - or a heading - opens it, archives or restores it, deletes it, and sorts that half of the list by creation time, modification time, or title, ascending or descending. The two halves sort independently and each remembers its own order.
+  - Every note can be deleted, archived or not: archiving files a note away, it does not lock it. Deleted notes go to the **Recycle Bin**.
+  - Each note opens in its own editor window, several at a time. Right-clicking one offers **Undo**, **Redo**, **Cut**, **Copy**, **Paste**, **Delete** the selection, **Select All**, **Archive** or **Restore**, and **Delete Note and Close**, with anything that would do nothing greyed out. Undo runs a hundred levels deep and `Ctrl + Y` redoes.
+  - **`Ctrl + Wheel`** sets one text size for the list and every editor at once. It is stored unscaled, so a size chosen on a 200% display reads the same on a 100% one and a note dragged between monitors is redrawn at that display's scale.
+  - Everything a text file cannot carry lives in `note\note.ini`: each note's section and creation time, both sort orders, the list window's geometry, the shared text size, and **each note's own editor position and size**, so a note reopens on the monitor and at the size it was left.
 
-### Added
-- The options menu (`O` button, or right-click the status line) now carries one submenu per connected display, each holding everything the app can do to that one monitor: its **Preview Window** thumbnail, **Scale** (100, 125, 150, 175, 200, 225), and **Brightness** in quarter steps (0, 25, 50, 75, 100). The current scale and the nearest brightness step are checked, and scaling percentages the monitor cannot reach stay greyed out.
+- **A command language in the command box**, which until now echoed back whatever was typed. `help`, `list` (windows, resize presets, or shortcuts), `go`, `resize`, `move`, `search windows`, and `note`, each with a one-letter short form. **`help <command>`** explains one of them in full, with its arguments and worked examples.
+  - Every command that names a window uses the number `list` prints beside it, and only the commands that print numbers re-read the window list, so a number stays valid between reading it and typing it.
+  - `move`'s X and Y are measured from a display's own top-left corner rather than the virtual desktop's, so the same pair means the same place on every screen; an optional display number moves a window to another monitor.
+  - The input field is multi-line, so pasting several lines runs them in order, each echoed behind a `>` prompt.
+
+- **Per-display control in the options menu.** Every connected monitor gets its own submenu holding everything the app can do to that one display: its **Preview Window** thumbnail, **Scale** (100, 125, 150, 175, 200, 225), and **Brightness** in quarter steps. The current scale and the nearest brightness step are checked, and scaling percentages the monitor cannot reach stay greyed out.
 - Brightness is now per display. Monitors that answer DDC/CI are driven directly; the rest fall back to a gamma curve applied to that display's own device context, so dimming one screen leaves its neighbours alone. Every backed-up ramp is handed back at exit, not just the desktop's.
 
-- The command box runs commands instead of echoing what was typed. `help`, `list` (windows, `list resize`, `list shortcut`), `go N`, `resize N P`, `move N X Y` with an optional display number, `search windows T`, and `note`, each with a one-letter short form. Every command that names a window uses the number `list` prints beside it, and only the commands that print numbers re-read the window list, so a number stays valid between reading it and typing it. Pasting several lines runs them in order, each echoed behind a `>` prompt.
-- Notes: a note list on the new `N` toolbar button, one editor window per note and several open at once, and plain UTF-8 `.txt` files under `note\` whose first line is the title. Edits are held in memory and written a couple of seconds after the typing settles, for the changed notes only; closing an editor or quitting flushes the rest. Notes can be kept, which refuses deletion until released.
-
 ### Changed
-- The resize presets the task context menu offers now come from one shared table, which is also what `list resize` prints and `resize N P` indexes, so the menu and the command box cannot drift apart.
+
 - Displays are named the way their owner would name them - display number, the monitor name the driver reads out of the EDID, and the connector it hangs off, as in `2. DELL U2720Q (DP)` - in the options menu, the thumbnail window caption, and its tooltip. Reported connectors are RGB, DVI, HDMI, DP, eDP, USB-C, Internal, and the rest of the DisplayConfig set. The port is the socket on the graphics adapter rather than the cable, so a USB-C screen running DisplayPort alt mode reports as `DP`; `USB-C` appears when DisplayPort is tunnelled over USB4 or Thunderbolt.
 - `Arrange Monitors` is gone as a top-level entry; the thumbnail toggle it held now sits in each display's own submenu as **Preview Window**.
+- The resize presets the task context menu offers come from one shared table, which is also what `list resize` prints and `resize` indexes, so the menu and the command box cannot drift apart.
 - A DDC/CI brightness reading is normalised against the range the monitor reports instead of being read as a percentage outright, so displays that do not use 0..100 no longer show a misleading level.
+
+### Fixed
+
+- Long lines in the command box wrap instead of running off the right edge. A multiline edit control treats `ES_AUTOHSCROLL` as the switch that turns word wrap off, and both fields were created with it.
+- A plain wheel scrolls the command box. Every wheel message was being forwarded to the window, which acts only on `Ctrl` and `Alt`, so the transcript could not be scrolled at all.
 
 ## [v26.07.22] - 2026-07-22
 
