@@ -153,9 +153,16 @@ path may leave a display in a state this app cannot restore at exit.
   - **Limitation:** the first WMI instance is used. A machine with two
     integrated panels would need `InstanceName` matched against the display's
     device path; that is written down here rather than guessed at.
-- **P4 (done, v26.07.29d)** - The wheel over `B` moves brightness in 1% steps
-  where opacity and volume keep their coarse 5%, and a display that has been
-  probed and answered nothing shows `Brightness (unavailable)`.
+- **P4 (done, v26.07.29d; the step reverted in v26.07.29p)** - The wheel over
+  `B` moved brightness in 1% steps where opacity and volume kept their coarse
+  5%, and a display that has been probed and answered nothing shows
+  `Brightness (unavailable)`.
+  - **The 1% step did not survive use.** D3's reasoning was sound and its
+    conclusion was still wrong: knowing the monitor's real scale means fine
+    steps are *possible*, not that they are *wanted*. A hundred notches to cross
+    the range makes the wheel a chore, and the `O` menu already covers the case
+    where a specific level rather than a nudge is what you are after. All three
+    values are back on 5%.
 - **P5 (done, v26.07.29d)** - README and SPEC.
 
 ## Non-Goals

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.30] - 2026-07-30
+
+### Changed
+- The wheel over `B` moves brightness in 5% steps again, the same as opacity and volume. It was put on 1% in v26.07.29d because driving each monitor on its own real scale made fine steps possible — which turned out not to be the same thing as wanting them. A hundred notches to cross the range makes the wheel a chore, and the `O` menu already covers wanting a specific level rather than a nudge.
+- `VER.txt` is current again; it had been left at v26.07.29l through three releases.
+
 ## [v26.07.29o] - 2026-07-29
 
 ### Added
