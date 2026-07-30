@@ -653,11 +653,15 @@ static int toolbar_value_min_percent(int index)
     return 0;
 }
 
-/* Brightness is driven on the monitor's own scale now, so the wheel can work
- * finer than the coarse step opacity and volume are comfortable with. */
+/* One step for all three. Brightness had its own 1% for a while, on the
+ * reasoning that a monitor's real scale is known rather than assumed - true,
+ * but it made the wheel a hundred notches wide to cross, and a control you have
+ * to spin is worse than one that lands slightly off where you wanted. The seam
+ * stays in case a value ever wants its own step again. */
 static int toolbar_value_step_percent(int index)
 {
-    return (index == HG_TOOL_ICON_BRIGHTNESS) ? 1 : 5;
+    (void)index;
+    return 5;
 }
 
 static int toolbar_value_next_percent(int index, int current, short delta)

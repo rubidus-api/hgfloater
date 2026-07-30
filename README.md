@@ -227,9 +227,9 @@ window across the screen; when that heading runs out of room it turns
 counter-clockwise — north, west, south, east, and back to north. If no direction
 has room, nothing moves.
 
-**`B` — brightness.** The wheel moves brightness in **1% steps**, finer than the
-5% opacity and volume use, because a monitor's real scale is known rather than
-assumed.
+**`B` — brightness.** The wheel moves brightness in **5% steps**, the same as
+opacity and volume. The `O` menu offers quarter steps per display when you want
+a specific level rather than a nudge.
 
 hgfloater tries three things per display, in order, and remembers which one
 answered. First the **low-level DDC/CI** path: it reads the monitor's
