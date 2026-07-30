@@ -31,5 +31,7 @@ void unregister_global_hotkey(HWND hwnd);
 void hg_config_reset_all(HWND hwnd);
 /* Write anything the debounced savers are still holding (shutdown, reset). */
 void hg_config_flush_pending(void);
+/* Appends the commented defaults for keys that have no control in the UI. */
+void hg_config_ensure_template(void);
 
 #endif /* HG_CONFIG_H */

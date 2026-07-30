@@ -63,6 +63,25 @@ BOOL hg_startup_set_enabled(BOOL enabled)
     return (status == ERROR_SUCCESS);
 }
 
+/* Our own windows that are documents rather than the widget itself: a note
+ * editor, the note list, the clipboard history, the command box.
+ *
+ * They are all WS_EX_TOOLWINDOW, which is what keeps them out of the system's
+ * Alt-Tab, and that is right - they belong to a widget, not to the taskbar. But
+ * the taskbox is a list of windows to reach, and hgfloater is exactly the kind
+ * of program this is for: several notes open at once, each its own window, none
+ * of them reachable from a list that skipped them. The floater, the taskbox and
+ * the toolbar stay out, because they are the thing you are looking at. */
+static BOOL hg_is_own_reachable_window(HWND hwnd)
+{
+    WCHAR class_name[64];
+    if (GetClassNameW(hwnd, class_name, (int)HG_ARRAYSIZE(class_name)) <= 0)
+        return FALSE;
+
+    return lstrcmpiW(class_name, HG_CLASS_NOTE_EDIT) == 0 || lstrcmpiW(class_name, HG_CLASS_NOTE_LIST) == 0 ||
+           lstrcmpiW(class_name, HG_CLASS_CLIP) == 0 || lstrcmpiW(class_name, HG_CLASS_COMMANDBOX) == 0;
+}
+
 BOOL is_alt_tab_window(HWND hwnd)
 {
     if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd || hwnd == hg_g_about_wnd)
@@ -75,12 +94,14 @@ BOOL is_alt_tab_window(HWND hwnd)
     if (GetWindowTextLengthW(hwnd) == 0)
         return FALSE;
 
+    BOOL own = hg_is_own_reachable_window(hwnd);
+
     LONG_PTR ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-    if (ex_style & WS_EX_TOOLWINDOW)
+    if ((ex_style & WS_EX_TOOLWINDOW) && !own)
         return FALSE;
 
     HWND owner_hwnd = GetWindow(hwnd, GW_OWNER);
-    if (owner_hwnd != NULL && !(ex_style & WS_EX_APPWINDOW))
+    if (owner_hwnd != NULL && !(ex_style & WS_EX_APPWINDOW) && !own)
         return FALSE;
 
     int cloaked = 0;

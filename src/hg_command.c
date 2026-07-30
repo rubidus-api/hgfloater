@@ -9,8 +9,125 @@
 #include "hg_utils.h"
 #include "hg_globals.h"
 #include "widgets/hg_note.h"
+#include "widgets/hg_clip.h"
+#include "hg_values.h"
 
 #define HG_CMD_MAX_ARGS 8
+
+/* ------------------------------------------------------------- history
+ *
+ * Shift+Left and Shift+Right walk this. The cap is a setting because a line
+ * you typed is the cheapest thing in the program to keep and the most annoying
+ * thing to retype, but an unbounded list of everything anyone ever ran is a
+ * different promise than a scratchpad, so it has a number and the number is
+ * visible. Nothing here is written to disk. */
+#define HG_CMD_HISTORY_CAP 256
+#define HG_CMD_HISTORY_DEFAULT 64
+
+static WCHAR *s_history[HG_CMD_HISTORY_CAP]; /* newest first */
+static int s_history_count = 0;
+static int s_history_max = 0;     /* 0 until the config is read */
+static int s_history_cursor = -1; /* -1 when not walking the list */
+
+static int cmd_history_clamp(int value)
+{
+    if (value < 1)
+        return 1;
+    if (value > HG_CMD_HISTORY_CAP)
+        return HG_CMD_HISTORY_CAP;
+    return value;
+}
+
+static void cmd_history_trim(void)
+{
+    while (s_history_count > s_history_max) {
+        free(s_history[s_history_count - 1]);
+        s_history[s_history_count - 1] = NULL;
+        --s_history_count;
+    }
+}
+
+int hg_command_history_max(void)
+{
+    if (s_history_max == 0) {
+        s_history_max = cmd_history_clamp(
+            (int)GetPrivateProfileIntW(L"commandbox", L"history_max", HG_CMD_HISTORY_DEFAULT, hg_g_config_path));
+    }
+    return s_history_max;
+}
+
+void hg_command_set_history_max(int value)
+{
+    (void)hg_command_history_max(); /* make sure the file has been read first */
+    s_history_max = cmd_history_clamp(value);
+
+    WCHAR text[16];
+    hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d", s_history_max);
+    WritePrivateProfileStringW(L"commandbox", L"history_max", text, hg_g_config_path);
+
+    /* Same asymmetry as the clipboard: lowering it takes effect now, because
+     * "at most this many" would otherwise be false the moment it was set. */
+    cmd_history_trim();
+}
+
+void hg_command_history_add(const WCHAR *line)
+{
+    if (!line || !*line)
+        return;
+    (void)hg_command_history_max();
+
+    /* Running the same line twice in a row is one entry, not two: a history
+     * whose first three rows are the same command is a history you have to
+     * scroll past to reach anything. */
+    if (s_history_count > 0 && s_history[0] && wcscmp(s_history[0], line) == 0) {
+        s_history_cursor = -1;
+        return;
+    }
+
+    size_t cch = wcslen(line);
+    WCHAR *copy = (WCHAR *)malloc(sizeof(WCHAR) * (cch + 1u));
+    if (!copy)
+        return;
+    memcpy(copy, line, sizeof(WCHAR) * (cch + 1u));
+
+    if (s_history_count >= s_history_max) {
+        free(s_history[s_history_max - 1]);
+        s_history[s_history_max - 1] = NULL;
+        s_history_count = s_history_max - 1;
+    }
+    if (s_history_count > 0)
+        memmove(&s_history[1], &s_history[0], sizeof(s_history[0]) * (size_t)s_history_count);
+    s_history[0] = copy;
+    ++s_history_count;
+    s_history_cursor = -1;
+}
+
+void hg_command_history_reset(void)
+{
+    s_history_cursor = -1;
+}
+
+/* direction > 0 walks towards older lines. Returns NULL at either end, and an
+ * empty string when walking back past the newest, which is how the input box
+ * gets cleared rather than stuck on the first entry. */
+const WCHAR *hg_command_history_step(int direction)
+{
+    if (s_history_count <= 0)
+        return NULL;
+
+    if (direction > 0) {
+        if (s_history_cursor + 1 >= s_history_count)
+            return NULL;
+        ++s_history_cursor;
+    } else {
+        if (s_history_cursor < 0)
+            return NULL;
+        --s_history_cursor;
+        if (s_history_cursor < 0)
+            return L"";
+    }
+    return s_history[s_history_cursor];
+}
 
 static void cmd_printf(const WCHAR *format, ...)
 {
@@ -167,33 +284,62 @@ typedef struct HgCommandHelp {
 } HgCommandHelp;
 
 static const WCHAR *const cmd_help_help[] = {
-    L"help [command]      (h)",
+    L"help [command|key]  (h)",
     L"",
     L"  With no command, lists them all. With one, explains that one",
-    L"  and shows what it looks like in use.",
+    L"  and shows what it looks like in use. 'help key' prints the keys",
+    L"  this window answers to - the same list it opens on.",
     L"",
     L"Examples:",
     L"  help                everything, in one line each",
     L"  h move              just move, in detail",
+    L"  h k                 the keys, not the commands",
 };
 
-static const WCHAR *const cmd_help_list[] = {
-    L"list [kind]         (l)",
+/* The keys, in one place, because this is both `help key` and what the window
+ * shows when it opens: a box with a blinking cursor and no other clue is a box
+ * you have to be told about elsewhere. */
+static const WCHAR *const cmd_key_help[] = {
+    L"Keys",
+    L"  Enter              run what is typed",
+    L"  Shift+Enter        new line - several commands, run in order",
+    L"  Shift+Up/Down      scroll this transcript",
+    L"  Shift+PgUp/PgDn    scroll it a page at a time",
+    L"  Shift+Left/Right   older / newer line from the history",
+    L"  Ctrl+Space         jump to the input box",
+    L"  Ctrl+Wheel         text size          Alt+Wheel   opacity",
+    L"  Alt+arrows         move this window   Ctrl+arrows resize it",
+    L"  Esc                close",
     L"",
-    L"  Prints a numbered list. Without a kind, lists windows.",
+    L"Type 'help' for the commands, or 'h <command>' for one in detail.",
+};
+
+void hg_command_print_key_help(void)
+{
+    for (size_t i = 0; i < HG_ARRAYSIZE(cmd_key_help); ++i)
+        commandbox_print(cmd_key_help[i]);
+}
+
+static const WCHAR *const cmd_help_show[] = {
+    L"show [kind [n]]     (s)",
+    L"",
+    L"  Prints a numbered list. Without a kind, shows windows.",
     L"  The number beside a window is the one go, resize, and move take,",
     L"  so this is where those commands get their arguments.",
-    L"  Kinds: windows (w), resize (r), shortcut (s), note (n), sensors (t).",
+    L"  Kinds: windows (w), resize (r), shortcut (c), note (n),",
+    L"         sensors (s), value (v).",
     L"",
     L"Examples:",
-    L"  list                every window, numbered",
-    L"  l w                 the same list",
-    L"  l r                 the resize presets, numbered for 'resize'",
-    L"  l s                 the shortcut icons",
-    L"  l n                 every note, numbered for the 'note' command",
-    L"  l t                 every temperature sensor, and which one is shown",
+    L"  show                every window, numbered",
+    L"  s w                 the same list",
+    L"  s r                 the resize presets, numbered for 'resize'",
+    L"  s c                 the shortcut icons",
+    L"  s n                 every note, numbered for the 'note' command",
+    L"  s s                 every temperature sensor, numbered",
+    L"  s s 2               just sensor 2, with its unit",
+    L"  s v                 the settable values and what they are now",
     L"",
-    L"  'list sensors' is a diagnostic. The floater shows one CPU",
+    L"  'show sensors' is a diagnostic. The floater shows one CPU",
     L"  temperature, chosen from whatever the firmware exposes; this",
     L"  prints all of them so a reading that looks wrong can be checked",
     L"  against its neighbours. A zone that never moves is firmware",
@@ -241,34 +387,36 @@ static const WCHAR *const cmd_help_move[] = {
     L"  m 1 0 0 2           the same corner, but on display 2",
 };
 
-static const WCHAR *const cmd_help_search[] = {
-    L"search windows <text>             (s w)",
-    L"search note <text>                (s n)",
+static const WCHAR *const cmd_help_find[] = {
+    L"find windows <text>               (f w)",
+    L"find note <text>                  (f n)",
     L"",
     L"  Lists what contains <text>, ignoring case. Windows are matched on",
     L"  their title; notes on their title and their body both, because a",
     L"  note is looked for by what is in it as often as by its name.",
     L"",
-    L"  The numbers printed are the ones 'list' and 'list note' would",
+    L"  The numbers printed are the ones 'show' and 'show note' would",
     L"  give, not 1, 2, 3 among the matches, so a result can be handed",
     L"  straight to 'go' or 'note'.",
     L"  Everything after the kind is the text, spaces included.",
     L"",
     L"Examples:",
-    L"  search windows notepad",
-    L"  s w visual studio   the space is part of what is searched for",
+    L"  find windows notepad",
+    L"  f w visual studio   the space is part of what is searched for",
     L"  go 7                using a number the search printed",
-    L"  s n groceries       notes mentioning groceries anywhere",
+    L"  f n groceries       notes mentioning groceries anywhere",
     L"  note 4              opening one the search printed",
 };
 
 static const WCHAR *const cmd_help_note[] = {
-    L"note [<note> [action]]            (n)",
+    L"note [new|<note> [action]]        (n)",
     L"",
     L"  With nothing after it, opens the note list - the same window the",
     L"  N toolbar button opens.",
     L"",
-    L"  <note> is the number 'list note' prints. That numbering does not",
+    L"  'note new' makes one and opens it, the same as +Add Note.",
+    L"",
+    L"  <note> is the number 'show note' prints. That numbering does not",
     L"  follow the window's sorting, so a number stays the note it was.",
     L"",
     L"  Actions: archive (a), restore (r), delete (d). Without one, the",
@@ -277,29 +425,87 @@ static const WCHAR *const cmd_help_note[] = {
     L"",
     L"  delete is not undoable from here. The file goes to the Recycle",
     L"  Bin, which is where it can be got back from. It also renumbers",
-    L"  the notes after it, so run 'list note' again before typing",
+    L"  the notes after it, so run 'show note' again before typing",
     L"  another number.",
     L"",
     L"Examples:",
     L"  note                the list window",
-    L"  l n                 every note, with its number",
+    L"  n n                 write a new note",
+    L"  s n                 every note, with its number",
     L"  note 3              open note 3",
     L"  n 3 a               file note 3 away, read-only from then on",
     L"  n 3 r               put it back among the active notes",
     L"  n 3 d               delete note 3",
 };
 
+static const WCHAR *const cmd_help_config[] = {
+    L"config              (c)",
+    L"",
+    L"  Opens config.ini in Notepad. Everything the program remembers",
+    L"  between runs is in that one file, in plain text.",
+    L"",
+    L"  hgfloater writes the file as settings change, so a value you",
+    L"  edit by hand can be overwritten by the running program. Change",
+    L"  it, save, and restart if the setting has a live control.",
+    L"",
+    L"Examples:",
+    L"  config",
+};
+
+static const WCHAR *const cmd_help_clipboard[] = {
+    L"clipboard [<n>]     (b)",
+    L"",
+    L"  With nothing after it, prints the clipboard history, newest",
+    L"  first, numbered. With a number, makes that entry the current",
+    L"  clipboard: everything above it moves down one, so the list ends",
+    L"  up in the order it would have been in had you copied that text",
+    L"  again. Nothing is lost.",
+    L"",
+    L"  The same list the L toolbar button shows. It is text only, and",
+    L"  it is never written to disk.",
+    L"",
+    L"Examples:",
+    L"  clipboard           the history, numbered",
+    L"  b                   the same",
+    L"  b 3                 make entry 3 the current clipboard",
+};
+
+static const WCHAR *const cmd_help_write[] = {
+    L"write value <what> <number>       (w v)",
+    L"",
+    L"  Sets one of the values 'show value' lists. <what> is either the",
+    L"  number beside it or its name, and a unique leading piece of the",
+    L"  name is enough.",
+    L"",
+    L"  A value that lives in a settings file is written there straight",
+    L"  away, so it survives a restart without waiting for anything.",
+    L"  Brightness and volume are the machine's state rather than ours",
+    L"  and are not saved anywhere; the line printed says which it was.",
+    L"",
+    L"  Out-of-range numbers are clamped rather than refused, and the",
+    L"  line printed shows what the value actually became.",
+    L"",
+    L"Examples:",
+    L"  s v                 what can be set, and what it is now",
+    L"  write value 1 60    by number",
+    L"  w v bright 60       by name, shortened",
+    L"  w v clip-max 32     keep 32 clipboard entries from now on",
+};
+
 static const HgCommandHelp cmd_help_table[] = {
-    {L"help", L"h", L"this list, or one command in detail", cmd_help_help, HG_ARRAYSIZE(cmd_help_help)},
-    {L"list", L"l", L"windows, resize presets, shortcuts, notes, or sensors", cmd_help_list, HG_ARRAYSIZE(cmd_help_list)},
+    {L"help", L"h", L"this list, one command in detail, or the keys", cmd_help_help, HG_ARRAYSIZE(cmd_help_help)},
+    {L"show", L"s", L"windows, presets, shortcuts, notes, sensors, values", cmd_help_show, HG_ARRAYSIZE(cmd_help_show)},
+    {L"find", L"f", L"windows or notes containing some text", cmd_help_find, HG_ARRAYSIZE(cmd_help_find)},
     {L"go", NULL, L"focus a window by its number", cmd_help_go, HG_ARRAYSIZE(cmd_help_go)},
     {L"resize", L"r", L"resize a window to a preset", cmd_help_resize, HG_ARRAYSIZE(cmd_help_resize)},
     {L"move", L"m", L"move a window, optionally to another display", cmd_help_move, HG_ARRAYSIZE(cmd_help_move)},
-    {L"search", L"s", L"find windows or notes by their text", cmd_help_search, HG_ARRAYSIZE(cmd_help_search)},
-    {L"note", L"n", L"the note list, or one note by number", cmd_help_note, HG_ARRAYSIZE(cmd_help_note)},
+    {L"note", L"n", L"the note list, a new note, or one by number", cmd_help_note, HG_ARRAYSIZE(cmd_help_note)},
+    {L"clipboard", L"b", L"the clipboard history, or take one entry", cmd_help_clipboard, HG_ARRAYSIZE(cmd_help_clipboard)},
+    {L"write", L"w", L"set one of the values 'show value' lists", cmd_help_write, HG_ARRAYSIZE(cmd_help_write)},
+    {L"config", L"c", L"open config.ini in Notepad", cmd_help_config, HG_ARRAYSIZE(cmd_help_config)},
 };
 
-static const HgCommandHelp *cmd_help_find(const WCHAR *word)
+static const HgCommandHelp *cmd_help_lookup(const WCHAR *word)
 {
     for (size_t i = 0; i < HG_ARRAYSIZE(cmd_help_table); ++i) {
         if (cmd_word_is(word, cmd_help_table[i].name, cmd_help_table[i].shorthand))
@@ -311,9 +517,13 @@ static const HgCommandHelp *cmd_help_find(const WCHAR *word)
 static void cmd_help(int argc, WCHAR *argv[])
 {
     if (argc >= 2) {
-        const HgCommandHelp *entry = cmd_help_find(argv[1]);
+        const HgCommandHelp *entry = cmd_help_lookup(argv[1]);
         if (!entry) {
-            cmd_printf(L"help: no command called '%ls' - type help for the list", argv[1]);
+            if (cmd_word_is(argv[1], L"key", L"k") || cmd_word_is(argv[1], L"keys", NULL)) {
+                hg_command_print_key_help();
+                return;
+            }
+            cmd_printf(L"help: no command called '%ls' - type help, or 'h k' for the keys", argv[1]);
             return;
         }
         for (size_t i = 0; i < entry->detail_count; ++i)
@@ -380,33 +590,91 @@ static void cmd_list_notes(void)
 
 /* The diagnostic behind the TMP row. One number is shown; this is every
  * number it was chosen from, so a suspicious reading can be judged. */
-static void cmd_list_sensors(void)
+/* The sensors, numbered so one of them can be asked for on its own. The two
+ * readings the floater actually draws come last and keep their own numbers,
+ * because "which of these is on the bar" is the question this command exists to
+ * answer. */
+static int cmd_sensor_collect(HgThermalZone *zones, int max, int *out_zone_count)
 {
-    HgThermalZone zones[HG_THERMAL_MAX_ZONES];
-    int count = hg_thermal_enumerate(zones, (int)HG_ARRAYSIZE(zones));
-    if (count <= 0) {
-        commandbox_print(L"no thermal zones - this machine's firmware exposes none");
-    } else {
-        for (int i = 0; i < count; ++i) {
-            cmd_printf(L"%3d  %-7ls %3d C  %ls", i + 1, zones[i].from_counter ? L"counter" : L"wmi",
-                       zones[i].celsius, zones[i].name);
-        }
+    int count = hg_thermal_enumerate(zones, max);
+    if (out_zone_count)
+        *out_zone_count = count;
+    /* zones, then TMP, then GPU */
+    return count + 2;
+}
+
+static void cmd_sensor_line(int number, const HgThermalZone *zones, int zone_count, WCHAR *out, size_t out_cch)
+{
+    if (number <= zone_count) {
+        const HgThermalZone *z = &zones[number - 1];
+        hellgates_wsprintf(out, out_cch, L"%-7ls %ls: %d C", z->from_counter ? L"counter" : L"wmi", z->name,
+                           z->celsius);
+        return;
     }
 
-    int chosen = 0;
-    if (hg_thermal_zone_celsius(&chosen))
-        cmd_printf(L"     shown as TMP: %d C", chosen);
-    else
-        commandbox_print(L"     shown as TMP: nothing - the row is hidden");
+    if (number == zone_count + 1) {
+        int chosen = 0;
+        if (hg_thermal_zone_celsius(&chosen))
+            hellgates_wsprintf(out, out_cch, L"shown  TMP (CPU thermal zone): %d C", chosen);
+        else
+            StringCchCopyW(out, out_cch, L"shown  TMP: nothing - the row is hidden");
+        return;
+    }
 
     int gpu = 0;
     if (hg_get_gpu_temperature(&gpu))
-        cmd_printf(L"     shown as GPU: %d C", gpu);
+        hellgates_wsprintf(out, out_cch, L"shown  GPU (adapter sensor): %d C", gpu);
     else
-        commandbox_print(L"     shown as GPU: nothing - no adapter reports a sensor");
+        StringCchCopyW(out, out_cch, L"shown  GPU: nothing - no adapter reports a sensor");
 }
 
-static void cmd_list(int argc, WCHAR *argv[])
+static void cmd_show_sensors(int argc, WCHAR *argv[])
+{
+    HgThermalZone zones[HG_THERMAL_MAX_ZONES];
+    int zone_count = 0;
+    int total = cmd_sensor_collect(zones, (int)HG_ARRAYSIZE(zones), &zone_count);
+
+    if (argc >= 3) {
+        int wanted = 0;
+        if (!cmd_parse_int(argv[2], &wanted)) {
+            cmd_printf(L"show sensors: '%ls' is not a sensor number", argv[2]);
+            return;
+        }
+        if (wanted < 1 || wanted > total) {
+            cmd_printf(L"show sensors: no sensor %d (there are %d)", wanted, total);
+            return;
+        }
+        WCHAR line[HG_MAX_STR];
+        cmd_sensor_line(wanted, zones, zone_count, line, HG_ARRAYSIZE(line));
+        cmd_printf(L"%3d  %ls", wanted, line);
+        return;
+    }
+
+    if (zone_count <= 0)
+        commandbox_print(L"no thermal zones - this machine's firmware exposes none");
+    for (int i = 1; i <= total; ++i) {
+        WCHAR line[HG_MAX_STR];
+        cmd_sensor_line(i, zones, zone_count, line, HG_ARRAYSIZE(line));
+        cmd_printf(L"%3d  %ls", i, line);
+    }
+}
+
+/* Every number that can be written, what it is now, and what it may be. */
+static void cmd_show_values(void)
+{
+    int count = hg_value_count();
+    for (int i = 1; i <= count; ++i) {
+        HgValueInfo info;
+        int value = 0;
+        if (!hg_value_info(i, &info) || !hg_value_get(i, &value))
+            continue;
+        cmd_printf(L"%3d  %-17ls %4d%-2ls  (%d-%d%ls)  %ls", i, info.name, value, info.unit, info.min, info.max,
+                   info.unit, info.about);
+    }
+    commandbox_print(L"     set one with 'write value <number|name> <value>'");
+}
+
+static void cmd_show(int argc, WCHAR *argv[])
 {
     if (argc < 2) {
         cmd_list_windows();
@@ -416,16 +684,113 @@ static void cmd_list(int argc, WCHAR *argv[])
         cmd_list_windows();
     } else if (cmd_word_is(argv[1], L"resize", L"r")) {
         cmd_list_resize();
-    } else if (cmd_word_is(argv[1], L"shortcut", L"s") || cmd_word_is(argv[1], L"shortcuts", NULL)) {
+    } else if (cmd_word_is(argv[1], L"shortcut", L"c") || cmd_word_is(argv[1], L"shortcuts", NULL)) {
         cmd_list_shortcuts();
     } else if (cmd_word_is(argv[1], L"note", L"n") || cmd_word_is(argv[1], L"notes", NULL)) {
         cmd_list_notes();
-    } else if (cmd_word_is(argv[1], L"sensors", L"t") || cmd_word_is(argv[1], L"sensor", NULL) ||
+    } else if (cmd_word_is(argv[1], L"sensors", L"s") || cmd_word_is(argv[1], L"sensor", NULL) ||
                cmd_word_is(argv[1], L"temp", NULL)) {
-        cmd_list_sensors();
+        cmd_show_sensors(argc, argv);
+    } else if (cmd_word_is(argv[1], L"value", L"v") || cmd_word_is(argv[1], L"values", NULL)) {
+        cmd_show_values();
     } else {
-        cmd_printf(L"list: unknown kind '%ls' (windows, resize, shortcut, note, sensors)", argv[1]);
+        cmd_printf(L"show: unknown kind '%ls' (windows, resize, shortcut, note, sensors, value)", argv[1]);
     }
+}
+
+/* ------------------------------------------------------- write, config, b */
+
+static void cmd_write(int argc, WCHAR *argv[])
+{
+    if (argc < 2 || !(cmd_word_is(argv[1], L"value", L"v") || cmd_word_is(argv[1], L"values", NULL))) {
+        commandbox_print(L"write: only 'write value' so far, as in 'w v brightness 60'");
+        return;
+    }
+    if (argc < 4) {
+        commandbox_print(L"write value <number|name> <value> - 'show value' lists them:");
+        cmd_show_values();
+        return;
+    }
+
+    int number = 0;
+    if (!cmd_parse_int(argv[2], &number))
+        number = hg_value_find(argv[2]);
+
+    HgValueInfo info;
+    if (!hg_value_info(number, &info)) {
+        cmd_printf(L"write value: no value called '%ls' (see 'show value')", argv[2]);
+        return;
+    }
+
+    int wanted = 0;
+    if (!cmd_parse_int(argv[3], &wanted)) {
+        cmd_printf(L"write value: '%ls' is not a number", argv[3]);
+        return;
+    }
+
+    BOOL persisted = FALSE;
+    if (!hg_value_set(number, wanted, &persisted)) {
+        cmd_printf(L"write value: %ls could not be set", info.name);
+        return;
+    }
+
+    /* Read it back rather than echoing what was asked for: it may have been
+     * clamped, and a monitor may not have taken the value it was given. */
+    int now = 0;
+    hg_value_get(number, &now);
+    if (persisted)
+        cmd_printf(L"%ls = %d%ls, saved", info.name, now, info.unit);
+    else
+        cmd_printf(L"%ls = %d%ls (not saved - the machine keeps this one)", info.name, now, info.unit);
+}
+
+static void cmd_config(void)
+{
+    /* notepad rather than ShellExecute on the .ini itself: .ini is not always
+     * associated with an editor, and on some machines opening it launches
+     * something that is not one. */
+    /* Quoted: the path runs through the user's profile directory, and a user
+     * name with a space in it would otherwise reach Notepad as two arguments. */
+    WCHAR argument[HG_MAX_PATH + 4];
+    hellgates_wsprintf(argument, HG_ARRAYSIZE(argument), L"\"%ls\"", hg_g_config_path);
+    if ((INT_PTR)ShellExecuteW(NULL, L"open", L"notepad.exe", argument, NULL, SW_SHOWNORMAL) <= 32) {
+        commandbox_print(L"config: could not open Notepad");
+        return;
+    }
+    cmd_printf(L"config: %ls", hg_g_config_path);
+}
+
+static BOOL cmd_clipboard(int argc, WCHAR *argv[])
+{
+    int count = hg_clip_count();
+
+    if (argc >= 2) {
+        int number = 0;
+        if (!cmd_parse_int(argv[1], &number)) {
+            cmd_printf(L"clipboard: '%ls' is not an entry number", argv[1]);
+            return FALSE;
+        }
+        WCHAR row[HG_CLIP_ROW_CCH_PUBLIC];
+        if (!hg_clip_row(number, row, HG_ARRAYSIZE(row))) {
+            cmd_printf(L"clipboard: no entry %d (there %ls %d)", number, (count == 1) ? L"is" : L"are", count);
+            return FALSE;
+        }
+        hg_clip_take(number);
+        cmd_printf(L"clipboard 1: %ls", row);
+        return FALSE;
+    }
+
+    if (count <= 0) {
+        commandbox_print(L"clipboard: nothing copied yet this session");
+        return FALSE;
+    }
+    for (int i = 1; i <= count; ++i) {
+        WCHAR row[HG_CLIP_ROW_CCH_PUBLIC];
+        if (hg_clip_row(i, row, HG_ARRAYSIZE(row)))
+            cmd_printf(L"%3d  %ls", i, row);
+    }
+    cmd_printf(L"     keeping at most %d; 'b <n>' makes one of them current", hg_clip_max());
+    return FALSE;
 }
 
 /* TRUE when a window really was brought forward, so the caller can leave the
@@ -521,9 +886,9 @@ static void cmd_move(int argc, WCHAR *argv[])
     }
 }
 
-/* The numbers printed are the ones `list note` gives, not 1, 2, 3 among the
+/* The numbers printed are the ones `show note` gives, not 1, 2, 3 among the
  * matches, so a result can be handed straight back to `note`. */
-static void cmd_search_notes(const WCHAR *needle)
+static void cmd_find_notes(const WCHAR *needle)
 {
     int count = hg_note_command_count();
     int found = 0;
@@ -540,23 +905,23 @@ static void cmd_search_notes(const WCHAR *needle)
         cmd_printf(L"no note matches '%ls'", needle);
 }
 
-static void cmd_search(int argc, WCHAR *argv[], const WCHAR *line)
+static void cmd_find(int argc, WCHAR *argv[], const WCHAR *line)
 {
     BOOL windows = (argc >= 2) && cmd_word_is(argv[1], L"windows", L"w");
     BOOL notes = (argc >= 2) && (cmd_word_is(argv[1], L"note", L"n") || cmd_word_is(argv[1], L"notes", NULL));
     if (argc < 3 || (!windows && !notes)) {
-        commandbox_print(L"search: windows or note, as in 'search windows notepad' or 's n groceries'");
+        commandbox_print(L"find: windows or note, as in 'find windows notepad' or 'f n groceries'");
         return;
     }
 
     const WCHAR *needle = cmd_tail(line, 2);
     if (!needle || !*needle) {
-        commandbox_print(L"search: needs something to look for");
+        commandbox_print(L"find: needs something to look for");
         return;
     }
 
     if (notes) {
-        cmd_search_notes(needle);
+        cmd_find_notes(needle);
         return;
     }
 
@@ -585,15 +950,24 @@ static BOOL cmd_note(int argc, WCHAR *argv[])
         return TRUE;
     }
 
+    if (cmd_word_is(argv[1], L"new", L"n")) {
+        if (!hg_note_command_new()) {
+            commandbox_print(L"note: could not make a note");
+            return FALSE;
+        }
+        commandbox_print(L"note: a new note is open");
+        return TRUE;
+    }
+
     int number = 0;
     if (!cmd_parse_int(argv[1], &number)) {
-        cmd_printf(L"note: '%ls' is not a note number - see 'list note'", argv[1]);
+        cmd_printf(L"note: '%ls' is not a note number - see 'show note'", argv[1]);
         return FALSE;
     }
 
     HgNoteBrief brief;
     if (!hg_note_command_brief(number, &brief)) {
-        cmd_printf(L"note: no note %d (see 'list note')", number);
+        cmd_printf(L"note: no note %d (see 'show note')", number);
         return FALSE;
     }
 
@@ -659,18 +1033,24 @@ BOOL hg_command_execute(const WCHAR *line)
 
     if (cmd_word_is(argv[0], L"help", L"h")) {
         cmd_help(argc, argv);
-    } else if (cmd_word_is(argv[0], L"list", L"l")) {
-        cmd_list(argc, argv);
+    } else if (cmd_word_is(argv[0], L"show", L"s")) {
+        cmd_show(argc, argv);
+    } else if (cmd_word_is(argv[0], L"find", L"f")) {
+        cmd_find(argc, argv, line);
     } else if (cmd_word_is(argv[0], L"go", NULL)) {
         moved_focus = cmd_go(argc, argv);
     } else if (cmd_word_is(argv[0], L"resize", L"r")) {
         cmd_resize(argc, argv);
     } else if (cmd_word_is(argv[0], L"move", L"m")) {
         cmd_move(argc, argv);
-    } else if (cmd_word_is(argv[0], L"search", L"s")) {
-        cmd_search(argc, argv, line);
     } else if (cmd_word_is(argv[0], L"note", L"n")) {
         moved_focus = cmd_note(argc, argv);
+    } else if (cmd_word_is(argv[0], L"clipboard", L"b")) {
+        moved_focus = cmd_clipboard(argc, argv);
+    } else if (cmd_word_is(argv[0], L"write", L"w")) {
+        cmd_write(argc, argv);
+    } else if (cmd_word_is(argv[0], L"config", L"c")) {
+        cmd_config();
     } else {
         cmd_printf(L"unknown command '%ls' - type help", argv[0]);
     }

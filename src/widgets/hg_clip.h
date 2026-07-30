@@ -22,4 +22,16 @@ void hg_clip_toggle_window(void);
 
 LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 
+/* The command box's view. Numbers are 1-based positions in the history, newest
+ * first, which is the same order the window shows - unlike the notes, the
+ * clipboard list has only one order, so there is nothing to reconcile. */
+#define HG_CLIP_ROW_CCH_PUBLIC 160
+int hg_clip_count(void);
+int hg_clip_max(void);
+void hg_clip_set_max(int value);
+/* One row of display text for entry `number`; FALSE when there is no such entry. */
+BOOL hg_clip_row(int number, WCHAR *out, size_t out_cch);
+/* Makes entry `number` the current clipboard, pushing the ones above it down. */
+BOOL hg_clip_take(int number);
+
 #endif /* HG_CLIP_H */

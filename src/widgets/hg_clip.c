@@ -560,6 +560,45 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
     return DefWindowProcW(hwnd, msg, w_param, l_param);
 }
 
+/* ------------------------------------------------- the command box's view */
+
+int hg_clip_count(void)
+{
+    hg_clip_init();
+    return s_clip_count;
+}
+
+int hg_clip_max(void)
+{
+    hg_clip_init();
+    return s_clip_max;
+}
+
+void hg_clip_set_max(int value)
+{
+    hg_clip_init();
+    clip_set_max(value);
+}
+
+BOOL hg_clip_row(int number, WCHAR *out, size_t out_cch)
+{
+    hg_clip_init();
+    if (!out || out_cch == 0 || number < 1 || number > s_clip_count || !s_clips[number - 1])
+        return FALSE;
+    clip_row_text(s_clips[number - 1], out, out_cch);
+    return TRUE;
+}
+
+BOOL hg_clip_take(int number)
+{
+    hg_clip_init();
+    if (number < 1 || number > s_clip_count)
+        return FALSE;
+    clip_promote(number - 1);
+    clip_list_fill();
+    return TRUE;
+}
+
 void hg_clip_toggle_window(void)
 {
     hg_clip_init(); /* the L button may be the first thing that runs */

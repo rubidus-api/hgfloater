@@ -27,6 +27,40 @@ static int commandbox_line_height(HWND hwnd, double scale)
     return line_h;
 }
 
+/* Shift plus a movement key scrolls the transcript, wherever the caret is. The
+ * transcript is read-only and never has focus, so without this the only way to
+ * look back at what a command printed is the mouse. */
+static BOOL commandbox_scroll_transcript(WPARAM key)
+{
+    if (!hg_g_commandbox_out_wnd || !IsWindow(hg_g_commandbox_out_wnd))
+        return FALSE;
+
+    int bar = -1;
+    switch (key) {
+    case VK_UP: bar = SB_LINEUP; break;
+    case VK_DOWN: bar = SB_LINEDOWN; break;
+    case VK_PRIOR: bar = SB_PAGEUP; break;
+    case VK_NEXT: bar = SB_PAGEDOWN; break;
+    default: return FALSE;
+    }
+    SendMessageW(hg_g_commandbox_out_wnd, WM_VSCROLL, (WPARAM)bar, 0);
+    return TRUE;
+}
+
+/* Shift+Left and Shift+Right walk the history. Plain arrows stay the caret's,
+ * because the input box is multi-line and moving through what you are typing
+ * has to keep working. */
+static BOOL commandbox_recall(int direction)
+{
+    const WCHAR *line = hg_command_history_step(direction);
+    if (!line)
+        return FALSE;
+    SetWindowTextW(hg_g_commandbox_in_wnd, line);
+    int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
+    SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
+    return TRUE;
+}
+
 LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
                                                UINT_PTR subclass_id, DWORD_PTR ref_data)
 {
@@ -36,6 +70,29 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
         BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
         BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+        BOOL is_shift = (GetKeyState(VK_SHIFT) < 0);
+
+        if (is_shift && !is_ctrl && !is_alt) {
+            if (commandbox_scroll_transcript(w_param))
+                return 0;
+            if (w_param == VK_LEFT) {
+                commandbox_recall(1); /* older */
+                return 0;
+            }
+            if (w_param == VK_RIGHT) {
+                commandbox_recall(-1); /* newer */
+                return 0;
+            }
+        }
+
+        /* Enter runs it; Shift+Enter is the newline, which is what makes a
+         * multi-line box worth having. Ctrl+Enter kept working because it was
+         * the only way to run a line for several versions. */
+        if (w_param == VK_RETURN && !is_shift && !is_alt) {
+            commandbox_execute();
+            return 0;
+        }
+
         if (w_param == VK_SPACE && is_ctrl) {
             SetFocus(hg_g_commandbox_in_wnd);
             int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
@@ -48,10 +105,6 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
         }
         if (w_param == VK_ESCAPE) {
             SendMessageW(parent, msg, w_param, l_param);
-            return 0;
-        }
-        if (w_param == VK_RETURN && is_ctrl) {
-            commandbox_execute();
             return 0;
         }
     }
@@ -128,6 +181,9 @@ void commandbox_execute()
             WCHAR echo[HG_MAX_STR];
             StringCchPrintfW(echo, HG_ARRAYSIZE(echo), L"> %ls", cursor);
             commandbox_print(echo);
+            /* Recorded before it runs, so a command that fails is still
+             * something you can bring back and correct. */
+            hg_command_history_add(cursor);
             if (hg_command_execute(cursor))
                 moved_focus = TRUE;
         }
@@ -141,11 +197,24 @@ void commandbox_execute()
     }
 
     SetWindowTextW(hg_g_commandbox_in_wnd, L"");
+    hg_command_history_reset();
     /* Taking the keyboard back is right after a command that only printed, and
      * wrong after one that opened a window for the reader to work in. */
     if (!moved_focus)
         SetFocus(hg_g_commandbox_in_wnd);
     free(in_buf);
+}
+
+/* The window exists to be typed into, so the keyboard goes to the input box
+ * rather than to the frame: opening it and having the first keystroke land
+ * nowhere is the whole complaint this answers. */
+void commandbox_focus_input(void)
+{
+    if (!hg_g_commandbox_in_wnd || !IsWindow(hg_g_commandbox_in_wnd))
+        return;
+    SetFocus(hg_g_commandbox_in_wnd);
+    int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
+    SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
 }
 
 /* Recover a position saved off-screen (for example from an old monitor
@@ -162,6 +231,7 @@ static void commandbox_after_show(void)
         append_message(msg);
     }
     hg_force_foreground(hg_g_commandbox_wnd);
+    commandbox_focus_input();
 }
 
 void show_commandbox_window()
@@ -230,7 +300,7 @@ void show_commandbox_window()
         );
 
         hg_g_commandbox_btn_wnd = CreateWindowExW(
-            0, L"BUTTON", L"Execute (Ctrl+Enter)",
+            0, L"BUTTON", L"Execute (Enter)",
             WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)103, GetModuleHandle(NULL), NULL
         );
@@ -245,6 +315,11 @@ void show_commandbox_window()
         RECT rc_client;
         GetClientRect(hg_g_commandbox_wnd, &rc_client);
         SendMessageW(hg_g_commandbox_wnd, WM_SIZE, 0, MAKELPARAM(rc_client.right, rc_client.bottom));
+
+        /* What the box opens on. A blank transcript and a cursor is a prompt
+         * you have to have been told about; the keys are the thing a first-time
+         * reader needs and the thing a returning one forgets. */
+        hg_command_print_key_help();
 
         ShowWindow(hg_g_commandbox_wnd, SW_SHOWNORMAL);
         commandbox_after_show();
@@ -262,6 +337,13 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     case WM_DPICHANGED:
         /* Scale ownership stays with the floater/taskbox pair; just take the size. */
         hg_apply_dpi_suggested_rect(hwnd, l_param);
+        return 0;
+
+    case WM_ACTIVATE:
+        /* Clicking the window anywhere, or alt-tabbing back to it, puts the
+         * keyboard where typing belongs. */
+        if (LOWORD(w_param) != WA_INACTIVE)
+            commandbox_focus_input();
         return 0;
 
     case WM_COMMAND:

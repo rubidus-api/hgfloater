@@ -1774,6 +1774,37 @@ static HgNote *note_by_number(int number)
     return &s_notes[order[number - 1]];
 }
 
+BOOL hg_note_command_new(void)
+{
+    hg_notes_load();
+    HgNote *note = note_create();
+    if (!note)
+        return FALSE;
+    note_list_refresh();
+    note_open_editor((int)(note - s_notes));
+    return TRUE;
+}
+
+int hg_note_font_size(void)
+{
+    hg_notes_load(); /* the size is read with the rest of note.ini */
+    return s_font_size;
+}
+
+void hg_note_set_font_size(int size)
+{
+    hg_notes_load();
+    if (size < HG_NOTE_FONT_MIN)
+        size = HG_NOTE_FONT_MIN;
+    if (size > HG_NOTE_FONT_MAX)
+        size = HG_NOTE_FONT_MAX;
+    if (size == s_font_size)
+        return;
+    s_font_size = size;
+    note_ini_set_int(L"font", L"size", s_font_size);
+    note_refresh_fonts();
+}
+
 int hg_note_command_count(void)
 {
     int order[HG_MAX_NOTES];

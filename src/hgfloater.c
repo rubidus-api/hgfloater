@@ -439,6 +439,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
     update_monitor_enum();
     hg_refresh_all_monitor_brightness();
+    hg_config_ensure_template();
     hg_notes_load();
     hg_clip_init(); /* capture starts with the app, not with the window */
     dispatch_pending_command_line();

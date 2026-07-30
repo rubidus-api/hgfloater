@@ -54,6 +54,7 @@ SRC := \
 	src/hg_config.c \
 	src/hg_calc.c \
 	src/hg_command.c \
+	src/hg_values.c \
 	src/widgets/hg_floater.c \
 	src/widgets/hg_taskbox.c \
 	src/widgets/hg_toolbar.c \
