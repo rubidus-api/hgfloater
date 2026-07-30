@@ -399,6 +399,8 @@ could come and go between the list you read and the number you typed.
 | `show resize` | `s r` | The resize presets, numbered. |
 | `show shortcut` | `s c` | The shortcut icons, numbered. |
 | `show note` | `s n` | Every note, numbered for the `note` command. |
+| `show monitor` | `s m` | Every display, numbered, with its size, its place, and whether its preview is up. |
+| `show monitor 1` | `s m 1` | Turn display 1's [preview window](#9-monitor-thumbnails) on; run it again to close it. |
 | `show sensors` | `s s` | Every temperature sensor found, numbered, and which one `TMP` and `GPU` show. |
 | `show sensors 2` | `s s 2` | Just sensor 2, with its unit. |
 | `show value` | `s v` | The settable values, numbered, with what each one is now. |
