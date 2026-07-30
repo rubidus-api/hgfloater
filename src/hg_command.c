@@ -10,6 +10,7 @@
 #include "hg_globals.h"
 #include "widgets/hg_note.h"
 #include "widgets/hg_clip.h"
+#include "widgets/hg_monitor.h"
 #include "hg_values.h"
 
 #define HG_CMD_MAX_ARGS 8
@@ -255,7 +256,11 @@ static HWND cmd_window_by_number(int number)
  * gaps after a monitor is unplugged, and answering 'display 2' with whichever
  * monitor happens to sit second in the array would move a window to a display
  * the reader did not name. */
-static const MonitorInfo *cmd_monitor_by_number(int number)
+/* Windows' own display number where the system gives us one, so the number in
+ * `show monitor` is the number on the Settings page and the number `move`
+ * takes. Position in our list only as a fallback, and only when nothing is
+ * labelled - mixing the two would give two monitors the same number. */
+static int cmd_monitor_index_by_number(int number)
 {
     BOOL any_numbered = FALSE;
     for (int i = 0; i < hg_g_monitor_count; ++i) {
@@ -263,11 +268,23 @@ static const MonitorInfo *cmd_monitor_by_number(int number)
         if (labelled > 0)
             any_numbered = TRUE;
         if (labelled == number)
-            return &hg_g_monitors[i];
+            return i;
     }
     if (!any_numbered && number >= 1 && number <= hg_g_monitor_count)
-        return &hg_g_monitors[number - 1];
-    return NULL;
+        return number - 1;
+    return -1;
+}
+
+static int cmd_monitor_number_of(int index)
+{
+    int labelled = hg_monitor_display_number(hg_g_monitors[index].name);
+    return (labelled > 0) ? labelled : index + 1;
+}
+
+static const MonitorInfo *cmd_monitor_by_number(int number)
+{
+    int index = cmd_monitor_index_by_number(number);
+    return (index >= 0) ? &hg_g_monitors[index] : NULL;
 }
 
 /* ---------------------------------------------------------------- commands */
@@ -330,7 +347,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"  The number beside a window is the one go, resize, and move take,",
     L"  so this is where those commands get their arguments.",
     L"  Kinds: windows (w), resize (r), shortcut (c), note (n),",
-    L"         sensors (s), value (v).",
+    L"         monitor (m), sensors (s), value (v).",
     L"",
     L"Examples:",
     L"  show                every window, numbered",
@@ -338,6 +355,8 @@ static const WCHAR *const cmd_help_show[] = {
     L"  s r                 the resize presets, numbered for 'resize'",
     L"  s c                 the shortcut icons",
     L"  s n                 every note, numbered for the 'note' command",
+    L"  s m                 every display, numbered, with its size and place",
+    L"  s m 1               turn display 1's preview window on - again to close",
     L"  s s                 every temperature sensor, numbered",
     L"  s s 2               just sensor 2, with its unit",
     L"  s v                 the settable values and what they are now",
@@ -497,7 +516,8 @@ static const WCHAR *const cmd_help_write[] = {
 
 static const HgCommandHelp cmd_help_table[] = {
     {L"help", L"h", L"this list, one command in detail, or the keys", cmd_help_help, HG_ARRAYSIZE(cmd_help_help)},
-    {L"show", L"s", L"windows, presets, shortcuts, notes, sensors, values", cmd_help_show, HG_ARRAYSIZE(cmd_help_show)},
+    {L"show", L"s", L"windows, presets, shortcuts, notes, displays, values", cmd_help_show,
+     HG_ARRAYSIZE(cmd_help_show)},
     {L"find", L"f", L"windows or notes containing some text", cmd_help_find, HG_ARRAYSIZE(cmd_help_find)},
     {L"go", NULL, L"focus a window by its number", cmd_help_go, HG_ARRAYSIZE(cmd_help_go)},
     {L"resize", L"r", L"resize a window to a preset", cmd_help_resize, HG_ARRAYSIZE(cmd_help_resize)},
@@ -662,6 +682,48 @@ static void cmd_show_sensors(int argc, WCHAR *argv[])
     }
 }
 
+/* The displays, and the preview window each one can have. With a number this
+ * toggles that preview rather than printing anything, which is the same switch
+ * the display's own submenu in the O menu holds - saying it twice in two places
+ * would be two things to keep in step. */
+static void cmd_show_monitors(int argc, WCHAR *argv[])
+{
+    if (hg_g_monitor_count <= 0) {
+        commandbox_print(L"no displays reported");
+        return;
+    }
+
+    if (argc >= 3) {
+        int wanted = 0;
+        if (!cmd_parse_int(argv[2], &wanted)) {
+            cmd_printf(L"show monitor: '%ls' is not a display number", argv[2]);
+            return;
+        }
+        int index = cmd_monitor_index_by_number(wanted);
+        if (index < 0) {
+            cmd_printf(L"show monitor: no display %d", wanted);
+            return;
+        }
+
+        toggle_monitor_window(index);
+
+        WCHAR described[HG_MAX_STR];
+        hg_describe_monitor(hg_g_monitors[index].name, described, HG_ARRAYSIZE(described));
+        cmd_printf(L"display %d preview %ls: %ls", wanted, hg_g_monitors[index].active ? L"on" : L"off", described);
+        return;
+    }
+
+    for (int i = 0; i < hg_g_monitor_count; ++i) {
+        WCHAR described[HG_MAX_STR];
+        hg_describe_monitor(hg_g_monitors[i].name, described, HG_ARRAYSIZE(described));
+        const RECT *rc = &hg_g_monitors[i].rcMonitor;
+        cmd_printf(L"%3d  %-8ls %4dx%-4d at %5d,%-5d  %ls", cmd_monitor_number_of(i),
+                   hg_g_monitors[i].active ? L"preview" : L"", rc->right - rc->left, rc->bottom - rc->top, rc->left,
+                   rc->top, described);
+    }
+    commandbox_print(L"     's m <n>' turns that display's preview window on, or off again");
+}
+
 /* Every number that can be written, what it is now, and what it may be. */
 static void cmd_show_values(void)
 {
@@ -694,10 +756,14 @@ static void cmd_show(int argc, WCHAR *argv[])
     } else if (cmd_word_is(argv[1], L"sensors", L"s") || cmd_word_is(argv[1], L"sensor", NULL) ||
                cmd_word_is(argv[1], L"temp", NULL)) {
         cmd_show_sensors(argc, argv);
+    } else if (cmd_word_is(argv[1], L"monitor", L"m") || cmd_word_is(argv[1], L"monitors", NULL) ||
+               cmd_word_is(argv[1], L"display", NULL)) {
+        cmd_show_monitors(argc, argv);
     } else if (cmd_word_is(argv[1], L"value", L"v") || cmd_word_is(argv[1], L"values", NULL)) {
         cmd_show_values();
     } else {
-        cmd_printf(L"show: unknown kind '%ls' (windows, resize, shortcut, note, sensors, value)", argv[1]);
+        cmd_printf(L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, value)",
+                   argv[1]);
     }
 }
 

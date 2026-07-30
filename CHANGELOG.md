@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31c] - 2026-07-31
+
+### Added
+- `show monitor` (`s m`) lists the displays with their number, size, position, and whether their preview window is up. `show monitor 1` (`s m 1`) turns display 1's preview on, and running it again closes it — the same switch the display's own submenu in the `O` menu holds, called once rather than reimplemented.
+- The number it prints is the one `move` already takes: Windows' own display number where the system gives us one, so it matches the Settings page, falling back to position in the list only when nothing is labelled.
+
 ## [v26.07.31b] - 2026-07-31
 
 ### Changed
