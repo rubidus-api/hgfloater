@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31b] - 2026-07-31
+
+### Changed
+- **Scrolling and the history are modes now, not modifier combinations.** `Ctrl + S` enters scroll mode, where `Up`/`Down` move the transcript a line and `Left`/`Right` a page; `Ctrl + H` enters history mode, where `Up`/`Down` walk through what you have run. The `Shift + arrow` and `Shift + PgUp/PgDn` bindings added a few hours earlier are gone.
+  - The reason is what those bindings cost: `Shift` with the arrows is text selection in every other text box on the machine, and taking it away from the one box you type commands into was the wrong trade. A mode is something you enter on purpose, so it costs nothing you had.
+  - The title bar says which mode is on, because a window that has silently changed what its keys do is a window that looks broken. Any key the mode has no use for drops the mode and is then handled normally, so typing never lands in a hole.
+- **`Esc` leaves the mode, or closes the box and hands the keyboard back to the taskbox** — expanding it from the floater first if it was not already open. Closing the box and leaving focus nowhere in particular was never useful.
+- **`Ctrl + Enter` is gone.** `Enter` runs the line and `Shift + Enter` is the newline; there is no longer a second way to do the first thing.
+
 ## [v26.07.31] - 2026-07-31
 
 ### Added
