@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31] - 2026-07-31
+
+### Added
+- The command box opens on **its own key list** instead of a blank prompt, and `help key` (`h k`) prints it again. A box with a cursor and nothing else is a box you have to be told about somewhere other than the box.
+- **Command history**: `Shift + Left` and `Shift + Right` walk back and forward through what you have run. It keeps 64 lines by default, settable with `write value history-max <n>` or `history_max` in `config.ini`, and holds nothing on disk. A line is recorded before it runs, so a command that failed is still one you can bring back and correct.
+- `Shift + Up/Down` and `Shift + PgUp/PgDn` **scroll the transcript**. It is read-only and never takes focus, so until now the only way to look back at what a command printed was the mouse.
+- New commands: `note new` (`n n`) writes a note; `clipboard` (`b`) prints the clipboard history numbered and `b 3` makes entry 3 current; `config` (`c`) opens `config.ini` in Notepad; `show value` (`s v`) lists every settable value with what it is now, and `write value <number|name> <value>` (`w v`) sets one; `show sensors 2` prints one sensor rather than all of them.
+- `config.ini` gains `[commandbox] history_max`, written on first run together with a comment block explaining it and `[clipboard] max` — the two keys that have no control anywhere in the interface.
+
+### Changed
+- **The keyboard goes to the input box** when the command box opens and whenever it is activated. Opening a window whose entire purpose is being typed into, and then having the first keystroke land nowhere, was the complaint this answers.
+- **`Enter` runs the line; `Shift + Enter` is the newline.** `Ctrl + Enter` still works — it was the only way to run a line for a long time. The consequence is that `Shift` with the arrows now belongs to the transcript and the history rather than to text selection; `Ctrl + Shift + Left/Right` still selects a word at a time.
+- `list` is now **`show`** (`s`) and `search` is now **`find`** (`f`). Because sensors took `s` as a kind, `show shortcut` is `s c`.
+- **Task icons are one per window, and that now includes hgfloater's own windows** — every open note editor, the note list, the clipboard history, the command box. They were being filtered out for being tool windows, which is right for Alt-Tab and wrong for a list whose job is reaching windows. The floater, taskbox and toolbar stay out: they are the thing you are looking at.
+
 ## [v26.07.30] - 2026-07-30
 
 ### Changed

@@ -31,6 +31,10 @@ typedef struct HgNoteBrief {
 } HgNoteBrief;
 
 int hg_note_command_count(void);
+/* Makes a note and opens it, the same as +Add Note in the list window. */
+BOOL hg_note_command_new(void);
+int hg_note_font_size(void);
+void hg_note_set_font_size(int size);
 BOOL hg_note_command_brief(int number, HgNoteBrief *out);
 BOOL hg_note_command_matches(int number, const WCHAR *needle);
 BOOL hg_note_command_open(int number);

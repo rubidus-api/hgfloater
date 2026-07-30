@@ -13,4 +13,16 @@ BOOL hg_command_execute(const WCHAR *line);
 /* Append one line to the command box transcript. */
 void commandbox_print(const WCHAR *text);
 
+/* The key reference: `help key`, and what the window prints when it opens. */
+void hg_command_print_key_help(void);
+
+/* The command history Shift+Left and Shift+Right walk. Nothing is written to
+ * disk; only the cap is a setting. */
+void hg_command_history_add(const WCHAR *line);
+void hg_command_history_reset(void);
+/* direction > 0 for older, < 0 for newer. NULL at the end; L"" past the newest. */
+const WCHAR *hg_command_history_step(int direction);
+int hg_command_history_max(void);
+void hg_command_set_history_max(int value);
+
 #endif /* HG_COMMAND_H */

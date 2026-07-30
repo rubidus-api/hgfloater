@@ -7,7 +7,7 @@ translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 390 KB** that needs no installer and no runtime, so
+single **executable of about 410 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -167,8 +167,15 @@ built-in buttons.
 
 ### 5.1 Running windows and shortcuts
 
-- **Task icons** come first: one per visible top-level window, in the order
-  Windows reports them.
+- **Task icons** come first: **one per window, not one per program**, in the
+  order Windows reports them. A program with four windows open gets four icons,
+  each going straight to its own window.
+
+  That now includes **hgfloater's own windows** — every open note editor, the
+  note list, the clipboard history, the command box. They are tool windows, so
+  Windows keeps them out of Alt-Tab, which is right for a widget's windows but
+  wrong for a list whose whole job is reaching them. The floater, the taskbox
+  and the toolbar stay out: they are the thing you are looking at.
 - **Shortcut icons** follow: one per `.lnk` or `.url` in your shortcuts folder.
 - **Left click** activates a task or launches a shortcut.
 - **Left drag** on a task icon reorders it within the grid.
@@ -344,8 +351,29 @@ Open it with the `O` toolbar button or by right-clicking the status line.
 A standalone console window, opened with the `C` toolbar button or the `C` key
 while the floater or taskbox has focus.
 
-- Type a command and run it with **`Ctrl + Enter`** or the Execute button.
-- **`Ctrl + Space`** returns focus to the input field.
+**The keyboard goes to the input box** the moment the window opens, and again
+whenever it is activated, so the first thing you type lands where you meant it.
+**The window opens on its own key list** rather than a blank prompt — the same
+list `help key` prints.
+
+| Key | What it does |
+| :--- | :--- |
+| `Enter` | Run what is typed. |
+| `Shift + Enter` | A new line. Several commands run in order, top to bottom. |
+| `Shift + Up/Down` | Scroll the transcript. |
+| `Shift + PgUp/PgDn` | Scroll it a page at a time. |
+| `Shift + Left/Right` | The previous / next line from the history. |
+| `Ctrl + Space` | Jump to the input box. |
+| `Esc` | Close the window. |
+
+The history keeps the last **64** lines by default, changed with
+`write value history-max <n>` or the `history_max` key in `config.ini`. Running
+the same line twice in a row stores it once. Nothing is written to disk.
+
+Shift with the arrows belongs to the transcript and the history, so it is no
+longer text selection in the input box — **`Ctrl + Shift + Left/Right`** still
+selects a word at a time.
+
 - **`Ctrl + Wheel`** changes the text size, **`Alt + Wheel`** the opacity, and a
   plain wheel scrolls.
 - Long lines **wrap** instead of running off the right edge, so a transcript of
@@ -355,7 +383,7 @@ while the floater or taskbox has focus.
 
 ### Commands
 
-Every command that names a window uses the number `list` prints beside it, and
+Every command that names a window uses the number `show` prints beside it, and
 that is the window's place in the same list the toolbar draws. Only the commands
 that print numbers re-read the window list: if `go` refreshed first, windows
 could come and go between the list you read and the number you typed.
@@ -364,23 +392,31 @@ could come and go between the list you read and the number you typed.
 | :--- | :--- | :--- |
 | `help` | `h` | The list below, inside the box. |
 | `help move` | `h m` | One command explained in full, with examples. |
-| `list` | `l` | Windows, numbered. |
-| `list windows` | `l w` | The same list. |
-| `list resize` | `l r` | The resize presets, numbered. |
-| `list shortcut` | `l s` | The shortcut icons, numbered. |
-| `list note` | `l n` | Every note, numbered for the `note` command. |
-| `list sensors` | `l t` | Every temperature sensor found, and which one `TMP` and `GPU` show. |
+| `help key` | `h k` | The keys above, not the commands. |
+| `show` | `s` | Windows, numbered. |
+| `show windows` | `s w` | The same list. |
+| `show resize` | `s r` | The resize presets, numbered. |
+| `show shortcut` | `s c` | The shortcut icons, numbered. |
+| `show note` | `s n` | Every note, numbered for the `note` command. |
+| `show sensors` | `s s` | Every temperature sensor found, numbered, and which one `TMP` and `GPU` show. |
+| `show sensors 2` | `s s 2` | Just sensor 2, with its unit. |
+| `show value` | `s v` | The settable values, numbered, with what each one is now. |
 | `go 1` | — | Focus window 1, restoring it if it is minimised. |
 | `resize 1 1` | `r 1 1` | Resize window 1 to preset 1. |
 | `move 1 100 100` | `m 1 100 100` | Move window 1 to 100, 100 on the display it is already on. |
 | `move 1 100 100 2` | `m 1 100 100 2` | Move window 1 to 100, 100 on display 2. |
-| `search windows word` | `s w word` | Windows whose title contains `word`, listed under their `list` numbers rather than renumbered. |
+| `find windows word` | `f w word` | Windows whose title contains `word`, listed under their `show` numbers rather than renumbered. |
 | `note` | `n` | Open the [note list](#10-notes). |
+| `note new` | `n n` | Write a new note and open it. |
 | `note 3` | `n 3` | Open note 3 in its own editor. An archived note opens read-only. |
 | `note 3 archive` | `n 3 a` | File note 3 away. |
 | `note 3 restore` | `n 3 r` | Put it back among the active notes. |
 | `note 3 delete` | `n 3 d` | Delete note 3, to the Recycle Bin. |
-| `search note word` | `s n word` | Notes whose title **or body** contains `word`, under their `list note` numbers. |
+| `find note word` | `f n word` | Notes whose title **or body** contains `word`, under their `show note` numbers. |
+| `clipboard` | `b` | The [clipboard history](#the-clipboard-history), numbered. |
+| `clipboard 3` | `b 3` | Make entry 3 the current clipboard, pushing the ones above it down. |
+| `write value 1 60` | `w v 1 60` | Set value 1 to 60. The name works too, shortened: `w v bright 60`. |
+| `config` | `c` | Open `config.ini` in Notepad. |
 
 `X` and `Y` are measured from the target display's own top-left corner, not from
 the virtual desktop's, so the same pair of numbers means the same place on every
@@ -545,7 +581,8 @@ creation time of day goes there too, since the file name only carries the day.
 | `F1` | About |
 | `T` | Open the taskbox (from the floater) |
 | `Ctrl` + `Q` / `X`, `Alt + F4` | Quit |
-| `Ctrl + Enter` | Execute (inside the Command Box) |
+| `Enter` | Execute (inside the Command Box) |
+| `Shift + Enter` | New line (inside the Command Box) |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
 | `Ctrl + Wheel` | Text size (inside the Command Box) |
 
@@ -608,7 +645,15 @@ Only the number lives here. The clips themselves are never written to disk.
 
 ### `[commandbox]`
 
-Its own `x`, `y`, `w`, `h`, `alpha`, `font_size`, and `font_name`.
+Its own `x`, `y`, `w`, `h`, `alpha`, `font_size`, and `font_name`, plus:
+
+| Key | Meaning |
+| :--- | :--- |
+| `history_max` | How many command lines `Shift + Left/Right` walk back through, 1–256 (default `64`) |
+
+Both this and `[clipboard] max` have no control anywhere in the interface, so
+hgfloater writes them into `config.ini` on first run with a comment block
+explaining them. The lines and the clips themselves are never written to disk.
 
 ### `[etc]`
 

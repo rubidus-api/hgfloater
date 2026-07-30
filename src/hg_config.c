@@ -59,6 +59,90 @@ static void config_defer(unsigned bits)
         hg_config_flush_pending(); /* no timer, no deferral: write it now */
 }
 
+/* WritePrivateProfileStringW cannot write a comment, and a settings file whose
+ * keys are undocumented is one nobody edits by hand. So the keys that have no
+ * control anywhere in the interface get their block appended once, with the
+ * explanation attached; the profile API leaves comment lines alone afterwards,
+ * so this survives every later write. */
+void hg_config_ensure_template(void)
+{
+    /* Asked as a string: the integer form returns UINT, so "absent" and "0"
+     * cannot be told apart. */
+    WCHAR probe[16];
+    GetPrivateProfileStringW(L"commandbox", L"history_max", L"", probe, (DWORD)HG_ARRAYSIZE(probe),
+                             hg_g_config_path);
+    if (probe[0] != L'\0')
+        return;
+
+    /* The keys go in through the profile API, which puts each one inside the
+     * section it belongs to. Appending "[commandbox]" as text would create a
+     * second section of that name, and the API reads the first one and ignores
+     * the rest - the key would be there and would never be read. */
+    WritePrivateProfileStringW(L"commandbox", L"history_max", L"64", hg_g_config_path);
+    if (GetPrivateProfileIntW(L"clipboard", L"max", 0, hg_g_config_path) == 0)
+        WritePrivateProfileStringW(L"clipboard", L"max", L"16", hg_g_config_path);
+
+    /* The explanation is appended as comments. It goes at the end rather than
+     * beside each key, because inserting a line into a file the profile API
+     * rewrites is not something that API offers - but comment lines anywhere in
+     * the file survive every later write, which is what makes this worth
+     * doing at all. */
+    static const WCHAR block[] =
+        L"\r\n"
+        L"; ---------------------------------------------------------------------\r\n"
+        L"; Two keys have no control anywhere in the interface:\r\n"
+        L";\r\n"
+        L";   [commandbox] history_max   how many command lines Shift+Left and\r\n"
+        L";                              Shift+Right walk back through. 1-256.\r\n"
+        L";                              Lowering it drops the oldest at once.\r\n"
+        L";                              The lines are never written to disk.\r\n"
+        L";\r\n"
+        L";   [clipboard]  max           how many clipboard entries to keep, 1-64.\r\n"
+        L";                              Also set from the L window, or with\r\n"
+        L";                              'write value clip-max <n>'.\r\n"
+        L";                              The clips are never written to disk.\r\n"
+        L";\r\n"
+        L"; hgfloater rewrites this file as settings change. Comments survive that;\r\n"
+        L"; a value you edit by hand while it is running may not.\r\n";
+
+    WCHAR normalized[HG_MAX_PATH];
+    normalize_path_for_api(hg_g_config_path, normalized, HG_MAX_PATH);
+    HANDLE file = CreateFileW(normalized, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE)
+        return;
+
+    /* Match the encoding the file already has: the profile API writes UTF-16
+     * only into a file that starts with a byte-order mark, and mixing the two
+     * would corrupt whichever half was written the other way. */
+    BOOL wide = FALSE;
+    HANDLE probe_file = CreateFileW(normalized, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                                    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (probe_file != INVALID_HANDLE_VALUE) {
+        unsigned char bom[2] = {0, 0};
+        DWORD got = 0;
+        if (ReadFile(probe_file, bom, sizeof(bom), &got, NULL) && got == 2)
+            wide = (bom[0] == 0xFF && bom[1] == 0xFE);
+        CloseHandle(probe_file);
+    }
+
+    DWORD written = 0;
+    if (wide) {
+        WriteFile(file, block, (DWORD)(sizeof(block) - sizeof(WCHAR)), &written, NULL);
+    } else {
+        int need = WideCharToMultiByte(CP_ACP, 0, block, -1, NULL, 0, NULL, NULL);
+        if (need > 1) {
+            char *narrow = (char *)malloc((size_t)need);
+            if (narrow) {
+                WideCharToMultiByte(CP_ACP, 0, block, -1, narrow, need, NULL, NULL);
+                WriteFile(file, narrow, (DWORD)(need - 1), &written, NULL);
+                free(narrow);
+            }
+        }
+    }
+    CloseHandle(file);
+}
+
 void hg_config_flush_pending(void)
 {
     if (s_flush_timer) {
