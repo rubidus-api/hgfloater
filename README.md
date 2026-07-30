@@ -360,19 +360,20 @@ list `help key` prints.
 | :--- | :--- |
 | `Enter` | Run what is typed. |
 | `Shift + Enter` | A new line. Several commands run in order, top to bottom. |
-| `Shift + Up/Down` | Scroll the transcript. |
-| `Shift + PgUp/PgDn` | Scroll it a page at a time. |
-| `Shift + Left/Right` | The previous / next line from the history. |
+| `Ctrl + S` | **Scroll mode**: `Up`/`Down` move the transcript a line, `Left`/`Right` a page. |
+| `Ctrl + H` | **History mode**: `Up`/`Down` walk through what you have run. |
+| `Esc` | Leave the mode, or — with no mode on — close the box and go back to the taskbox. |
 | `Ctrl + Space` | Jump to the input box. |
-| `Esc` | Close the window. |
+
+**The arrows stay the caret's** until you ask for a mode, so selecting and
+editing text in the input box works the way it does in every other text box on
+the machine. The title bar says which mode is on, and any key the mode has no
+use for drops the mode and is then handled normally — typing never lands in a
+hole.
 
 The history keeps the last **64** lines by default, changed with
 `write value history-max <n>` or the `history_max` key in `config.ini`. Running
 the same line twice in a row stores it once. Nothing is written to disk.
-
-Shift with the arrows belongs to the transcript and the history, so it is no
-longer text selection in the input box — **`Ctrl + Shift + Left/Right`** still
-selects a word at a time.
 
 - **`Ctrl + Wheel`** changes the text size, **`Alt + Wheel`** the opacity, and a
   plain wheel scrolls.
@@ -583,6 +584,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Ctrl` + `Q` / `X`, `Alt + F4` | Quit |
 | `Enter` | Execute (inside the Command Box) |
 | `Shift + Enter` | New line (inside the Command Box) |
+| `Ctrl + S` / `Ctrl + H` | Scroll mode / history mode (inside the Command Box) |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
 | `Ctrl + Wheel` | Text size (inside the Command Box) |
 

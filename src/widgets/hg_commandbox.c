@@ -27,29 +27,52 @@ static int commandbox_line_height(HWND hwnd, double scale)
     return line_h;
 }
 
-/* Shift plus a movement key scrolls the transcript, wherever the caret is. The
- * transcript is read-only and never has focus, so without this the only way to
- * look back at what a command printed is the mouse. */
-static BOOL commandbox_scroll_transcript(WPARAM key)
-{
-    if (!hg_g_commandbox_out_wnd || !IsWindow(hg_g_commandbox_out_wnd))
-        return FALSE;
+/* ------------------------------------------------------------------- modes
+ *
+ * Scrolling the transcript and walking the history both want the arrow keys,
+ * and so does the caret in a multi-line input box. Modifier combinations were
+ * the first answer and the wrong one: they took Shift+arrow away from text
+ * selection, which is a key every other text box on the machine has.
+ *
+ * So the arrows stay the caret's, and a mode is something you enter on purpose.
+ * Ctrl+S for scrolling, Ctrl+H for the history, and while one is on the arrows
+ * mean that instead. The caption says which, because a window that has silently
+ * changed what its keys do is a window that looks broken. */
+typedef enum HgCommandBoxMode {
+    HG_CB_MODE_NONE = 0,
+    HG_CB_MODE_SCROLL,
+    HG_CB_MODE_HISTORY
+} HgCommandBoxMode;
 
-    int bar = -1;
-    switch (key) {
-    case VK_UP: bar = SB_LINEUP; break;
-    case VK_DOWN: bar = SB_LINEDOWN; break;
-    case VK_PRIOR: bar = SB_PAGEUP; break;
-    case VK_NEXT: bar = SB_PAGEDOWN; break;
-    default: return FALSE;
+static HgCommandBoxMode s_cb_mode = HG_CB_MODE_NONE;
+
+static void commandbox_set_mode(HgCommandBoxMode mode)
+{
+    if (s_cb_mode == mode)
+        return;
+    s_cb_mode = mode;
+
+    if (!hg_g_commandbox_wnd || !IsWindow(hg_g_commandbox_wnd))
+        return;
+    switch (mode) {
+    case HG_CB_MODE_SCROLL:
+        SetWindowTextW(hg_g_commandbox_wnd, L"Command Box - SCROLL: up/down a line, left/right a page, Esc to leave");
+        break;
+    case HG_CB_MODE_HISTORY:
+        SetWindowTextW(hg_g_commandbox_wnd, L"Command Box - HISTORY: up/down through it, Enter to run, Esc to leave");
+        break;
+    default:
+        SetWindowTextW(hg_g_commandbox_wnd, L"Command Box");
+        break;
     }
-    SendMessageW(hg_g_commandbox_out_wnd, WM_VSCROLL, (WPARAM)bar, 0);
-    return TRUE;
 }
 
-/* Shift+Left and Shift+Right walk the history. Plain arrows stay the caret's,
- * because the input box is multi-line and moving through what you are typing
- * has to keep working. */
+static void commandbox_scroll(int bar)
+{
+    if (hg_g_commandbox_out_wnd && IsWindow(hg_g_commandbox_out_wnd))
+        SendMessageW(hg_g_commandbox_out_wnd, WM_VSCROLL, (WPARAM)bar, 0);
+}
+
 static BOOL commandbox_recall(int direction)
 {
     const WCHAR *line = hg_command_history_step(direction);
@@ -59,6 +82,65 @@ static BOOL commandbox_recall(int direction)
     int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
     SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
     return TRUE;
+}
+
+/* TRUE when the key was the mode's. Anything the mode has no use for drops the
+ * mode and is then handled normally, so typing never lands in a hole. */
+static BOOL commandbox_mode_key(WPARAM key)
+{
+    if (s_cb_mode == HG_CB_MODE_SCROLL) {
+        switch (key) {
+        case VK_UP: commandbox_scroll(SB_LINEUP); return TRUE;
+        case VK_DOWN: commandbox_scroll(SB_LINEDOWN); return TRUE;
+        case VK_LEFT: commandbox_scroll(SB_PAGEUP); return TRUE;
+        case VK_RIGHT: commandbox_scroll(SB_PAGEDOWN); return TRUE;
+        default: break;
+        }
+        commandbox_set_mode(HG_CB_MODE_NONE);
+        return FALSE;
+    }
+
+    if (s_cb_mode == HG_CB_MODE_HISTORY) {
+        switch (key) {
+        case VK_UP: commandbox_recall(1); return TRUE;   /* older */
+        case VK_DOWN: commandbox_recall(-1); return TRUE; /* newer */
+        default: break;
+        }
+        /* Enter runs what the history put in the box, so leaving the mode and
+         * letting it through is exactly right. */
+        commandbox_set_mode(HG_CB_MODE_NONE);
+        return FALSE;
+    }
+    return FALSE;
+}
+
+/* Esc leaves a mode if one is on, and otherwise puts the box away and hands the
+ * keyboard to the taskbox - which is where the reader was before they opened
+ * this, and the only other place the keys mean anything. */
+static void commandbox_escape(HWND hwnd)
+{
+    if (s_cb_mode != HG_CB_MODE_NONE) {
+        commandbox_set_mode(HG_CB_MODE_NONE);
+        return;
+    }
+
+    ShowWindow(hwnd, SW_HIDE);
+
+    if (!hg_g_taskbox_wnd || !IsWindow(hg_g_taskbox_wnd))
+        return;
+
+    if (!IsWindowVisible(hg_g_taskbox_wnd)) {
+        /* The same expansion the floater does, so the taskbox lands where it
+         * would have if it had been opened from there. */
+        hg_expand_taskbox_from_floater(hg_g_floater_wnd, hg_g_taskbox_wnd);
+        refresh_window_list(FALSE);
+        ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
+        if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd))
+            ShowWindow(hg_g_floater_wnd, SW_HIDE);
+    }
+    hg_force_foreground(hg_g_taskbox_wnd);
+    if (hg_g_toolbar_wnd)
+        SetFocus(hg_g_toolbar_wnd);
 }
 
 LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
@@ -72,23 +154,23 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
         BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
         BOOL is_shift = (GetKeyState(VK_SHIFT) < 0);
 
-        if (is_shift && !is_ctrl && !is_alt) {
-            if (commandbox_scroll_transcript(w_param))
-                return 0;
-            if (w_param == VK_LEFT) {
-                commandbox_recall(1); /* older */
+        if (is_ctrl && !is_alt && (w_param == 'S' || w_param == 'H')) {
+            commandbox_set_mode((w_param == 'S') ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
+            return 0;
+        }
+
+        if (s_cb_mode != HG_CB_MODE_NONE && !is_ctrl && !is_alt) {
+            if (w_param == VK_ESCAPE) {
+                commandbox_set_mode(HG_CB_MODE_NONE);
                 return 0;
             }
-            if (w_param == VK_RIGHT) {
-                commandbox_recall(-1); /* newer */
+            if (commandbox_mode_key(w_param))
                 return 0;
-            }
         }
 
         /* Enter runs it; Shift+Enter is the newline, which is what makes a
-         * multi-line box worth having. Ctrl+Enter kept working because it was
-         * the only way to run a line for several versions. */
-        if (w_param == VK_RETURN && !is_shift && !is_alt) {
+         * multi-line box worth having. */
+        if (w_param == VK_RETURN && !is_shift && !is_alt && !is_ctrl) {
             commandbox_execute();
             return 0;
         }
@@ -104,7 +186,7 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
             return 0;
         }
         if (w_param == VK_ESCAPE) {
-            SendMessageW(parent, msg, w_param, l_param);
+            commandbox_escape(parent);
             return 0;
         }
     }
@@ -468,8 +550,17 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
                 return 0;
             }
         }
+        if (is_ctrl && !is_alt && (w_param == 'S' || w_param == 'H')) {
+            commandbox_set_mode((w_param == 'S') ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
+            commandbox_focus_input();
+            return 0;
+        }
+        if (s_cb_mode != HG_CB_MODE_NONE && !is_ctrl && !is_alt && w_param != VK_ESCAPE) {
+            if (commandbox_mode_key(w_param))
+                return 0;
+        }
         if (w_param == VK_ESCAPE) {
-            ShowWindow(hwnd, SW_HIDE);
+            commandbox_escape(hwnd);
             return 0;
         }
         break;
@@ -515,6 +606,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         return hg_on_ctlcolor_edit((HDC)w_param);
 
     case WM_CLOSE:
+        commandbox_set_mode(HG_CB_MODE_NONE);
         ShowWindow(hwnd, SW_HIDE);
         return 0;
     }
