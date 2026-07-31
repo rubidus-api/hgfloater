@@ -162,8 +162,12 @@ a window is.
 
 - No synthesised clicks, no key injection, no reading another process's memory.
   `SelectionItemPattern::Select` or nothing.
-- No closing a tab, reordering tabs, or opening new ones. Reaching a tab is the
-  feature.
+- No reordering tabs and no opening new ones. **Closing one was a non-goal and
+  is no longer** (v26.07.31h): the task menu's Close acted on the window, so a
+  right-click on one tab threw away every other tab in it. Once a tab is an item
+  in that menu, the menu has to mean what it says, and the way to say it is to
+  invoke the tab's own close button - not Ctrl+W, which needs focus and closes
+  whichever tab is current rather than the one that was asked for.
 - No favicons. The tab's icon would be another cross-process fetch per tab per
   pass, for a picture 16 pixels wide; tab items carry their window's icon and
   their own label.

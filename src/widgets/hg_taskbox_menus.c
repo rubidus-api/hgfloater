@@ -214,7 +214,7 @@ static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, i
     return TRUE;
 }
 
-static HMENU taskbox_create_task_context_menu(void)
+static HMENU taskbox_create_task_context_menu(BOOL is_tab)
 {
     HMENU h_menu = CreatePopupMenu();
     if (!h_menu)
@@ -224,7 +224,9 @@ static HMENU taskbox_create_task_context_menu(void)
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_RESTORE, L"Focus (&F)");
     AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_MOVETO_0_0, L"Move to (0, 0) (&0)");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_CLOSE, L"Close Window (&X)");
+    /* On a tab this closes the tab, so it must not say Window. Saying the wrong
+     * one is how a right-click threw away eleven other tabs. */
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_TASK_CLOSE, is_tab ? L"Close Tab (&X)" : L"Close Window (&X)");
     AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
 
     /* Sizes and their order come from the shared preset table, so this menu and
@@ -261,16 +263,28 @@ static BOOL taskbox_task_menu_size_for_command(int cmd, int *out_cx, int *out_cy
     return TRUE;
 }
 
-static void taskbox_dispatch_task_menu_command(int cmd, HWND target)
+static void taskbox_dispatch_task_menu_command(int cmd, HWND target, BOOL is_tab, int tab_index)
 {
     if (cmd == 0 || !target || !IsWindow(target))
         return;
 
     if (cmd == HG_IDM_TASK_RESTORE) {
+        if (is_tab) {
+            hg_tabs_activate(target, tab_index);
+            return;
+        }
         if (IsIconic(target))
             ShowWindow(target, SW_RESTORE);
         SetForegroundWindow(target);
     } else if (cmd == HG_IDM_TASK_CLOSE) {
+        if (is_tab) {
+            /* Nothing at all when the tab cannot be closed. The only other
+             * thing this code could do is close the window, which is what the
+             * reader was not asking for and cannot be undone. */
+            if (!hg_tabs_close(target, tab_index))
+                append_message(L"That tab has no close button of its own; nothing was closed");
+            return;
+        }
         PostMessageW(target, WM_CLOSE, 0, 0);
     } else if (cmd == HG_IDM_TASK_MOVETO_0_0) {
         SetWindowPos(target, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -290,8 +304,10 @@ void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int ico
     /* The refresh timer can reorder the item list while the menu is modal, so act on
      * the window handle captured now, not on the index. */
     HWND target = hg_g_window_items[cur_index].hwnd;
+    BOOL is_tab = hg_g_window_items[cur_index].is_tab;
+    int tab_index = hg_g_window_items[cur_index].tab_index;
 
-    HMENU h_menu = taskbox_create_task_context_menu();
+    HMENU h_menu = taskbox_create_task_context_menu(is_tab);
     if (!h_menu)
         return;
 
@@ -303,7 +319,7 @@ void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int ico
 
     SetMenuDefaultItem(h_menu, HG_IDM_TASK_RESTORE, FALSE);
     int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd);
-    taskbox_dispatch_task_menu_command(cmd, target);
+    taskbox_dispatch_task_menu_command(cmd, target, is_tab, tab_index);
 }
 
 static HMENU taskbox_create_shortcut_context_menu(int cur_index)

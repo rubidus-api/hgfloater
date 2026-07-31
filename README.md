@@ -231,7 +231,11 @@ appear. The design and what it costs are in
 - **Right click** (or `Enter` / `F2` on the focused icon) opens its menu:
   - **Run (&R)** — start a new instance, or launch the shortcut.
   - **Focus (&F)** — switch to the existing window.
-  - **Close Window (&X)** — task icons only.
+  - **Close Window (&X)** — task icons only. On a **tab** icon this reads
+    **Close Tab** and closes only that tab, by invoking the tab's own close
+    button; if the tab has no such button nothing is closed and the status line
+    says so. **Focus** on a tab switches to that tab rather than only raising
+    its window.
   - **Open File Location (&O)** — shortcut icons only.
 
 ### 5.2 The status line
