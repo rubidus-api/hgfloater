@@ -91,27 +91,34 @@ do with the tab strip that is right in front of you, and the taskbox is for the
 window you cannot see. Being five seconds stale about a tab title is not a cost
 anyone will notice; a taskbox that stutters once a second is.
 
-### D2a. The window's tab strip is not the only tab control in the window
+### D2a. Find the strip by where it is, not by what its container is called
 
-Asking for every `TabItem` below the window is the obvious query and it is the
-wrong one. Explorer's Home page has a tab strip of its own - Favourites, Recent,
-Shared - and those are real tab items that have nothing to do with the window's
-tabs. A browser's page content can contain tabs too, for the same reason: a tab
-is a normal control and pages use it.
+Two attempts, wrong in opposite directions, and the second one is why this
+section is worth reading.
 
-So the query is in two steps. Find the tab **controls**, take the one at the top
-of the window, and read that one's children. A window's tab strip is above
-everything by definition of what it is; a tab control further down belongs to
-what is being displayed, not to the window.
+**Asking for every `TabItem` below the window** collected Explorer's Home page
+sections - Favourites, Recent, Shared. Those are real tab items, of the page
+rather than of the window. A tab is an ordinary control and content uses it.
 
-"At the top" is a geometric test - within the upper quarter of the window - and
-it is what lets **no window tab strip** be an answer rather than a wrong guess.
-An Explorer window showing only its Home page then contributes no tab items,
-which is correct: it has one tab, and its Home page's sections are not tabs of
-the window.
+**Then requiring a `UIA_TabControlTypeId` parent** fixed that and broke
+Explorer's real tabs, which stopped appearing at all. What a XAML tab strip
+publishes as its container is not something we get to decide, and a design that
+depends on another application's choice of control type is a design that breaks
+when that application changes its mind.
 
-Children rather than descendants at the second step, for the matching reason: a
-tab that contains a control which is itself a tab item is one tab.
+What is reliably true is **where** the strip is. A window's tabs are at the top
+of the window, above everything, because being above everything is what makes
+them the window's rather than the content's. So the filter is geometric and is
+applied to the tab items themselves - within the upper quarter of the window -
+and nothing at all is assumed about their parent.
+
+That test is also what lets **no window tab strip** be an answer rather than a
+wrong guess: an Explorer window showing only its Home page contributes no tab
+items, which is correct, because its Home page's sections are not tabs of the
+window.
+
+The items are then ordered by their left edge rather than by tree order, because
+the number on an icon has to mean the tab in that position on screen.
 
 ### D3. Only windows that can have tabs
 

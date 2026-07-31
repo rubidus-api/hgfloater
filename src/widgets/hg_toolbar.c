@@ -3,6 +3,7 @@
 #include "../hg_utils.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
+#include "../hg_tabs.h"
 
 static int toolbar_clamp_percent(int pct)
 {
@@ -660,7 +661,18 @@ static LRESULT toolbar_controller_on_mbutton_up(HWND hwnd, LPARAM l_param)
         if (cur_type == 0) {
             HWND target = hg_g_window_items[cur_index].hwnd;
             if (IsWindow(target)) {
-                PostMessageW(target, WM_CLOSE, 0, 0);
+                /* The same rule the context menu follows, and it has to be
+                 * stated in both places or the two disagree - which is what
+                 * happened: the menu learned about tabs and this did not, so a
+                 * middle click on one tab still shut the whole application.
+                 * A tab closes its own tab or nothing at all; falling back to
+                 * closing the window is the surprise, not the service. */
+                if (hg_g_window_items[cur_index].is_tab) {
+                    if (!hg_tabs_close(target, hg_g_window_items[cur_index].tab_index))
+                        append_message(L"That tab has no close button of its own; nothing was closed");
+                } else {
+                    PostMessageW(target, WM_CLOSE, 0, 0);
+                }
             }
         }
     }
