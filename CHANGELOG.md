@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31k] - 2026-07-31
+
+### Added
+- **Right-click the maximize button on any window** — the one left of the X — and hgfloater offers that window **Move to (0, 0)** and its size presets. The same entries the task icons offer, from the same preset table. Left-click still maximizes, and right-clicking a caption button does nothing in Windows, so nothing was taken away.
+  - **Close hgfloater and the behaviour is gone.** Nothing is installed and nothing needs uninstalling; the hook goes in when the setting is on and comes out when it is off or the program exits.
+  - Switched with **Menu on Maximize Button** in the `O` menu or `[etc] caption_menu`, defaulting on.
+  - Windows running as administrator keep their ordinary behaviour: Windows does not let an unelevated program touch input bound for an elevated one, and hgfloater runs unelevated on purpose. Same for windows with no maximize button.
+  - This is the only thing hgfloater does outside its own windows, and it needs a system-wide mouse hook. The hook reads the button and the coordinates and nothing else, there is no keyboard hook, and the README says so — a global mouse hook is also what a keylogger uses, so an antivirus may take an interest.
+  - Design, costs and limits: `docs/RFC-2026-07-caption-button-menu.md`.
+
+### Fixed
+- `build.bat` was missing `hg_tabs.c`, so the Windows-side build script had been unable to build the tab feature since v26.07.31e. Both source lists are now checked against each other.
+
 ## [v26.07.31j] - 2026-07-31
 
 ### Changed

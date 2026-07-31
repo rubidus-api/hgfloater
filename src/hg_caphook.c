@@ -1,0 +1,198 @@
+/* A menu on every window's maximize button.
+ *
+ * See docs/RFC-2026-07-caption-button-menu.md. Three rules, and the first one
+ * is the whole reason the other two exist:
+ *
+ * - The hook is on the desktop's input path. It runs for every mouse event on
+ *   the machine, and Windows stops calling a low-level hook that takes too
+ *   long. So it does one comparison and returns, and everything expensive
+ *   happens only after a right button press.
+ * - The hook posts; it never acts. Opening a menu inside the hook would run a
+ *   modal loop inside the mouse's own input path.
+ * - Asking another window anything is bounded. SendMessageTimeout with
+ *   SMTO_ABORTIFHUNG, never a plain SendMessage: a hung application must cost
+ *   us the menu, not the mouse. */
+#include "hg_caphook.h"
+#include "hg_utils.h"
+#include "hg_globals.h"
+#include "widgets/hg_taskbox.h"
+
+static BOOL s_read = FALSE;
+static BOOL s_enabled = FALSE;
+static HHOOK s_hook = NULL;
+
+BOOL hg_caphook_enabled(void)
+{
+    if (!s_read) {
+        s_read = TRUE;
+        /* On by default: this is meant to replace a separate utility, and a
+         * feature nobody can find is a feature nobody has. */
+        s_enabled = (GetPrivateProfileIntW(L"etc", L"caption_menu", 1, hg_g_config_path) != 0);
+    }
+    return s_enabled;
+}
+
+void hg_caphook_set_enabled(BOOL enabled)
+{
+    (void)hg_caphook_enabled();
+    s_enabled = enabled ? TRUE : FALSE;
+    WritePrivateProfileStringW(L"etc", L"caption_menu", s_enabled ? L"1" : L"0", hg_g_config_path);
+    hg_caphook_apply();
+}
+
+/* Is this point the maximize button of that window?
+ *
+ * First the window's own answer, which is right by construction. Then, only if
+ * it declined to say, the geometry the system computed for its caption buttons:
+ * minimize, maximize and close divide that rectangle in three, so the middle
+ * third is the one. A guess, but a narrow one, and only ever a fallback. */
+static BOOL caphook_is_maximize_button(HWND hwnd, POINT screen_pt)
+{
+    DWORD_PTR hit = 0;
+    LPARAM packed = MAKELPARAM((WORD)screen_pt.x, (WORD)screen_pt.y);
+    if (SendMessageTimeoutW(hwnd, WM_NCHITTEST, 0, packed, SMTO_ABORTIFHUNG, 60, &hit)) {
+        if (hit == HTMAXBUTTON)
+            return TRUE;
+        /* A definite answer that is not the maximize button ends it; only
+         * silence or a client-area answer is worth a second opinion, because an
+         * application drawing its own title bar reports the whole thing as
+         * client. */
+        if (hit != HTCLIENT && hit != HTNOWHERE)
+            return FALSE;
+    }
+
+    RECT buttons;
+    if (FAILED(DwmGetWindowAttribute(hwnd, DWMWA_CAPTION_BUTTON_BOUNDS, &buttons, sizeof(buttons))))
+        return FALSE;
+
+    RECT window_rc;
+    if (!GetWindowRect(hwnd, &window_rc))
+        return FALSE;
+
+    /* The bounds come back relative to the window. */
+    LONG left = window_rc.left + buttons.left;
+    LONG top = window_rc.top + buttons.top;
+    LONG right = window_rc.left + buttons.right;
+    LONG bottom = window_rc.top + buttons.bottom;
+    LONG width = right - left;
+    if (width <= 0 || bottom <= top)
+        return FALSE;
+    if (screen_pt.y < top || screen_pt.y >= bottom)
+        return FALSE;
+
+    LONG third = width / 3;
+    if (third <= 0)
+        return FALSE;
+    return screen_pt.x >= left + third && screen_pt.x < left + third * 2;
+}
+
+static BOOL caphook_is_our_window(HWND hwnd)
+{
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    return pid == GetCurrentProcessId();
+}
+
+static LRESULT CALLBACK caphook_proc(int code, WPARAM w_param, LPARAM l_param)
+{
+    /* Everything that is not a right button press leaves immediately. This
+     * function is on the path of every mouse event on the desktop. */
+    if (code != HC_ACTION || w_param != WM_RBUTTONDOWN)
+        return CallNextHookEx(s_hook, code, w_param, l_param);
+
+    const MSLLHOOKSTRUCT *info = (const MSLLHOOKSTRUCT *)l_param;
+    if (!info)
+        return CallNextHookEx(s_hook, code, w_param, l_param);
+
+    HWND under = WindowFromPoint(info->pt);
+    if (!under)
+        return CallNextHookEx(s_hook, code, w_param, l_param);
+
+    HWND top = GetAncestor(under, GA_ROOT);
+    if (!top || caphook_is_our_window(top))
+        return CallNextHookEx(s_hook, code, w_param, l_param);
+
+    if (!caphook_is_maximize_button(top, info->pt))
+        return CallNextHookEx(s_hook, code, w_param, l_param);
+
+    if (!hg_g_taskbox_wnd || !IsWindow(hg_g_taskbox_wnd))
+        return CallNextHookEx(s_hook, code, w_param, l_param);
+
+    /* Posted, not shown here: a menu is a modal loop, and this is the mouse's
+     * input path. */
+    PostMessageW(hg_g_taskbox_wnd, HG_MSG_CAPTION_MENU, (WPARAM)top, 0);
+
+    /* Swallowed - and only now, having decided. Right-clicking a caption button
+     * does nothing in Windows, so nothing is being taken away. */
+    return 1;
+}
+
+void hg_caphook_apply(void)
+{
+    BOOL wanted = hg_caphook_enabled();
+
+    if (wanted && !s_hook) {
+        s_hook = SetWindowsHookExW(WH_MOUSE_LL, caphook_proc, GetModuleHandleW(NULL), 0);
+    } else if (!wanted && s_hook) {
+        UnhookWindowsHookEx(s_hook);
+        s_hook = NULL;
+    }
+}
+
+void hg_caphook_shutdown(void)
+{
+    if (s_hook) {
+        UnhookWindowsHookEx(s_hook);
+        s_hook = NULL;
+    }
+}
+
+/* The same entries the task icon's menu offers, from the same preset table.
+ * A second list of sizes could disagree with the taskbox about what a preset
+ * means, and two answers to that is worse than none. */
+void hg_caphook_show_menu(HWND owner, HWND target)
+{
+    if (!target || !IsWindow(target))
+        return;
+
+    HMENU menu = CreatePopupMenu();
+    if (!menu)
+        return;
+
+    AppendMenuW(menu, MF_STRING, HG_IDM_TASK_MOVETO_0_0, L"Move to (0, 0)");
+    AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    for (int i = 0; i < HG_RESIZE_PRESET_COUNT; ++i) {
+        if (i == 3 || i == 7)
+            AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+        AppendMenuW(menu, MF_STRING, (UINT_PTR)(HG_IDM_TASK_RESIZE_4_3_1 + (UINT)i), hg_resize_presets[i].name);
+    }
+
+    POINT pt;
+    GetCursorPos(&pt);
+
+    /* A popup owned by a window that is not in the foreground never gets the
+     * click that should dismiss it; these two calls are the documented way
+     * around that. */
+    SetForegroundWindow(owner);
+    int cmd = (int)TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, owner, NULL);
+    PostMessageW(owner, WM_NULL, 0, 0);
+    DestroyMenu(menu);
+
+    if (cmd == 0 || !IsWindow(target))
+        return;
+
+    if (cmd == HG_IDM_TASK_MOVETO_0_0) {
+        SetWindowPos(target, NULL, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        return;
+    }
+
+    int index = cmd - HG_IDM_TASK_RESIZE_4_3_1;
+    if (index >= 0 && index < HG_RESIZE_PRESET_COUNT) {
+        /* A maximized window ignores a size, so it comes out of that first -
+         * otherwise the menu would appear to do nothing at all. */
+        if (IsZoomed(target))
+            ShowWindow(target, SW_RESTORE);
+        SetWindowPos(target, NULL, 0, 0, hg_resize_presets[index].cx, hg_resize_presets[index].cy,
+                     SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+}

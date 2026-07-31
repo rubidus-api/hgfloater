@@ -1,0 +1,164 @@
+# RFC 2026-07: A Menu on Every Window's Maximize Button
+
+Status: Proposed
+Date: 2026-07-31
+
+## Summary
+
+Right-click the maximize button on **any** window's title bar and get hgfloater's
+move-and-resize menu for that window: send it to 0,0, or set it to one of the
+size presets. The behaviour exists only while hgfloater is running and is gone
+the moment it exits.
+
+This is a different kind of feature from everything else in the program. Every
+other thing hgfloater does happens inside its own windows. This one changes what
+a click does in **someone else's** window, which means a system-wide input hook,
+and that deserves its costs written down before any of it is written.
+
+## Is it possible
+
+Yes, without elevation, without injecting anything into other processes, and
+without a driver. Three pieces:
+
+### 1. Seeing the click: `WH_MOUSE_LL`
+
+A low-level mouse hook is global, needs no DLL in the target process, and runs
+**in our own process** on the thread that installed it. It sees every mouse
+message before the target window does and can swallow one by returning non-zero.
+
+The alternative, `WH_MOUSE`, needs a DLL loaded into every process on the
+desktop. That is not something this program is going to do.
+
+### 2. Knowing the click was on the maximize button: `WM_NCHITTEST`
+
+`SendMessageTimeout(hwnd, WM_NCHITTEST, 0, MAKELPARAM(x, y))` asks the window
+what is at that point. **`HTMAXBUTTON`** is the answer we are looking for.
+
+This is the window's own answer, so it is right by construction for any window
+that uses a normal frame - and it is the *window's* answer, so an application
+that draws its own title bar may return `HTCLIENT` and never say `HTMAXBUTTON`
+at all.
+
+### 3. The fallback for custom title bars: `DWMWA_CAPTION_BUTTON_BOUNDS`
+
+`DwmGetWindowAttribute` with `DWMWA_CAPTION_BUTTON_BOUNDS` returns the rectangle
+the caption buttons occupy. Minimize, maximize and close divide it in three, so
+the middle third is the maximize button.
+
+Geometry rather than the window's own answer, so it is a guess - but a narrow
+one, bounded to a rectangle the system computed, used only when step 2 declined
+to answer.
+
+## What it cannot do, stated first
+
+- **Elevated windows are out of reach.** Windows will not let an unelevated
+  process hook input destined for an elevated one. Right-clicking Task Manager's
+  maximize button will do what it always did. hgfloater runs unelevated on
+  purpose and that is not changing for this.
+- **Two-button title bars, no title bar, full screen.** Anything with no
+  maximize button has nothing to right-click.
+- **Applications that answer neither.** A window that returns `HTCLIENT` *and*
+  reports no caption button bounds keeps its ordinary behaviour.
+
+None of these is a failure mode that breaks anything. In each case the click
+does what it would have done with hgfloater not running.
+
+## The cost, and the one real risk
+
+A low-level mouse hook is called for **every mouse event on the desktop**. Two
+consequences:
+
+1. **It must be fast, always.** The hook does one comparison - is this a right
+   button press - and returns immediately for everything else. The hit-test only
+   runs on a right press, which is rare.
+2. **A blocked hook thread blocks the mouse.** Windows gives a low-level hook a
+   timeout (`LowLevelHooksTimeout`, 300 ms by default) and silently stops
+   calling a hook that keeps exceeding it. This is the real risk, and it is
+   sharper here than it would have been a month ago: the same UI thread also
+   makes UI Automation calls for the tab feature, which can block on another
+   application's UI thread.
+
+   So the hit-test uses `SendMessageTimeout` with `SMTO_ABORTIFHUNG` and a short
+   timeout, and never a plain `SendMessage`. A hung target application must cost
+   us the menu, not the mouse.
+
+## Design
+
+### D1. The hook installs and uninstalls with the setting, and with the program
+
+`UnhookWindowsHookEx` at exit, and on toggling off. When hgfloater is not
+running there is nothing installed and no behaviour to remove - which is exactly
+what was asked for.
+
+### D2. A setting, defaulted on
+
+`[etc] caption_menu`, default `1`, and a checked entry in the `O` menu. This is
+the first thing hgfloater has ever done outside its own windows, so it must be
+switchable off from inside the program rather than only by not running it. It
+defaults on because a feature nobody can find is a feature nobody has.
+
+### D3. The menu is the one that already exists
+
+The same entries the task icon's context menu offers - **Move to (0, 0)** and
+the size presets - built from the same preset table. There is no second list of
+sizes and no second idea of what the presets are; a menu that could disagree
+with the taskbox about what "4:3 1" means would be worse than no menu.
+
+### D4. The hook posts, it does not act
+
+The hook procedure captures the target window and posts a message to hgfloater's
+own window. Everything else - building the menu, tracking it, moving the target
+- happens on the normal message loop.
+
+A hook that opened a menu inline would be a hook that runs a modal loop inside
+the mouse's input path, which is the way to hang the desktop.
+
+### D5. Swallow the click, but only when the menu will appear
+
+The hook returns non-zero (eat the message) only when it has decided this was a
+right press on a maximize button and it has posted the message. Every other
+event is passed on untouched.
+
+Right-clicking a caption button does nothing at all in Windows, so nothing is
+being taken away when we do claim it.
+
+## Non-Goals
+
+- No left-click behaviour. Maximize still maximizes.
+- No hooking anything but the maximize button. The system menu on the caption,
+  the close button, and everything else stay as they are.
+- No keyboard hook, ever.
+- No per-application rules.
+
+## Risks
+
+- **The hook is a system-wide input path.** Mitigated by D4, D5 and the
+  bounded hit-test; and by D2, which means it can be switched off from the menu
+  the moment it misbehaves.
+- **A `SendMessageTimeout` to a hung window.** Bounded, `SMTO_ABORTIFHUNG`, and
+  falls through to the geometric test.
+- **Security software.** A global mouse hook is a thing keyloggers do, and
+  hgfloater is already an unsigned binary that has drawn a false positive once.
+  This may draw another. Worth knowing before it happens rather than after; the
+  hook reads only the button and the coordinates, and the README will say so.
+
+## Phases
+
+- **P1** - The hook, the hit-test, the posted message, install and teardown.
+- **P2** - The menu, from the shared preset table.
+- **P3** - The `O` menu entry, the `config.ini` key, README and SPEC.
+
+## References
+
+- `SetWindowsHookEx` / `WH_MOUSE_LL` - global, no injection, runs in the
+  installing process.
+  <https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc>
+- `WM_NCHITTEST` and `HTMAXBUTTON`.
+  <https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-nchittest>
+- `DwmGetWindowAttribute`, `DWMWA_CAPTION_BUTTON_BOUNDS`.
+  <https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmgetwindowattribute>
+- `SendMessageTimeout`, `SMTO_ABORTIFHUNG`.
+  <https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessagetimeouta>
+- Sizer - the application named in the request, which does this and which this
+  is meant to replace. Its behaviour was the specification; none of its source
+  was read.
