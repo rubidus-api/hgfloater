@@ -33,6 +33,11 @@ int hg_tabs_enumerate(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max);
  * stale when the page navigates or the strip rebuilds. */
 BOOL hg_tabs_activate(HWND hwnd, int tab_index);
 
+/* Close one tab by invoking its own close button. FALSE when there is no button
+ * to invoke - and the caller must then do nothing, because the alternative on
+ * hand is closing the window, which throws away every other tab. */
+BOOL hg_tabs_close(HWND hwnd, int tab_index);
+
 void hg_tabs_shutdown(void);
 
 #endif /* HG_TABS_H */

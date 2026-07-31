@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31h] - 2026-07-31
+
+### Fixed
+- **Right-clicking a tab icon and choosing Close closed the whole window**, taking every other tab with it. The menu entry acted on the window because that is all a task item used to be; once a tab is an item in that menu, the menu has to mean what it says.
+- Close on a tab now invokes **that tab's own close button**, so it closes exactly the tab that was right-clicked. Not `Ctrl+W`: that needs the window focused and acts on whichever tab is current rather than the one asked for.
+- The entry is labelled **Close Tab** on a tab and **Close Window** on a window, and **Focus** on a tab switches to that tab rather than only raising its window.
+- If the tab has no close button to invoke, **nothing happens** and the status line says so. The only other thing the code could do is close the window, which is what the reader was not asking for and cannot be undone.
+
 ## [v26.07.31g] - 2026-07-31
 
 ### Fixed

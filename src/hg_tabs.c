@@ -257,6 +257,80 @@ BOOL hg_tabs_activate(HWND hwnd, int tab_index)
     return selected;
 }
 
+/* The tab's own close button, invoked the way a click would invoke it.
+ *
+ * Not Ctrl+W: that is key injection, it needs the window focused, and it acts
+ * on whatever tab is current rather than the one that was asked for. The button
+ * is right there in the tree and it closes exactly the tab it belongs to. */
+BOOL hg_tabs_close(HWND hwnd, int tab_index)
+{
+    if (!hg_tabs_enabled() || tab_index < 0)
+        return FALSE;
+
+    IUIAutomation *automation = hg_tabs_automation();
+    IUIAutomationElementArray *found = hg_tabs_find(hwnd);
+    if (!automation || !found)
+        return FALSE;
+
+    int length = 0;
+    IUIAutomationElement *tab = NULL;
+    if (SUCCEEDED(IUIAutomationElementArray_get_Length(found, &length)) && tab_index < length)
+        IUIAutomationElementArray_GetElement(found, tab_index, &tab);
+    IUIAutomationElementArray_Release(found);
+    if (!tab)
+        return FALSE;
+
+    IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_ButtonControlTypeId);
+    IUIAutomationElementArray *buttons = NULL;
+    if (condition) {
+        if (FAILED(IUIAutomationElement_FindAll(tab, TreeScope_Descendants, condition, &buttons)))
+            buttons = NULL;
+        IUIAutomationCondition_Release(condition);
+    }
+    IUIAutomationElement_Release(tab);
+    if (!buttons)
+        return FALSE;
+
+    /* The rightmost button, when there is more than one. Matching the name
+     * against "Close" would work in English and nowhere else; where the close
+     * control sits is the same in every language. */
+    int button_count = 0;
+    IUIAutomationElement *best = NULL;
+    LONG best_left = 0;
+    if (SUCCEEDED(IUIAutomationElementArray_get_Length(buttons, &button_count))) {
+        for (int i = 0; i < button_count; ++i) {
+            IUIAutomationElement *element = NULL;
+            if (FAILED(IUIAutomationElementArray_GetElement(buttons, i, &element)) || !element)
+                continue;
+
+            RECT bounds;
+            if (SUCCEEDED(IUIAutomationElement_get_CurrentBoundingRectangle(element, &bounds)) &&
+                (!best || bounds.left > best_left)) {
+                if (best)
+                    IUIAutomationElement_Release(best);
+                best = element;
+                best_left = bounds.left;
+                continue;
+            }
+            IUIAutomationElement_Release(element);
+        }
+    }
+    IUIAutomationElementArray_Release(buttons);
+    if (!best)
+        return FALSE;
+
+    BOOL closed = FALSE;
+    IUIAutomationInvokePattern *invoke = NULL;
+    if (SUCCEEDED(IUIAutomationElement_GetCurrentPatternAs(best, UIA_InvokePatternId, &IID_IUIAutomationInvokePattern,
+                                                           (void **)&invoke)) &&
+        invoke) {
+        closed = SUCCEEDED(IUIAutomationInvokePattern_Invoke(invoke));
+        IUIAutomationInvokePattern_Release(invoke);
+    }
+    IUIAutomationElement_Release(best);
+    return closed;
+}
+
 void hg_tabs_shutdown(void)
 {
     if (s_automation) {
