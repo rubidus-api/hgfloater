@@ -120,6 +120,14 @@ HRESULT hellgates_wsprintf(LPWSTR dest, size_t dest_size, LPCWSTR format, ...);
 void normalize_path_for_api(const WCHAR *input, WCHAR *output, size_t output_size);
 void init_paths(void);
 BOOL is_alt_tab_window(HWND hwnd);
+
+/* Task icons carry a label in their top-left corner - 0-9 then A-Z - and
+ * Shift with that character activates the icon. Digits first because the first
+ * ten windows are the ones reached most often and a digit is one keystroke to
+ * find; 36 labels in all, after which icons simply have none. */
+#define HG_TASK_BADGE_COUNT 36
+WCHAR hg_task_badge_char(int index);
+int hg_task_badge_index(WCHAR ch);
 void get_process_name_by_hwnd(HWND hwnd, WCHAR *out_name, size_t out_size, DWORD *out_pid);
 void get_process_path_by_hwnd(HWND hwnd, WCHAR *out_path, size_t out_size, DWORD *out_pid);
 HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon);

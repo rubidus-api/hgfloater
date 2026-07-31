@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31e] - 2026-07-31
+
+### Added
+- **Every task icon carries a label** in its top-left corner — `0`–`9`, then `A`–`Z` — and **`Shift` + that character** activates it, exactly as clicking would. Digits first because the first ten windows are the ones reached most often. `Shift` is what keeps this clear of the bare-letter grid movement and the bare `C` that opens the command box, which is what sank an earlier bare-letter scheme.
+- **Browser and Explorer tabs can have their own task icons**, off by default, switched with **Show Browser & Explorer Tabs** in the `O` menu or `[taskbox] show_tabs` in `config.ini`. Clicking a tab icon switches to that tab without a synthesised click.
+  - A tab is not a window, so no amount of window enumeration finds one; the only supported way to ask is UI Automation, which is a call into the other application's own UI thread. That is slow and can block if the thread is busy, which is why this is off by default, asks only windows whose class can have tabs, re-reads them every five seconds rather than every second, and falls back silently to one icon per window on any failure.
+  - Design, costs, and what was turned down: `docs/RFC-2026-07-tabs-as-task-icons.md`.
+
 ## [v26.07.31d] - 2026-07-31
 
 ### Fixed

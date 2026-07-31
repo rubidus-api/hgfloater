@@ -71,7 +71,7 @@
 
 /* Build-time versioning */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v26.07.31d"
+#define HG_VERSION_W L"v26.07.31e"
 #endif
 
 /* Include generated About text from README.md if available */
@@ -155,6 +155,7 @@
 #define HG_IDM_OPEN_SHORTCUTS 215
 #define HG_IDM_EDIT_CONFIG 216
 #define HG_IDM_STARTUP 217
+#define HG_IDM_SHOW_TABS 218
 
 #define HG_COPYDATA_COMMAND_LINE 0x4847434CU
 
@@ -293,6 +294,11 @@ typedef struct {
     DWORD process_id;
     BOOL exists;
     int image_index;
+    /* A tab item stands for one tab inside hwnd rather than for the window.
+     * Activating it selects that tab; everything that measures or moves a
+     * window still acts on hwnd, because a tab has no geometry of its own. */
+    BOOL is_tab;
+    int tab_index;
 } WindowItem;
 
 typedef struct {

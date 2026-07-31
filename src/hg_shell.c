@@ -83,6 +83,28 @@ static BOOL hg_is_own_reachable_window(HWND hwnd)
            lstrcmpiW(class_name, HG_CLASS_MONITOR) == 0;
 }
 
+WCHAR hg_task_badge_char(int index)
+{
+    if (index < 0)
+        return 0;
+    if (index < 10)
+        return (WCHAR)(L'0' + index);
+    if (index < HG_TASK_BADGE_COUNT)
+        return (WCHAR)(L'A' + (index - 10));
+    return 0; /* past the alphabet: no label, and no key for it either */
+}
+
+int hg_task_badge_index(WCHAR ch)
+{
+    if (ch >= L'0' && ch <= L'9')
+        return ch - L'0';
+    if (ch >= L'A' && ch <= L'Z')
+        return 10 + (ch - L'A');
+    if (ch >= L'a' && ch <= L'z')
+        return 10 + (ch - L'a');
+    return -1;
+}
+
 BOOL is_alt_tab_window(HWND hwnd)
 {
     if (hwnd == hg_g_taskbox_wnd || hwnd == hg_g_floater_wnd || hwnd == hg_g_about_wnd)

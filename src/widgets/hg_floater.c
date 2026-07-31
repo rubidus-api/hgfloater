@@ -1,5 +1,6 @@
 #include "hg_floater.h"
 #include "../hg_utils.h"
+#include "../hg_tabs.h"
 #include "../hg_config.h"
 
 /* Forward declaration for show_about_window which is in hgfloater.c (or widgets/hg_about.c when created) */
@@ -944,6 +945,13 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             } else {
                 append_message(L"Start with Windows: the registry refused the change");
             }
+        } else if (cmd == HG_IDM_SHOW_TABS) {
+            BOOL wanted = !hg_tabs_enabled();
+            hg_tabs_set_enabled(wanted);
+            /* Forced, so the list is rebuilt from scratch rather than waiting
+             * for the tab pass to come round on its own clock. */
+            refresh_window_list(TRUE);
+            append_message(wanted ? L"Tabs: shown as their own icons" : L"Tabs: off, one icon per window");
         } else if (cmd == HG_IDM_ABOUT) {
             show_about_window();
         } else if (cmd == HG_IDM_RESET_ALL) {

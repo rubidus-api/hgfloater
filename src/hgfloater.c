@@ -2,6 +2,7 @@
 #include "hg_utils.h"
 #include "hg_config.h"
 #include "widgets/hg_clip.h"
+#include "hg_tabs.h"
 
 /* =========================================================================
  * 창 클래스 등록 기능 (Window Class Registration)
@@ -487,6 +488,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
 cleanup_finish:
     hg_config_flush_pending(); /* debounced settings must survive the exit */
+    hg_tabs_shutdown();
     hg_clip_shutdown();
     hg_notes_shutdown();       /* an edit made a second ago must not be the one lost */
     hg_backlight_shutdown();   /* the cached WMI connection, before COM goes away */

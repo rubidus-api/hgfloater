@@ -3,6 +3,7 @@
 #include "../hg_utils.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
+#include "../hg_tabs.h"
 
 static BOOL get_explorer_path(IShellWindows *psw, HWND target_hwnd, WCHAR *out_path, int max_len)
 {
@@ -69,6 +70,102 @@ static IShellWindows *refresh_acquire_shell_windows(IShellWindows **psw)
     return *psw;
 }
 
+/* One item per tab, for the windows that have them, in place of the one item
+ * the window would have contributed.
+ *
+ * Its own clock: the enumeration is a cross-process call and the list refreshes
+ * every second, so tabs are re-read every fifth pass and reused in between. A
+ * tab title five seconds stale costs nobody anything; a taskbox that stutters
+ * once a second costs everybody. */
+static int expand_window_tabs(WindowItem *items, int count, BOOL force)
+{
+    if (!hg_tabs_enabled())
+        return count;
+
+    static int ticks = 0;
+    BOOL requery = force || (++ticks >= 5);
+    if (requery)
+        ticks = 0;
+
+    /* Titles are remembered between passes so the four seconds in between cost
+     * nothing at all, keyed by the window they came from. */
+    static HWND cached_hwnd[HG_MAX_MONITORS * 4];
+    static WCHAR cached_titles[HG_MAX_MONITORS * 4][HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
+    static int cached_count[HG_MAX_MONITORS * 4];
+    static int cache_used = 0;
+
+    WindowItem out[HG_MAX_WINDOW_ITEMS];
+    int out_count = 0;
+
+    for (int i = 0; i < count && out_count < HG_MAX_WINDOW_ITEMS; ++i) {
+        int tabs = 0;
+        int slot = -1;
+
+        if (hg_tabs_window_may_have_tabs(items[i].hwnd)) {
+            for (int c = 0; c < cache_used; ++c) {
+                if (cached_hwnd[c] == items[i].hwnd) {
+                    slot = c;
+                    break;
+                }
+            }
+            if (slot < 0 && cache_used < (int)HG_ARRAYSIZE(cached_hwnd)) {
+                slot = cache_used++;
+                cached_hwnd[slot] = items[i].hwnd;
+                cached_count[slot] = 0;
+                requery = TRUE; /* a window we have not asked about yet */
+            }
+            if (slot >= 0) {
+                if (requery)
+                    cached_count[slot] = hg_tabs_enumerate(items[i].hwnd, cached_titles[slot],
+                                                           HG_TABS_MAX_PER_WINDOW);
+                tabs = cached_count[slot];
+            }
+        }
+
+        /* One tab is a window with a tab strip nobody is using; showing it as a
+         * tab item would say something the reader cannot act on. */
+        if (tabs <= 1 || slot < 0) {
+            out[out_count++] = items[i];
+            continue;
+        }
+
+        for (int t = 0; t < tabs && out_count < HG_MAX_WINDOW_ITEMS; ++t) {
+            out[out_count] = items[i];
+            out[out_count].is_tab = TRUE;
+            out[out_count].tab_index = t;
+            StringCchCopyW(out[out_count].title, HG_MAX_STR, cached_titles[slot][t]);
+
+            /* The icon handle is owned exactly once. The first tab inherits the
+             * window's, the rest get their own copy; a copy that fails leaves
+             * NULL, and the toolbar draws the title's first character instead. */
+            if (t > 0) {
+                out[out_count].icon = items[i].icon ? CopyIcon(items[i].icon) : NULL;
+                out[out_count].own_icon = (out[out_count].icon != NULL);
+            }
+            ++out_count;
+        }
+    }
+
+    /* Windows that have gone leave their cache entry behind; compact it here so
+     * a long session does not fill the table with dead handles. */
+    int kept = 0;
+    for (int c = 0; c < cache_used; ++c) {
+        if (!IsWindow(cached_hwnd[c]))
+            continue;
+        if (kept != c) {
+            cached_hwnd[kept] = cached_hwnd[c];
+            cached_count[kept] = cached_count[c];
+            memcpy(cached_titles[kept], cached_titles[c], sizeof(cached_titles[c]));
+        }
+        ++kept;
+    }
+    cache_used = kept;
+
+    for (int i = 0; i < out_count; ++i)
+        items[i] = out[i];
+    return out_count;
+}
+
 void refresh_window_list(BOOL force)
 {
     int new_count = 0;
@@ -79,6 +176,21 @@ void refresh_window_list(BOOL force)
     for (int i = 0; i < hg_g_window_count; i++) {
         if (new_count >= HG_MAX_WINDOW_ITEMS)
             break;
+
+        /* The previous pass may have expanded a window into several tab items.
+         * Reuse rebuilds windows, not tabs, so a window that is already in the
+         * new list is skipped and the expansion below does the fan-out again. */
+        BOOL already_added = FALSE;
+        for (int j = 0; j < new_count; ++j) {
+            if (hg_g_new_items[j].hwnd == hg_g_window_items[i].hwnd) {
+                already_added = TRUE;
+                break;
+            }
+        }
+        if (already_added) {
+            release_window_item_icon(&hg_g_window_items[i]);
+            continue;
+        }
 
         if (IsWindow(hg_g_window_items[i].hwnd) && is_alt_tab_window(hg_g_window_items[i].hwnd)) {
             hg_g_new_items[new_count] = (WindowItem){0};
@@ -163,10 +275,13 @@ void refresh_window_list(BOOL force)
 
     HG_RELEASE_COM(shell_windows);
 
+    new_count = expand_window_tabs(hg_g_new_items, new_count, force);
+
     BOOL changed = force || (new_count != hg_g_window_count);
     if (!changed) {
         for (int i = 0; i < hg_g_window_count; i++) {
             if (hg_g_new_items[i].hwnd != hg_g_window_items[i].hwnd ||
+                hg_g_new_items[i].tab_index != hg_g_window_items[i].tab_index ||
                 lstrcmpW(hg_g_new_items[i].title, hg_g_window_items[i].title) != 0) {
                 changed = TRUE;
                 break;
