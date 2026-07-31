@@ -89,12 +89,18 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
 
     /* Titles are remembered between passes so the four seconds in between cost
      * nothing at all, keyed by the window they came from. */
-    static HWND cached_hwnd[HG_MAX_MONITORS * 4];
-    static WCHAR cached_titles[HG_MAX_MONITORS * 4][HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
-    static int cached_count[HG_MAX_MONITORS * 4];
+#define HG_TABS_CACHE_WINDOWS 16
+    static HWND cached_hwnd[HG_TABS_CACHE_WINDOWS];
+    static WCHAR cached_titles[HG_TABS_CACHE_WINDOWS][HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
+    static int cached_count[HG_TABS_CACHE_WINDOWS];
     static int cache_used = 0;
 
-    WindowItem out[HG_MAX_WINDOW_ITEMS];
+    /* Static, not local. A WindowItem is about 4 KB - two HG_MAX_STR strings -
+     * so a thousand of them is a four-megabyte stack frame on a one-megabyte
+     * stack, which is a crash at the first call and not a subtle one. The rest
+     * of this file keeps its item arrays in static storage for exactly this
+     * reason; this function has to as well. Only ever the UI thread. */
+    static WindowItem out[HG_MAX_WINDOW_ITEMS];
     int out_count = 0;
 
     for (int i = 0; i < count && out_count < HG_MAX_WINDOW_ITEMS; ++i) {
