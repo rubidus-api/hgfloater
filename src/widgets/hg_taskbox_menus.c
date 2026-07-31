@@ -4,6 +4,7 @@
 #include "../hg_config.h"
 #include "../hg_globals.h"
 #include "../hg_tabs.h"
+#include "../hg_caphook.h"
 
 static HMENU taskbox_create_audio_submenu(void)
 {
@@ -154,6 +155,8 @@ HMENU taskbox_create_main_popup_menu(void)
                 L"Start with Windows");
     AppendMenuW(h_menu, MF_STRING | (hg_tabs_enabled() ? MF_CHECKED : 0u), HG_IDM_SHOW_TABS,
                 L"Show Tabs as Task Icons");
+    AppendMenuW(h_menu, MF_STRING | (hg_caphook_enabled() ? MF_CHECKED : 0u), HG_IDM_CAPTION_MENU,
+                L"Menu on Maximize Button");
     AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(h_menu, MF_STRING, HG_IDM_ABOUT, L"About...");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");

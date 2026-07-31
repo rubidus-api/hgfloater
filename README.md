@@ -7,7 +7,7 @@ translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 430 KB** that needs no installer and no runtime, so
+single **executable of about 450 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -159,6 +159,34 @@ of other windows.
 
 When the cursor leaves the taskbox, it collapses back to the floater after a
 half-second grace period, so brushing past the edge does not dismiss it.
+
+### 4.1 The maximize button menu
+
+While hgfloater is running, **right-click the maximize button** — the one left
+of the X — on **any** window, and you get hgfloater's menu for that window:
+**Move to (0, 0)** and the same size presets the task icons offer. Left-clicking
+it still maximizes; right-clicking a caption button does nothing in Windows, so
+nothing was taken away.
+
+Switch it off with **Menu on Maximize Button** in the `O` menu, or
+`caption_menu=0` under `[etc]`. **Close hgfloater and the behaviour is gone** —
+there is nothing installed and nothing to uninstall.
+
+Three cases where the click does what it always did, none of them a failure:
+
+- **Windows running as administrator.** Windows does not let an unelevated
+  program touch input bound for an elevated one, and hgfloater runs unelevated
+  on purpose.
+- **Windows with no maximize button** — nothing to right-click.
+- **Applications that report neither a maximize button nor caption-button
+  bounds.** Rare, and they simply keep their ordinary behaviour.
+
+This is the only thing hgfloater does outside its own windows, and it needs a
+system-wide mouse hook to do it. The hook reads the button and the coordinates
+and nothing else; it holds no keyboard hook and never has. Because a global
+mouse hook is also a thing keyloggers do, an antivirus may take an interest —
+which is worth knowing in advance rather than after. The design and its costs
+are in `docs/RFC-2026-07-caption-button-menu.md`.
 
 ## 5. The Taskbox
 
@@ -389,6 +417,9 @@ Open it with the `O` toolbar button or by right-clicking the status line.
 - **Open Shortcuts Folder** — opens the shortcuts directory in Explorer. This is
   how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts).
 - **Edit Configuration** — opens `config.ini` in Notepad.
+- **Menu on Maximize Button** — checked while the maximize button of **every**
+  window answers a right-click with hgfloater's move-and-resize menu. See
+  [4.1](#41-the-maximize-button-menu).
 - **Show Tabs as Task Icons** — checked when a tabbed application's tabs get
   their own task icons. See [5.1](#51-running-windows-and-shortcuts) for which
   applications, how to add one, and why it is off by default.
@@ -747,6 +778,7 @@ explaining them. The lines and the clips themselves are never written to disk.
 | Key | Meaning |
 | :--- | :--- |
 | `font_name` | Font for edit controls, tooltips, and the About dialog (default `Segoe UI`) |
+| `caption_menu` | `0` stops right-clicking any window's maximize button from opening hgfloater's menu (default `1`) |
 
 ### `[colors]`
 

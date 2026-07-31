@@ -6,6 +6,7 @@
 #include "hg_note.h"
 #include "hg_clip.h"
 #include "../hg_tabs.h"
+#include "../hg_caphook.h"
 
 void update_size(int delta)
 {
@@ -1017,6 +1018,13 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         }
         return 0;
     }
+    /* Posted by the mouse hook when a right-click landed on some window's
+     * maximize button. Handled here, on the ordinary message loop, because the
+     * hook itself must never run a modal loop. */
+    case HG_MSG_CAPTION_MENU:
+        hg_caphook_show_menu(hwnd, (HWND)w_param);
+        return 0;
+
     case WM_TIMER:
         if (w_param == HG_TIMER_TASKBOX_REFRESH) {
             if (IsWindowVisible(hwnd) && !hg_g_menu_active) {

@@ -3,6 +3,7 @@
 #include "hg_config.h"
 #include "widgets/hg_clip.h"
 #include "hg_tabs.h"
+#include "hg_caphook.h"
 
 /* =========================================================================
  * 창 클래스 등록 기능 (Window Class Registration)
@@ -443,6 +444,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     hg_config_ensure_template();
     hg_notes_load();
     hg_clip_init(); /* capture starts with the app, not with the window */
+    hg_caphook_apply();
     dispatch_pending_command_line();
 
     ACCEL accel[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP},
@@ -488,6 +490,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
 cleanup_finish:
     hg_config_flush_pending(); /* debounced settings must survive the exit */
+    hg_caphook_shutdown();
     hg_tabs_shutdown();
     hg_clip_shutdown();
     hg_notes_shutdown();       /* an edit made a second ago must not be the one lost */
