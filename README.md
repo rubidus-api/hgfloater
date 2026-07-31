@@ -7,7 +7,7 @@ translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 410 KB** that needs no installer and no runtime, so
+single **executable of about 430 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -205,6 +205,28 @@ built-in buttons.
 > (`0010`, `0020`, `0030`) means you can slip something in later without
 > renaming everything after it.
 - **Left click** activates a task or launches a shortcut.
+
+**Every task icon carries a label** in its top-left corner — `0` to `9`, then
+`A` to `Z`. **`Shift` + that character** activates the icon, exactly as clicking
+it would. Digits come first because the first ten windows are the ones you reach
+most, and a digit is one keystroke to find. Past 36 icons there is no label and
+no key. `Shift` is what keeps this clear of the bare-letter grid movement
+(`WASD`) and of the bare `C` that opens the command box.
+
+**Browser and Explorer tabs can have their own icons.** Off by default; turn it
+on with **Show Browser & Explorer Tabs** in the `O` menu, or `show_tabs=1` under
+`[taskbox]` in `config.ini`. With it on, a browser window with eight tabs
+contributes eight icons and clicking one switches to that tab.
+
+It is off by default for a reason worth knowing. A tab is not a window, so the
+only supported way to find one is **UI Automation** — a call into the other
+application's own UI thread, which is slow and can block if that thread is busy.
+So it runs only for windows that can have tabs (Chromium-based browsers and
+Explorer), it re-reads them every five seconds rather than every second, and
+anything that fails falls back silently to one icon for the window. Some
+applications do not publish off-screen tabs at all, and those tabs will not
+appear. The design and what it costs are in
+`docs/RFC-2026-07-tabs-as-task-icons.md`.
 - **Left drag** on a task icon reorders it within the grid.
 - **Right click** (or `Enter` / `F2` on the focused icon) opens its menu:
   - **Run (&R)** — start a new instance, or launch the shortcut.
@@ -341,6 +363,9 @@ Open it with the `O` toolbar button or by right-clicking the status line.
 - **Open Shortcuts Folder** — opens the shortcuts directory in Explorer. This is
   how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts).
 - **Edit Configuration** — opens `config.ini` in Notepad.
+- **Show Browser & Explorer Tabs** — checked when tabs get their own task
+  icons. See [5.1](#51-running-windows-and-shortcuts) for what it costs and why
+  it is off by default.
 - **Start with Windows** — checked when hgfloater launches at sign-in. Toggling
   it writes or removes one value under
   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, holding the quoted
@@ -615,6 +640,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Enter` | Execute (inside the Command Box) |
 | `Shift + Enter` | New line (inside the Command Box) |
 | `Ctrl + S` / `Ctrl + H` | Scroll mode / history mode (inside the Command Box) |
+| `Shift` + `0`–`9`, `A`–`Z` | Activate the task icon with that label |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
 | `Ctrl + Wheel` | Text size (inside the Command Box) |
 
@@ -666,6 +692,7 @@ every wheel notch.
 | `font_size` | Text size |
 | `icon_size` | Icon resolution (`[taskbox]` only) |
 | `show_stats` | `0` hides the CPU/memory/battery line (`[floater]` only, default `1`) |
+| `show_tabs` | `1` gives browser and Explorer tabs their own task icons (`[taskbox]` only, default `0`) |
 
 ### `[clipboard]`
 

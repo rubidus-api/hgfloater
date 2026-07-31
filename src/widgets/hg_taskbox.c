@@ -5,6 +5,7 @@
 #include "hg_taskbox_internal.h"
 #include "hg_note.h"
 #include "hg_clip.h"
+#include "../hg_tabs.h"
 
 void update_size(int delta)
 {
@@ -305,6 +306,14 @@ void activate_taskbar_item(int index)
     if (index < 0 || index >= hg_g_window_count)
         return;
     HWND target = hg_g_window_items[index].hwnd;
+
+    if (hg_g_window_items[index].is_tab) {
+        /* Raises the window and selects the tab; if the tab has gone the window
+         * still comes forward, which is the useful half of the answer. */
+        hg_tabs_activate(target, hg_g_window_items[index].tab_index);
+        return;
+    }
+
     if (IsWindow(target)) {
         if (IsIconic(target))
             ShowWindow(target, SW_RESTORE);
@@ -584,6 +593,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
      * keyboard focus, plain keys also arrive as WM_SYSKEYDOWN, and treating
      * them as Alt turned arrow navigation into window moves. */
     BOOL is_alt = (GetKeyState(VK_MENU) < 0);
+    BOOL is_shift = (GetKeyState(VK_SHIFT) < 0);
 
     /* Alt + 방향키/wasd: 현재 창 이동 (태스크 박스) */
     if (is_alt) {
@@ -702,6 +712,18 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
             int new_w = exact_tb_width + border * 2;
             SetWindowPos(hwnd, NULL, 0, 0, new_w, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            return 0;
+        }
+    }
+
+    /* Shift and a label go straight to that icon, as if it had been clicked.
+     * Shift is what keeps this out of the way of the bare-letter grid movement
+     * (WASD) and of the bare C that opens the command box - the reason a
+     * bare-letter scheme was tried and abandoned. Checked before those. */
+    if (is_shift && !is_ctrl && !is_alt) {
+        int badge_index = hg_task_badge_index((WCHAR)w_param);
+        if (badge_index >= 0 && badge_index < hg_g_window_count) {
+            activate_taskbar_item(badge_index);
             return 0;
         }
     }

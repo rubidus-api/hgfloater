@@ -140,6 +140,17 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     hg_g_toolbar_btn_font = CreateFontW(icon_size, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
                                                         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
                                                         CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                    /* The label sits in a box half the icon, so it needs its own
+                     * size; built here so it is rebuilt exactly when the icons
+                     * are and never once per paint. */
+                    release_font_handle(&hg_g_toolbar_badge_font, FALSE);
+                    int badge_px = icon_size / 2;
+                    if (badge_px < SC(10))
+                        badge_px = SC(10);
+                    hg_g_toolbar_badge_font =
+                        CreateFontW(badge_px - SC(2), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                                    OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                    DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
                     *cached_icon_size = icon_size;
                 }
 
@@ -214,6 +225,31 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         draw_outlined_text(mem_dc, initial, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
                                            HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
                         SelectObject(mem_dc, old_font);
+                    }
+
+                    /* The label, over the icon's top-left corner. Drawn last so
+                     * it is never the thing hidden by the icon. */
+                    WCHAR badge = hg_task_badge_char(r_idx);
+                    if (badge && hg_g_toolbar_badge_font) {
+                        int badge_size = icon_size / 2;
+                        if (badge_size < SC(10))
+                            badge_size = SC(10);
+                        RECT badge_rc = {rc_item.left - SC(2), rc_item.top - SC(2), rc_item.left - SC(2) + badge_size,
+                                         rc_item.top - SC(2) + badge_size};
+
+                        HBRUSH hbr_badge = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+                        if (hbr_badge)
+                            FillRect(mem_dc, &badge_rc, hbr_badge);
+                        HBRUSH hbr_edge = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
+                        if (hbr_edge)
+                            FrameRect(mem_dc, &badge_rc, hbr_edge);
+
+                        WCHAR badge_text[2] = {badge, 0};
+                        HFONT old_badge = (HFONT)SelectObject(mem_dc, hg_g_toolbar_badge_font);
+                        SetBkMode(mem_dc, TRANSPARENT);
+                        SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
+                        DrawTextW(mem_dc, badge_text, 1, &badge_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                        SelectObject(mem_dc, old_badge);
                     }
 
                     /* Draw active status indicator (elegant pill/dot under the active task's icon) */

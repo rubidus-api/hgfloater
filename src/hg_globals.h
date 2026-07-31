@@ -47,6 +47,7 @@ extern HFONT hg_g_main_font;
 extern HFONT hg_g_floater_time_font;
 extern HFONT hg_g_floater_date_font;
 extern HFONT hg_g_toolbar_btn_font;
+extern HFONT hg_g_toolbar_badge_font;
 extern HBRUSH hg_g_main_bg_brush;
 extern HBRUSH hg_g_edit_bg_brush;
 extern HBRUSH hg_g_hbr_highlight;
