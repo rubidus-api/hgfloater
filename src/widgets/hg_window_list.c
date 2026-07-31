@@ -83,7 +83,11 @@ void refresh_window_list(BOOL force)
         if (IsWindow(hg_g_window_items[i].hwnd) && is_alt_tab_window(hg_g_window_items[i].hwnd)) {
             hg_g_new_items[new_count] = (WindowItem){0};
             hg_g_new_items[new_count].hwnd = hg_g_window_items[i].hwnd;
-            if (force) {
+            if (force || !hg_g_window_items[i].icon) {
+                /* A window asked for its icon while it was still starting up can
+                 * answer nothing, and the old code kept that nothing for the life
+                 * of the window. Asking again on the next pass costs one call for
+                 * the few that failed and stops a permanently blank cell. */
                 release_window_item_icon(&hg_g_window_items[i]);
                 hg_g_new_items[new_count].icon = get_window_icon(hg_g_window_items[i].hwnd, ABS(hg_g_current_font_size),
                                                                  &hg_g_new_items[new_count].own_icon);

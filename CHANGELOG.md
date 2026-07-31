@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31d] - 2026-07-31
+
+### Fixed
+- **Task icons that only appeared when the pointer crossed them.** A window whose icon would not load left the cell empty, and an empty cell reads as no window at all — until you hovered and the highlight box appeared out of nowhere. The window is there either way, so the title's first character now stands in for a missing icon.
+- **An icon that failed to load once stayed missing for the life of the window.** A window asked for its icon while it is still starting up can answer nothing, and that nothing was cached. Each refresh now retries the ones that have no icon, which costs one call for the few that failed.
+- **hgfloater's monitor preview windows** were still missing from the task icons. v26.07.31 added the note editors, the note list, the clipboard history and the command box; the preview windows belong there too.
+
+### Documentation
+- The README now says plainly **how to add a shortcut icon** — right-click `O`, *Open Shortcuts Folder*, drop a `.lnk` or `.url` in — in a highlighted box rather than one line in a list, and explains that the order comes from the file name, so a `0001` prefix controls it. Pad the numbers: the sort is plain alphabetical, so `10` comes before `2` otherwise.
+
 ## [v26.07.31c] - 2026-07-31
 
 ### Added

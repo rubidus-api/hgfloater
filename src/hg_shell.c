@@ -79,7 +79,8 @@ static BOOL hg_is_own_reachable_window(HWND hwnd)
         return FALSE;
 
     return lstrcmpiW(class_name, HG_CLASS_NOTE_EDIT) == 0 || lstrcmpiW(class_name, HG_CLASS_NOTE_LIST) == 0 ||
-           lstrcmpiW(class_name, HG_CLASS_CLIP) == 0 || lstrcmpiW(class_name, HG_CLASS_COMMANDBOX) == 0;
+           lstrcmpiW(class_name, HG_CLASS_CLIP) == 0 || lstrcmpiW(class_name, HG_CLASS_COMMANDBOX) == 0 ||
+           lstrcmpiW(class_name, HG_CLASS_MONITOR) == 0;
 }
 
 BOOL is_alt_tab_window(HWND hwnd)

@@ -177,6 +177,33 @@ built-in buttons.
   wrong for a list whose whole job is reaching them. The floater, the taskbox
   and the toolbar stay out: they are the thing you are looking at.
 - **Shortcut icons** follow: one per `.lnk` or `.url` in your shortcuts folder.
+
+> ### 📌 How to add a shortcut icon
+>
+> 1. **Right-click the `O` button** on the toolbar (or right-click the status
+>    line) to open the options menu.
+> 2. Choose **Open Shortcuts Folder**. Explorer opens on
+>    `%USERPROFILE%\.HellGates\hgfloater\shortcuts\`.
+> 3. **Copy a shortcut into it** — any `.lnk` or `.url`. Drag one out of the
+>    Start menu, or right-click a program and *Send to → Desktop*, then move
+>    that file here.
+>
+> The new icon appears within a second. No restart, no settings screen: the
+> folder **is** the setting.
+>
+> **To change the order, rename the files.** Icons are sorted by file name, so
+> putting a number in front controls where each one sits:
+>
+> ```
+> 0001 Visual Studio Code.lnk
+> 0002 Firefox.lnk
+> 0010 Calculator.lnk
+> ```
+>
+> Pad the numbers to the same width — `0001`, not `1`. The sort is a plain
+> alphabetical one, so `10` would come before `2` otherwise. Leaving gaps
+> (`0010`, `0020`, `0030`) means you can slip something in later without
+> renaming everything after it.
 - **Left click** activates a task or launches a shortcut.
 - **Left drag** on a task icon reorders it within the grid.
 - **Right click** (or `Enter` / `F2` on the focused icon) opens its menu:
@@ -311,7 +338,8 @@ hgfloater empties the history.**
 
 Open it with the `O` toolbar button or by right-clicking the status line.
 
-- **Open Shortcuts Folder** — opens the shortcuts directory in Explorer.
+- **Open Shortcuts Folder** — opens the shortcuts directory in Explorer. This is
+  how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts).
 - **Edit Configuration** — opens `config.ini` in Notepad.
 - **Start with Windows** — checked when hgfloater launches at sign-in. Toggling
   it writes or removes one value under
