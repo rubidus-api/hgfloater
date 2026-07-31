@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31g] - 2026-07-31
+
+### Fixed
+- **Explorer contributed Favourites, Recent and Shared as if they were tabs.** They are tabs — of Explorer's Home *page*, not of the window — and the query was asking for every tab item anywhere below the window, which is the obvious question and the wrong one.
+- The search is now two steps: find the tab *controls*, take the one at the top of the window, and read that one's immediate children. A window's tab strip is above everything by definition of what it is; a tab control further down belongs to what is being displayed. An Explorer window showing only its Home page now contributes no tab items at all, which is right — it has one tab, and its Home page's sections are not tabs of the window.
+
 ## [v26.07.31f] - 2026-07-31
 
 ### Fixed
