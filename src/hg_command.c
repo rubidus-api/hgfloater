@@ -352,6 +352,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"Examples:",
     L"  show                every window, numbered",
     L"  s w                 the same list",
+    L"  s w class           with each window's class, for tab_classes",
     L"  s r                 the resize presets, numbered for 'resize'",
     L"  s c                 the shortcut icons",
     L"  s n                 every note, numbered for the 'note' command",
@@ -562,7 +563,10 @@ static void cmd_help(int argc, WCHAR *argv[])
     commandbox_print(L"'help <command>' explains one of them, with examples.");
 }
 
-static void cmd_list_windows(void)
+/* With `class`, the window class beside each title. That is the name
+ * `[taskbox] tab_classes` takes, and without this there is no way to find it
+ * short of a separate tool. */
+static void cmd_list_windows(BOOL with_class)
 {
     cmd_refresh_windows();
 
@@ -571,8 +575,17 @@ static void cmd_list_windows(void)
         return;
     }
     for (int i = 0; i < hg_g_window_count; ++i) {
-        cmd_printf(L"%3d  %ls", i + 1, hg_g_window_items[i].title);
+        if (with_class) {
+            WCHAR class_name[64];
+            if (GetClassNameW(hg_g_window_items[i].hwnd, class_name, (int)HG_ARRAYSIZE(class_name)) <= 0)
+                StringCchCopyW(class_name, HG_ARRAYSIZE(class_name), L"?");
+            cmd_printf(L"%3d  %-28ls %ls", i + 1, class_name, hg_g_window_items[i].title);
+        } else {
+            cmd_printf(L"%3d  %ls", i + 1, hg_g_window_items[i].title);
+        }
     }
+    if (with_class)
+        commandbox_print(L"     add one to [taskbox] tab_classes in config.ini to look for its tabs");
 }
 
 static void cmd_list_resize(void)
@@ -742,11 +755,11 @@ static void cmd_show_values(void)
 static void cmd_show(int argc, WCHAR *argv[])
 {
     if (argc < 2) {
-        cmd_list_windows();
+        cmd_list_windows(FALSE);
         return;
     }
     if (cmd_word_is(argv[1], L"windows", L"w")) {
-        cmd_list_windows();
+        cmd_list_windows(argc >= 3 && cmd_word_is(argv[2], L"class", L"c"));
     } else if (cmd_word_is(argv[1], L"resize", L"r")) {
         cmd_list_resize();
     } else if (cmd_word_is(argv[1], L"shortcut", L"c") || cmd_word_is(argv[1], L"shortcuts", NULL)) {

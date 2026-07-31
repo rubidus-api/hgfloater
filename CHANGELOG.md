@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31j] - 2026-07-31
+
+### Changed
+- **Tabs are not a browser feature.** Nothing in the mechanism ever was — the same UI Automation tree answers for any tabbed application — so the built-in list now covers **Firefox** (`MozillaWindowClass`), **Windows Terminal** (`CASCADIA_HOSTING_WINDOW_CLASS`) and **Notepad** alongside the Chromium family and Explorer. The `O` menu entry reads **Show Tabs as Task Icons** rather than naming browsers, and the `config.ini` comments say the same.
+
+### Added
+- `[taskbox] tab_classes` adds window classes to that list from `config.ini`, semicolon-separated, with no rebuild. A list compiled into the program can only ever be out of date; this is what makes the answer "what you tell us about" instead of "these five".
+- `show windows class` (`s w class`) prints the window class beside each title, which is where the names for `tab_classes` come from. A setting whose value nobody can discover is a setting nobody can use.
+
 ## [v26.07.31i] - 2026-07-31
 
 ### Fixed
