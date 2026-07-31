@@ -198,6 +198,22 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     if (hg_g_window_items[r_idx].icon) {
                         DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size,
                                    icon_size, 0, NULL, DI_NORMAL);
+                    } else if (hg_g_toolbar_btn_font) {
+                        /* An icon that would not load left an empty cell, and an
+                         * empty cell reads as no window at all - until the
+                         * pointer crossed it and the highlight box appeared out
+                         * of nowhere. The window is there either way, so the
+                         * title's first character stands in for the icon. */
+                        const WCHAR *title = hg_g_window_items[r_idx].title;
+                        WCHAR initial[2];
+                        initial[0] = (title && title[0]) ? title[0] : L'?';
+                        initial[1] = L'\0';
+
+                        HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
+                        SetBkMode(mem_dc, TRANSPARENT);
+                        draw_outlined_text(mem_dc, initial, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
+                                           HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
+                        SelectObject(mem_dc, old_font);
                     }
 
                     /* Draw active status indicator (elegant pill/dot under the active task's icon) */
