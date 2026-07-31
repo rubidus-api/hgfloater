@@ -92,92 +92,93 @@ static IUIAutomationCondition *hg_tabs_type_condition(IUIAutomation *automation,
     return condition;
 }
 
-/* The window's own tab strip, which is not the only tab control in the window.
+/* The window's tab strip, found by where its tabs are rather than by what the
+ * container calls itself.
  *
- * Sweeping the whole tree for TabItem was the first attempt and it was wrong:
- * Explorer's Home page has a tab strip of its own - Favourites, Recent, Shared -
- * and those are real TabItems that have nothing to do with the window's tabs.
- * Asking for TabItem anywhere in the window is asking the wrong question.
+ * Two earlier attempts were wrong in opposite directions. Asking for every
+ * TabItem below the window collected Explorer's Home page sections - Favourites,
+ * Recent, Shared - which are real tabs of the page and not of the window. Then
+ * requiring them to sit under a UIA_TabControlTypeId parent lost Explorer's real
+ * tabs entirely, because what a XAML tab strip publishes as its container is not
+ * something we get to decide.
  *
- * So: find the tab *controls*, and take the one at the top of the window. A
- * window's tab strip sits above everything, by definition of what it is;
- * anything further down belongs to the content. The upper-quarter test is what
- * makes "there is no window tab strip here" an answer rather than a wrong
- * guess - Explorer showing only its Home page then contributes no tabs, which
- * is exactly right, because it has none. */
-static IUIAutomationElement *hg_tabs_find_strip(IUIAutomation *automation, IUIAutomationElement *root, HWND hwnd)
-{
-    RECT window_rc;
-    if (!GetWindowRect(hwnd, &window_rc))
-        return NULL;
-    LONG window_height = window_rc.bottom - window_rc.top;
-    if (window_height <= 0)
-        return NULL;
-    LONG strip_limit = window_rc.top + window_height / 4;
-
-    IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_TabControlTypeId);
-    if (!condition)
-        return NULL;
-
-    IUIAutomationElementArray *controls = NULL;
-    if (FAILED(IUIAutomationElement_FindAll(root, TreeScope_Descendants, condition, &controls)) || !controls) {
-        IUIAutomationCondition_Release(condition);
-        return NULL;
-    }
-    IUIAutomationCondition_Release(condition);
-
-    int length = 0;
-    IUIAutomationElement *best = NULL;
-    LONG best_top = 0;
-    if (SUCCEEDED(IUIAutomationElementArray_get_Length(controls, &length))) {
-        for (int i = 0; i < length; ++i) {
-            IUIAutomationElement *element = NULL;
-            if (FAILED(IUIAutomationElementArray_GetElement(controls, i, &element)) || !element)
-                continue;
-
-            RECT bounds;
-            if (SUCCEEDED(IUIAutomationElement_get_CurrentBoundingRectangle(element, &bounds)) &&
-                bounds.top <= strip_limit && (!best || bounds.top < best_top)) {
-                if (best)
-                    IUIAutomationElement_Release(best);
-                best = element;
-                best_top = bounds.top;
-                continue;
-            }
-            IUIAutomationElement_Release(element);
-        }
-    }
-    IUIAutomationElementArray_Release(controls);
-    return best;
-}
-
-/* The tab strip's own children, and nothing else in the window. TreeScope_Children
- * rather than Descendants for the same reason: a tab that contains a control
- * which is itself a TabItem is not two tabs. */
-static IUIAutomationElementArray *hg_tabs_find(HWND hwnd)
+ * What is reliably true is where the strip is: a window's tabs are at the top of
+ * the window, above everything, because that is what makes them the window's.
+ * So the filter is geometric and applied to the tab items themselves, and no
+ * assumption is made about their parent at all.
+ *
+ * Elements come back AddRef'd; the caller releases every one. */
+static int hg_tabs_collect(HWND hwnd, IUIAutomationElement **out, int max)
 {
     IUIAutomation *automation = hg_tabs_automation();
-    if (!automation)
-        return NULL;
+    if (!automation || !out || max <= 0)
+        return 0;
+
+    RECT window_rc;
+    if (!GetWindowRect(hwnd, &window_rc))
+        return 0;
+    LONG window_height = window_rc.bottom - window_rc.top;
+    if (window_height <= 0)
+        return 0;
+    /* The upper quarter. An address bar and a toolbar still fit above the page,
+     * so a page's own tabs land below this line while the window's do not. */
+    LONG strip_limit = window_rc.top + window_height / 4;
 
     IUIAutomationElement *root = NULL;
     if (FAILED(IUIAutomation_ElementFromHandle(automation, hwnd, &root)) || !root)
-        return NULL;
-
-    IUIAutomationElement *strip = hg_tabs_find_strip(automation, root, hwnd);
-    IUIAutomationElement_Release(root);
-    if (!strip)
-        return NULL;
+        return 0;
 
     IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_TabItemControlTypeId);
     IUIAutomationElementArray *found = NULL;
     if (condition) {
-        if (FAILED(IUIAutomationElement_FindAll(strip, TreeScope_Children, condition, &found)))
+        if (FAILED(IUIAutomationElement_FindAll(root, TreeScope_Descendants, condition, &found)))
             found = NULL;
         IUIAutomationCondition_Release(condition);
     }
-    IUIAutomationElement_Release(strip);
-    return found;
+    IUIAutomationElement_Release(root);
+    if (!found)
+        return 0;
+
+    LONG lefts[HG_TABS_MAX_PER_WINDOW];
+    int count = 0;
+    int length = 0;
+    if (SUCCEEDED(IUIAutomationElementArray_get_Length(found, &length))) {
+        for (int i = 0; i < length && count < max; ++i) {
+            IUIAutomationElement *element = NULL;
+            if (FAILED(IUIAutomationElementArray_GetElement(found, i, &element)) || !element)
+                continue;
+
+            RECT bounds;
+            if (FAILED(IUIAutomationElement_get_CurrentBoundingRectangle(element, &bounds)) ||
+                bounds.top > strip_limit || bounds.right <= bounds.left) {
+                IUIAutomationElement_Release(element);
+                continue;
+            }
+
+            /* Left to right, which is the order the reader sees and therefore
+             * the order the tab numbers have to be in. Tree order usually
+             * matches; usually is not a guarantee worth resting on. */
+            int at = count;
+            while (at > 0 && lefts[at - 1] > bounds.left) {
+                lefts[at] = lefts[at - 1];
+                out[at] = out[at - 1];
+                --at;
+            }
+            lefts[at] = bounds.left;
+            out[at] = element;
+            ++count;
+        }
+    }
+    IUIAutomationElementArray_Release(found);
+    return count;
+}
+
+static void hg_tabs_release(IUIAutomationElement **elements, int count)
+{
+    for (int i = 0; i < count; ++i) {
+        if (elements[i])
+            IUIAutomationElement_Release(elements[i]);
+    }
 }
 
 int hg_tabs_enumerate(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
@@ -187,34 +188,20 @@ int hg_tabs_enumerate(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
     if (!hg_tabs_window_may_have_tabs(hwnd))
         return 0;
 
-    IUIAutomationElementArray *found = hg_tabs_find(hwnd);
-    if (!found)
-        return 0;
+    IUIAutomationElement *tabs[HG_TABS_MAX_PER_WINDOW];
+    int count = hg_tabs_collect(hwnd, tabs, (max < HG_TABS_MAX_PER_WINDOW) ? max : HG_TABS_MAX_PER_WINDOW);
 
-    int length = 0;
-    if (FAILED(IUIAutomationElementArray_get_Length(found, &length)) || length <= 0) {
-        IUIAutomationElementArray_Release(found);
-        return 0;
-    }
-
-    int count = 0;
-    for (int i = 0; i < length && count < max; ++i) {
-        IUIAutomationElement *element = NULL;
-        if (FAILED(IUIAutomationElementArray_GetElement(found, i, &element)) || !element)
-            continue;
-
+    for (int i = 0; i < count; ++i) {
         BSTR name = NULL;
-        if (SUCCEEDED(IUIAutomationElement_get_CurrentName(element, &name)) && name) {
-            StringCchCopyW(titles[count], HG_MAX_STR, name);
+        if (SUCCEEDED(IUIAutomationElement_get_CurrentName(tabs[i], &name)) && name) {
+            StringCchCopyW(titles[i], HG_MAX_STR, name);
             SysFreeString(name);
         } else {
-            StringCchCopyW(titles[count], HG_MAX_STR, L"(tab)");
+            StringCchCopyW(titles[i], HG_MAX_STR, L"(tab)");
         }
-        ++count;
-        IUIAutomationElement_Release(element);
     }
 
-    IUIAutomationElementArray_Release(found);
+    hg_tabs_release(tabs, count);
     return count;
 }
 
@@ -223,29 +210,23 @@ BOOL hg_tabs_activate(HWND hwnd, int tab_index)
     if (!hg_tabs_enabled() || tab_index < 0)
         return FALSE;
 
-    IUIAutomationElementArray *found = hg_tabs_find(hwnd);
-    if (!found)
-        return FALSE;
+    IUIAutomationElement *tabs[HG_TABS_MAX_PER_WINDOW];
+    int count = hg_tabs_collect(hwnd, tabs, HG_TABS_MAX_PER_WINDOW);
 
-    int length = 0;
     BOOL selected = FALSE;
-    if (SUCCEEDED(IUIAutomationElementArray_get_Length(found, &length)) && tab_index < length) {
-        IUIAutomationElement *element = NULL;
-        if (SUCCEEDED(IUIAutomationElementArray_GetElement(found, tab_index, &element)) && element) {
-            IUIAutomationSelectionItemPattern *pattern = NULL;
-            if (SUCCEEDED(IUIAutomationElement_GetCurrentPatternAs(element, UIA_SelectionItemPatternId,
-                                                                   &IID_IUIAutomationSelectionItemPattern,
-                                                                   (void **)&pattern)) &&
-                pattern) {
-                /* A real API call rather than a synthesised click: it needs
-                 * neither the foreground nor the pointer. */
-                selected = SUCCEEDED(IUIAutomationSelectionItemPattern_Select(pattern));
-                IUIAutomationSelectionItemPattern_Release(pattern);
-            }
-            IUIAutomationElement_Release(element);
+    if (tab_index < count) {
+        IUIAutomationSelectionItemPattern *pattern = NULL;
+        if (SUCCEEDED(IUIAutomationElement_GetCurrentPatternAs(tabs[tab_index], UIA_SelectionItemPatternId,
+                                                               &IID_IUIAutomationSelectionItemPattern,
+                                                               (void **)&pattern)) &&
+            pattern) {
+            /* A real API call rather than a synthesised click: it needs neither
+             * the foreground nor the pointer. */
+            selected = SUCCEEDED(IUIAutomationSelectionItemPattern_Select(pattern));
+            IUIAutomationSelectionItemPattern_Release(pattern);
         }
     }
-    IUIAutomationElementArray_Release(found);
+    hg_tabs_release(tabs, count);
 
     /* Both halves are needed: selecting a tab inside a window that is behind
      * three others is not what the reader asked for. */
@@ -268,26 +249,24 @@ BOOL hg_tabs_close(HWND hwnd, int tab_index)
         return FALSE;
 
     IUIAutomation *automation = hg_tabs_automation();
-    IUIAutomationElementArray *found = hg_tabs_find(hwnd);
-    if (!automation || !found)
+    if (!automation)
         return FALSE;
 
-    int length = 0;
-    IUIAutomationElement *tab = NULL;
-    if (SUCCEEDED(IUIAutomationElementArray_get_Length(found, &length)) && tab_index < length)
-        IUIAutomationElementArray_GetElement(found, tab_index, &tab);
-    IUIAutomationElementArray_Release(found);
-    if (!tab)
+    IUIAutomationElement *tabs[HG_TABS_MAX_PER_WINDOW];
+    int count = hg_tabs_collect(hwnd, tabs, HG_TABS_MAX_PER_WINDOW);
+    if (tab_index >= count) {
+        hg_tabs_release(tabs, count);
         return FALSE;
+    }
 
     IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_ButtonControlTypeId);
     IUIAutomationElementArray *buttons = NULL;
     if (condition) {
-        if (FAILED(IUIAutomationElement_FindAll(tab, TreeScope_Descendants, condition, &buttons)))
+        if (FAILED(IUIAutomationElement_FindAll(tabs[tab_index], TreeScope_Descendants, condition, &buttons)))
             buttons = NULL;
         IUIAutomationCondition_Release(condition);
     }
-    IUIAutomationElement_Release(tab);
+    hg_tabs_release(tabs, count);
     if (!buttons)
         return FALSE;
 

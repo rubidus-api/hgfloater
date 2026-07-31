@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31i] - 2026-07-31
+
+### Fixed
+- **Middle-clicking a tab icon closed the whole application.** v26.07.31h taught the context menu about tabs and left this path behind, so the menu and the middle click disagreed about what Close means. A middle click on a tab now closes that tab, or nothing at all — never the window.
+- **Explorer's tabs stopped appearing entirely.** The v26.07.31g fix required the tabs to sit under a `TabControl` parent, and what a XAML tab strip publishes as its container is not something this program gets to decide. Depending on another application's choice of control type was the mistake.
+  - The strip is now found by **where it is** — tab items within the upper quarter of the window — with nothing assumed about their parent. That still excludes Explorer's Home page sections, which sit below the toolbar, and it no longer excludes Explorer's real tabs.
+  - Tabs are ordered by their left edge rather than by tree order, so the number on an icon means the tab in that position on screen.
+
 ## [v26.07.31h] - 2026-07-31
 
 ### Fixed
