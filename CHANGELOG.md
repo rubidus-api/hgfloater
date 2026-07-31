@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.07.31f] - 2026-07-31
+
+### Fixed
+- **v26.07.31e crashed at startup.** The tab expansion added in that release declared its output array as a local: a `WindowItem` holds two 1024-character strings and is about 4 KB, so a thousand of them is a four-megabyte stack frame on a one-megabyte stack. The frame is reserved when the function is entered, so the early return for "tabs are switched off" never got a chance to run — the crash happened the first time the window list refreshed, which is during startup, on every machine, whether or not the feature was on.
+- The array is now static, like every other item array in that file. The measured frame for `refresh_window_list` went from four megabytes to 160 bytes.
+- The tab title cache is bounded at 16 windows rather than sized off the monitor count, which was both arbitrary and larger than it needed to be.
+
 ## [v26.07.31e] - 2026-07-31
 
 ### Added
