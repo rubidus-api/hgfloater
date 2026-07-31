@@ -91,6 +91,28 @@ do with the tab strip that is right in front of you, and the taskbox is for the
 window you cannot see. Being five seconds stale about a tab title is not a cost
 anyone will notice; a taskbox that stutters once a second is.
 
+### D2a. The window's tab strip is not the only tab control in the window
+
+Asking for every `TabItem` below the window is the obvious query and it is the
+wrong one. Explorer's Home page has a tab strip of its own - Favourites, Recent,
+Shared - and those are real tab items that have nothing to do with the window's
+tabs. A browser's page content can contain tabs too, for the same reason: a tab
+is a normal control and pages use it.
+
+So the query is in two steps. Find the tab **controls**, take the one at the top
+of the window, and read that one's children. A window's tab strip is above
+everything by definition of what it is; a tab control further down belongs to
+what is being displayed, not to the window.
+
+"At the top" is a geometric test - within the upper quarter of the window - and
+it is what lets **no window tab strip** be an answer rather than a wrong guess.
+An Explorer window showing only its Home page then contributes no tab items,
+which is correct: it has one tab, and its Home page's sections are not tabs of
+the window.
+
+Children rather than descendants at the second step, for the matching reason: a
+tab that contains a control which is itself a tab item is one tab.
+
 ### D3. Only windows that can have tabs
 
 The enumeration runs only for windows whose class is one of the known tabbed

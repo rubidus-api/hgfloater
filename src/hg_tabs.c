@@ -78,7 +78,82 @@ static IUIAutomation *hg_tabs_automation(void)
     return s_automation;
 }
 
-/* Every TabItem below the window, in tree order. The caller owns nothing. */
+static IUIAutomationCondition *hg_tabs_type_condition(IUIAutomation *automation, int control_type)
+{
+    VARIANT wanted;
+    VariantInit(&wanted);
+    V_VT(&wanted) = VT_I4;
+    V_I4(&wanted) = control_type;
+
+    IUIAutomationCondition *condition = NULL;
+    if (FAILED(IUIAutomation_CreatePropertyCondition(automation, UIA_ControlTypePropertyId, wanted, &condition)))
+        condition = NULL;
+    VariantClear(&wanted);
+    return condition;
+}
+
+/* The window's own tab strip, which is not the only tab control in the window.
+ *
+ * Sweeping the whole tree for TabItem was the first attempt and it was wrong:
+ * Explorer's Home page has a tab strip of its own - Favourites, Recent, Shared -
+ * and those are real TabItems that have nothing to do with the window's tabs.
+ * Asking for TabItem anywhere in the window is asking the wrong question.
+ *
+ * So: find the tab *controls*, and take the one at the top of the window. A
+ * window's tab strip sits above everything, by definition of what it is;
+ * anything further down belongs to the content. The upper-quarter test is what
+ * makes "there is no window tab strip here" an answer rather than a wrong
+ * guess - Explorer showing only its Home page then contributes no tabs, which
+ * is exactly right, because it has none. */
+static IUIAutomationElement *hg_tabs_find_strip(IUIAutomation *automation, IUIAutomationElement *root, HWND hwnd)
+{
+    RECT window_rc;
+    if (!GetWindowRect(hwnd, &window_rc))
+        return NULL;
+    LONG window_height = window_rc.bottom - window_rc.top;
+    if (window_height <= 0)
+        return NULL;
+    LONG strip_limit = window_rc.top + window_height / 4;
+
+    IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_TabControlTypeId);
+    if (!condition)
+        return NULL;
+
+    IUIAutomationElementArray *controls = NULL;
+    if (FAILED(IUIAutomationElement_FindAll(root, TreeScope_Descendants, condition, &controls)) || !controls) {
+        IUIAutomationCondition_Release(condition);
+        return NULL;
+    }
+    IUIAutomationCondition_Release(condition);
+
+    int length = 0;
+    IUIAutomationElement *best = NULL;
+    LONG best_top = 0;
+    if (SUCCEEDED(IUIAutomationElementArray_get_Length(controls, &length))) {
+        for (int i = 0; i < length; ++i) {
+            IUIAutomationElement *element = NULL;
+            if (FAILED(IUIAutomationElementArray_GetElement(controls, i, &element)) || !element)
+                continue;
+
+            RECT bounds;
+            if (SUCCEEDED(IUIAutomationElement_get_CurrentBoundingRectangle(element, &bounds)) &&
+                bounds.top <= strip_limit && (!best || bounds.top < best_top)) {
+                if (best)
+                    IUIAutomationElement_Release(best);
+                best = element;
+                best_top = bounds.top;
+                continue;
+            }
+            IUIAutomationElement_Release(element);
+        }
+    }
+    IUIAutomationElementArray_Release(controls);
+    return best;
+}
+
+/* The tab strip's own children, and nothing else in the window. TreeScope_Children
+ * rather than Descendants for the same reason: a tab that contains a control
+ * which is itself a TabItem is not two tabs. */
 static IUIAutomationElementArray *hg_tabs_find(HWND hwnd)
 {
     IUIAutomation *automation = hg_tabs_automation();
@@ -89,21 +164,19 @@ static IUIAutomationElementArray *hg_tabs_find(HWND hwnd)
     if (FAILED(IUIAutomation_ElementFromHandle(automation, hwnd, &root)) || !root)
         return NULL;
 
-    VARIANT wanted;
-    VariantInit(&wanted);
-    V_VT(&wanted) = VT_I4;
-    V_I4(&wanted) = UIA_TabItemControlTypeId;
+    IUIAutomationElement *strip = hg_tabs_find_strip(automation, root, hwnd);
+    IUIAutomationElement_Release(root);
+    if (!strip)
+        return NULL;
 
-    IUIAutomationCondition *condition = NULL;
+    IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_TabItemControlTypeId);
     IUIAutomationElementArray *found = NULL;
-    if (SUCCEEDED(IUIAutomation_CreatePropertyCondition(automation, UIA_ControlTypePropertyId, wanted, &condition)) &&
-        condition) {
-        if (FAILED(IUIAutomationElement_FindAll(root, TreeScope_Descendants, condition, &found)))
+    if (condition) {
+        if (FAILED(IUIAutomationElement_FindAll(strip, TreeScope_Children, condition, &found)))
             found = NULL;
         IUIAutomationCondition_Release(condition);
     }
-    VariantClear(&wanted);
-    IUIAutomationElement_Release(root);
+    IUIAutomationElement_Release(strip);
     return found;
 }
 
