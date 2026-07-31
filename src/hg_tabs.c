@@ -43,10 +43,57 @@ void hg_tabs_set_enabled(BOOL enabled)
         hg_tabs_shutdown(); /* off gives the COM object back rather than idling on it */
 }
 
-/* The tabbed shells worth asking. Incomplete on purpose: an unlisted
- * application keeps the behaviour it has now - one icon for one window, which
- * is not a regression - and asking every window on the desktop for its tabs is
- * how a per-window cost becomes the cost of running the program. */
+/* The window classes worth asking. Nothing here is specific to browsers - a
+ * tabbed application is a tabbed application - but the list has to exist,
+ * because asking every window on the desktop for its tabs is how a per-window
+ * cost becomes the cost of running the program.
+ *
+ * An unlisted application keeps the behaviour it has now, one icon for one
+ * window, which is not a regression. And because a list compiled into the
+ * program can only ever be out of date, `[taskbox] tab_classes` in config.ini
+ * adds to it without a rebuild. */
+static const WCHAR *const hg_tab_classes[] = {
+    L"Chrome_WidgetWin_1",             /* Chromium: Chrome, Edge, Brave, Opera, and Electron apps */
+    L"CabinetWClass",                  /* Explorer, which grew tabs in Windows 11 */
+    L"MozillaWindowClass",             /* Firefox */
+    L"CASCADIA_HOSTING_WINDOW_CLASS",  /* Windows Terminal */
+    L"Notepad",                        /* Notepad, which grew tabs in Windows 11 */
+};
+
+static BOOL hg_tabs_class_listed_extra(const WCHAR *class_name)
+{
+    /* Read once. A list of class names is not something that changes while the
+     * program runs, and re-reading a file per window per pass would undo the
+     * point of having a cheap gate at all. */
+    static BOOL read = FALSE;
+    static WCHAR extra[512];
+    if (!read) {
+        read = TRUE;
+        GetPrivateProfileStringW(L"taskbox", L"tab_classes", L"", extra, (DWORD)HG_ARRAYSIZE(extra),
+                                 hg_g_config_path);
+    }
+    if (!extra[0])
+        return FALSE;
+
+    /* Semicolon-separated, spaces around a name ignored. */
+    const WCHAR *cursor = extra;
+    while (*cursor) {
+        while (*cursor == L' ' || *cursor == L';')
+            ++cursor;
+        const WCHAR *start = cursor;
+        while (*cursor && *cursor != L';')
+            ++cursor;
+        const WCHAR *end = cursor;
+        while (end > start && end[-1] == L' ')
+            --end;
+
+        size_t len = (size_t)(end - start);
+        if (len > 0 && len == wcslen(class_name) && _wcsnicmp(start, class_name, len) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 BOOL hg_tabs_window_may_have_tabs(HWND hwnd)
 {
     if (!hwnd || !IsWindow(hwnd))
@@ -56,9 +103,11 @@ BOOL hg_tabs_window_may_have_tabs(HWND hwnd)
     if (GetClassNameW(hwnd, class_name, (int)HG_ARRAYSIZE(class_name)) <= 0)
         return FALSE;
 
-    /* Chromium's window class covers Chrome, Edge, Brave, Opera and the rest;
-     * CabinetWClass is Explorer, which grew tabs in Windows 11. */
-    return lstrcmpiW(class_name, L"Chrome_WidgetWin_1") == 0 || lstrcmpiW(class_name, L"CabinetWClass") == 0;
+    for (size_t i = 0; i < HG_ARRAYSIZE(hg_tab_classes); ++i) {
+        if (lstrcmpiW(class_name, hg_tab_classes[i]) == 0)
+            return TRUE;
+    }
+    return hg_tabs_class_listed_extra(class_name);
 }
 
 static IUIAutomation *hg_tabs_automation(void)

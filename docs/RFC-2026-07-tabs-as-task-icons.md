@@ -120,18 +120,31 @@ window.
 The items are then ordered by their left edge rather than by tree order, because
 the number on an icon has to mean the tab in that position on screen.
 
-### D3. Only windows that can have tabs
+### D3. Only windows that can have tabs, and the list is editable
 
-The enumeration runs only for windows whose class is one of the known tabbed
-shells - `Chrome_WidgetWin_1` (Chrome, Edge, and the rest of the Chromium
-family) and `CabinetWClass` (Explorer). Every other window is skipped without a
-call.
+Nothing in the mechanism is specific to browsers - a tabbed application is a
+tabbed application, and the same UI Automation tree answers for any of them.
+What limits the feature is cost, so the enumeration runs only for windows whose
+class is on a list. Everything else is skipped without a call.
 
-This is a list of class names and it will be incomplete, and that is the correct
-trade: an unknown application keeps exactly the behaviour it has now, one icon
-for one window, which is not a regression. Asking every window on the desktop
-for its tabs so that one unlisted browser might work is how the cost in the
-previous section becomes the cost of using the program.
+Built in: `Chrome_WidgetWin_1` (Chromium, which is Chrome, Edge, Brave, Opera
+and every Electron application), `CabinetWClass` (Explorer),
+`MozillaWindowClass` (Firefox), `CASCADIA_HOSTING_WINDOW_CLASS` (Windows
+Terminal), `Notepad`.
+
+**A list compiled into the program can only ever be out of date**, so
+`[taskbox] tab_classes` adds to it from `config.ini`, semicolon-separated, with
+no rebuild. That is what turns "we support these five" into "we support what you
+tell us about", and it costs one string read at startup.
+
+For that to be usable a reader has to be able to find a window's class, so
+`show windows class` prints it. A setting nobody can discover the value for is a
+setting nobody can use.
+
+An unlisted application keeps exactly the behaviour it has now, one icon for one
+window, which is not a regression. Asking every window on the desktop so that
+one unlisted application might work is how the cost in the previous section
+becomes the cost of using the program.
 
 ### D4. A tab is an item, not a window
 
