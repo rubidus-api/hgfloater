@@ -1,6 +1,6 @@
 # RFC 2026-07: Browser and Explorer Tabs as Task Icons
 
-Status: Proposed
+Status: Implemented (v26.07.31e; the tab-strip scoping in D2a followed in v26.07.31g)
 Date: 2026-07-31
 
 ## Summary
@@ -190,13 +190,28 @@ a window is.
 
 ## Phases
 
-- **P1** - The setting: `[taskbox] show_tabs`, the `O` menu item, and the
-  plumbing that reads it. No enumeration yet.
-- **P2** - UI Automation enumeration behind the setting, per D2 and D3, with tab
-  items in the window list per D4.
-- **P3** - Activation via `SelectionItemPattern`, and the `resize`/`move`
-  behaviour in D5.
-- **P4** - README, SPEC, and the note about virtualised tab strips.
+- **P1 (done, v26.07.31e)** - The setting: `[taskbox] show_tabs`, the `O` menu
+  item, and the plumbing that reads it.
+- **P2 (done, v26.07.31e)** - UI Automation enumeration behind the setting, per
+  D2 and D3, with tab items in the window list per D4.
+  - **D2a was written after the fact**, from use: the first cut asked the window
+    for every tab item and collected Explorer's Home page sections. Fixed in
+    v26.07.31g, and the rule is recorded above rather than left in the code.
+- **P3 (done, v26.07.31e)** - Activation via `SelectionItemPattern`.
+- **P4 (done, v26.07.31e)** - README, SPEC, and the note about virtualised tab
+  strips.
+
+## What went wrong on the way
+
+Two failures worth keeping, because both were avoidable:
+
+- **A four-megabyte stack frame.** The expansion declared its output array as a
+  local. A `WindowItem` is about 4 KB, so a thousand of them overflowed the
+  one-megabyte stack on entry - before the early return for "the feature is off"
+  could run. v26.07.31e therefore crashed at startup on every machine whether or
+  not tabs were switched on. The lesson is in SPEC: item arrays in that file are
+  static, and `gcc -fstack-usage` will find the next one.
+- **Asking the wrong question.** See D2a.
 
 ## References
 
