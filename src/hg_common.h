@@ -71,7 +71,7 @@
 
 /* Build-time versioning */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v26.07.31k"
+#define HG_VERSION_W L"v26.08.02"
 #endif
 
 /* Include generated About text from README.md if available */
@@ -157,6 +157,7 @@
 #define HG_IDM_STARTUP 217
 #define HG_IDM_SHOW_TABS 218
 #define HG_IDM_CAPTION_MENU 219
+#define HG_IDM_CAPTION_DISMISS 220
 
 #define HG_COPYDATA_COMMAND_LINE 0x4847434CU
 

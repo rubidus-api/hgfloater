@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.08.02] - 2026-08-02
+
+### Added
+- The maximize-button menu ends with **Close**, which shuts the menu and leaves the window alone. Escape and a click outside already dismissed it, but this menu opens on a button in someone else's title bar, where a stray click is likelier than usual to land on something that acts — so the harmless way out is on the menu, at the bottom, where anyone looking for "never mind" looks.
+
 ## [v26.07.31k] - 2026-07-31
 
 ### Added

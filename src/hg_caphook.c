@@ -167,6 +167,14 @@ void hg_caphook_show_menu(HWND owner, HWND target)
         AppendMenuW(menu, MF_STRING, (UINT_PTR)(HG_IDM_TASK_RESIZE_4_3_1 + (UINT)i), hg_resize_presets[i].name);
     }
 
+    /* A way out that is a click rather than a guess. Escape and a click outside
+     * both dismiss a popup, but this menu appears on a button in someone else's
+     * title bar, where a stray click is more likely to hit something that acts -
+     * so the harmless option is on the menu, at the bottom, where a reader
+     * looking for "never mind" looks. */
+    AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(menu, MF_STRING, HG_IDM_CAPTION_DISMISS, L"Close");
+
     POINT pt;
     GetCursorPos(&pt);
 
@@ -178,7 +186,10 @@ void hg_caphook_show_menu(HWND owner, HWND target)
     PostMessageW(owner, WM_NULL, 0, 0);
     DestroyMenu(menu);
 
-    if (cmd == 0 || !IsWindow(target))
+    /* Dismissed, either by the entry or by escaping: the window is not touched.
+     * Spelled out rather than left to fall through the tests below, so that
+     * adding a command later cannot accidentally give this one a meaning. */
+    if (cmd == 0 || cmd == HG_IDM_CAPTION_DISMISS || !IsWindow(target))
         return;
 
     if (cmd == HG_IDM_TASK_MOVETO_0_0) {
