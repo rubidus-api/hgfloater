@@ -164,9 +164,10 @@ half-second grace period, so brushing past the edge does not dismiss it.
 
 While hgfloater is running, **right-click the maximize button** — the one left
 of the X — on **any** window, and you get hgfloater's menu for that window:
-**Move to (0, 0)** and the same size presets the task icons offer. Left-clicking
-it still maximizes; right-clicking a caption button does nothing in Windows, so
-nothing was taken away.
+**Move to (0, 0)**, the same size presets the task icons offer, and **Close**,
+which shuts the menu without touching the window. Left-clicking the button still
+maximizes; right-clicking a caption button does nothing in Windows, so nothing
+was taken away.
 
 Switch it off with **Menu on Maximize Button** in the `O` menu, or
 `caption_menu=0` under `[etc]`. **Close hgfloater and the behaviour is gone** —
