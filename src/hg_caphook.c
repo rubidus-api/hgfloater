@@ -120,11 +120,38 @@ static LRESULT CALLBACK caphook_proc(int code, WPARAM w_param, LPARAM l_param)
 
     /* Posted, not shown here: a menu is a modal loop, and this is the mouse's
      * input path. */
-    PostMessageW(hg_g_taskbox_wnd, HG_MSG_CAPTION_MENU, (WPARAM)top, 0);
+    if (!PostMessageW(hg_g_taskbox_wnd, HG_MSG_CAPTION_MENU, (WPARAM)top, 0)) {
+        /* The queue refused it, or the window went away between the check and
+         * here. Eating the click now would take it and give nothing back, so it
+         * goes through untouched instead. */
+        return CallNextHookEx(s_hook, code, w_param, l_param);
+    }
 
-    /* Swallowed - and only now, having decided. Right-clicking a caption button
-     * does nothing in Windows, so nothing is being taken away. */
+    /* Swallowed - and only now, having decided and having something to show for
+     * it. Right-clicking a caption button does nothing in Windows, so nothing is
+     * being taken away. */
     return 1;
+}
+
+/* The hook is a process-owned resource: Windows removes it when the process
+ * ends, however it ends, so a force-kill leaves no behaviour behind and no
+ * other application is left changed. That is the guarantee, and it is the
+ * system's rather than ours.
+ *
+ * This handler does not exist because that guarantee is in doubt. It exists
+ * because relying on a cleanup you never perform is how you find out it was
+ * not doing what you assumed - so the hook comes out on every exit this
+ * process can still run code on, and the system's cleanup stays the backstop
+ * rather than the plan. */
+static LPTOP_LEVEL_EXCEPTION_FILTER s_previous_filter = NULL;
+static BOOL s_filter_installed = FALSE;
+
+static LONG WINAPI caphook_unhandled_exception(EXCEPTION_POINTERS *info)
+{
+    hg_caphook_shutdown();
+    /* Whatever was going to happen to this crash still happens: the previous
+     * filter runs if there was one, and the default does if there was not. */
+    return s_previous_filter ? s_previous_filter(info) : EXCEPTION_CONTINUE_SEARCH;
 }
 
 void hg_caphook_apply(void)
@@ -133,6 +160,13 @@ void hg_caphook_apply(void)
 
     if (wanted && !s_hook) {
         s_hook = SetWindowsHookExW(WH_MOUSE_LL, caphook_proc, GetModuleHandleW(NULL), 0);
+        if (s_hook && !s_filter_installed) {
+            /* Installed with the first hook rather than at startup, so a run
+             * that never turns this on never touches the process's exception
+             * handling at all. */
+            s_previous_filter = SetUnhandledExceptionFilter(caphook_unhandled_exception);
+            s_filter_installed = TRUE;
+        }
     } else if (!wanted && s_hook) {
         UnhookWindowsHookEx(s_hook);
         s_hook = NULL;

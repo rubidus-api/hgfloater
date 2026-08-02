@@ -1,6 +1,6 @@
 # RFC 2026-07: A Menu on Every Window's Maximize Button
 
-Status: Proposed
+Status: Implemented (v26.07.31k; teardown hardened and D5a in v26.08.03)
 Date: 2026-07-31
 
 ## Summary
@@ -87,8 +87,27 @@ consequences:
 ### D1. The hook installs and uninstalls with the setting, and with the program
 
 `UnhookWindowsHookEx` at exit, and on toggling off. When hgfloater is not
-running there is nothing installed and no behaviour to remove - which is exactly
-what was asked for.
+running there is nothing installed and no behaviour to remove.
+
+**A force-kill is safe by construction.** A hook is a process-owned resource:
+the callback lives in this process, and Windows removes the registration when
+the process ends, whichever way it ends - Task Manager, `TerminateProcess`, a
+crash. Nothing survives to change how anyone else's window behaves, and no
+other application was ever modified in the first place, which is the deeper
+reason: this feature never wrote anything into another process.
+
+That guarantee is the system's, and this program does not lean on it. The hook
+is taken out on every exit we can still run code on:
+
+- the ordinary exit path,
+- **`WM_ENDSESSION`**, so logging off or shutting down releases it while there
+  is still a message loop to do it in,
+- an **unhandled exception**, through a top-level filter installed with the
+  first hook and chaining to whatever filter was there before, so the crash
+  still crashes and still gets reported.
+
+None of these is load-bearing. They exist because relying on a cleanup you
+never perform is how you discover it was not doing what you assumed.
 
 ### D2. A setting, defaulted on
 
@@ -122,6 +141,13 @@ event is passed on untouched.
 Right-clicking a caption button does nothing at all in Windows, so nothing is
 being taken away when we do claim it.
 
+### D5a. Never swallow a click that produced nothing
+
+The hook eats the right-click only after it has decided *and* successfully
+posted the message. If the post fails - a full queue, or the window gone between
+the check and the post - the click goes through untouched. Taking an input event
+and giving nothing back is the one outcome worse than not having the feature.
+
 ## Non-Goals
 
 - No left-click behaviour. Maximize still maximizes.
@@ -144,9 +170,16 @@ being taken away when we do claim it.
 
 ## Phases
 
-- **P1** - The hook, the hit-test, the posted message, install and teardown.
-- **P2** - The menu, from the shared preset table.
-- **P3** - The `O` menu entry, the `config.ini` key, README and SPEC.
+- **P1 (done, v26.07.31k)** - The hook, the hit-test, the posted message,
+  install and teardown.
+- **P2 (done, v26.07.31k)** - The menu, from the shared preset table. A
+  **Close** entry was added in v26.08.02: Escape and an outside click already
+  dismissed it, but this menu opens on a button in someone else's title bar,
+  where a stray click is likelier than usual to land on something that acts.
+- **P3 (done, v26.07.31k)** - The `O` menu entry, the `config.ini` key, README
+  and SPEC.
+- **P4 (done, v26.08.03)** - D1's teardown on every exit that can still run
+  code, and D5a.
 
 ## References
 
