@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.08.03] - 2026-08-03
+
+### Changed
+- The maximize-button hook is now taken out on **every exit the process can still run code on**: the ordinary path as before, plus `WM_ENDSESSION` when logging off or shutting down, plus an unhandled exception through a top-level filter that chains to whatever was there before, so a crash still crashes and still gets reported.
+  - A force-kill was already safe and still is: a hook is a process-owned resource, and Windows removes the registration when the process ends however it ends. The deeper reason is that this feature never wrote anything into another process to begin with — there is nothing left behind to undo.
+  - These handlers are not load-bearing. They exist because relying on a cleanup you never perform is how you find out it was not doing what you assumed.
+
+### Fixed
+- The hook could swallow a right-click and show nothing, if posting the message failed — a full queue, or the taskbox window going away between the check and the post. The click now goes through untouched in that case. Taking an input event and giving nothing back is worse than not having the feature.
+
 ## [v26.08.02] - 2026-08-02
 
 ### Added

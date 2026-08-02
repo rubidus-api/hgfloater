@@ -1021,6 +1021,14 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     /* Posted by the mouse hook when a right-click landed on some window's
      * maximize button. Handled here, on the ordinary message loop, because the
      * hook itself must never run a modal loop. */
+    /* Logging off or shutting down. The process is about to be ended for us,
+     * and Windows would take the hook out either way - but this is an exit we
+     * can still run code on, so we take it out ourselves. */
+    case WM_ENDSESSION:
+        if (w_param)
+            hg_caphook_shutdown();
+        return 0;
+
     case HG_MSG_CAPTION_MENU:
         hg_caphook_show_menu(hwnd, (HWND)w_param);
         return 0;
