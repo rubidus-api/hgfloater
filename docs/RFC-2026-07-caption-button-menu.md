@@ -141,6 +141,34 @@ event is passed on untouched.
 Right-clicking a caption button does nothing at all in Windows, so nothing is
 being taken away when we do claim it.
 
+### D6. A watchdog, because being dropped is silent
+
+The risk in the section above is not theoretical and it has no error to report:
+Windows stops calling a hook that has been too slow, the handle stays valid,
+`UnhookWindowsHookEx` would still succeed, and the only symptom is that nothing
+happens any more. There is no API that answers "am I still hooked".
+
+So it is inferred, every 30 seconds, from evidence we can get for free:
+
+- The hook increments a counter on every callback. One increment is the
+  cheapest thing that can be done per event, and it is the only work done for
+  the events this feature does not care about.
+- The watchdog compares the pointer position with the previous check. **If the
+  pointer moved and the counter did not, the hook was dropped**, because mouse
+  movement is mouse events and a live hook is called for them.
+
+That direction is what makes it safe: it has **no false positives**. If the
+pointer has not moved, nothing is concluded and nothing is done - silence is
+not evidence of death, and re-installing on a hunch would churn the input path
+for no reason. A cursor moved by `SetCursorPos` rather than by a mouse could
+cost one needless re-install; re-installing is cheap and harmless, and a
+feature that has silently stopped working is neither.
+
+It runs on the floater's clock rather than the taskbox's refresh, because the
+taskbox's only ticks while the taskbox is visible and the taskbox is hidden most
+of the time. The interval lives inside the watchdog, so calling it from a second
+place later can only ever be harmless.
+
 ### D5a. Never swallow a click that produced nothing
 
 The hook eats the right-click only after it has decided *and* successfully

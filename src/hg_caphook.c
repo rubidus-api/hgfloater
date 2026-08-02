@@ -21,6 +21,11 @@ static BOOL s_read = FALSE;
 static BOOL s_enabled = FALSE;
 static HHOOK s_hook = NULL;
 
+/* The watchdog's evidence. Written only by the hook, which runs on the thread
+ * that installed it - our UI thread - and read only by the watchdog, which runs
+ * on that same thread's timer. One thread, so no interlocking. */
+static unsigned s_callbacks = 0;
+
 BOOL hg_caphook_enabled(void)
 {
     if (!s_read) {
@@ -95,6 +100,11 @@ static BOOL caphook_is_our_window(HWND hwnd)
 
 static LRESULT CALLBACK caphook_proc(int code, WPARAM w_param, LPARAM l_param)
 {
+    /* One increment, so the watchdog can tell a living hook from a dead one.
+     * It is the cheapest thing that can be done per event and it is the only
+     * work done for the events this feature does not care about. */
+    ++s_callbacks;
+
     /* Everything that is not a right button press leaves immediately. This
      * function is on the path of every mouse event on the desktop. */
     if (code != HC_ACTION || w_param != WM_RBUTTONDOWN)
@@ -179,6 +189,72 @@ void hg_caphook_shutdown(void)
         UnhookWindowsHookEx(s_hook);
         s_hook = NULL;
     }
+}
+
+/* Is the hook still being called?
+ *
+ * Windows drops a low-level hook that has been too slow and tells nobody: the
+ * handle stays valid, UnhookWindowsHookEx would still succeed, and the only
+ * symptom is that nothing happens any more. There is no API that answers
+ * "am I still hooked", so this infers it.
+ *
+ * The inference has no false positives, which is the point. If the pointer has
+ * moved since the last check then mouse events happened, and a hook that is
+ * still installed must have been called for them. Moved but not called means
+ * dropped. If the pointer has not moved we learn nothing and say nothing -
+ * silence is not evidence of death, and re-installing on a hunch would churn
+ * the input path for no reason.
+ *
+ * (A cursor moved by SetCursorPos rather than by a mouse could cost one
+ * needless re-install. Re-installing is cheap and harmless; a feature that has
+ * silently stopped working is neither.) */
+void hg_caphook_watchdog(void)
+{
+    static POINT last_pt = {0, 0};
+    static unsigned last_callbacks = 0;
+    static BOOL primed = FALSE;
+    static ULONGLONG last_check = 0;
+
+    if (!hg_caphook_enabled() || !s_hook) {
+        primed = FALSE;
+        return;
+    }
+
+    /* The interval is kept here rather than in the caller's timer, so calling
+     * this from more than one place - or from a timer whose rate changes - can
+     * only ever be harmless. */
+    ULONGLONG now = GetTickCount64();
+    if (last_check != 0 && (now - last_check) < (ULONGLONG)HG_CAPHOOK_WATCHDOG_SECONDS * 1000ULL)
+        return;
+    last_check = now;
+
+    POINT now_pt;
+    if (!GetCursorPos(&now_pt))
+        return;
+
+    if (!primed) {
+        /* First look: record and judge nothing. */
+        primed = TRUE;
+        last_pt = now_pt;
+        last_callbacks = s_callbacks;
+        return;
+    }
+
+    BOOL pointer_moved = (now_pt.x != last_pt.x || now_pt.y != last_pt.y);
+    BOOL hook_ran = (s_callbacks != last_callbacks);
+
+    last_pt = now_pt;
+    last_callbacks = s_callbacks;
+
+    if (!pointer_moved || hook_ran)
+        return;
+
+    /* Moved, and we were never called: put it back. Unhooking first because the
+     * old registration may still be listed even though it is no longer being
+     * called, and leaking it would stack a second one on the next round. */
+    UnhookWindowsHookEx(s_hook);
+    s_hook = SetWindowsHookExW(WH_MOUSE_LL, caphook_proc, GetModuleHandleW(NULL), 0);
+    primed = FALSE; /* start the next judgement from a clean pair of readings */
 }
 
 /* The same entries the task icon's menu offers, from the same preset table.

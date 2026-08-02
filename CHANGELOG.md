@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.08.03b] - 2026-08-03
+
+### Added
+- **A watchdog for the maximize-button hook.** Windows stops calling a low-level hook that has been too slow and tells nobody — the handle stays valid and the feature simply stops working. There is no API that answers "am I still hooked", so it is inferred every 30 seconds: the hook counts its own callbacks, and if the pointer has moved since the last check while the counter has not, the hook was dropped and is put back.
+  - The inference has **no false positives**, which is the point. Pointer moved means mouse events happened, and a live hook is called for them. Pointer unmoved concludes nothing and does nothing — silence is not evidence of death, and re-installing on a hunch would churn the input path for no reason.
+  - It costs one increment per mouse event, which is the only work the hook does for events this feature does not care about, plus one `GetCursorPos` every 30 seconds.
+  - It rides the floater's clock, not the taskbox's refresh: that one only ticks while the taskbox is visible, and the taskbox is hidden most of the time.
+
 ## [v26.08.03] - 2026-08-03
 
 ### Changed
