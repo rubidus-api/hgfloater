@@ -1188,6 +1188,12 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     }
     case WM_TIMER: {
         if (w_param == HG_TIMER_FLOATER_CLOCK) {
+            /* On the floater's clock rather than the taskbox's refresh: that one
+             * only runs while the taskbox is visible, and the taskbox is hidden
+             * most of the time. This timer runs for the life of the program,
+             * which is what a watchdog needs. It throttles itself. */
+            hg_caphook_watchdog();
+
             static SYSTEMTIME last_st = {0};
             SYSTEMTIME st;
             GetLocalTime(&st);

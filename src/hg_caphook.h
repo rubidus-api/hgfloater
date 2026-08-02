@@ -21,6 +21,12 @@ void hg_caphook_set_enabled(BOOL enabled);
 void hg_caphook_apply(void);
 void hg_caphook_shutdown(void);
 
+/* Windows silently stops calling a low-level hook that has been too slow, and
+ * says nothing: the handle stays valid and the feature just stops. Call this on
+ * a slow timer to notice and put the hook back. */
+#define HG_CAPHOOK_WATCHDOG_SECONDS 30
+void hg_caphook_watchdog(void);
+
 /* Posted to the taskbox when a right-click landed on a maximize button;
  * w_param carries the target window. */
 #define HG_MSG_CAPTION_MENU (WM_APP + 40)
