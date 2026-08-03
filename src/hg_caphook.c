@@ -98,6 +98,24 @@ static BOOL caphook_is_our_window(HWND hwnd)
     return pid == GetCurrentProcessId();
 }
 
+/* The window whose maximize button took the press, held between the press and
+ * the release. Written and read only by the hook, on the one thread that
+ * installed it, so no interlocking. */
+static HWND s_armed = NULL;
+
+/* The top-level window at a screen point, or NULL if it is one of ours. */
+static HWND caphook_target_at(POINT pt)
+{
+    HWND under = WindowFromPoint(pt);
+    if (!under)
+        return NULL;
+
+    HWND top = GetAncestor(under, GA_ROOT);
+    if (!top || caphook_is_our_window(top))
+        return NULL;
+    return top;
+}
+
 static LRESULT CALLBACK caphook_proc(int code, WPARAM w_param, LPARAM l_param)
 {
     /* One increment, so the watchdog can tell a living hook from a dead one.
@@ -105,21 +123,53 @@ static LRESULT CALLBACK caphook_proc(int code, WPARAM w_param, LPARAM l_param)
      * work done for the events this feature does not care about. */
     ++s_callbacks;
 
-    /* Everything that is not a right button press leaves immediately. This
-     * function is on the path of every mouse event on the desktop. */
-    if (code != HC_ACTION || w_param != WM_RBUTTONDOWN)
+    /* Everything that is not a right button leaves immediately. This function
+     * is on the path of every mouse event on the desktop. */
+    if (code != HC_ACTION || (w_param != WM_RBUTTONDOWN && w_param != WM_RBUTTONUP))
         return CallNextHookEx(s_hook, code, w_param, l_param);
 
     const MSLLHOOKSTRUCT *info = (const MSLLHOOKSTRUCT *)l_param;
     if (!info)
         return CallNextHookEx(s_hook, code, w_param, l_param);
 
-    HWND under = WindowFromPoint(info->pt);
-    if (!under)
+    if (w_param == WM_RBUTTONUP) {
+        HWND armed = s_armed;
+        s_armed = NULL;
+        if (!armed)
+            return CallNextHookEx(s_hook, code, w_param, l_param);
+
+        /* Both halves of this click are ours. The press was swallowed, so
+         * letting the release through would hand the target an up with no down
+         * before it - which is worse than taking the whole click, and taking
+         * the whole click takes nothing away: right-clicking a caption button
+         * does nothing in Windows.
+         *
+         * The menu is asked for only if the release is still on the button that
+         * took the press. Pressing and dragging away is how every button in
+         * Windows is cancelled, and this one is no different. */
+        if (IsWindow(armed) && caphook_target_at(info->pt) == armed &&
+            caphook_is_maximize_button(armed, info->pt) &&
+            hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+            /* Posted, not shown here: a menu is a modal loop, and this is the
+             * mouse's input path. */
+            PostMessageW(hg_g_taskbox_wnd, HG_MSG_CAPTION_MENU, (WPARAM)armed, 0);
+        }
+        return 1;
+    }
+
+    /* A press means any earlier one is over, however it ended. Without this, a
+     * press whose release was never seen - swallowed by something else, or lost
+     * with the desktop it happened on - would leave an arm behind that eats one
+     * unrelated right-release later. */
+    s_armed = NULL;
+
+    /* A menu of ours is already up. Its own modal loop is what should see this
+     * click - dismissing it - rather than us stacking a second menu on top. */
+    if (hg_g_menu_active)
         return CallNextHookEx(s_hook, code, w_param, l_param);
 
-    HWND top = GetAncestor(under, GA_ROOT);
-    if (!top || caphook_is_our_window(top))
+    HWND top = caphook_target_at(info->pt);
+    if (!top)
         return CallNextHookEx(s_hook, code, w_param, l_param);
 
     if (!caphook_is_maximize_button(top, info->pt))
@@ -128,18 +178,15 @@ static LRESULT CALLBACK caphook_proc(int code, WPARAM w_param, LPARAM l_param)
     if (!hg_g_taskbox_wnd || !IsWindow(hg_g_taskbox_wnd))
         return CallNextHookEx(s_hook, code, w_param, l_param);
 
-    /* Posted, not shown here: a menu is a modal loop, and this is the mouse's
-     * input path. */
-    if (!PostMessageW(hg_g_taskbox_wnd, HG_MSG_CAPTION_MENU, (WPARAM)top, 0)) {
-        /* The queue refused it, or the window went away between the check and
-         * here. Eating the click now would take it and give nothing back, so it
-         * goes through untouched instead. */
-        return CallNextHookEx(s_hook, code, w_param, l_param);
-    }
+    /* Armed rather than acted on. The menu waits for the release, because a
+     * menu opened with the right button still down is a menu that the release
+     * immediately either dismisses or - the cursor sitting on its first entry -
+     * picks from. Both look like a menu that flashes and vanishes, and the
+     * second one moves a window nobody asked to move. */
+    s_armed = top;
 
-    /* Swallowed - and only now, having decided and having something to show for
-     * it. Right-clicking a caption button does nothing in Windows, so nothing is
-     * being taken away. */
+    /* Swallowed - and only now, having decided. The release is swallowed with
+     * it, and the pair produces the menu. */
     return 1;
 }
 
@@ -180,6 +227,9 @@ void hg_caphook_apply(void)
     } else if (!wanted && s_hook) {
         UnhookWindowsHookEx(s_hook);
         s_hook = NULL;
+        /* A press whose release will never be seen, because the hook that would
+         * have seen it is gone. */
+        s_armed = NULL;
     }
 }
 
@@ -188,6 +238,7 @@ void hg_caphook_shutdown(void)
     if (s_hook) {
         UnhookWindowsHookEx(s_hook);
         s_hook = NULL;
+        s_armed = NULL;
     }
 }
 
@@ -254,6 +305,7 @@ void hg_caphook_watchdog(void)
      * called, and leaking it would stack a second one on the next round. */
     UnhookWindowsHookEx(s_hook);
     s_hook = SetWindowsHookExW(WH_MOUSE_LL, caphook_proc, GetModuleHandleW(NULL), 0);
+    s_armed = NULL; /* whatever was pressed, its release went to the dropped hook */
     primed = FALSE; /* start the next judgement from a clean pair of readings */
 }
 
@@ -263,6 +315,12 @@ void hg_caphook_watchdog(void)
 void hg_caphook_show_menu(HWND owner, HWND target)
 {
     if (!target || !IsWindow(target))
+        return;
+
+    /* One menu at a time. The message that brings us here is posted, and a
+     * posted message is dispatched inside a menu's own modal loop too, so
+     * without this a second one could open on top of the first. */
+    if (hg_g_menu_active)
         return;
 
     HMENU menu = CreatePopupMenu();
@@ -292,7 +350,15 @@ void hg_caphook_show_menu(HWND owner, HWND target)
      * click that should dismiss it; these two calls are the documented way
      * around that. */
     SetForegroundWindow(owner);
+
+    /* The owner is the taskbox, and the taskbox has a timer that collapses it
+     * once the cursor has been outside it for half a second - which the cursor
+     * is, because it is on somebody else's title bar. Hiding the owner window
+     * cancels the menu it owns, so the flag that already stops that timer for
+     * the taskbox's own menus has to cover this one too. */
+    hg_g_menu_active = TRUE;
     int cmd = (int)TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, owner, NULL);
+    hg_g_menu_active = FALSE;
     PostMessageW(owner, WM_NULL, 0, 0);
     DestroyMenu(menu);
 

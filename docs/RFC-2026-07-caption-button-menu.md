@@ -1,6 +1,6 @@
 # RFC 2026-07: A Menu on Every Window's Maximize Button
 
-Status: Implemented (v26.07.31k; teardown hardened and D5a in v26.08.03)
+Status: Implemented (v26.07.31k; teardown and D5a in v26.08.03; D5b and D5c in v26.08.03c)
 Date: 2026-07-31
 
 ## Summary
@@ -141,6 +141,9 @@ event is passed on untouched.
 Right-clicking a caption button does nothing at all in Windows, so nothing is
 being taken away when we do claim it.
 
+*Amended by D5b: it is the press and its release that are claimed together, and
+the message is posted from the release.*
+
 ### D6. A watchdog, because being dropped is silent
 
 The risk in the section above is not theoretical and it has no error to report:
@@ -168,6 +171,46 @@ It runs on the floater's clock rather than the taskbox's refresh, because the
 taskbox's only ticks while the taskbox is visible and the taskbox is hidden most
 of the time. The interval lives inside the watchdog, so calling it from a second
 place later can only ever be harmless.
+
+### D5b. The press arms, the release opens
+
+The first version posted the message from the button **press** and swallowed
+only that. Both halves of that were wrong, and the second one is what made the
+feature look broken:
+
+- The menu appeared while the right button was still physically down, directly
+  under the cursor. The release that came a moment later went into the menu that
+  had just opened: sometimes it only dismissed it, which reads as a menu that
+  flashes and vanishes; sometimes it selected the entry under the cursor, which
+  is the top one - **Move to (0, 0)** - and the window jumped to the corner
+  before the menu was even read.
+- The release was never swallowed, so the target application got an up with no
+  down before it. A window that draws its own title bar is free to act on that.
+
+So the press arms and is swallowed; the release is swallowed with it and posts
+the message, but only if it is still on the maximize button that took the press.
+Press and drag away is how every button in Windows is cancelled, and this one is
+no different. A press that we do not arm clears any arm left over from before,
+so a release that never arrives cannot make us eat an unrelated one later.
+
+Taking both halves takes nothing away that D5 did not already account for:
+right-clicking a caption button does nothing in Windows. Taking *one* half is
+the outcome that gives another application something it never would have seen.
+
+### D5c. One menu, and nothing may hide it
+
+Two things could end this menu before it was used, both of them ours:
+
+- The message that opens it is posted, and a posted message is dispatched inside
+  a menu's own modal loop too - so a second right-click on some other maximize
+  button would stack a second menu on the first. The hook now passes a press
+  through untouched while one of our menus is up, so that click dismisses the
+  menu, which is what a click outside a menu should do.
+- The menu is owned by the taskbox, and the taskbox collapses itself once the
+  cursor has been outside it for half a second - which the cursor is, for the
+  whole life of this menu, because it is out on someone else's title bar.
+  Hiding a window cancels the menu it owns. The `hg_g_menu_active` flag that
+  already holds that timer off for the taskbox's own menus now covers this one.
 
 ### D5a. Never swallow a click that produced nothing
 
@@ -208,6 +251,10 @@ and giving nothing back is the one outcome worse than not having the feature.
   and SPEC.
 - **P4 (done, v26.08.03)** - D1's teardown on every exit that can still run
   code, and D5a.
+- **P5 (done, v26.08.03c)** - D5b and D5c, after the menu was reported appearing
+  at the screen corner and disappearing again. Everything P1 to P4 describes was
+  working: the menu was simply opened at the one moment when the next input
+  event was certain to close it.
 
 ## References
 

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v26.08.03c] - 2026-08-03
+
+### Fixed
+- **The maximize-button menu appeared and vanished, and sometimes moved the window on its way out.** The menu opened on the press, while the right button was still held down — so the release that followed landed straight in a menu that had just appeared under the cursor. Sometimes that release only dismissed it, which read as a menu that flashed; sometimes it picked the entry sitting under the cursor, which is the first one, **Move to (0, 0)**, and the window jumped to the corner. The menu now waits for the release: the press arms it, the release opens it, and releasing somewhere else cancels it the way dragging off any button in Windows does.
+  - The release is swallowed along with the press it belongs to. Only the press was taken before, which left the target application an up with no down in front of it — and an application that draws its own title bar may act on that.
+  - The menu no longer opens on top of itself. The message that opens it is posted, and posted messages are dispatched inside a menu's own modal loop too, so a second right-click could stack a second menu; now that click dismisses the first one instead, which is what a click outside a menu should do.
+  - The taskbox's own collapse timer no longer cancels the menu. The taskbox owns this menu, the cursor is out on somebody else's title bar the whole time it is open, and hiding a window cancels the menu it owns — so the flag that already holds that timer off for the taskbox's own menus now covers this one.
+
 ## [v26.08.03b] - 2026-08-03
 
 ### Added
