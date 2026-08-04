@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v26.08.04] - 2026-08-04
 
 A max-effort review of the whole codebase, aimed at the reported high idle CPU
 occupancy and at bounding memory growth, confirmed fifteen root causes; all are

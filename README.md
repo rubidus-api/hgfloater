@@ -71,7 +71,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.07.29l)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.08.04)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -401,6 +401,11 @@ would otherwise be false the moment you asked for it. **Raising it fills
 forward**: the dropped clips are gone, and new ones accumulate up to the new
 number.
 
+**The history is bounded in bytes as well as in count.** Very large clips are
+capped individually, and the whole history is capped in total; past the total,
+the oldest clips go first and the newest always stays. Copying enormous text
+blocks all day cannot make hgfloater's memory grow without limit.
+
 **Nothing is written to disk.** The history lives in memory and dies with the
 program; only the maximum is saved. This is deliberate, and it is the one place
 hgfloater does less than the clipboard managers it was measured against: a
@@ -490,6 +495,9 @@ the same line twice in a row stores it once. Nothing is written to disk.
   plain wheel scrolls.
 - Long lines **wrap** instead of running off the right edge, so a transcript of
   window titles and help text reads without a horizontal scrollbar.
+- The transcript keeps a bounded tail: past its budget the **oldest lines are
+  trimmed**, which also keeps output appearing forever — an EDIT control that
+  hits its internal limit would otherwise drop new text silently.
 - The window keeps its own position, size, opacity, font, and font size in
   `config.ini`, independent of the other widgets.
 
@@ -556,6 +564,11 @@ display.
 - **Left drag the thumbnail's edit box** to move the thumbnail window.
 - **Right click the edit box** to close it.
 - Each thumbnail remembers its own position and size.
+- The refresh rate follows attention: **10 frames a second while your pointer
+  is on the thumbnail** (that is when you are driving the other monitor
+  through it), 5 while it is merely open, and one when other windows cover it
+  completely. Every frame is a capture of the whole source display, so a
+  thumbnail nobody is looking at no longer costs what one being used does.
 
 ## 10. Notes
 
