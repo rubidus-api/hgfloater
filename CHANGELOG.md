@@ -4,6 +4,83 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+A max-effort review of the whole codebase, aimed at the reported high idle CPU
+occupancy and at bounding memory growth, confirmed fifteen root causes; all are
+addressed here. The standing allocation policy applies throughout: fixed static
+storage first, then arenas, ad-hoc heap last, and every cache carries a hard cap.
+
+### Fixed
+- **Idle CPU: the floater re-measured the same text every second.** Every paint
+  asked for about eighteen ink extents, and each ask created a scratch DC and a
+  32-bit DIB, rendered the text, and scanned every pixel row. Measurements are
+  now cached per font and string in fixed storage; releasing any font retires
+  the whole cache through a global generation counter, so a recycled handle
+  value can never serve another font's numbers.
+- **Idle CPU: the monitor preview captured the whole screen ten times a second
+  no matter who was looking.** The rate now follows attention: 10 fps with the
+  pointer on the preview (that is the remote-driving case), 5 fps while merely
+  open, and one frame a second when other windows cover it completely - which
+  the old visibility check could not see, because a covered window still has its
+  visible bit set. The floater's clock tick also invalidated every preview a
+  second time each second; that duplicate is gone.
+- **Idle CPU: the temperature poll rebuilt its machinery every five seconds.**
+  The PDH query - whose wildcard add parses the entire performance-counter
+  registry - is now opened once and kept, each poll doing only a collect into a
+  fixed buffer instead of open, parse, allocate, close. The WMI zone query
+  drops its connection on failure (the module's own recovery contract, which
+  the thermal path had been skipping) and a machine that keeps answering
+  "no zones" earns geometrically longer pauses, up to about ten minutes,
+  instead of a doomed cross-process query every five seconds forever. The GPU
+  temperature poll's per-call heap allocation is now a fixed array.
+- **Idle CPU: Explorer paths were re-resolved over DCOM every second.** The
+  resolved path is now cached per window and revalidated only when the window's
+  title changes - navigating changes the title, so nothing is missed, and both
+  hgfloater's and explorer.exe's steady-state CPU drop while the taskbox is
+  open. A window whose icon extraction keeps failing also now earns a growing
+  retry pause (three quick tries, then doubling waits capped near half a
+  minute) instead of re-running the full blocking pipeline every refresh.
+- **Idle CPU: extra browser tabs cost an icon copy per tab per second.** Tab
+  items now share the window's icon handle without owning it; the fan-out is
+  rebuilt and released as one unit, so the share cannot outlive the owner.
+- **Typing lag: the note editor extracted the whole document on every
+  keystroke.** A keystroke now just marks the note stale; the text is pulled
+  once, when the save timer, focus loss, or closing actually consumes it, and
+  the caption redraws only when the title really changed. Typing cost no longer
+  grows with the note.
+- **UI stalls: brightness was read over DDC/CI every five seconds.** A DDC read
+  blocks the UI thread for up to hundreds of milliseconds on slow monitor
+  firmware. The cache now refreshes once a minute - the app's own setters stamp
+  it immediately, so only outside changes (the Windows slider, monitor buttons)
+  wait that long.
+- **Unbounded memory: the clipboard history had no total cap.** Entry count and
+  per-clip size were bounded, but 64 clips near the ceiling could hold over a
+  hundred megabytes for the life of the process. A 4 Mi-character total cap now
+  evicts oldest-first; the newest clip always stays.
+- **Unbounded memory: the command box transcript grew forever, then went
+  mute.** Once the EDIT control's internal limit filled, appends silently
+  inserted nothing - commands appeared to run with no output. The transcript
+  now trims its oldest lines past a fixed budget, so both the memory and the
+  output keep working.
+- **Leak: closing a monitor preview left its tooltip registered.** Destroying a
+  tool's window does not remove the tool, so every open/close cycle grew the
+  shared tooltip control's table. The preview now deletes its tool in
+  WM_DESTROY, the one path every teardown crosses.
+- **Leak: a full window table dropped icon handles.** When windows plus
+  expanded tabs reached the item cap, both the expansion's copy-back and the
+  refresh's early bail discarded items whose icons they owned without releasing
+  them. Every drop path now honors the release contract.
+- **Crash-adjacent: a failed note-editor creation could act on the wrong
+  note.** The window learns which note it belongs to only after creation
+  returns, so a WM_DESTROY from a creation that failed midway read the default
+  slot of 0 and destroyed note 0's font under its live editor. The window now
+  starts marked as belonging to no note.
+- **Undefined behavior: a long number in a command overflowed.** More than ten
+  digits drove the accumulating multiply past INT_MAX - undefined in C, and a
+  wrapped value could name a real window. The parse now rejects the overflow
+  before it can happen.
+
 ## [v26.08.03c] - 2026-08-03
 
 ### Fixed

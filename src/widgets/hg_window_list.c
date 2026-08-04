@@ -70,6 +70,55 @@ static IShellWindows *refresh_acquire_shell_windows(IShellWindows **psw)
     return *psw;
 }
 
+/* The resolved path is remembered per window: the IShellWindows walk above is
+ * cross-process COM per collection entry, and it used to run once per Explorer
+ * window per second. The answer only changes when the user navigates, and
+ * navigating renames the window - so the raw title, already in hand for free,
+ * is the revalidation key. A failure is remembered the same way: a window
+ * whose path cannot be resolved will not resolve any better one second later,
+ * only after it changes. */
+#define HG_EXPLORER_CACHE 32
+static BOOL explorer_path_for(IShellWindows **shell_windows, HWND hwnd, const WCHAR *raw_title, WCHAR *out,
+                              int out_cch)
+{
+    typedef struct ExplorerPathEntry {
+        HWND hwnd;
+        BOOL resolved;
+        WCHAR title[HG_MAX_STR];
+        WCHAR path[HG_MAX_PATH];
+    } ExplorerPathEntry;
+    static ExplorerPathEntry s_cache[HG_EXPLORER_CACHE];
+    static int s_next = 0;
+
+    for (int i = 0; i < HG_EXPLORER_CACHE; ++i) {
+        if (s_cache[i].hwnd == hwnd && lstrcmpW(s_cache[i].title, raw_title) == 0) {
+            if (s_cache[i].resolved)
+                StringCchCopyW(out, (size_t)out_cch, s_cache[i].path);
+            return s_cache[i].resolved;
+        }
+    }
+
+    ExplorerPathEntry *slot = NULL;
+    for (int i = 0; i < HG_EXPLORER_CACHE; ++i) {
+        if (s_cache[i].hwnd == NULL || s_cache[i].hwnd == hwnd || !IsWindow(s_cache[i].hwnd)) {
+            slot = &s_cache[i];
+            break;
+        }
+    }
+    if (!slot) {
+        slot = &s_cache[s_next];
+        s_next = (s_next + 1) % HG_EXPLORER_CACHE;
+    }
+
+    slot->hwnd = hwnd;
+    StringCchCopyW(slot->title, HG_ARRAYSIZE(slot->title), raw_title);
+    slot->resolved =
+        get_explorer_path(refresh_acquire_shell_windows(shell_windows), hwnd, slot->path, HG_MAX_PATH);
+    if (slot->resolved)
+        StringCchCopyW(out, (size_t)out_cch, slot->path);
+    return slot->resolved;
+}
+
 /* One item per tab, for the windows that have them, in place of the one item
  * the window would have contributed.
  *
@@ -102,8 +151,9 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
      * reason; this function has to as well. Only ever the UI thread. */
     static WindowItem out[HG_MAX_WINDOW_ITEMS];
     int out_count = 0;
+    int consumed = 0;
 
-    for (int i = 0; i < count && out_count < HG_MAX_WINDOW_ITEMS; ++i) {
+    for (int i = 0; i < count && out_count < HG_MAX_WINDOW_ITEMS; ++i, consumed = i) {
         int tabs = 0;
         int slot = -1;
 
@@ -141,16 +191,25 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
             out[out_count].tab_index = t;
             StringCchCopyW(out[out_count].title, HG_MAX_STR, cached_titles[slot][t]);
 
-            /* The icon handle is owned exactly once. The first tab inherits the
-             * window's, the rest get their own copy; a copy that fails leaves
-             * NULL, and the toolbar draws the title's first character instead. */
+            /* The icon handle is owned exactly once, by the first tab, which
+             * inherits the window's handle and its ownership flag. The rest
+             * share the same handle without owning it: every item of a fan-out
+             * is rebuilt together each pass and released together when the
+             * window goes, so the share can never outlive the owner - and it
+             * replaces a CopyIcon plus DestroyIcon per extra tab per second. */
             if (t > 0) {
-                out[out_count].icon = items[i].icon ? CopyIcon(items[i].icon) : NULL;
-                out[out_count].own_icon = (out[out_count].icon != NULL);
+                out[out_count].icon = items[i].icon;
+                out[out_count].own_icon = FALSE;
             }
             ++out_count;
         }
     }
+
+    /* A full output table ends the loop with input items still unconsumed, and
+     * every one of those may own its icon handle. They are about to be
+     * overwritten by the copy-back, so this is the last moment to let go. */
+    for (int i = consumed; i < count; ++i)
+        release_window_item_icon(&items[i]);
 
     /* Windows that have gone leave their cache entry behind; compact it here so
      * a long session does not fill the table with dead handles. */
@@ -180,8 +239,12 @@ void refresh_window_list(BOOL force)
 
     /* 1단계: 기존 창 유효성 체크 및 아이콘 재사용 */
     for (int i = 0; i < hg_g_window_count; i++) {
-        if (new_count >= HG_MAX_WINDOW_ITEMS)
-            break;
+        if (new_count >= HG_MAX_WINDOW_ITEMS) {
+            /* No room left: the remaining old items are dropped, and each may
+             * still own its icon. Breaking here would leak them. */
+            release_window_item_icon(&hg_g_window_items[i]);
+            continue;
+        }
 
         /* The previous pass may have expanded a window into several tab items.
          * Reuse rebuilds windows, not tabs, so a window that is already in the
@@ -201,14 +264,36 @@ void refresh_window_list(BOOL force)
         if (IsWindow(hg_g_window_items[i].hwnd) && is_alt_tab_window(hg_g_window_items[i].hwnd)) {
             hg_g_new_items[new_count] = (WindowItem){0};
             hg_g_new_items[new_count].hwnd = hg_g_window_items[i].hwnd;
-            if (force || !hg_g_window_items[i].icon) {
+            BOOL retry_now = TRUE;
+            if (!force && !hg_g_window_items[i].icon && hg_g_window_items[i].icon_retry_wait > 0) {
+                /* Still waiting out the backoff from earlier failures. */
+                hg_g_new_items[new_count].icon_misses = hg_g_window_items[i].icon_misses;
+                hg_g_new_items[new_count].icon_retry_wait = hg_g_window_items[i].icon_retry_wait - 1;
+                retry_now = FALSE;
+            }
+            if (retry_now && (force || !hg_g_window_items[i].icon)) {
                 /* A window asked for its icon while it was still starting up can
                  * answer nothing, and the old code kept that nothing for the life
-                 * of the window. Asking again on the next pass costs one call for
-                 * the few that failed and stops a permanently blank cell. */
+                 * of the window. Asking again stops a permanently blank cell -
+                 * but each ask blocks on the target window and reads disk, so a
+                 * window that keeps failing earns a growing pause: 3 quick
+                 * retries, then doubling waits capped near half a minute. */
                 release_window_item_icon(&hg_g_window_items[i]);
                 hg_g_new_items[new_count].icon = get_window_icon(hg_g_window_items[i].hwnd, ABS(hg_g_current_font_size),
                                                                  &hg_g_new_items[new_count].own_icon);
+                if (hg_g_new_items[new_count].icon) {
+                    hg_g_new_items[new_count].icon_misses = 0;
+                    hg_g_new_items[new_count].icon_retry_wait = 0;
+                } else {
+                    int misses = hg_g_window_items[i].icon_misses + 1;
+                    hg_g_new_items[new_count].icon_misses = misses;
+                    if (misses > 3) {
+                        int wait = 1 << ((misses - 3 < 5) ? (misses - 3) : 5);
+                        hg_g_new_items[new_count].icon_retry_wait = wait;
+                    }
+                }
+            } else if (!retry_now) {
+                /* keep nothing this pass; the fields above already carried over */
             } else {
                 hg_g_new_items[new_count].icon = hg_g_window_items[i].icon;
                 hg_g_new_items[new_count].own_icon = hg_g_window_items[i].own_icon;
@@ -226,8 +311,8 @@ void refresh_window_list(BOOL force)
 
             if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
                 static WCHAR path[HG_MAX_PATH];
-                if (get_explorer_path(refresh_acquire_shell_windows(&shell_windows), hg_g_new_items[new_count].hwnd,
-                                      path, HG_MAX_PATH)) {
+                if (explorer_path_for(&shell_windows, hg_g_new_items[new_count].hwnd,
+                                      hg_g_new_items[new_count].title, path, HG_MAX_PATH)) {
                     StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
                 }
             }
@@ -268,7 +353,8 @@ void refresh_window_list(BOOL force)
 
                 if (lstrcmpiW(hg_g_new_items[new_count].process_name, L"explorer.exe") == 0) {
                     static WCHAR path[HG_MAX_PATH];
-                    if (get_explorer_path(refresh_acquire_shell_windows(&shell_windows), hwnd, path, HG_MAX_PATH)) {
+                    if (explorer_path_for(&shell_windows, hwnd, hg_g_new_items[new_count].title, path,
+                                          HG_MAX_PATH)) {
                         StringCchCopyW(hg_g_new_items[new_count].title, HG_MAX_STR, path);
                     }
                 }

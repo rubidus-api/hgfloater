@@ -181,9 +181,12 @@ BOOL hg_get_gpu_temperature(int *out_celsius)
     if (enumeration.NumAdapters > 64)
         return FALSE; /* a count this large is not a machine, it is a wrong answer */
 
-    enumeration.pAdapters = (HgKmtAdapterInfo *)calloc(enumeration.NumAdapters, sizeof(HgKmtAdapterInfo));
-    if (!enumeration.pAdapters)
-        return FALSE;
+    /* The count is validated at 64 just above, so the array lives in fixed
+     * storage rather than being heap-allocated and freed every 5-second poll.
+     * Only ever the UI thread. */
+    static HgKmtAdapterInfo s_adapters[64];
+    SecureZeroMemory(s_adapters, sizeof(s_adapters));
+    enumeration.pAdapters = s_adapters;
 
     BOOL found = FALSE;
     int hottest = 0;
@@ -215,7 +218,6 @@ BOOL hg_get_gpu_temperature(int *out_celsius)
         }
     }
 
-    free(enumeration.pAdapters);
     if (found)
         *out_celsius = hottest;
     return found;

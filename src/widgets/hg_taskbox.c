@@ -1040,9 +1040,14 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                  * the same every second until the minute rolls over. */
                 hg_update_status_clock();
                 refresh_window_list(FALSE);
-                /* Keep the DDC/CI brightness cache warm off the paint path. */
+                /* Keep the DDC/CI brightness cache warm off the paint path.
+                 * Sparingly: a DDC/CI read is a blocking I2C transaction on the
+                 * UI thread, up to hundreds of milliseconds on slow firmware.
+                 * The app's own setters stamp the cache immediately, so this
+                 * only exists to notice outside changes - the Windows slider,
+                 * the monitor's buttons - and once a minute is enough for that. */
                 static int brightness_refresh_ticks = 0;
-                if (++brightness_refresh_ticks >= 5) {
+                if (++brightness_refresh_ticks >= 60) {
                     brightness_refresh_ticks = 0;
                     hg_refresh_brightness_cache();
                 }

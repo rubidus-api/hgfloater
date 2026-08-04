@@ -82,6 +82,10 @@ typedef struct HgNote {
     WCHAR *text; /* the whole note, title line included; never NULL once used */
     BOOL archived;
     BOOL dirty;
+    /* The editor holds newer text than note->text. Set by every keystroke,
+     * cleared by note_editor_sync: extracting the whole document per EN_CHANGE
+     * made typing in a large note O(length) per character. */
+    BOOL text_stale;
     ULONGLONG changed_tick;
     HWND editor;
     HFONT editor_font; /* this editor's own handle on the shared size */
@@ -104,6 +108,10 @@ static void note_list_refresh(void);
 /* Defined with the editor; archiving a note from anywhere has to reach the
  * window that is showing it, because that window stops being writable. */
 static void note_editor_apply_archived(HgNote *note);
+
+/* Defined with the editor; the flush path consumes note->text and has to pull
+ * what the editor holds first. */
+static void note_editor_sync(HgNote *note);
 
 static void note_directory(WCHAR *out, size_t out_cch)
 {
@@ -836,6 +844,7 @@ void hg_notes_flush(BOOL force)
             continue;
         if (!force && now - note->changed_tick < HG_NOTE_SAVE_DELAY_MS)
             continue;
+        note_editor_sync(note);
         if (note_write_file(note))
             note->dirty = FALSE;
     }
@@ -968,8 +977,13 @@ static LRESULT CALLBACK note_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
-static void note_editor_pull_text(HgNote *note)
+/* Bring note->text up to date with the editor, if it has fallen behind. Called
+ * where the text is about to be consumed - the save paths - rather than on
+ * every keystroke, which is what keeps typing O(1) in the note's length. */
+static void note_editor_sync(HgNote *note)
 {
+    if (!note->text_stale)
+        return;
     if (!note->editor || !IsWindow(note->editor))
         return;
     HWND edit = GetDlgItem(note->editor, HG_NOTE_EDIT_ID);
@@ -982,11 +996,14 @@ static void note_editor_pull_text(HgNote *note)
 
     free(note->text);
     note->text = buffer;
-    note_refresh_title(note);
+    note->text_stale = FALSE;
 
-    note->dirty = TRUE;
-    note->changed_tick = GetTickCount64();
-    SetWindowTextW(note->editor, note->title);
+    WCHAR before[HG_NOTE_TITLE_CCH];
+    StringCchCopyW(before, HG_ARRAYSIZE(before), note->title);
+    note_refresh_title(note);
+    /* The caption redraw is non-client work; only a changed title earns it. */
+    if (lstrcmpW(before, note->title) != 0)
+        SetWindowTextW(note->editor, note->title);
 }
 
 /* Archiving a note files it away, and something filed away has stopped being
@@ -1178,6 +1195,13 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
 {
     switch (msg) {
     case WM_CREATE: {
+        /* The note index arrives via GWLP_USERDATA only after CreateWindowExW
+         * returns, but a creation that fails after this point still gets a
+         * WM_DESTROY - which would read the default of 0 and act on note 0:
+         * destroy its font under its live editor, null its editor field, and
+         * stamp its geometry. The sentinel makes this window belong to no note
+         * until note_open_editor says otherwise. */
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)-1);
         hg_apply_class_background(hwnd);
         apply_dwm_attributes(hwnd);
         HWND edit = CreateWindowExW(WS_EX_CLIENTEDGE, note_edit_class(), NULL,
@@ -1214,8 +1238,14 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_COMMAND:
         if (LOWORD(w_param) == HG_NOTE_EDIT_ID && HIWORD(w_param) == EN_CHANGE) {
             HgNote *note = note_from_editor(hwnd);
-            if (note)
-                note_editor_pull_text(note);
+            if (note) {
+                /* Record that there is newer text and when; the extraction
+                 * itself waits for a consumer. Per keystroke this is three
+                 * stores where it used to be a whole-document copy. */
+                note->text_stale = TRUE;
+                note->dirty = TRUE;
+                note->changed_tick = GetTickCount64();
+            }
             return 0;
         }
         break;
@@ -1279,6 +1309,7 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_DESTROY: {
         HgNote *note = note_from_editor(hwnd);
         if (note) {
+            note_editor_sync(note); /* while the edit control still exists */
             note_save_editor_rect(note);
             note->editor = NULL;
             if (note->editor_font) {

@@ -265,6 +265,40 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
     case WM_TIMER: {
         if (w_param == HG_TIMER_MONITOR_REFRESH) {
             if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
+                /* Every paint is a full-source StretchBlt off the screen DC, so
+                 * the rate is matched to who is looking. The pointer on the
+                 * preview means it is being used to drive the other monitor:
+                 * every tick (10 fps). Merely open: every other tick (5 fps),
+                 * which the eye forgives on a thumbnail. Fully covered by other
+                 * windows - checked at five sample points, cheap against the
+                 * cost of one wasted capture - it idles at one paint a second,
+                 * because IsWindowVisible only says the style bit is set. */
+                int cadence = 2;
+                POINT pt;
+                RECT rc;
+                if (GetCursorPos(&pt) && GetWindowRect(hwnd, &rc)) {
+                    if (PtInRect(&rc, pt)) {
+                        cadence = 1;
+                    } else {
+                        POINT probes[5] = {{rc.left + 4, rc.top + 4},
+                                           {rc.right - 5, rc.top + 4},
+                                           {rc.left + 4, rc.bottom - 5},
+                                           {rc.right - 5, rc.bottom - 5},
+                                           {(rc.left + rc.right) / 2, (rc.top + rc.bottom) / 2}};
+                        BOOL any_visible = FALSE;
+                        for (int i = 0; i < 5 && !any_visible; ++i) {
+                            HWND hit = WindowFromPoint(probes[i]);
+                            if (hit == hwnd || (hit && GetAncestor(hit, GA_ROOT) == hwnd))
+                                any_visible = TRUE;
+                        }
+                        if (!any_visible)
+                            cadence = 10;
+                    }
+                }
+                if (monitor_idx >= 0 && ++hg_g_monitors[monitor_idx].preview_tick < cadence)
+                    return 0;
+                if (monitor_idx >= 0)
+                    hg_g_monitors[monitor_idx].preview_tick = 0;
                 InvalidateRect(hwnd, NULL, FALSE);
             }
         }
@@ -472,6 +506,20 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             close_monitor_window(monitor_idx);
         } else {
             DestroyWindow(hwnd);
+        }
+        return 0;
+    }
+    case WM_DESTROY: {
+        /* The tool registered at open outlives the window unless it is deleted
+         * here: destroying a tool's hwnd does not remove its registration, and
+         * every open/close cycle would grow the tooltip control's table. This
+         * is the one path every teardown goes through. */
+        if (hg_g_tooltip_wnd) {
+            TOOLINFOW ti = {0};
+            ti.cbSize = TOOLINFO_V1_SIZE;
+            ti.hwnd = hwnd;
+            ti.uId = (UINT_PTR)hwnd;
+            SendMessageW(hg_g_tooltip_wnd, TTM_DELTOOLW, 0, (LPARAM)&ti);
         }
         return 0;
     }

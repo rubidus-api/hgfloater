@@ -96,6 +96,26 @@ static void clip_set_max(int value)
     }
 }
 
+/* The count cap alone leaves the total unbounded: 64 clips near the per-clip
+ * ceiling is over a hundred megabytes held for the life of the process. The
+ * total gets its own hard cap, enforced newest-first so what goes is always
+ * the oldest history. Enforced on every push, the walk below only ever
+ * measures a total already at or near the cap. */
+#define HG_CLIP_TOTAL_CCH (4u * 1024u * 1024u)
+
+static void clip_enforce_total(void)
+{
+    size_t total = 0;
+    int keep = 0;
+    while (keep < s_clip_count) {
+        total += (s_clips[keep] ? wcslen(s_clips[keep]) + 1 : 0);
+        if (total > HG_CLIP_TOTAL_CCH && keep > 0) /* the newest always stays */
+            break;
+        ++keep;
+    }
+    clip_drop_from(keep);
+}
+
 /* Takes ownership of text on every path, including the ones that refuse it. */
 static void clip_push(WCHAR *text)
 {
@@ -117,6 +137,7 @@ static void clip_push(WCHAR *text)
     s_clips[0] = text;
     ++s_clip_count;
 
+    clip_enforce_total();
     clip_list_fill();
 }
 
