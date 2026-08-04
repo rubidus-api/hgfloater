@@ -216,10 +216,39 @@ void load_commandbox_font()
     );
 }
 
+/* The transcript is bounded. Past the budget the oldest lines are cut, for two
+ * reasons: the buffer would otherwise grow for the life of the process, and an
+ * EDIT that reaches its internal text limit makes EM_REPLACESEL insert nothing,
+ * silently - commands would appear to run with no output. Trimming to
+ * three-quarters keeps the cuts rare rather than one per print. */
+#define HG_CMDBOX_TRANSCRIPT_CCH (48 * 1024)
+
+static void commandbox_trim_transcript(int incoming_cch)
+{
+    int out_len = GetWindowTextLengthW(hg_g_commandbox_out_wnd);
+    if (out_len + incoming_cch <= HG_CMDBOX_TRANSCRIPT_CCH)
+        return;
+
+    int excess = out_len + incoming_cch - (HG_CMDBOX_TRANSCRIPT_CCH / 4) * 3;
+    if (excess > out_len)
+        excess = out_len;
+
+    /* Cut on a line boundary at or past the excess, so the top of what remains
+     * is a whole line rather than the tail of one. */
+    LRESULT line = SendMessageW(hg_g_commandbox_out_wnd, EM_LINEFROMCHAR, (WPARAM)excess, 0);
+    LRESULT cut = SendMessageW(hg_g_commandbox_out_wnd, EM_LINEINDEX, (WPARAM)(line + 1), 0);
+    if (cut < 0)
+        cut = excess;
+    SendMessageW(hg_g_commandbox_out_wnd, EM_SETSEL, 0, (LPARAM)cut);
+    SendMessageW(hg_g_commandbox_out_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"");
+}
+
 void commandbox_print(const WCHAR *text)
 {
     if (!hg_g_commandbox_out_wnd || !IsWindow(hg_g_commandbox_out_wnd) || !text)
         return;
+
+    commandbox_trim_transcript((int)lstrlenW(text) + 2);
 
     int out_len = GetWindowTextLengthW(hg_g_commandbox_out_wnd);
     SendMessageW(hg_g_commandbox_out_wnd, EM_SETSEL, (WPARAM)out_len, (LPARAM)out_len);
@@ -389,6 +418,10 @@ void show_commandbox_window()
 
         SetWindowSubclass(hg_g_commandbox_out_wnd, commandbox_edit_subclass_proc, 1, 0);
         SetWindowSubclass(hg_g_commandbox_in_wnd, commandbox_edit_subclass_proc, 2, 0);
+
+        /* The transcript trims itself; the control's own limit just has to sit
+         * above the trim budget so the trim is what binds, never the EDIT. */
+        SendMessageW(hg_g_commandbox_out_wnd, EM_SETLIMITTEXT, HG_CMDBOX_TRANSCRIPT_CCH * 2, 0);
 
         SendMessageW(hg_g_commandbox_out_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
         SendMessageW(hg_g_commandbox_in_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);

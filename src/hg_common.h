@@ -301,6 +301,11 @@ typedef struct {
      * window still acts on hwnd, because a tab has no geometry of its own. */
     BOOL is_tab;
     int tab_index;
+    /* Consecutive failed icon extractions. The retry pipeline blocks on the
+     * target window and reads disk, so a window that keeps answering nothing
+     * earns a longer and longer pause between attempts. */
+    int icon_misses;
+    int icon_retry_wait;
 } WindowItem;
 
 typedef struct {
@@ -322,6 +327,7 @@ typedef struct {
     WCHAR label[160];  /* display number, EDID monitor name, and connection port */
     HWND hwnd;
     BOOL active;
+    int preview_tick;       /* refresh-timer tick counter; see monitor WM_TIMER */
     int brightness;         /* cached percentage, -1 while unknown */
     /* Which of the brightness paths this display answers to, and the scale it
      * answers on. Resolved on first use and reset when the list is rebuilt;

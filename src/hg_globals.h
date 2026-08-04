@@ -48,6 +48,8 @@ extern HFONT hg_g_floater_time_font;
 extern HFONT hg_g_floater_date_font;
 extern HFONT hg_g_toolbar_btn_font;
 extern HFONT hg_g_toolbar_badge_font;
+/* Ticks on every release_font_handle; see the note there. */
+extern unsigned hg_g_font_generation;
 extern HBRUSH hg_g_main_bg_brush;
 extern HBRUSH hg_g_edit_bg_brush;
 extern HBRUSH hg_g_hbr_highlight;

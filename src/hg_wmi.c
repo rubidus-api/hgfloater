@@ -77,6 +77,8 @@ static void hg_wmi_drop(void)
     HG_RELEASE_COM(s_services);
 }
 
+static void hg_pdh_drop(void); /* defined with the PDH half below */
+
 static IWbemServices *hg_wmi_services(void)
 {
     if (!s_services)
@@ -87,6 +89,7 @@ static IWbemServices *hg_wmi_services(void)
 void hg_backlight_shutdown(void)
 {
     hg_wmi_drop();
+    hg_pdh_drop();
 }
 
 /* First instance of a class, or NULL. There is one integrated panel on the
@@ -208,13 +211,38 @@ static BOOL hg_thermal_to_celsius(int tenths_kelvin, int *out_celsius)
     return TRUE;
 }
 
+/* A poll that keeps failing, or keeps answering "no such zones", must not keep
+ * its full cost. The absence of a firmware class does not change between one
+ * 5-second tick and the next, so consecutive misses buy geometrically more
+ * skipped polls, up to about ten minutes' worth - long enough to be free,
+ * short enough that a service that comes back is noticed. */
+#define HG_ZONE_BACKOFF_STEP 12  /* one miss postpones roughly a minute of polls */
+#define HG_ZONE_BACKOFF_MAX 120  /* ten minutes of 5-second polls */
+
+static int hg_zone_backoff(int *misses)
+{
+    if (*misses < INT_MAX / HG_ZONE_BACKOFF_STEP)
+        (*misses)++;
+    int skip = *misses * HG_ZONE_BACKOFF_STEP;
+    return (skip > HG_ZONE_BACKOFF_MAX) ? HG_ZONE_BACKOFF_MAX : skip;
+}
+
 /* Every zone the WMI class reports, not just the first. Firmware routinely
  * declares several and puts a placeholder in front of the live one. */
 static int hg_wmi_zones(HgThermalZone *out, int max)
 {
-    IWbemServices *services = hg_wmi_services();
-    if (!services)
+    static int s_skip = 0;
+    static int s_misses = 0;
+    if (s_skip > 0) {
+        s_skip--;
         return 0;
+    }
+
+    IWbemServices *services = hg_wmi_services();
+    if (!services) {
+        s_skip = hg_zone_backoff(&s_misses);
+        return 0;
+    }
 
     BSTR language = SysAllocString(L"WQL");
     BSTR query = SysAllocString(L"SELECT InstanceName, CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
@@ -227,14 +255,21 @@ static int hg_wmi_zones(HgThermalZone *out, int max)
         SysFreeString(language);
     if (query)
         SysFreeString(query);
-    if (FAILED(hr) || !rows)
+    if (FAILED(hr) || !rows) {
+        hg_wmi_drop(); /* a dead connection must not be kept and retried forever */
+        s_skip = hg_zone_backoff(&s_misses);
         return 0;
+    }
 
     int count = 0;
+    BOOL next_failed = FALSE;
     while (count < max) {
         IWbemClassObject *object = NULL;
         ULONG returned = 0;
-        if (FAILED(rows->lpVtbl->Next(rows, HG_WMI_TIMEOUT_MS, 1, &object, &returned)) || returned != 1 || !object)
+        HRESULT next_hr = rows->lpVtbl->Next(rows, HG_WMI_TIMEOUT_MS, 1, &object, &returned);
+        if (FAILED(next_hr))
+            next_failed = TRUE;
+        if (FAILED(next_hr) || returned != 1 || !object)
             break;
 
         VARIANT value;
@@ -262,6 +297,13 @@ static int hg_wmi_zones(HgThermalZone *out, int max)
     }
 
     HG_RELEASE_COM(rows);
+
+    if (next_failed)
+        hg_wmi_drop(); /* same recovery contract as the query itself */
+    if (count > 0)
+        s_misses = 0;
+    else
+        s_skip = hg_zone_backoff(&s_misses);
     return count;
 }
 
@@ -319,42 +361,85 @@ static BOOL hg_pdh_ready(void)
     return s_pfnPdhOpen && s_pfnPdhAdd && s_pfnPdhCollect && s_pfnPdhArray && s_pfnPdhClose;
 }
 
+/* The query is opened once and kept: PdhAddEnglishCounterW parses the whole
+ * performance-counter registry to resolve its path, which is far too much work
+ * to redo every 5-second poll. A wildcard counter picks up instance changes at
+ * each collect, so keeping it does not go stale on ordinary reconfiguration;
+ * a collect that does fail rebuilds the query on the next attempt. */
+static PDH_HQUERY s_pdh_query = NULL;
+static PDH_HCOUNTER s_pdh_counter = NULL;
+
+static void hg_pdh_drop(void)
+{
+    if (s_pdh_query)
+        s_pfnPdhClose(s_pdh_query);
+    s_pdh_query = NULL;
+    s_pdh_counter = NULL;
+}
+
 static int hg_counter_zones(HgThermalZone *out, int max)
 {
+    static int s_skip = 0;
+    static int s_misses = 0;
+    /* Fixed storage for the formatted array: a handful of zones with generous
+     * names uses a fraction of this. A machine reporting more than fits is
+     * answered with the WMI zones alone rather than with a heap allocation. */
+    static union {
+        PDH_FMT_COUNTERVALUE_ITEM_W align;
+        BYTE bytes[8192];
+    } s_values;
+
+    if (s_skip > 0) {
+        s_skip--;
+        return 0;
+    }
     if (!hg_pdh_ready())
         return 0;
 
-    PDH_HQUERY query = NULL;
-    if (s_pfnPdhOpen(NULL, 0, &query) != ERROR_SUCCESS || !query)
+    if (!s_pdh_query) {
+        PDH_HQUERY query = NULL;
+        if (s_pfnPdhOpen(NULL, 0, &query) != ERROR_SUCCESS || !query) {
+            s_skip = hg_zone_backoff(&s_misses);
+            return 0;
+        }
+        PDH_HCOUNTER counter = NULL;
+        if (s_pfnPdhAdd(query, L"\\Thermal Zone Information(*)\\Temperature", 0, &counter) != ERROR_SUCCESS) {
+            s_pfnPdhClose(query);
+            s_skip = hg_zone_backoff(&s_misses);
+            return 0;
+        }
+        s_pdh_query = query;
+        s_pdh_counter = counter;
+    }
+
+    if (s_pfnPdhCollect(s_pdh_query) != ERROR_SUCCESS) {
+        hg_pdh_drop();
+        s_skip = hg_zone_backoff(&s_misses);
         return 0;
+    }
 
     int count = 0;
-    PDH_HCOUNTER counter = NULL;
-    if (s_pfnPdhAdd(query, L"\\Thermal Zone Information(*)\\Temperature", 0, &counter) == ERROR_SUCCESS &&
-        s_pfnPdhCollect(query) == ERROR_SUCCESS) {
-        DWORD size = 0;
-        DWORD items = 0;
-        PDH_STATUS status = s_pfnPdhArray(counter, PDH_FMT_DOUBLE, &size, &items, NULL);
-        if (status == (PDH_STATUS)PDH_MORE_DATA && size > 0 && size < (1u << 20)) {
-            PDH_FMT_COUNTERVALUE_ITEM_W *values = (PDH_FMT_COUNTERVALUE_ITEM_W *)malloc(size);
-            if (values && s_pfnPdhArray(counter, PDH_FMT_DOUBLE, &size, &items, values) == ERROR_SUCCESS) {
-                for (DWORD i = 0; i < items && count < max; ++i) {
-                    double kelvin = values[i].FmtValue.doubleValue;
-                    int celsius = (int)(kelvin - 273.15 + 0.5);
-                    if (celsius < 1 || celsius > 150)
-                        continue;
-                    StringCchCopyW(out[count].name, HG_ARRAYSIZE(out[count].name),
-                                   values[i].szName ? values[i].szName : L"(zone)");
-                    out[count].celsius = celsius;
-                    out[count].from_counter = TRUE;
-                    count++;
-                }
-            }
-            free(values);
+    DWORD size = sizeof(s_values);
+    DWORD items = 0;
+    if (s_pfnPdhArray(s_pdh_counter, PDH_FMT_DOUBLE, &size, &items, &s_values.align) == ERROR_SUCCESS) {
+        const PDH_FMT_COUNTERVALUE_ITEM_W *values = &s_values.align;
+        for (DWORD i = 0; i < items && count < max; ++i) {
+            double kelvin = values[i].FmtValue.doubleValue;
+            int celsius = (int)(kelvin - 273.15 + 0.5);
+            if (celsius < 1 || celsius > 150)
+                continue;
+            StringCchCopyW(out[count].name, HG_ARRAYSIZE(out[count].name),
+                           values[i].szName ? values[i].szName : L"(zone)");
+            out[count].celsius = celsius;
+            out[count].from_counter = TRUE;
+            count++;
         }
     }
 
-    s_pfnPdhClose(query);
+    if (count > 0)
+        s_misses = 0;
+    else
+        s_skip = hg_zone_backoff(&s_misses);
     return count;
 }
 

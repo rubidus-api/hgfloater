@@ -1,5 +1,6 @@
 node_modules/
 build/
+build-mingw/
 dist/
 coverage/
 .DS_Store

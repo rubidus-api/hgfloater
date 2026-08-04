@@ -47,6 +47,7 @@ HFONT hg_g_floater_time_font = NULL;
 HFONT hg_g_floater_date_font = NULL;
 HFONT hg_g_toolbar_btn_font = NULL;
 HFONT hg_g_toolbar_badge_font = NULL;
+unsigned hg_g_font_generation = 0;
 HBRUSH hg_g_main_bg_brush = NULL;
 HBRUSH hg_g_edit_bg_brush = NULL;
 HBRUSH hg_g_hbr_highlight = NULL;

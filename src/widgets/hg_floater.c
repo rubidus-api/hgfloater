@@ -265,7 +265,7 @@ typedef struct HgInkExtent {
     int top;     /* ink top, relative to the text cell's top */
 } HgInkExtent;
 
-static HgInkExtent floater_ink_extent(HDC hdc, HFONT font, const WCHAR *text)
+static HgInkExtent floater_ink_extent_uncached(HDC hdc, HFONT font, const WCHAR *text)
 {
     HgInkExtent ink = {0, 0, 0};
     SIZE sz = {0};
@@ -338,6 +338,51 @@ static HgInkExtent floater_ink_extent(HDC hdc, HFONT font, const WCHAR *text)
         ink.top = first;
         ink.cy = last - first + 1;
     }
+    return ink;
+}
+
+/* Measured ink is cached. One WM_PAINT asks for around eighteen extents, the
+ * stats tick repaints nearly every second, and each uncached ask above is a
+ * scratch DC, a DIB section, a render, a GdiFlush and a pixel scan - for the
+ * same strings, over and over. Keyed by font handle and string; any
+ * release_font_handle bumps hg_g_font_generation, which retires every entry at
+ * once, so a reused HFONT value can never serve another font's measurements. */
+#define HG_INK_CACHE_ENTRIES 48
+#define HG_INK_CACHE_TEXT_CCH 48
+
+static HgInkExtent floater_ink_extent(HDC hdc, HFONT font, const WCHAR *text)
+{
+    typedef struct HgInkCacheEntry {
+        HFONT font;
+        unsigned generation;
+        unsigned stamp;
+        WCHAR text[HG_INK_CACHE_TEXT_CCH];
+        HgInkExtent ink;
+    } HgInkCacheEntry;
+    static HgInkCacheEntry s_cache[HG_INK_CACHE_ENTRIES];
+    static unsigned s_stamp = 0;
+
+    if (!hdc || !font || !text || !text[0] || lstrlenW(text) >= HG_INK_CACHE_TEXT_CCH)
+        return floater_ink_extent_uncached(hdc, font, text);
+
+    HgInkCacheEntry *victim = &s_cache[0];
+    for (int i = 0; i < HG_INK_CACHE_ENTRIES; ++i) {
+        HgInkCacheEntry *entry = &s_cache[i];
+        if (entry->font == font && entry->generation == hg_g_font_generation &&
+            lstrcmpW(entry->text, text) == 0) {
+            entry->stamp = ++s_stamp;
+            return entry->ink;
+        }
+        if (entry->stamp < victim->stamp)
+            victim = entry;
+    }
+
+    HgInkExtent ink = floater_ink_extent_uncached(hdc, font, text);
+    victim->font = font;
+    victim->generation = hg_g_font_generation;
+    victim->stamp = ++s_stamp;
+    StringCchCopyW(victim->text, HG_ARRAYSIZE(victim->text), text);
+    victim->ink = ink;
     return ink;
 }
 
@@ -1224,11 +1269,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     }
                 }
             }
-            for (int i = 0; i < hg_g_monitor_count; i++) {
-                if (hg_g_monitors[i].active && hg_g_monitors[i].hwnd) {
-                    InvalidateRect(hg_g_monitors[i].hwnd, NULL, FALSE);
-                }
-            }
+            /* Monitor previews are not invalidated here: each one runs its own
+             * refresh timer, and a second invalidation from this tick only
+             * doubled a repaint that already happens. */
         } else if (w_param == HG_TIMER_HIGHLIGHT) {
             hg_g_floater_highlight_ticks--;
             if (hg_g_floater_highlight_ticks <= 0) {

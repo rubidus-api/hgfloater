@@ -475,6 +475,11 @@ void release_font_handle(HFONT *font, BOOL preserve_stock)
         DeleteObject(*font);
     }
     *font = NULL;
+    /* Windows reuses GDI handle values, so anything caching per-font results
+     * keyed by HFONT would go stale silently. The generation ticks on every
+     * release; a cache that remembers the generation it was filled under can
+     * tell a live handle from a reincarnated one. */
+    hg_g_font_generation++;
 }
 
 void release_brush_handle(HBRUSH *brush)

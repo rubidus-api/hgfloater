@@ -5,6 +5,8 @@
  * list is only re-read by the commands that print numbers: if `go` refreshed
  * first, the window list could reorder between the `list` the reader saw and
  * the number they typed, and they would switch to the wrong window. */
+#include <limits.h>
+
 #include "hg_command.h"
 #include "hg_utils.h"
 #include "hg_globals.h"
@@ -211,7 +213,12 @@ static BOOL cmd_parse_int(const WCHAR *text, int *out)
     for (; *p; ++p) {
         if (*p < L'0' || *p > L'9')
             return FALSE;
-        value = value * 10 + (int)(*p - L'0');
+        int digit = (int)(*p - L'0');
+        /* Reject before the multiply can pass INT_MAX: overflow of a signed
+         * int is undefined, and a wrapped value could name a real window. */
+        if (value > (INT_MAX - digit) / 10)
+            return FALSE;
+        value = value * 10 + digit;
     }
     *out = value * sign;
     return TRUE;
