@@ -21,8 +21,34 @@
 
 static BOOL s_enabled_read = FALSE;
 static BOOL s_enabled = FALSE;
+
+/* The UI thread's own automation instance, for the one-shot user actions
+ * (activate, close). The worker thread has its own; COM objects are not
+ * shared across the apartment boundary. */
 static IUIAutomation *s_automation = NULL;
 static BOOL s_automation_failed = FALSE;
+
+/* ------------------------------------------------------------- the worker
+ *
+ * One thread, owning its own MTA COM and its own IUIAutomation. The UI thread
+ * talks to it through a request batch and a result table, both under one
+ * critical section, and is never made to wait: file a request, keep drawing
+ * from the cache, fold the answer in when HG_MSG_TABS_READY arrives. */
+typedef struct HgTabsResult {
+    HWND hwnd; /* NULL = empty slot */
+    int count;
+    BOOL fresh; /* set by the worker, cleared by hg_tabs_take_result */
+    WCHAR titles[HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
+} HgTabsResult;
+
+static CRITICAL_SECTION s_tabs_lock;
+static BOOL s_tabs_lock_ready = FALSE; /* init/create only ever on the UI thread */
+static HANDLE s_tabs_thread = NULL;
+static HANDLE s_tabs_wake = NULL; /* auto-reset: "a request batch is waiting" */
+static volatile LONG s_tabs_stop = 0;
+static HWND s_tabs_request_hwnds[HG_TABS_WORKER_WINDOWS];
+static int s_tabs_request_count = 0;
+static HgTabsResult s_tabs_results[HG_TABS_WORKER_WINDOWS];
 
 BOOL hg_tabs_enabled(void)
 {
@@ -157,9 +183,8 @@ static IUIAutomationCondition *hg_tabs_type_condition(IUIAutomation *automation,
  * assumption is made about their parent at all.
  *
  * Elements come back AddRef'd; the caller releases every one. */
-static int hg_tabs_collect(HWND hwnd, IUIAutomationElement **out, int max)
+static int hg_tabs_collect(IUIAutomation *automation, HWND hwnd, IUIAutomationElement **out, int max)
 {
-    IUIAutomation *automation = hg_tabs_automation();
     if (!automation || !out || max <= 0)
         return 0;
 
@@ -230,15 +255,12 @@ static void hg_tabs_release(IUIAutomationElement **elements, int count)
     }
 }
 
-int hg_tabs_enumerate(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
+/* Collect and read the titles in one sweep. Runs on whichever thread owns the
+ * automation instance passed in - in practice the worker. */
+static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
 {
-    if (!hg_tabs_enabled() || !titles || max <= 0)
-        return 0;
-    if (!hg_tabs_window_may_have_tabs(hwnd))
-        return 0;
-
     IUIAutomationElement *tabs[HG_TABS_MAX_PER_WINDOW];
-    int count = hg_tabs_collect(hwnd, tabs, (max < HG_TABS_MAX_PER_WINDOW) ? max : HG_TABS_MAX_PER_WINDOW);
+    int count = hg_tabs_collect(automation, hwnd, tabs, (max < HG_TABS_MAX_PER_WINDOW) ? max : HG_TABS_MAX_PER_WINDOW);
 
     for (int i = 0; i < count; ++i) {
         BSTR name = NULL;
@@ -254,13 +276,158 @@ int hg_tabs_enumerate(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
     return count;
 }
 
+/* Store one window's answer. Slot choice: the window's existing slot, then an
+ * empty one, then one whose window has died, then round-robin - the table is
+ * as large as the request batch, so a live batch always fits. */
+static void hg_tabs_store_result(HWND hwnd, const WCHAR titles[][HG_MAX_STR], int count)
+{
+    static int s_next = 0; /* worker-only */
+
+    EnterCriticalSection(&s_tabs_lock);
+    HgTabsResult *slot = NULL;
+    for (int i = 0; i < HG_TABS_WORKER_WINDOWS && !slot; ++i) {
+        if (s_tabs_results[i].hwnd == hwnd)
+            slot = &s_tabs_results[i];
+    }
+    for (int i = 0; i < HG_TABS_WORKER_WINDOWS && !slot; ++i) {
+        if (s_tabs_results[i].hwnd == NULL || !IsWindow(s_tabs_results[i].hwnd))
+            slot = &s_tabs_results[i];
+    }
+    if (!slot) {
+        slot = &s_tabs_results[s_next];
+        s_next = (s_next + 1) % HG_TABS_WORKER_WINDOWS;
+    }
+
+    slot->hwnd = hwnd;
+    slot->count = count;
+    slot->fresh = TRUE;
+    for (int i = 0; i < count; ++i)
+        StringCchCopyW(slot->titles[i], HG_MAX_STR, titles[i]);
+    LeaveCriticalSection(&s_tabs_lock);
+}
+
+static DWORD WINAPI hg_tabs_worker(LPVOID unused)
+{
+    (void)unused;
+    /* MTA, and an automation instance of this thread's own: the UIA client
+     * guidance wants clients off the UI thread, and COM interface pointers do
+     * not cross apartments. */
+    BOOL co = SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED));
+    IUIAutomation *automation = NULL;
+    if (co) {
+        if (FAILED(CoCreateInstance(&CLSID_CUIAutomation, NULL, CLSCTX_INPROC_SERVER, &IID_IUIAutomation,
+                                    (void **)&automation)))
+            automation = NULL;
+    }
+
+    /* 48 KB of titles: static rather than a stack frame, and safe as such
+     * because only this one worker thread ever runs this function. */
+    static WCHAR s_titles[HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
+
+    while (!s_tabs_stop) {
+        WaitForSingleObject(s_tabs_wake, INFINITE);
+        if (s_tabs_stop)
+            break;
+
+        HWND batch[HG_TABS_WORKER_WINDOWS];
+        int batch_count = 0;
+        EnterCriticalSection(&s_tabs_lock);
+        batch_count = s_tabs_request_count;
+        for (int i = 0; i < batch_count; ++i)
+            batch[i] = s_tabs_request_hwnds[i];
+        s_tabs_request_count = 0;
+        LeaveCriticalSection(&s_tabs_lock);
+
+        for (int i = 0; i < batch_count && !s_tabs_stop; ++i) {
+            if (!IsWindow(batch[i]))
+                continue;
+            int count = automation ? hg_tabs_read_titles(automation, batch[i], s_titles, HG_TABS_MAX_PER_WINDOW) : 0;
+            hg_tabs_store_result(batch[i], s_titles, count);
+        }
+
+        /* Even an all-zero answer is an answer: the list may be waiting to
+         * drop a fan-out that no longer exists. */
+        if (batch_count > 0 && hg_g_floater_wnd)
+            PostMessageW(hg_g_floater_wnd, HG_MSG_TABS_READY, 0, 0);
+    }
+
+    if (automation)
+        IUIAutomation_Release(automation);
+    if (co)
+        CoUninitialize();
+    return 0;
+}
+
+/* UI thread only, like every entry point below. */
+static BOOL hg_tabs_worker_ensure(void)
+{
+    if (s_tabs_thread)
+        return TRUE;
+
+    if (!s_tabs_lock_ready) {
+        InitializeCriticalSection(&s_tabs_lock);
+        s_tabs_lock_ready = TRUE;
+    }
+    if (!s_tabs_wake) {
+        s_tabs_wake = CreateEventW(NULL, FALSE, FALSE, NULL);
+        if (!s_tabs_wake)
+            return FALSE;
+    }
+
+    s_tabs_stop = 0;
+    s_tabs_thread = CreateThread(NULL, 0, hg_tabs_worker, NULL, 0, NULL);
+    return s_tabs_thread != NULL;
+}
+
+void hg_tabs_request(const HWND *hwnds, int count)
+{
+    if (!hg_tabs_enabled() || !hwnds || count <= 0)
+        return;
+    if (!hg_tabs_worker_ensure())
+        return;
+
+    if (count > HG_TABS_WORKER_WINDOWS)
+        count = HG_TABS_WORKER_WINDOWS;
+
+    /* The newest batch replaces any batch still waiting: both were snapshots
+     * of the same list, and the newer one is the truer one. */
+    EnterCriticalSection(&s_tabs_lock);
+    for (int i = 0; i < count; ++i)
+        s_tabs_request_hwnds[i] = hwnds[i];
+    s_tabs_request_count = count;
+    LeaveCriticalSection(&s_tabs_lock);
+    SetEvent(s_tabs_wake);
+}
+
+int hg_tabs_take_result(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
+{
+    if (!s_tabs_lock_ready || !titles || max <= 0)
+        return -1;
+
+    int taken = -1;
+    EnterCriticalSection(&s_tabs_lock);
+    for (int i = 0; i < HG_TABS_WORKER_WINDOWS; ++i) {
+        HgTabsResult *slot = &s_tabs_results[i];
+        if (slot->hwnd != hwnd || !slot->fresh)
+            continue;
+        int count = (slot->count < max) ? slot->count : max;
+        for (int t = 0; t < count; ++t)
+            StringCchCopyW(titles[t], HG_MAX_STR, slot->titles[t]);
+        slot->fresh = FALSE;
+        taken = count;
+        break;
+    }
+    LeaveCriticalSection(&s_tabs_lock);
+    return taken;
+}
+
 BOOL hg_tabs_activate(HWND hwnd, int tab_index)
 {
     if (!hg_tabs_enabled() || tab_index < 0)
         return FALSE;
 
     IUIAutomationElement *tabs[HG_TABS_MAX_PER_WINDOW];
-    int count = hg_tabs_collect(hwnd, tabs, HG_TABS_MAX_PER_WINDOW);
+    int count = hg_tabs_collect(hg_tabs_automation(), hwnd, tabs, HG_TABS_MAX_PER_WINDOW);
 
     BOOL selected = FALSE;
     if (tab_index < count) {
@@ -302,7 +469,7 @@ BOOL hg_tabs_close(HWND hwnd, int tab_index)
         return FALSE;
 
     IUIAutomationElement *tabs[HG_TABS_MAX_PER_WINDOW];
-    int count = hg_tabs_collect(hwnd, tabs, HG_TABS_MAX_PER_WINDOW);
+    int count = hg_tabs_collect(automation, hwnd, tabs, HG_TABS_MAX_PER_WINDOW);
     if (tab_index >= count) {
         hg_tabs_release(tabs, count);
         return FALSE;
@@ -361,6 +528,24 @@ BOOL hg_tabs_close(HWND hwnd, int tab_index)
 
 void hg_tabs_shutdown(void)
 {
+    /* Stop the worker first: it must not touch the tables while they reset.
+     * A worker stuck inside a cross-process UIA call past the wait is left to
+     * the process teardown rather than terminated mid-call. */
+    if (s_tabs_thread) {
+        s_tabs_stop = 1;
+        SetEvent(s_tabs_wake);
+        WaitForSingleObject(s_tabs_thread, 2000);
+        CloseHandle(s_tabs_thread);
+        s_tabs_thread = NULL;
+        s_tabs_stop = 0;
+    }
+    if (s_tabs_lock_ready) {
+        EnterCriticalSection(&s_tabs_lock);
+        s_tabs_request_count = 0;
+        SecureZeroMemory(s_tabs_results, sizeof(s_tabs_results));
+        LeaveCriticalSection(&s_tabs_lock);
+    }
+
     if (s_automation) {
         IUIAutomation_Release(s_automation);
         s_automation = NULL;

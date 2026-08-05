@@ -1333,6 +1333,14 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         }
         return 0;
     }
+    case HG_MSG_TABS_READY:
+        /* The tab worker finished a batch. Fold it in now if the list is on
+         * screen; if not, the results wait in the worker's table and the next
+         * expand picks them up in its own pass. */
+        if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+            refresh_window_list(FALSE);
+        }
+        return 0;
     case WM_COPYDATA:
         return handle_copydata_command_line((const COPYDATASTRUCT *)l_param);
     case WM_DESTROY:

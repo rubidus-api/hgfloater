@@ -23,10 +23,25 @@ void hg_tabs_set_enabled(BOOL enabled);
  * no cross-process call - so it can gate everything else. */
 BOOL hg_tabs_window_may_have_tabs(HWND hwnd);
 
-/* Titles of the window's tabs, newest tree state. 0 when disabled, when the
- * window is not a tabbed one, or on any failure - in which case the caller
- * shows the window itself, exactly as before. */
-int hg_tabs_enumerate(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max);
+/* Enumeration runs on a worker thread, because a UIA walk is a cross-process
+ * call whose cost belongs to the target application - Chrome's accessibility
+ * tree grows for as long as the browser runs, and a walk that took nothing at
+ * startup can take a hundred milliseconds an hour later. The UI thread only
+ * files a request and reads whatever answer has arrived; it never waits.
+ *
+ * hg_tabs_request queues a batch of windows and returns at once. When the
+ * worker finishes, it posts HG_MSG_TABS_READY to the floater window; results
+ * sit in a table until hg_tabs_take_result collects them, so a taskbox that is
+ * hidden when the answer lands simply picks it up on its next pass. */
+#define HG_TABS_WORKER_WINDOWS 16
+#define HG_MSG_TABS_READY (WM_APP + 41)
+
+void hg_tabs_request(const HWND *hwnds, int count);
+
+/* The worker's answer for this window, if a fresh one is waiting: copies the
+ * titles and returns the tab count (possibly 0). -1 when nothing new has
+ * arrived, in which case the caller keeps what it has. */
+int hg_tabs_take_result(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max);
 
 /* Raise the window and switch it to that tab. The element is re-found now
  * rather than held from the enumeration: a pointer into another process goes

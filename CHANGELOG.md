@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- **The floater-to-taskbox expansion stuttered once Chrome had been running a
+  while, with tabs shown as icons.** Reading another application's tabs is a
+  UI Automation walk into that application, and Chromium's accessibility trees
+  grow for as long as the browser runs - so a walk that cost nothing at
+  startup cost a hundred milliseconds an hour later, and it ran on the UI
+  thread, on the expand path. Enumeration now runs on a **background worker
+  thread**: the dashboard draws from its cache immediately, files a request,
+  and folds the answer in when it arrives. Expanding is instant no matter what
+  the browser is doing; a brand-new browser window shows one icon for the
+  fraction of a second its first answer takes, then fans out into tabs.
+  - Requests keep their five-second cadence, now on a wall clock. Switching a
+    tab or closing one from the icon menu still acts immediately.
+  - Design notes: `docs/RFC-2026-07-tabs-as-task-icons.md`, section D6.
+
 ## [v0.1.0] - 2026-08-05
 
 ### Changed
