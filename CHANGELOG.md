@@ -4,9 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.2.0] - 2026-08-05
 
 ### Fixed
+- **Title changes no longer cost anything while the taskbox is hidden.** A
+  window retitling itself - a browser does it on every page - made hgfloater
+  re-fetch that window's icon at once, through a pipeline that blocks on the
+  target window and reads disk, whether or not the taskbox was even visible.
+  The re-fetch now happens only while the list is on screen; an icon that
+  changed meanwhile shows its old face until the window's next retitle.
+  (Found by a full re-review of everything changed since the last audit; the
+  rest of that delta - the worker thread, the caches, the caps - survived the
+  re-read without a defect.)
 - **The floater-to-taskbox expansion stuttered once Chrome had been running a
   while, with tabs shown as icons.** Reading another application's tabs is a
   UI Automation walk into that application, and Chromium's accessibility trees
