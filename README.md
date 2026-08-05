@@ -2,6 +2,8 @@
 
 **English** | [한국어](README.ko.md)
 
+**v0.1.0** — built 2026-08-05 15:33 KST
+
 hgfloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
@@ -71,7 +73,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v26.08.05)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.1.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`

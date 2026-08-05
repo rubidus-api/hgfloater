@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.1.0] - 2026-08-05
+
+### Changed
+- **The version scheme is now semantic, starting at v0.1.0.** Date-style
+  versions (v26.08.05 and earlier) said *when* a build was cut but nothing
+  about *how much* changed; from here the version says what kind of change a
+  release carries, and the date moves to where a date belongs: the **About
+  window (`F1`) now shows the exact build timestamp**, and the README opens
+  with the version and build time of the release it describes. The version
+  lives in `VER.txt`, which both build scripts read, so a release is one edit.
+
 ## [v26.08.05] - 2026-08-05
 
 ### Changed
