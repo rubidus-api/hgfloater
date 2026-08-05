@@ -281,7 +281,10 @@ Run **`show windows class`** (`s w class`) in the command box to see the class o
 every open window, which is where those names come from. An application whose
 tabs UI Automation does not publish will simply keep its single icon.
 
-It re-reads tabs every five seconds rather than every second, and anything that
+It re-reads tabs every five seconds rather than every second, **on a background
+thread** — the reading is a cross-process call whose cost grows with the
+browser's own accessibility data, so the dashboard draws from its cache and
+folds new answers in when they arrive rather than ever waiting. Anything that
 fails falls back silently to one icon for the window. Some applications do not
 publish off-screen tabs at all, and those tabs will not appear. The design and
 what it costs are in `docs/RFC-2026-07-tabs-as-task-icons.md`.

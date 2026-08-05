@@ -123,18 +123,31 @@ static BOOL explorer_path_for(IShellWindows **shell_windows, HWND hwnd, const WC
  * the window would have contributed.
  *
  * Its own clock: the enumeration is a cross-process call and the list refreshes
- * every second, so tabs are re-read every fifth pass and reused in between. A
- * tab title five seconds stale costs nobody anything; a taskbox that stutters
- * once a second costs everybody. */
+ * every second, so tabs are re-requested every fifth pass and reused in
+ * between. A tab title five seconds stale costs nobody anything; a taskbox
+ * that stutters once a second costs everybody.
+ *
+ * And the asking itself happens on the tab worker thread, never here: a UIA
+ * walk into Chrome can take a hundred milliseconds once its accessibility
+ * tree has grown, and this function runs on the expand path, where that
+ * hundred milliseconds is the stutter the user sees. Each pass takes whatever
+ * answers have arrived (hg_tabs_take_result), draws from the cache, and files
+ * the next request on its way out; HG_MSG_TABS_READY brings the answer back
+ * through another pass. */
 static int expand_window_tabs(WindowItem *items, int count, BOOL force)
 {
     if (!hg_tabs_enabled())
         return count;
 
-    static int ticks = 0;
-    BOOL requery = force || (++ticks >= 5);
-    if (requery)
-        ticks = 0;
+    /* Wall-clock, not pass-count: the ready message triggers a pass of its
+     * own, and a pass-counted cadence would count those too - each answer
+     * hastening the next question until the worker never sleeps. */
+    static ULONGLONG s_last_request = 0;
+    ULONGLONG now = GetTickCount64();
+    BOOL requery = force || (now - s_last_request >= 5000);
+
+    HWND want[HG_TABS_WORKER_WINDOWS];
+    int want_count = 0;
 
     /* Titles are remembered between passes so the four seconds in between cost
      * nothing at all, keyed by the window they came from. */
@@ -171,11 +184,13 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
                 requery = TRUE; /* a window we have not asked about yet */
             }
             if (slot >= 0) {
-                if (requery)
-                    cached_count[slot] = hg_tabs_enumerate(items[i].hwnd, cached_titles[slot],
-                                                           HG_TABS_MAX_PER_WINDOW);
+                int fresh = hg_tabs_take_result(items[i].hwnd, cached_titles[slot], HG_TABS_MAX_PER_WINDOW);
+                if (fresh >= 0)
+                    cached_count[slot] = fresh;
                 tabs = cached_count[slot];
             }
+            if (want_count < HG_TABS_WORKER_WINDOWS)
+                want[want_count++] = items[i].hwnd;
         }
 
         /* One tab is a window with a tab strip nobody is using; showing it as a
@@ -225,6 +240,13 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
         ++kept;
     }
     cache_used = kept;
+
+    /* The request goes out after the drawing is done, so even the pass that
+     * asks pays nothing for asking. */
+    if (requery && want_count > 0) {
+        hg_tabs_request(want, want_count);
+        s_last_request = now;
+    }
 
     for (int i = 0; i < out_count; ++i)
         items[i] = out[i];

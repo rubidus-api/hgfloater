@@ -250,3 +250,39 @@ Two failures worth keeping, because both were avoidable:
   `docs/RFC-2026-07-temperature.md` - the two earlier cases of this program
   taking a bounded, cached, off-the-paint-path approach to a slow cross-process
   API, whose shape D2 follows.
+
+## D6 - Enumeration moves to a worker thread (2026-08-05)
+
+The synchronous design above eventually produced the very stutter D2 was meant
+to avoid, and in a way that took weeks to show: Chromium turns its
+accessibility support on the first time a UIA client queries it and leaves it
+on for the browser session. The first walks are cheap because the trees are
+shallow; an hour later, with a dozen complex pages materialized, the same
+`FindAll` costs a hundred milliseconds - and it was running on the UI thread,
+on the expand path, which is exactly where the user is looking.
+
+So enumeration now runs on one dedicated worker thread:
+
+- The worker owns its COM (MTA, per UIA client guidance) and its own
+  `IUIAutomation` instance; interface pointers never cross the apartment
+  boundary. The UI thread keeps a separate instance for the one-shot user
+  actions (activate, close a tab), where a brief block on an explicit click is
+  acceptable.
+- The UI thread files a request batch (the current tab-class windows) and
+  returns immediately; the expand path draws from its title cache on every
+  pass and never waits. Requests are re-filed on a wall-clock cadence
+  (5 seconds), not a pass count, because the completion message triggers a
+  pass of its own and counting those would let each answer hasten the next
+  question.
+- The worker posts `HG_MSG_TABS_READY` to the floater when a batch completes.
+  Visible taskbox: one refresh pass folds the answers in. Hidden: the results
+  wait in the worker's table, and the next expand picks them up in its own
+  pass - so expansion after idle shows tabs instantly, from data at most one
+  request old.
+- A new tabbed window appears as a single icon for the fraction of a second
+  its first answer takes, then fans out. That replaces the old behaviour,
+  where the whole dashboard froze for as long as the answer took.
+- Shutdown signals the worker and waits briefly; a worker stuck inside a
+  cross-process call is left to process teardown rather than terminated
+  mid-call, because the tables it might still touch are process-lifetime
+  statics.
