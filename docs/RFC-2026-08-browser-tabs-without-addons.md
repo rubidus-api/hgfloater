@@ -1,7 +1,11 @@
 # RFC 2026-08: Browser Tabs Without Add-ons
 
-Status: Proposed
+Status: Partially implemented (2026-08-06) - see Implementation Notes
 Date: 2026-08-06
+
+Section labels here are B1-B6; the D-numbers belong to
+`docs/RFC-2026-07-tabs-as-task-icons.md` and the two must not be confused -
+that file's D6/D7 are the worker thread and the title gate this RFC builds on.
 
 ## Summary
 
@@ -72,9 +76,10 @@ cross-process 호출하지 말고 cache request로 묶도록 권장한다. 현�
 ### F1 - Timed-out worker is treated as terminated (high)
 
 `hg_tabs_shutdown`은 stop을 설정하고 2초 기다린 뒤 wait 결과와 무관하게 thread HANDLE을 닫고
-`s_tabs_stop`을 0으로 되돌린다. `CloseHandle`은 thread를 종료하지 않는다. UIA 호출에 걸려 있던
-thread가 뒤늦게 돌아오면 다시 loop를 돌 수 있고, `show_tabs`를 다시 켜면 두 번째 worker도
-생성될 수 있다.
+`s_tabs_stop`을 0으로 되돌린다. `CloseHandle`은 thread를 종료하지 않는다. 결정적으로 stop을
+0으로 되돌리는 것이 UIA 호출에 걸려 있던 thread를 **되살린다**: 호출이 끝나 loop 조건을 다시
+검사할 때 종료 신호가 이미 사라져 있으므로 좀비가 아니라 정상 동작 thread로 복귀하고,
+`show_tabs`를 다시 켜면 두 번째 worker가 생성되어 같은 auto-reset event를 두 thread가 기다린다.
 
 Required fix:
 
@@ -126,7 +131,7 @@ counter로 `eligible/dropped` 수를 확인할 수 있어야 한다.
 
 ## Proposed Design
 
-### D1 - One worker state machine
+### B1 - One worker state machine
 
 worker 상태를 `STOPPED`, `RUNNING`, `STOPPING`, `FAILED`로 명시한다. UI thread는 request queue만
 갱신하며 COM 호출을 하지 않는다.
@@ -142,7 +147,7 @@ queue는 창별 최신 request 하나만 유지한다. 전체 batch 덮어쓰기
 identity/generation/priority를 저장하면 한 창의 잦은 title change가 다른 창 request를 지우지 않는다.
 worker는 action, dirty enumeration, backstop 순으로 하나씩 꺼낸다.
 
-### D2 - Chromium fast path: bounded MSAA traversal
+### B2 - Chromium fast path: bounded MSAA traversal
 
 Chromium 공식 접근성 문서는 Windows에서 MSAA/IAccessible과 IAccessible2 지원은 complete,
 IAccessibleEx/UIA는 very limited라고 설명한다. 따라서 `Chrome_WidgetWin_*` 창에는 MSAA fast path를
@@ -161,30 +166,35 @@ Algorithm:
 
 - 최대 depth 8
 - 최대 visited node 256
-- 창당 soft elapsed budget 20 ms; 넘으면 결과 폐기 후 UIA fallback을 다음 idle cycle에 예약
+- 창당 soft elapsed budget 20 ms; 넘으면 걷기를 중단하고 UIA fallback으로 넘어가되, 그때까지
+  얻은 결과가 sanity check를 통과하면 버리지 않고 채택한다 - 이미 지불한 비용의 결과를
+  폐기하면 재시도가 같은 비용을 반복한다
 - 탭 최대 24개는 현재 상한 유지
 
 MSAA의 `AccessibleChildren`도 cross-process COM이므로 worker에서만 호출한다. browser version별
 role/tree shape가 다를 수 있어 class name만으로 성공을 가정하지 않고, 위치/role/title sanity check를
 모두 통과한 경우만 fast path 결과를 채택한다.
 
-### D3 - UIA scoped-container fallback
+### B3 - UIA scoped-container fallback
 
 MSAA가 실패하거나 비Chromium 앱이면 UIA를 사용한다. 다만 매 refresh마다 window root의 전체
 descendant를 검색하지 않는다.
 
 1. Discovery: 기존 `FindAllBuildCache(TreeScope_Descendants)`를 한 번 실행해 상단 TabItem들을 찾는다.
 2. 각 TabItem의 parent/ancestor를 비교해 공통의 가장 작은 container를 정한다.
-3. container의 runtime ID와 window identity를 cache한다. live pointer는 cache하지 않는다.
-4. Refresh: root에서 cached runtime ID를 재발견한 뒤 그 container subtree에만
-   `FindAllBuildCache`를 실행한다.
-5. container가 사라졌거나 sanity check가 실패할 때만 full discovery로 돌아간다.
+3. container를 다시 찾을 **경로 힌트**를 cache한다: root에서 container까지의
+   (ControlType, ClassName, AutomationId, child index) 체인. live pointer는 cache하지 않는다.
+   주의: UIA runtime ID는 property condition 검색에 쓸 수 없으므로 "runtime ID로 재발견"은
+   성립하지 않는다 - 재발견은 TreeWalker로 경로 힌트를 따라 내려가는 짧은 걷기다.
+4. Refresh: 경로 힌트를 따라 container를 다시 잡은 뒤 그 subtree에만 `FindAllBuildCache`를
+   실행한다.
+5. 경로가 끊겼거나 sanity check가 실패할 때만 full discovery로 돌아간다.
 
-UIA runtime ID 역시 provider 재구성 뒤 영구 identity가 아니므로 실패 시 폐기 가능한 hint로만 쓴다.
-container 탐색이 오히려 많은 round trip을 만들면 해당 provider는 기존 one-shot full cache walk를
+경로 힌트는 provider 재구성 뒤 영구 identity가 아니므로 실패 시 폐기 가능한 hint로만 쓴다.
+container 재발견이 오히려 많은 round trip을 만들면 해당 provider는 기존 one-shot full cache walk를
 유지한다. 구현 전/후 호출 시간으로 선택해야 한다.
 
-### D4 - Event-assisted invalidation, not event-driven enumeration
+### B4 - Event-assisted invalidation, not event-driven enumeration
 
 UIA는 structure/property/selection event subscription을 지원한다. 이를 데이터 source로 신뢰하지
 않고 cache를 dirty로 만드는 hint로만 사용한다.
@@ -197,11 +207,16 @@ UIA는 structure/property/selection event subscription을 지원한다. 이를 �
   mode를 즉시 끄고 title/backstop 방식으로 되돌린다.
 - add/remove handler는 동일 worker thread에서 직렬화한다. Microsoft는 여러 thread에서 event
   handler를 동시에 add/remove하지 말라고 명시한다.
+- **명시해야 할 두 리스크**: (1) 구독은 대상 element의 live 참조를 구독 기간 내내 보유한다 -
+  이 파일 계열의 "foreign pointer를 refresh 사이에 보존하지 않는다" 원칙의 명시적 예외이며,
+  provider가 죽으면 참조 해제 경로를 반드시 검증해야 한다. (2) 구독의 존재 자체가 브라우저
+  접근성 활성화를 붙들어 둘 수 있다 - Chromium이 유휴 시 접근성을 해체하는 이득(D7이 확인한
+  효과)을 구독이 상쇄하는지 Phase 2 측정 항목에 넣는다.
 
 이 설계는 “이벤트가 반드시 온다”에 기대지 않는다. 이벤트 품질이 나쁜 브라우저에서도 현재보다
 나빠지지 않고, 잘 오는 provider에서만 불필요한 backstop walk를 줄인다.
 
-### D5 - Icon policy without favicon extraction
+### B5 - Icon policy without favicon extraction
 
 추가 설치 없이 접근성 API만 사용할 때 탭 제목은 얻을 수 있지만 favicon image bytes/HICON은
 표준적으로 보장되지 않는다. 다음 정책을 명시한다.
@@ -215,7 +230,7 @@ UIA는 structure/property/selection event subscription을 지원한다. 이를 �
 따라서 이번 RFC의 “아이콘”은 탭 항목의 안정적인 시각 표식을 뜻하며 실제 favicon은 non-goal이다.
 favicon이 필수 요구가 되면 추가 설치 허용 여부를 별도 RFC에서 다시 결정해야 한다.
 
-### D6 - Adaptive backoff and circuit breaker
+### B6 - Adaptive backoff and circuit breaker
 
 provider/window별 elapsed time과 연속 실패를 기억한다.
 
@@ -339,6 +354,47 @@ refresh와 bounded backoff를 사용하는 것이다.
 확장 프로그램 없이 실제 favicon까지 안정적으로 얻는 효율적인 공식 API는 확인되지 않았다.
 favicon 때문에 browser tree, profile file, 화면을 더 깊게 훑으면 원래 성능 문제를 되살리므로,
 이번 RFC에서는 정확한 제목/순서/동작과 끊김 제거를 우선한다.
+
+## Implementation Notes (2026-08-06)
+
+Phase 0 plus the two performance pieces shipped together; the review that
+preceded them adjusted three designs. What the code does where it differs from
+the sections above:
+
+- **F1**: implemented as the B1 state machine (STOPPED/RUNNING/STOPPING), with
+  reap-before-create and the stop flag left set across a timeout. A FAILED
+  state proved unnecessary: a worker that cannot initialise COM still answers,
+  with failed results, and the breaker quiets it.
+- **F2**: implemented with a simpler design than per-request generations -
+  `hg_tabs_request` now **merges** into the pending set instead of replacing
+  it, so a queued window can never be silently unqueued; with that, stamping
+  asked-state at send time is truthful again. The OK/FAILED distinction is
+  carried per result (`HgTabsAnswer.failed`), and a failed ask keeps the
+  previous fan-out instead of folding it.
+- **F3**: implemented as PID-only identity. The class check was dropped: a
+  recycled HWND only reaches the tab path if the new window is also a
+  tab-class window, and the PID catches that; asked-title mismatch then
+  refreshes within a pass. The full (class, generation) tuple was judged
+  over-engineering.
+- **F4**: deferred, deliberately - RFC-2026-07 D6 records the trade (a click
+  blocking briefly is the behaviour the click asked for). Revisit if a hung
+  provider is ever actually observed.
+- **B2 (MSAA)**: implemented in `hg_tabs_msaa_read` with the budgets above
+  (depth 8, 256 nodes, 20 ms, 64 children per node), DOCUMENT-subtree and
+  below-band pruning, and per-attempt adoption: only a PAGETABLIST with at
+  least one visible PAGETAB in the top band is accepted; anything else falls
+  through to UIA in the same ask. Which provider answered is visible per
+  window in `show tabs`.
+- **B3/B4**: not implemented - B3 awaits the path-hint redesign recorded
+  above, B4 awaits Phase 2 and its two-risk measurement.
+- **B6**: implemented UI-side in the window list: per-window earliest-ask
+  (50 ms → 30 s quiet, 200 ms or 3 straight failures → 120 s), outranking
+  even a changed title. The worker keeps the 150 ms stagger and below-normal
+  priority; the `Sleep` stays until an action queue (F4) needs due-ticks.
+- **Observability**: `show tabs` (`s t`) in the command box prints the
+  counters (queued, answered, failed, msaa, over-50 ms, both overflow kinds,
+  shutdown timeouts) and one line per known window with provider, tab count,
+  elapsed and title. In-memory only; nothing is written to disk.
 
 ## References
 
