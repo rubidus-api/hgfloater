@@ -201,10 +201,15 @@ built-in buttons.
   each going straight to its own window.
 
   That now includes **hgfloater's own windows** — every open note editor, the
-  note list, the clipboard history, the command box. They are tool windows, so
-  Windows keeps them out of Alt-Tab, which is right for a widget's windows but
-  wrong for a list whose whole job is reaching them. The floater, the taskbox
-  and the toolbar stay out: they are the thing you are looking at.
+  note list, the clipboard history, the command box. The clipboard history and
+  the command box are tool windows, so Windows keeps them out of Alt-Tab, which
+  is right for a widget's controls but wrong for a list whose whole job is
+  reaching them — so this list carries them anyway. **The note windows are
+  ordinary application windows**: a note is a document, so each editor and the
+  note list get their own taskbar button and Alt-Tab entry, and they stay open
+  regardless of what the floater and taskbox do, until you close them. The
+  floater, the taskbox and the toolbar stay out: they are the thing you are
+  looking at.
 - **Shortcut icons** follow: one per `.lnk` or `.url` in your shortcuts folder.
 
 > ### 📌 How to add a shortcut icon
@@ -573,6 +578,12 @@ display.
 ## 10. Notes
 
 Open the note list with the **`N`** toolbar button or the `note` command.
+
+**Note windows stand on their own.** The list and every open editor are
+ordinary application windows: each has its taskbar button and Alt-Tab entry,
+they appear as task icons in the taskbox like any other window, and collapsing
+or closing the taskbox does not touch them — a note stays open until you close
+it.
 
 Each note is a plain UTF-8 `.txt` file, so it stays readable and editable
 outside hgfloater. **The first line is the title**; everything after it is the
