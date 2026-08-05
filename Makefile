@@ -11,7 +11,6 @@
 #
 # Useful variables:
 #     OUT=build          where object files and the exe are written (default: .)
-#     VERSION_SUFFIX=b   same-day re-release marker, e.g. v26.07.20b
 #
 # build.bat offers the same builds through an interactive menu on Windows; both
 # read the source list from here so the two cannot drift apart.
@@ -24,12 +23,17 @@ PYTHON  ?= python3
 OUT ?= .
 EXE := $(OUT)/hgfloater.exe
 
-# Version string is the build date, vYY.MM.DD, with an optional suffix.
-VER_Y := $(shell date +%y)
-VER_M := $(shell date +%m)
-VER_D := $(shell date +%d)
-VERSION_SUFFIX ?=
-VERSION_STRING := v$(VER_Y).$(VER_M).$(VER_D)$(VERSION_SUFFIX)
+# The version is semantic and lives in VER.txt (vMAJOR.MINOR.PATCH); bump it
+# there when cutting a release. The build stamp is the moment this build was
+# made, shown in the About window - the version says what, the stamp says when.
+VERSION_STRING := $(strip $(shell cat VER.txt))
+VER_CORE  := $(subst v,,$(VERSION_STRING))
+VER_MAJOR := $(word 1,$(subst ., ,$(VER_CORE)))
+VER_MINOR := $(word 2,$(subst ., ,$(VER_CORE)))
+VER_PATCH := $(word 3,$(subst ., ,$(VER_CORE)))
+# Overridable so a release can carry the exact stamp written into the README:
+#   BUILD_STAMP="2026-08-05 15:33 KST" make release
+BUILD_STAMP ?= $(shell date '+%Y-%m-%d %H:%M %Z')
 
 # Strict by default: the build is expected to stay warning-clean.
 WARNING_FLAGS := -Wall -Wextra -Wpedantic -Wshadow -Wformat=2 -Wdouble-promotion \
@@ -92,16 +96,17 @@ about:
 
 $(RES): src/hgfloater.rc | $(OUT)
 	$(WINDRES) src/hgfloater.rc -O coff -o $@ \
-		-DHG_RC_VER_MAJOR=$$((10#$(VER_Y))) \
-		-DHG_RC_VER_MINOR=$$((10#$(VER_M))) \
-		-DHG_RC_VER_PATCH=$$((10#$(VER_D))) \
-		-DHG_RC_VER_MINOR_STR=$(VER_M) \
-		-DHG_RC_VER_PATCH_STR=$(VER_D)$(VERSION_SUFFIX)
+		-DHG_RC_VER_MAJOR=$(VER_MAJOR) \
+		-DHG_RC_VER_MINOR=$(VER_MINOR) \
+		-DHG_RC_VER_PATCH=$(VER_PATCH) \
+		-DHG_RC_VER_MINOR_STR=$(VER_MINOR) \
+		-DHG_RC_VER_PATCH_STR=$(VER_PATCH)
 
 $(EXE): about $(SRC) $(RES) | $(OUT)
 	$(CC) -o $@ $(SRC) $(RES) $(WARNING_FLAGS) $(MODE_FLAGS) $(WIN_FLAGS) \
-		-DHG_VERSION_W=L\"$(VERSION_STRING)\" $(LIBS)
-	@echo "build: OK ($@ $(VERSION_STRING))"
+		-DHG_VERSION_W=L\"$(VERSION_STRING)\" \
+		'-DHG_BUILD_STAMP_W=L"$(BUILD_STAMP)"' $(LIBS)
+	@echo "build: OK ($@ $(VERSION_STRING), built $(BUILD_STAMP))"
 
 $(OUT):
 	@mkdir -p $(OUT)

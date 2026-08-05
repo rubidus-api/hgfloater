@@ -69,9 +69,14 @@
 #define MOD_NOREPEAT 0x4000
 #endif
 
-/* Build-time versioning */
+/* Build-time versioning. The version is semantic and comes from VER.txt via
+ * the build scripts; the stamp is the moment the exe was built. Fallbacks
+ * cover an IDE or ad-hoc compile that passes neither. */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v26.08.05"
+#define HG_VERSION_W L"v0.1.0"
+#endif
+#ifndef HG_BUILD_STAMP_W
+#define HG_BUILD_STAMP_W L"unknown"
 #endif
 
 /* Include generated About text from README.md if available */
@@ -85,6 +90,7 @@
 
 #define HG_ABOUT_FIXED_W                                                                                               \
     L"hgfloater " HG_VERSION_W L"\r\n"                                                                                 \
+    L"Built: " HG_BUILD_STAMP_W L"\r\n"                                                                                \
     L"A lightweight WinAPI-based floating widget & task switcher.\r\n\r\n"                                             \
     L"Homepage:\r\n"                                                                                                   \
     L"https://github.com/rubidus-api/hgfloater\r\n\r\n"                                                                \
