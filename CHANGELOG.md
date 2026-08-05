@@ -14,10 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   window (`F1`) now shows the exact build timestamp**, and the README opens
   with the version and build time of the release it describes. The version
   lives in `VER.txt`, which both build scripts read, so a release is one edit.
-
-## [v26.08.05] - 2026-08-05
-
-### Changed
+  (A `v26.08.05` release published earlier the same day carried the note-window
+  change below; it was withdrawn in favour of this one, which includes it.)
 - **Note windows stand on their own.** The note list and every note editor are
   now ordinary application windows (WS_EX_APPWINDOW) instead of tool windows:
   each gets its own taskbar button and Alt-Tab entry, and they appear in the
