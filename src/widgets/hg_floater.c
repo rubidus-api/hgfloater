@@ -1348,6 +1348,15 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     default: {
         if (hg_g_shellhook_msg && msg == hg_g_shellhook_msg) {
             if (w_param == HSHELL_REDRAW) {
+                /* Only while the taskbox is showing. A title change fires this
+                 * constantly - a browser fires it per page - and the icon
+                 * pipeline blocks on the target window and reads disk. With the
+                 * taskbox hidden nobody can see the icon anyway; one that
+                 * changed while we were not looking shows its old face until
+                 * the window's next REDRAW while visible, which for the badge
+                 * updaters that change icons at all is seconds away. */
+                if (!hg_g_taskbox_wnd || !IsWindowVisible(hg_g_taskbox_wnd))
+                    return 0;
                 HWND target_hwnd = (HWND)l_param;
                 BOOL found = FALSE;
                 for (int i = 0; i < hg_g_window_count; i++) {
@@ -1359,7 +1368,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         break;
                     }
                 }
-                if (found && hg_g_toolbar_wnd && hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+                if (found && hg_g_toolbar_wnd) {
                     InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
                 }
             } else if (w_param == HSHELL_WINDOWCREATED || w_param == HSHELL_WINDOWDESTROYED ||
