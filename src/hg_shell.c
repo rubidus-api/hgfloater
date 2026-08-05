@@ -66,12 +66,14 @@ BOOL hg_startup_set_enabled(BOOL enabled)
 /* Our own windows that are documents rather than the widget itself: a note
  * editor, the note list, the clipboard history, the command box.
  *
- * They are all WS_EX_TOOLWINDOW, which is what keeps them out of the system's
- * Alt-Tab, and that is right - they belong to a widget, not to the taskbar. But
- * the taskbox is a list of windows to reach, and hgfloater is exactly the kind
- * of program this is for: several notes open at once, each its own window, none
- * of them reachable from a list that skipped them. The floater, the taskbox and
- * the toolbar stay out, because they are the thing you are looking at. */
+ * The clipboard history, the command box and the monitor previews are
+ * WS_EX_TOOLWINDOW, which keeps them out of the system's Alt-Tab - right for a
+ * widget's controls, but the taskbox is a list of windows to reach, so it
+ * carries them anyway; this predicate is what lets them through its filters.
+ * The note windows are ordinary WS_EX_APPWINDOW windows now and pass the
+ * filters on their own; they stay listed here so nothing depends on that
+ * distinction. The floater, the taskbox and the toolbar stay out, because
+ * they are the thing you are looking at. */
 static BOOL hg_is_own_reachable_window(HWND hwnd)
 {
     WCHAR class_name[64];

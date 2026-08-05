@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **Note windows stand on their own.** The note list and every note editor are
+  now ordinary application windows (WS_EX_APPWINDOW) instead of tool windows:
+  each gets its own taskbar button and Alt-Tab entry, and they appear in the
+  taskbox's task icons like any other window. They were already unowned, so the
+  taskbox never actually closed them - but as tool windows they fell behind
+  whatever was clicked next with no button anywhere to bring them back, which
+  read as "my note closed when the taskbox did". Now they stay reachable, and
+  open, until closed.
+
 ## [v26.08.04] - 2026-08-04
 
 A max-effort review of the whole codebase, aimed at the reported high idle CPU
