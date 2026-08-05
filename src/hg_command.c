@@ -10,6 +10,7 @@
 #include "hg_command.h"
 #include "hg_utils.h"
 #include "hg_globals.h"
+#include "hg_tabs.h"
 #include "widgets/hg_note.h"
 #include "widgets/hg_clip.h"
 #include "widgets/hg_monitor.h"
@@ -781,8 +782,12 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_show_monitors(argc, argv);
     } else if (cmd_word_is(argv[1], L"value", L"v") || cmd_word_is(argv[1], L"values", NULL)) {
         cmd_show_values();
+    } else if (cmd_word_is(argv[1], L"tabs", L"t") || cmd_word_is(argv[1], L"tab", NULL)) {
+        /* The tab worker's own numbers: per window, which provider answered
+         * and what it cost; in total, what was queued, dropped, and slow. */
+        hg_tabs_report(commandbox_print);
     } else {
-        cmd_printf(L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, value)",
+        cmd_printf(L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value)",
                    argv[1]);
     }
 }

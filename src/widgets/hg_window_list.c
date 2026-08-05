@@ -162,10 +162,16 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
 #define HG_TABS_CACHE_WINDOWS 16
 #define HG_TABS_BACKSTOP_MS 30000
     static HWND cached_hwnd[HG_TABS_CACHE_WINDOWS];
+    static DWORD cached_pid[HG_TABS_CACHE_WINDOWS]; /* a recycled HWND is a different window */
     static WCHAR cached_titles[HG_TABS_CACHE_WINDOWS][HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
     static int cached_count[HG_TABS_CACHE_WINDOWS];
     static WCHAR cached_asked_title[HG_TABS_CACHE_WINDOWS][HG_MAX_STR];
     static ULONGLONG cached_asked_tick[HG_TABS_CACHE_WINDOWS];
+    /* Per-window breaker: a window whose asks run slow or keep failing earns
+     * a quiet period, no matter what its title does. 50 ms buys 30 seconds;
+     * 200 ms, or three failures in a row, buys two minutes. */
+    static ULONGLONG cached_earliest[HG_TABS_CACHE_WINDOWS];
+    static int cached_fails[HG_TABS_CACHE_WINDOWS];
     static int cache_used = 0;
 
     /* Static, not local. A WindowItem is about 4 KB - two HG_MAX_STR strings -
@@ -188,23 +194,58 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
                     break;
                 }
             }
+            if (slot < 0 && cache_used >= (int)HG_ARRAYSIZE(cached_hwnd)) {
+                hg_tabs_note_overflow(); /* the cap must fail loudly, not silently */
+            }
             if (slot < 0 && cache_used < (int)HG_ARRAYSIZE(cached_hwnd)) {
                 slot = cache_used++;
                 cached_hwnd[slot] = items[i].hwnd;
+                cached_pid[slot] = items[i].process_id;
                 cached_count[slot] = 0;
                 cached_asked_title[slot][0] = L'\0';
                 cached_asked_tick[slot] = 0;
+                cached_earliest[slot] = 0;
+                cached_fails[slot] = 0;
                 requery = TRUE; /* a window we have not asked about yet */
             }
             if (slot >= 0) {
-                int fresh = hg_tabs_take_result(items[i].hwnd, cached_titles[slot], HG_TABS_MAX_PER_WINDOW);
-                if (fresh >= 0)
-                    cached_count[slot] = fresh;
+                HgTabsAnswer answer;
+                int fresh = hg_tabs_take_result(items[i].hwnd, cached_titles[slot], HG_TABS_MAX_PER_WINDOW, &answer);
+                if (fresh >= 0) {
+                    if (answer.pid != 0 && cached_pid[slot] != 0 && answer.pid != cached_pid[slot]) {
+                        /* The HWND was recycled between ask and answer: this
+                         * result belongs to a window that no longer exists.
+                         * Start the slot over for the window that does. */
+                        cached_pid[slot] = answer.pid;
+                        cached_count[slot] = 0;
+                        cached_asked_tick[slot] = 0;
+                        cached_earliest[slot] = 0;
+                        cached_fails[slot] = 0;
+                    } else if (answer.failed) {
+                        /* The ask broke; the tabs are whatever they were. A
+                         * transient provider failure must not fold a living
+                         * fan-out back into one icon. */
+                        cached_fails[slot]++;
+                        cached_earliest[slot] =
+                            now + ((cached_fails[slot] >= 3) ? 120000 : HG_TABS_BACKSTOP_MS);
+                    } else {
+                        cached_count[slot] = fresh;
+                        cached_fails[slot] = 0;
+                        if (answer.elapsed_ms > 200)
+                            cached_earliest[slot] = now + 120000;
+                        else if (answer.elapsed_ms > 50)
+                            cached_earliest[slot] = now + HG_TABS_BACKSTOP_MS;
+                        else
+                            cached_earliest[slot] = 0;
+                    }
+                }
                 tabs = cached_count[slot];
 
                 BOOL ask = (cached_asked_tick[slot] == 0) ||
                            (lstrcmpW(cached_asked_title[slot], items[i].title) != 0) ||
                            (now - cached_asked_tick[slot] >= HG_TABS_BACKSTOP_MS);
+                if (now < cached_earliest[slot])
+                    ask = FALSE; /* the breaker outranks even a changed title */
                 if (ask && want_count < HG_TABS_WORKER_WINDOWS) {
                     want[want_count] = items[i].hwnd;
                     want_title[want_count] = items[i].title;
@@ -267,10 +308,13 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
             continue;
         if (kept != c) {
             cached_hwnd[kept] = cached_hwnd[c];
+            cached_pid[kept] = cached_pid[c];
             cached_count[kept] = cached_count[c];
             memcpy(cached_titles[kept], cached_titles[c], sizeof(cached_titles[c]));
             memcpy(cached_asked_title[kept], cached_asked_title[c], sizeof(cached_asked_title[c]));
             cached_asked_tick[kept] = cached_asked_tick[c];
+            cached_earliest[kept] = cached_earliest[c];
+            cached_fails[kept] = cached_fails[c];
         }
         ++kept;
     }

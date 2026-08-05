@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **A faster way to read Chromium tabs, and a sturdier worker to do it with**
+  (RFC-2026-08). For Chrome, Edge and other Chromium windows the worker now
+  asks through MSAA first - the accessibility interface Chromium itself calls
+  complete - with a strictly budgeted walk (depth 8, 256 nodes, 20 ms) that
+  never enters web content, so answering does not wake the browser's page
+  accessibility machinery at all. The result is adopted only when a real tab
+  strip answered; anything else falls back to UI Automation in the same ask.
+- **`show tabs`** (`s t`) in the command box: what was queued, answered,
+  failed, served by which provider, and how long each window's ask took -
+  the numbers the whole tab pipeline is judged by, kept in memory only.
+- **A per-window circuit breaker.** A window whose asks run slow (over 50 ms)
+  or keep failing earns a quiet period - 30 seconds, or two minutes past
+  200 ms or three straight failures - no matter what its title does.
+
+### Fixed
+- **A worker stuck in a cross-process call could come back from the dead.**
+  Toggling tabs off waited two seconds, then reset the stop flag whatever
+  happened - which is exactly what let a stuck worker resume when its call
+  finally returned, and a re-enable then started a second one. The lifecycle
+  is now an explicit state machine: a stuck worker stays marked STOPPING with
+  its stop flag set, no new worker starts until the old one is reaped, and
+  there is only ever one.
+- **A queued window could be silently unqueued.** New request batches replaced
+  the pending set, so a window waiting its turn could vanish - while being
+  stamped as asked, leaving its tabs stale for up to 30 seconds. Requests now
+  merge; nothing queued is dropped without being counted.
+- **A transient read failure no longer folds a browser's tabs into one icon.**
+  "The question failed" and "there are no tabs" were both a zero; they are now
+  different answers, and a failure keeps showing what was known.
+- A recycled window handle can no longer briefly wear another window's tabs:
+  answers carry the process id they were read from, and a mismatch resets the
+  slot instead of applying.
+
 ## [v0.2.1] - 2026-08-06
 
 ### Fixed
