@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- **The moment after expansion could still hitch the whole machine with many
+  browser tabs open.** v0.2.0 moved the tab walk off hgfloater's UI thread,
+  but the walk's real cost lands in the browser: answering it makes Chrome or
+  Edge materialize their accessibility trees, across their processes - and
+  current Chromium drops that machinery when nobody asks for a while, so the
+  first ask after an idle stretch pays for a full rebuild, of every browser
+  window at once. Three changes (RFC D7):
+  - A window is **re-asked only when its own title changed** - switching or
+    navigating a tab retitles the window - with a 30-second backstop for what
+    a title does not carry. Windows you never touched now cost nothing.
+  - The walk's answer (names and positions) **rides back in a single call**
+    via a UIA cache request, instead of two extra cross-process round trips
+    per tab.
+  - Batches are **staggered 150 ms apart** and the worker runs below normal
+    priority, so no two browsers rebuild their trees in the same instant.
+  - The trade, stated: a strip change that does not change the window title
+    (a background tab quietly opened) can show up to 30 seconds late.
+
 ## [v0.2.0] - 2026-08-05
 
 ### Fixed
