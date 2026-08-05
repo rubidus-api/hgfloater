@@ -9,11 +9,11 @@
 #ifndef HG_RC_VER_MAJOR
 #define HG_RC_VER_MAJOR 26
 #define HG_RC_VER_MINOR 8
-#define HG_RC_VER_PATCH 4
+#define HG_RC_VER_PATCH 5
 #endif
 #ifndef HG_RC_VER_MINOR_STR
 #define HG_RC_VER_MINOR_STR 08
-#define HG_RC_VER_PATCH_STR 04
+#define HG_RC_VER_PATCH_STR 05
 #endif
 
 #define HG_RC_STR_HELPER(x) #x
