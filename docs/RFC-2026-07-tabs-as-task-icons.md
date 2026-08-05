@@ -286,3 +286,33 @@ So enumeration now runs on one dedicated worker thread:
   cross-process call is left to process teardown rather than terminated
   mid-call, because the tables it might still touch are process-lifetime
   statics.
+
+## D7 - The walk itself made cheaper and rarer (2026-08-06)
+
+D6 took the walk off the UI thread, and the stutter moved instead of dying:
+the cost of `FindAll(TreeScope_Descendants)` lands in the *target* - the
+browser materializes its accessibility tree to answer, across its renderer
+processes - so a batch fired at every browser window in the instant after
+expansion still hitched the whole machine. Current Chromium also drops its
+accessibility mode after a while without UIA traffic, which is why the burst
+is worst right after an idle stretch: the first ask pays for the tree being
+rebuilt from nothing. Three changes, independent and stacked:
+
+- **A window is re-asked only when its own title changed.** Switching or
+  navigating a tab retitles a browser window, so title change is a cheap and
+  honest proxy for "the strip probably changed". A 30-second backstop catches
+  what a title does not carry (a background tab quietly opened). After
+  expansion, windows the user never touched cost nothing at all.
+- **The answer rides back in one call.** A cache request fetches Name and
+  BoundingRectangle inside the FindAll itself, with
+  `AutomationElementMode_None` so no live per-element reference is created.
+  The uncached path cost two cross-process round trips per tab item on top of
+  the walk.
+- **Batches are staggered and the worker runs below normal priority.** 150 ms
+  between windows, so no two browsers rebuild their trees in the same instant;
+  the priority keeps our half of the work out of the foreground's way (the
+  browser's half runs at its own priority regardless).
+
+The user-visible trade: a tab strip changed without a title change (rare) can
+lag up to 30 seconds. Ordinary tab switching and navigation update within the
+usual beat.

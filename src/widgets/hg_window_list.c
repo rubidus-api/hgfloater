@@ -147,14 +147,25 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
     BOOL requery = force || (now - s_last_request >= 5000);
 
     HWND want[HG_TABS_WORKER_WINDOWS];
+    const WCHAR *want_title[HG_TABS_WORKER_WINDOWS];
+    int want_slot[HG_TABS_WORKER_WINDOWS];
     int want_count = 0;
 
     /* Titles are remembered between passes so the four seconds in between cost
-     * nothing at all, keyed by the window they came from. */
+     * nothing at all, keyed by the window they came from. Beside them, what the
+     * window's own title was when we last asked: a UIA walk makes the target
+     * build its accessibility tree, which for a browser full of pages is the
+     * heaviest thing this program ever causes - so a window is only re-asked
+     * when its title says something changed (switching or navigating a tab
+     * retitles the window), with a slow backstop for the changes a title does
+     * not carry, like a background tab quietly appearing. */
 #define HG_TABS_CACHE_WINDOWS 16
+#define HG_TABS_BACKSTOP_MS 30000
     static HWND cached_hwnd[HG_TABS_CACHE_WINDOWS];
     static WCHAR cached_titles[HG_TABS_CACHE_WINDOWS][HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
     static int cached_count[HG_TABS_CACHE_WINDOWS];
+    static WCHAR cached_asked_title[HG_TABS_CACHE_WINDOWS][HG_MAX_STR];
+    static ULONGLONG cached_asked_tick[HG_TABS_CACHE_WINDOWS];
     static int cache_used = 0;
 
     /* Static, not local. A WindowItem is about 4 KB - two HG_MAX_STR strings -
@@ -181,6 +192,8 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
                 slot = cache_used++;
                 cached_hwnd[slot] = items[i].hwnd;
                 cached_count[slot] = 0;
+                cached_asked_title[slot][0] = L'\0';
+                cached_asked_tick[slot] = 0;
                 requery = TRUE; /* a window we have not asked about yet */
             }
             if (slot >= 0) {
@@ -188,9 +201,17 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
                 if (fresh >= 0)
                     cached_count[slot] = fresh;
                 tabs = cached_count[slot];
+
+                BOOL ask = (cached_asked_tick[slot] == 0) ||
+                           (lstrcmpW(cached_asked_title[slot], items[i].title) != 0) ||
+                           (now - cached_asked_tick[slot] >= HG_TABS_BACKSTOP_MS);
+                if (ask && want_count < HG_TABS_WORKER_WINDOWS) {
+                    want[want_count] = items[i].hwnd;
+                    want_title[want_count] = items[i].title;
+                    want_slot[want_count] = slot;
+                    ++want_count;
+                }
             }
-            if (want_count < HG_TABS_WORKER_WINDOWS)
-                want[want_count++] = items[i].hwnd;
         }
 
         /* One tab is a window with a tab strip nobody is using; showing it as a
@@ -226,6 +247,18 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
     for (int i = consumed; i < count; ++i)
         release_window_item_icon(&items[i]);
 
+    /* The request goes out after the drawing is done, so even the pass that
+     * asks pays nothing for asking. Asked-state is stamped only when a request
+     * really left, and before the compaction below can move any slot. */
+    if (requery && want_count > 0) {
+        hg_tabs_request(want, want_count);
+        s_last_request = now;
+        for (int w = 0; w < want_count; ++w) {
+            StringCchCopyW(cached_asked_title[want_slot[w]], HG_MAX_STR, want_title[w]);
+            cached_asked_tick[want_slot[w]] = now;
+        }
+    }
+
     /* Windows that have gone leave their cache entry behind; compact it here so
      * a long session does not fill the table with dead handles. */
     int kept = 0;
@@ -236,17 +269,12 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
             cached_hwnd[kept] = cached_hwnd[c];
             cached_count[kept] = cached_count[c];
             memcpy(cached_titles[kept], cached_titles[c], sizeof(cached_titles[c]));
+            memcpy(cached_asked_title[kept], cached_asked_title[c], sizeof(cached_asked_title[c]));
+            cached_asked_tick[kept] = cached_asked_tick[c];
         }
         ++kept;
     }
     cache_used = kept;
-
-    /* The request goes out after the drawing is done, so even the pass that
-     * asks pays nothing for asking. */
-    if (requery && want_count > 0) {
-        hg_tabs_request(want, want_count);
-        s_last_request = now;
-    }
 
     for (int i = 0; i < out_count; ++i)
         items[i] = out[i];

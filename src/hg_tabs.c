@@ -255,24 +255,126 @@ static void hg_tabs_release(IUIAutomationElement **elements, int count)
     }
 }
 
-/* Collect and read the titles in one sweep. Runs on whichever thread owns the
- * automation instance passed in - in practice the worker. */
-static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
+/* The cached bounding rectangle comes back as a VARIANT holding four doubles:
+ * left, top, width, height. */
+static BOOL hg_tabs_cached_rect(IUIAutomationElement *element, RECT *out)
 {
-    IUIAutomationElement *tabs[HG_TABS_MAX_PER_WINDOW];
-    int count = hg_tabs_collect(automation, hwnd, tabs, (max < HG_TABS_MAX_PER_WINDOW) ? max : HG_TABS_MAX_PER_WINDOW);
+    VARIANT value;
+    VariantInit(&value);
+    if (FAILED(IUIAutomationElement_GetCachedPropertyValue(element, UIA_BoundingRectanglePropertyId, &value)))
+        return FALSE;
 
-    for (int i = 0; i < count; ++i) {
-        BSTR name = NULL;
-        if (SUCCEEDED(IUIAutomationElement_get_CurrentName(tabs[i], &name)) && name) {
-            StringCchCopyW(titles[i], HG_MAX_STR, name);
-            SysFreeString(name);
-        } else {
-            StringCchCopyW(titles[i], HG_MAX_STR, L"(tab)");
+    BOOL ok = FALSE;
+    if (V_VT(&value) == (VT_ARRAY | VT_R8) && V_ARRAY(&value)) {
+        double *edges = NULL;
+        if (SUCCEEDED(SafeArrayAccessData(V_ARRAY(&value), (void **)&edges))) {
+            LONG lower = 0, upper = -1;
+            SafeArrayGetLBound(V_ARRAY(&value), 1, &lower);
+            SafeArrayGetUBound(V_ARRAY(&value), 1, &upper);
+            if (upper - lower + 1 >= 4) {
+                out->left = (LONG)edges[0];
+                out->top = (LONG)edges[1];
+                out->right = (LONG)(edges[0] + edges[2]);
+                out->bottom = (LONG)(edges[1] + edges[3]);
+                ok = TRUE;
+            }
+            SafeArrayUnaccessData(V_ARRAY(&value));
         }
     }
+    VariantClear(&value);
+    return ok;
+}
 
-    hg_tabs_release(tabs, count);
+/* Collect and read the titles in one sweep. Runs on whichever thread owns the
+ * automation instance passed in - in practice the worker.
+ *
+ * Everything is fetched through a cache request: the name and the rectangle
+ * ride back inside the FindAll answer itself, and AutomationElementMode_None
+ * means no live cross-process reference is even created per element. The
+ * uncached path costs two round trips per tab item on top of the walk; with a
+ * browser holding a dozen tabs, that difference is the difference between one
+ * cross-process call and twenty-five. */
+static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR titles[][HG_MAX_STR], int max)
+{
+    if (!automation || max <= 0)
+        return 0;
+    if (max > HG_TABS_MAX_PER_WINDOW)
+        max = HG_TABS_MAX_PER_WINDOW;
+
+    RECT window_rc;
+    if (!GetWindowRect(hwnd, &window_rc))
+        return 0;
+    LONG window_height = window_rc.bottom - window_rc.top;
+    if (window_height <= 0)
+        return 0;
+    LONG strip_limit = window_rc.top + window_height / 4; /* same line hg_tabs_collect draws */
+
+    IUIAutomationElement *root = NULL;
+    if (FAILED(IUIAutomation_ElementFromHandle(automation, hwnd, &root)) || !root)
+        return 0;
+
+    IUIAutomationCacheRequest *cache = NULL;
+    if (FAILED(IUIAutomation_CreateCacheRequest(automation, &cache)) || !cache) {
+        IUIAutomationElement_Release(root);
+        return 0;
+    }
+    IUIAutomationCacheRequest_AddProperty(cache, UIA_NamePropertyId);
+    IUIAutomationCacheRequest_AddProperty(cache, UIA_BoundingRectanglePropertyId);
+    IUIAutomationCacheRequest_put_AutomationElementMode(cache, AutomationElementMode_None);
+
+    IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_TabItemControlTypeId);
+    IUIAutomationElementArray *found = NULL;
+    if (condition) {
+        if (FAILED(IUIAutomationElement_FindAllBuildCache(root, TreeScope_Descendants, condition, cache, &found)))
+            found = NULL;
+        IUIAutomationCondition_Release(condition);
+    }
+    IUIAutomationCacheRequest_Release(cache);
+    IUIAutomationElement_Release(root);
+    if (!found)
+        return 0;
+
+    LONG lefts[HG_TABS_MAX_PER_WINDOW];
+    int count = 0;
+    int length = 0;
+    if (SUCCEEDED(IUIAutomationElementArray_get_Length(found, &length))) {
+        for (int i = 0; i < length && count < max; ++i) {
+            IUIAutomationElement *element = NULL;
+            if (FAILED(IUIAutomationElementArray_GetElement(found, i, &element)) || !element)
+                continue;
+
+            RECT bounds;
+            if (!hg_tabs_cached_rect(element, &bounds) || bounds.top > strip_limit ||
+                bounds.right <= bounds.left) {
+                IUIAutomationElement_Release(element);
+                continue;
+            }
+
+            WCHAR title[HG_MAX_STR];
+            VARIANT name;
+            VariantInit(&name);
+            if (SUCCEEDED(IUIAutomationElement_GetCachedPropertyValue(element, UIA_NamePropertyId, &name)) &&
+                V_VT(&name) == VT_BSTR && V_BSTR(&name)) {
+                StringCchCopyW(title, HG_ARRAYSIZE(title), V_BSTR(&name));
+            } else {
+                StringCchCopyW(title, HG_ARRAYSIZE(title), L"(tab)");
+            }
+            VariantClear(&name);
+            IUIAutomationElement_Release(element);
+
+            /* Left to right, the order the reader sees. */
+            int at = count;
+            while (at > 0 && lefts[at - 1] > bounds.left) {
+                lefts[at] = lefts[at - 1];
+                StringCchCopyW(titles[at], HG_MAX_STR, titles[at - 1]);
+                --at;
+            }
+            lefts[at] = bounds.left;
+            StringCchCopyW(titles[at], HG_MAX_STR, title);
+            ++count;
+        }
+    }
+    IUIAutomationElementArray_Release(found);
     return count;
 }
 
@@ -341,6 +443,12 @@ static DWORD WINAPI hg_tabs_worker(LPVOID unused)
         for (int i = 0; i < batch_count && !s_tabs_stop; ++i) {
             if (!IsWindow(batch[i]))
                 continue;
+            /* One window at a time, with air between them. The walk makes the
+             * target build its accessibility tree, and firing that at every
+             * browser window in the same instant is what a whole-system hitch
+             * is made of; staggered, each window's cost lands alone. */
+            if (i > 0)
+                Sleep(150);
             int count = automation ? hg_tabs_read_titles(automation, batch[i], s_titles, HG_TABS_MAX_PER_WINDOW) : 0;
             hg_tabs_store_result(batch[i], s_titles, count);
         }
@@ -376,6 +484,11 @@ static BOOL hg_tabs_worker_ensure(void)
 
     s_tabs_stop = 0;
     s_tabs_thread = CreateThread(NULL, 0, hg_tabs_worker, NULL, 0, NULL);
+    if (s_tabs_thread) {
+        /* Tab titles are never urgent. Whatever the machine is doing when a
+         * batch runs matters more than how soon the titles arrive. */
+        SetThreadPriority(s_tabs_thread, THREAD_PRIORITY_BELOW_NORMAL);
+    }
     return s_tabs_thread != NULL;
 }
 
