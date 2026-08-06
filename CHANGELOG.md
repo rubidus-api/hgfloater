@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.3.0] - 2026-08-06
 
 ### Added
 - **A faster way to read Chromium tabs, and a sturdier worker to do it with**
