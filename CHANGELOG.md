@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.3.1] - 2026-08-06
+
+### Added
+- **`show tabs` now says why the MSAA fast path did not answer**, with a
+  letter beside the provider: `r` no root object, `e` a stub tree with
+  nothing enumerable, `b` budget exhausted, `t` an empty strip, `x` a full
+  walk that found no strip, `-` not tried. First field evidence showed every
+  Chromium window answering over UIA; these letters decide between the two
+  possible verdicts - Chromium withholding its real MSAA tree from clients
+  that have not tripped its assistive-technology detection (`e`, which would
+  retire the fast path for stock browsers), or budgets in need of tuning
+  (`b`/`x`). The RFC records both roads.
+
 ## [v0.3.0] - 2026-08-06
 
 ### Added
