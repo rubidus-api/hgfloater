@@ -464,3 +464,44 @@ Two facts, two responses:
    IShellWindows collection this program walks for paths - tab titles could
    come from shell COM with no UIA at all, at the price of an unverified
    ordering. Worth an experiment if the MSAA bridge disappoints.)
+
+## Field Result 2 - B2 retired, B3 shipped (2026-08-07)
+
+The third run, on v0.3.2 (budget 60 ms, top-first walk, every tab-class
+window):
+
+```
+tabs: queued 12, answered 12 (failed 0, msaa 0, over 50 ms 12)
+  uia (b)  2 tab(s)  221 ms   Chrome
+  uia (x)  2 tab(s) 1355 ms   Explorer
+  uia (x)  2 tab(s)  664 ms   Explorer
+  uia (b)  3 tab(s)  170 ms   Chrome
+```
+
+The verdict is structural, not parametric:
+
+- **Chrome: still `b` at triple the budget with an ordered walk.** MSAA's cost
+  model is the problem - one cross-process round trip per element access, and
+  a node with twenty children costs forty of them. Any budget generous enough
+  to reach the strip costs what the one-call UIA walk costs. There is no
+  budget at which this wins.
+- **Explorer: `x` - the XAML-to-MSAA bridge exposes a tree, but no
+  PAGETABLIST in it.** Role mapping, not budget.
+- Worse, the failed attempt now ADDED up to 60 ms to every ask (221 ms vs the
+  previous 106-120 ms for Chrome).
+
+**B2 is retired** per this RFC's own rule - ship only on evidence, and the
+evidence, twice, says no. The MSAA walk is deleted, `-loleacc` is gone, and
+the letters moved to grading what shipped in its place:
+
+**B3, scoped UIA, as re-specified above**: discovery runs the usual one-call
+full walk, then finds one live TabItem, takes its ControlView parent as the
+strip container, and records the property chain (control type, class,
+automation id) from the window root down to it. Every later refresh descends
+that chain with one one-level FindFirst per step and runs the tab query on
+the container's own subtree - Explorer's folder view, the walk's real cost,
+is never considered. Any miss at any step invalidates the hint and the next
+ask pays one full discovery, rebuilding it. `show tabs` letters are now
+`s` (scoped), `f` (full discovery), `!` (failed); steady state should be all
+`s` with milliseconds in the low tens, and `f` only after a provider rebuilds
+its tree.

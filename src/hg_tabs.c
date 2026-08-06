@@ -18,7 +18,6 @@
 #include "hg_utils.h"
 #include "hg_globals.h"
 #include <uiautomation.h>
-#include <oleacc.h>
 
 static BOOL s_enabled_read = FALSE;
 static BOOL s_enabled = FALSE;
@@ -61,8 +60,8 @@ typedef struct HgTabsResult {
     int count;
     BOOL failed;      /* the ask broke; count is meaningless */
     DWORD elapsed_ms; /* self-measured cost of the whole ask */
-    WCHAR provider;   /* L'M' = MSAA, L'U' = UIA */
-    WCHAR msaa_note;  /* why MSAA did not answer: r/e/b/t/x, '-' = not tried */
+    WCHAR provider;   /* L'U' = UIA; the byte stays for whatever comes next */
+    WCHAR walk_note;  /* 's' scoped refresh, 'f' full discovery, '!' failed */
     BOOL fresh;       /* set by the worker, cleared by hg_tabs_take_result */
     WCHAR titles[HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
 } HgTabsResult;
@@ -82,7 +81,7 @@ static HgTabsResult s_tabs_results[HG_TABS_WORKER_WINDOWS];
 static unsigned s_stat_queued = 0;      /* windows accepted into the pending set */
 static unsigned s_stat_completed = 0;   /* answers stored, failed or not */
 static unsigned s_stat_failed = 0;      /* answers whose ask broke */
-static unsigned s_stat_msaa = 0;        /* answers served by the MSAA fast path */
+static unsigned s_stat_scoped = 0;      /* answers served by the scoped read */
 static unsigned s_stat_slow = 0;        /* answers that took over 50 ms */
 static unsigned s_stat_req_overflow = 0;  /* requests dropped: pending set full */
 static unsigned s_stat_pass_overflow = 0; /* eligible windows past the table cap */
@@ -293,29 +292,13 @@ static void hg_tabs_release(IUIAutomationElement **elements, int count)
     }
 }
 
-/* --------------------------------------------- the MSAA fast path (worker)
- *
- * Chromium's own documentation calls its Windows MSAA/IAccessible support
- * complete and its UIA support very limited - and the tab strip is browser
- * chrome, native views, not web content. So for Chromium-class windows the
- * worker first walks MSAA, breadth-first, under three hard budgets (depth,
- * visited nodes, elapsed time), pruning every subtree that is web content
- * (ROLE_SYSTEM_DOCUMENT) or wholly below the tab band. The prize is never
- * waking the browser's web-content accessibility machinery at all.
- *
- * The result is adopted only when a real tab strip answered: a PAGETABLIST
- * holding at least one visible PAGETAB inside the top band. Anything else
- * returns -1 and the UIA path answers as before - per window, per attempt,
- * decided by evidence rather than by class name. */
-#define HG_TABS_MSAA_MAX_DEPTH 8
-#define HG_TABS_MSAA_MAX_VISITED 256
-/* 60, not the RFC's first guess of 20: the field said 'b' - every Chromium
- * attempt died on the clock while the tree was genuinely answering. Each
- * element access is a cross-process round trip of a few milliseconds, so 20 ms
- * bought only a handful of nodes. 60 ms is still well under the measured UIA
- * walks it replaces (106-649 ms in the first field sample). */
-#define HG_TABS_MSAA_BUDGET_MS 60
-#define HG_TABS_MSAA_MAX_CHILDREN 64
+/* MSAA was tried here and retired by two field runs (RFC-2026-08, Field
+ * Result): Chromium answers with a real tree but per-element cross-process
+ * chattiness means a bounded walk either dies on its clock or costs what the
+ * one-call UIA walk costs; Explorer's XAML bridge never exposes a PAGETABLIST
+ * at all. What remains below is UIA only, in two gears - a scoped read that
+ * refreshes just the remembered tab-strip container, and the full-window
+ * discovery walk that finds that container in the first place. */
 
 static DWORD hg_tabs_now_ms(void)
 {
@@ -325,236 +308,6 @@ static DWORD hg_tabs_now_ms(void)
     LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
     return (DWORD)((ULONGLONG)now.QuadPart * 1000u / (ULONGLONG)s_freq.QuadPart);
-}
-
-static LONG hg_tabs_msaa_role(IAccessible *acc, VARIANT *child)
-{
-    VARIANT role;
-    VariantInit(&role);
-    LONG value = 0;
-    if (SUCCEEDED(IAccessible_get_accRole(acc, *child, &role)) && V_VT(&role) == VT_I4)
-        value = V_I4(&role);
-    VariantClear(&role);
-    return value;
-}
-
-static LONG hg_tabs_msaa_state(IAccessible *acc, VARIANT *child)
-{
-    VARIANT state;
-    VariantInit(&state);
-    LONG value = 0;
-    if (SUCCEEDED(IAccessible_get_accState(acc, *child, &state)) && V_VT(&state) == VT_I4)
-        value = V_I4(&state);
-    VariantClear(&state);
-    return value;
-}
-
-/* Harvest the visible PAGETAB children of one PAGETABLIST into titles, sorted
- * left to right. Returns the count, 0 when the strip answered with nothing
- * usable. */
-static int hg_tabs_msaa_harvest(IAccessible *tablist, WCHAR titles[][HG_MAX_STR], int max, LONG strip_limit)
-{
-    LONG child_count = 0;
-    if (FAILED(IAccessible_get_accChildCount(tablist, &child_count)) || child_count <= 0)
-        return 0;
-    if (child_count > HG_TABS_MSAA_MAX_CHILDREN)
-        child_count = HG_TABS_MSAA_MAX_CHILDREN;
-
-    VARIANT children[HG_TABS_MSAA_MAX_CHILDREN];
-    LONG fetched = 0;
-    if (FAILED(AccessibleChildren(tablist, 0, child_count, children, &fetched)))
-        return 0;
-
-    LONG lefts[HG_TABS_MAX_PER_WINDOW];
-    int count = 0;
-    for (LONG i = 0; i < fetched; ++i) {
-        IAccessible *acc = tablist; /* simple elements answer through the parent */
-        VARIANT *child = &children[i];
-        IAccessible *owned = NULL;
-        VARIANT self;
-        VariantInit(&self);
-        V_VT(&self) = VT_I4;
-        V_I4(&self) = CHILDID_SELF;
-
-        if (V_VT(child) == VT_DISPATCH && V_DISPATCH(child)) {
-            if (SUCCEEDED(IDispatch_QueryInterface(V_DISPATCH(child), &IID_IAccessible, (void **)&owned)) && owned) {
-                acc = owned;
-                child = &self;
-            }
-        } else if (V_VT(child) != VT_I4) {
-            VariantClear(&children[i]);
-            continue;
-        }
-
-        if (count < max && hg_tabs_msaa_role(acc, child) == ROLE_SYSTEM_PAGETAB) {
-            LONG state = hg_tabs_msaa_state(acc, child);
-            LONG left = 0, top = 0, width = 0, height = 0;
-            if (!(state & (STATE_SYSTEM_INVISIBLE | STATE_SYSTEM_OFFSCREEN)) &&
-                SUCCEEDED(IAccessible_accLocation(acc, &left, &top, &width, &height, *child)) && width > 0 &&
-                top <= strip_limit) {
-                WCHAR title[HG_MAX_STR];
-                BSTR name = NULL;
-                if (SUCCEEDED(IAccessible_get_accName(acc, *child, &name)) && name && name[0]) {
-                    StringCchCopyW(title, HG_ARRAYSIZE(title), name);
-                } else {
-                    StringCchCopyW(title, HG_ARRAYSIZE(title), L"(tab)");
-                }
-                if (name)
-                    SysFreeString(name);
-
-                int at = count;
-                while (at > 0 && lefts[at - 1] > left) {
-                    lefts[at] = lefts[at - 1];
-                    StringCchCopyW(titles[at], HG_MAX_STR, titles[at - 1]);
-                    --at;
-                }
-                lefts[at] = left;
-                StringCchCopyW(titles[at], HG_MAX_STR, title);
-                ++count;
-            }
-        }
-
-        if (owned)
-            IAccessible_Release(owned);
-        VariantClear(&children[i]);
-    }
-    return count;
-}
-
-/* The bounded walk. -1 = no usable tab strip found within the budgets (the
- * caller falls back to UIA); >= 1 = adopted MSAA answer.
- *
- * out_reason says where a failed attempt died, because "MSAA did not answer"
- * has causes with opposite fixes: 'r' no root object; 'e' a root with no
- * enumerable children - the stub tree Chromium serves until it has decided a
- * client deserves accessibility at all; 'b' budget exhausted mid-walk; 't' a
- * tab strip was found but held nothing usable; 'x' a full walk found no strip. */
-static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LONG strip_limit, WCHAR *out_reason)
-{
-    *out_reason = L'x';
-    IAccessible *root = NULL;
-    if (FAILED(AccessibleObjectFromWindow(hwnd, (DWORD)OBJID_CLIENT, &IID_IAccessible, (void **)&root)) || !root) {
-        *out_reason = L'r';
-        return -1;
-    }
-
-    /* Breadth-first queue of full IAccessible objects; simple (VT_I4) children
-     * are leaves and are examined inline, never queued. Worker-only statics. */
-    static IAccessible *s_queue[HG_TABS_MSAA_MAX_VISITED];
-    static int s_depth[HG_TABS_MSAA_MAX_VISITED];
-    static LONG s_top[HG_TABS_MSAA_MAX_VISITED];
-    int head = 0, tail = 0;
-    int visited = 0;
-    int found = -1;
-    int children_seen = 0;
-    BOOL saw_tablist = FALSE;
-    DWORD started = hg_tabs_now_ms();
-
-    IAccessible_AddRef(root);
-    s_queue[tail] = root;
-    s_depth[tail] = 0;
-    s_top[tail] = 0;
-    ++tail;
-
-    while (head < tail && found < 0) {
-        IAccessible *node = s_queue[head];
-        int depth = s_depth[head];
-        ++head;
-
-        if (++visited > HG_TABS_MSAA_MAX_VISITED || hg_tabs_now_ms() - started > HG_TABS_MSAA_BUDGET_MS) {
-            IAccessible_Release(node);
-            *out_reason = L'b';
-            break;
-        }
-
-        LONG child_count = 0;
-        if (SUCCEEDED(IAccessible_get_accChildCount(node, &child_count)) && child_count > 0) {
-            if (child_count > HG_TABS_MSAA_MAX_CHILDREN)
-                child_count = HG_TABS_MSAA_MAX_CHILDREN;
-            VARIANT children[HG_TABS_MSAA_MAX_CHILDREN];
-            LONG fetched = 0;
-            if (SUCCEEDED(AccessibleChildren(node, 0, child_count, children, &fetched))) {
-                children_seen += (int)fetched;
-                for (LONG i = 0; i < fetched; ++i) {
-                    if (V_VT(&children[i]) != VT_DISPATCH || !V_DISPATCH(&children[i])) {
-                        VariantClear(&children[i]);
-                        continue; /* simple elements cannot be a tab strip */
-                    }
-                    IAccessible *acc = NULL;
-                    if (FAILED(IDispatch_QueryInterface(V_DISPATCH(&children[i]), &IID_IAccessible, (void **)&acc)) ||
-                        !acc) {
-                        VariantClear(&children[i]);
-                        continue;
-                    }
-                    VariantClear(&children[i]);
-
-                    VARIANT self;
-                    VariantInit(&self);
-                    V_VT(&self) = VT_I4;
-                    V_I4(&self) = CHILDID_SELF;
-                    LONG role = hg_tabs_msaa_role(acc, &self);
-
-                    if (role == ROLE_SYSTEM_PAGETABLIST) {
-                        saw_tablist = TRUE;
-                        int got = hg_tabs_msaa_harvest(acc, titles, max, strip_limit);
-                        IAccessible_Release(acc);
-                        if (got >= 1) {
-                            found = got;
-                            break;
-                        }
-                        continue;
-                    }
-
-                    /* Web content starts at a DOCUMENT; below the band is the
-                     * page, not the strip. Neither is descended into - that
-                     * pruning is the whole reason this path is cheap. */
-                    if (role == ROLE_SYSTEM_DOCUMENT || depth + 1 >= HG_TABS_MSAA_MAX_DEPTH || tail >= HG_TABS_MSAA_MAX_VISITED) {
-                        IAccessible_Release(acc);
-                        continue;
-                    }
-                    LONG left = 0, top = 0, width = 0, height = 0;
-                    LONG sort_top = MAXLONG; /* unknown rects go last */
-                    if (SUCCEEDED(IAccessible_accLocation(acc, &left, &top, &width, &height, self))) {
-                        if (height > 0 && top > strip_limit) {
-                            IAccessible_Release(acc); /* wholly below the band */
-                            continue;
-                        }
-                        sort_top = top;
-                    }
-
-                    /* Highest first among this node's children: the strip
-                     * lives at the top of the window, and on a clock budget
-                     * the order of the walk is the walk. Insertion keeps the
-                     * still-unvisited tail of the queue sorted per level. */
-                    int at = tail;
-                    while (at > head && s_depth[at - 1] == depth + 1 && s_top[at - 1] > sort_top) {
-                        s_queue[at] = s_queue[at - 1];
-                        s_depth[at] = s_depth[at - 1];
-                        s_top[at] = s_top[at - 1];
-                        --at;
-                    }
-                    s_queue[at] = acc;
-                    s_depth[at] = depth + 1;
-                    s_top[at] = sort_top;
-                    ++tail;
-                }
-            }
-        }
-        IAccessible_Release(node);
-    }
-
-    /* Anything still queued was never visited; give the references back. */
-    for (; head < tail; ++head)
-        IAccessible_Release(s_queue[head]);
-
-    if (found < 0 && *out_reason != L'b') {
-        if (children_seen == 0)
-            *out_reason = L'e'; /* the stub tree: nothing enumerable at all */
-        else if (saw_tablist)
-            *out_reason = L't'; /* a strip answered, with nothing usable in it */
-        /* else 'x': a real walk that simply found no strip */
-    }
-    return found;
 }
 
 /* The cached bounding rectangle comes back as a VARIANT holding four doubles:
@@ -601,23 +354,17 @@ static BOOL hg_tabs_cached_rect(IUIAutomationElement *element, RECT *out)
  * walk - and 0 only when the walk genuinely answered "no tabs". The caller
  * keeps its previous answer on -1: a transient provider failure must not fold
  * a living fan-out back into one icon. */
-static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR titles[][HG_MAX_STR], int max,
-                               LONG strip_limit)
+static int hg_tabs_read_from(IUIAutomation *automation, IUIAutomationElement *scope, WCHAR titles[][HG_MAX_STR],
+                             int max, LONG strip_limit)
 {
-    if (!automation || max <= 0)
+    if (!automation || !scope || max <= 0)
         return -1;
     if (max > HG_TABS_MAX_PER_WINDOW)
         max = HG_TABS_MAX_PER_WINDOW;
 
-    IUIAutomationElement *root = NULL;
-    if (FAILED(IUIAutomation_ElementFromHandle(automation, hwnd, &root)) || !root)
-        return -1;
-
     IUIAutomationCacheRequest *cache = NULL;
-    if (FAILED(IUIAutomation_CreateCacheRequest(automation, &cache)) || !cache) {
-        IUIAutomationElement_Release(root);
+    if (FAILED(IUIAutomation_CreateCacheRequest(automation, &cache)) || !cache)
         return -1;
-    }
     IUIAutomationCacheRequest_AddProperty(cache, UIA_NamePropertyId);
     IUIAutomationCacheRequest_AddProperty(cache, UIA_BoundingRectanglePropertyId);
     IUIAutomationCacheRequest_put_AutomationElementMode(cache, AutomationElementMode_None);
@@ -625,12 +372,11 @@ static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR title
     IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_TabItemControlTypeId);
     IUIAutomationElementArray *found = NULL;
     if (condition) {
-        if (FAILED(IUIAutomationElement_FindAllBuildCache(root, TreeScope_Descendants, condition, cache, &found)))
+        if (FAILED(IUIAutomationElement_FindAllBuildCache(scope, TreeScope_Descendants, condition, cache, &found)))
             found = NULL;
         IUIAutomationCondition_Release(condition);
     }
     IUIAutomationCacheRequest_Release(cache);
-    IUIAutomationElement_Release(root);
     if (!found)
         return -1; /* the walk failed; 0 is reserved for a real "no tabs" */
 
@@ -678,10 +424,233 @@ static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR title
     return count;
 }
 
+/* The full-window walk: what discovery and the pre-B3 code always did. */
+static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR titles[][HG_MAX_STR], int max,
+                               LONG strip_limit)
+{
+    if (!automation)
+        return -1;
+    IUIAutomationElement *root = NULL;
+    if (FAILED(IUIAutomation_ElementFromHandle(automation, hwnd, &root)) || !root)
+        return -1;
+    int count = hg_tabs_read_from(automation, root, titles, max, strip_limit);
+    IUIAutomationElement_Release(root);
+    return count;
+}
+
+/* ------------------------------------------ the scoped read (RFC-2026-08 B3)
+ *
+ * The full walk asks the provider to consider the entire window - toolbars,
+ * panes, and in Explorer's case the whole folder view - to find a strip that
+ * sits in one small container. So the container's ADDRESS is remembered: the
+ * property chain (control type, class, automation id) of each ancestor from
+ * the window root down to the strip's parent. A refresh then descends that
+ * chain with one one-level FindFirst per step and runs the tab query on the
+ * container's own little subtree.
+ *
+ * The chain is a hint, never an identity: providers rebuild their trees, so
+ * any miss at any step just invalidates the hint and the next ask pays for
+ * one full discovery again. Worker-only state throughout. */
+#define HG_TABS_PATH_MAX 10
+
+typedef struct HgTabsPathStep {
+    int control_type;
+    WCHAR class_name[64];
+    WCHAR automation_id[64];
+} HgTabsPathStep;
+
+typedef struct HgTabsHint {
+    HWND hwnd; /* NULL = empty slot */
+    DWORD pid;
+    BOOL valid;
+    int depth; /* steps, root's child first, container last */
+    HgTabsPathStep steps[HG_TABS_PATH_MAX];
+} HgTabsHint;
+
+static HgTabsHint s_tabs_hints[HG_TABS_WORKER_WINDOWS]; /* worker-only */
+
+static HgTabsHint *hg_tabs_hint_slot(HWND hwnd, DWORD pid, BOOL create)
+{
+    for (int i = 0; i < HG_TABS_WORKER_WINDOWS; ++i) {
+        if (s_tabs_hints[i].hwnd == hwnd && s_tabs_hints[i].pid == pid)
+            return &s_tabs_hints[i];
+    }
+    if (!create)
+        return NULL;
+    for (int i = 0; i < HG_TABS_WORKER_WINDOWS; ++i) {
+        if (s_tabs_hints[i].hwnd == NULL || !IsWindow(s_tabs_hints[i].hwnd)) {
+            SecureZeroMemory(&s_tabs_hints[i], sizeof(s_tabs_hints[i]));
+            s_tabs_hints[i].hwnd = hwnd;
+            s_tabs_hints[i].pid = pid;
+            return &s_tabs_hints[i];
+        }
+    }
+    static int s_next = 0;
+    HgTabsHint *slot = &s_tabs_hints[s_next];
+    s_next = (s_next + 1) % HG_TABS_WORKER_WINDOWS;
+    SecureZeroMemory(slot, sizeof(*slot));
+    slot->hwnd = hwnd;
+    slot->pid = pid;
+    return slot;
+}
+
+/* One step of the descent as a condition: control type always, class and
+ * automation id when the step recorded them. */
+static IUIAutomationCondition *hg_tabs_step_condition(IUIAutomation *automation, const HgTabsPathStep *step)
+{
+    IUIAutomationCondition *all = hg_tabs_type_condition(automation, step->control_type);
+    if (!all)
+        return NULL;
+
+    for (int part = 0; part < 2; ++part) {
+        const WCHAR *text = (part == 0) ? step->class_name : step->automation_id;
+        PROPERTYID prop = (part == 0) ? UIA_ClassNamePropertyId : UIA_AutomationIdPropertyId;
+        if (!text[0])
+            continue;
+        VARIANT value;
+        VariantInit(&value);
+        V_VT(&value) = VT_BSTR;
+        V_BSTR(&value) = SysAllocString(text);
+        IUIAutomationCondition *one = NULL;
+        if (V_BSTR(&value) &&
+            SUCCEEDED(IUIAutomation_CreatePropertyCondition(automation, prop, value, &one)) && one) {
+            IUIAutomationCondition *joined = NULL;
+            if (SUCCEEDED(IUIAutomation_CreateAndCondition(automation, all, one, &joined)) && joined) {
+                IUIAutomationCondition_Release(all);
+                IUIAutomationCondition_Release(one);
+                all = joined;
+            } else {
+                IUIAutomationCondition_Release(one);
+            }
+        }
+        VariantClear(&value);
+    }
+    return all;
+}
+
+static int hg_tabs_read_scoped(IUIAutomation *automation, HWND hwnd, const HgTabsHint *hint,
+                               WCHAR titles[][HG_MAX_STR], int max, LONG strip_limit)
+{
+    if (!automation || !hint->valid || hint->depth <= 0)
+        return -1;
+
+    IUIAutomationElement *node = NULL;
+    if (FAILED(IUIAutomation_ElementFromHandle(automation, hwnd, &node)) || !node)
+        return -1;
+
+    for (int i = 0; i < hint->depth && node; ++i) {
+        IUIAutomationCondition *condition = hg_tabs_step_condition(automation, &hint->steps[i]);
+        IUIAutomationElement *next = NULL;
+        if (condition) {
+            if (FAILED(IUIAutomationElement_FindFirst(node, TreeScope_Children, condition, &next)))
+                next = NULL;
+            IUIAutomationCondition_Release(condition);
+        }
+        IUIAutomationElement_Release(node);
+        node = next; /* NULL = the path broke; the hint is stale */
+    }
+    if (!node)
+        return -1;
+
+    int count = hg_tabs_read_from(automation, node, titles, max, strip_limit);
+    IUIAutomationElement_Release(node);
+    /* 0 from a remembered container is suspicious - the strip may have moved
+     * house. Report it as a miss so the caller re-discovers. */
+    return (count <= 0) ? -1 : count;
+}
+
+/* After a successful full walk: find one live tab item, take its parent as
+ * the container, and record the property chain from the window root down to
+ * it. Costs a handful of round trips, paid only on discovery. */
+static void hg_tabs_hint_rebuild(IUIAutomation *automation, HWND hwnd, DWORD pid)
+{
+    HgTabsHint *hint = hg_tabs_hint_slot(hwnd, pid, TRUE);
+    hint->valid = FALSE;
+    hint->depth = 0;
+
+    IUIAutomationElement *root = NULL;
+    if (FAILED(IUIAutomation_ElementFromHandle(automation, hwnd, &root)) || !root)
+        return;
+
+    IUIAutomationElement *tab = NULL;
+    IUIAutomationCondition *condition = hg_tabs_type_condition(automation, UIA_TabItemControlTypeId);
+    if (condition) {
+        if (FAILED(IUIAutomationElement_FindFirst(root, TreeScope_Descendants, condition, &tab)))
+            tab = NULL;
+        IUIAutomationCondition_Release(condition);
+    }
+    if (!tab) {
+        IUIAutomationElement_Release(root);
+        return;
+    }
+
+    IUIAutomationTreeWalker *walker = NULL;
+    if (FAILED(IUIAutomation_get_ControlViewWalker(automation, &walker)) || !walker) {
+        IUIAutomationElement_Release(tab);
+        IUIAutomationElement_Release(root);
+        return;
+    }
+
+    /* Climb from the strip container toward the root, keeping the chain. */
+    IUIAutomationElement *chain[HG_TABS_PATH_MAX];
+    int chain_len = 0;
+    BOOL reached_root = FALSE;
+
+    IUIAutomationElement *node = NULL;
+    if (FAILED(IUIAutomationTreeWalker_GetParentElement(walker, tab, &node)))
+        node = NULL;
+    IUIAutomationElement_Release(tab);
+
+    while (node && chain_len < HG_TABS_PATH_MAX) {
+        chain[chain_len++] = node; /* owned */
+        IUIAutomationElement *parent = NULL;
+        if (FAILED(IUIAutomationTreeWalker_GetParentElement(walker, node, &parent)))
+            parent = NULL;
+        if (!parent)
+            break;
+        BOOL same = FALSE;
+        if (SUCCEEDED(IUIAutomation_CompareElements(automation, parent, root, &same)) && same) {
+            IUIAutomationElement_Release(parent);
+            reached_root = TRUE;
+            break;
+        }
+        node = parent;
+    }
+    IUIAutomationTreeWalker_Release(walker);
+    IUIAutomationElement_Release(root);
+
+    if (reached_root && chain_len > 0) {
+        /* chain[] runs container-first; the hint wants root's child first. */
+        for (int i = 0; i < chain_len; ++i) {
+            IUIAutomationElement *elem = chain[chain_len - 1 - i];
+            HgTabsPathStep *step = &hint->steps[i];
+            CONTROLTYPEID control_type = 0;
+            if (SUCCEEDED(IUIAutomationElement_get_CurrentControlType(elem, &control_type)))
+                step->control_type = (int)control_type;
+            BSTR text = NULL;
+            step->class_name[0] = L'\0';
+            if (SUCCEEDED(IUIAutomationElement_get_CurrentClassName(elem, &text)) && text) {
+                StringCchCopyW(step->class_name, HG_ARRAYSIZE(step->class_name), text);
+                SysFreeString(text);
+            }
+            text = NULL;
+            step->automation_id[0] = L'\0';
+            if (SUCCEEDED(IUIAutomationElement_get_CurrentAutomationId(elem, &text)) && text) {
+                StringCchCopyW(step->automation_id, HG_ARRAYSIZE(step->automation_id), text);
+                SysFreeString(text);
+            }
+        }
+        hint->depth = chain_len;
+        hint->valid = TRUE;
+    }
+    for (int i = 0; i < chain_len; ++i)
+        IUIAutomationElement_Release(chain[i]);
+}
+
 /* Store one window's answer. Slot choice: the window's existing slot, then an
  * empty one, then one whose window has died, then round-robin - the table is
  * as large as the request batch, so a live batch always fits. */
-static void hg_tabs_store_result(HWND hwnd, DWORD pid, WCHAR provider, WCHAR msaa_note, BOOL failed,
+static void hg_tabs_store_result(HWND hwnd, DWORD pid, WCHAR provider, WCHAR walk_note, BOOL failed,
                                  DWORD elapsed_ms, const WCHAR titles[][HG_MAX_STR], int count)
 {
     static int s_next = 0; /* worker-only */
@@ -690,8 +659,8 @@ static void hg_tabs_store_result(HWND hwnd, DWORD pid, WCHAR provider, WCHAR msa
     ++s_stat_completed;
     if (failed)
         ++s_stat_failed;
-    if (provider == L'M')
-        ++s_stat_msaa;
+    if (walk_note == L's')
+        ++s_stat_scoped;
     if (elapsed_ms > 50)
         ++s_stat_slow;
 
@@ -712,7 +681,7 @@ static void hg_tabs_store_result(HWND hwnd, DWORD pid, WCHAR provider, WCHAR msa
     slot->hwnd = hwnd;
     slot->pid = pid;
     slot->provider = provider;
-    slot->msaa_note = msaa_note;
+    slot->walk_note = walk_note;
     slot->failed = failed;
     slot->elapsed_ms = elapsed_ms;
     slot->count = failed ? 0 : count;
@@ -776,28 +745,36 @@ static DWORD WINAPI hg_tabs_worker(LPVOID unused)
             LONG strip_limit = window_rc.top + (window_rc.bottom - window_rc.top) / 4;
 
             DWORD started = hg_tabs_now_ms();
-            WCHAR provider = L'U';
-            WCHAR msaa_note = L'-';
+            WCHAR walk_note = L'!';
             int count = -1;
 
-            /* MSAA first, for every tab-class window - the field sample said
-             * the priciest walks were Explorer's, which the old Chromium-only
-             * gate never even tried. The attempt is bounded, adoption is per
-             * attempt on evidence (a walk that found no real tab strip falls
-             * through to UIA in the same ask), and the note records where a
-             * failed attempt died, so `show tabs` can say WHY a window keeps
-             * answering over UIA. */
-            count = hg_tabs_msaa_read(batch[i], s_titles, HG_TABS_MAX_PER_WINDOW, strip_limit, &msaa_note);
-            if (count >= 1)
-                provider = L'M';
-            if (count < 1 && provider == L'U') {
+            /* The scoped read first: descend the remembered property chain
+             * and query only the strip container's little subtree. Any miss
+             * invalidates the hint, and the full-window discovery answers -
+             * rebuilding the hint on its way out, so the NEXT ask is scoped
+             * again. Steady state is all scoped reads; discovery is paid per
+             * provider rebuild, not per refresh. */
+            HgTabsHint *hint = hg_tabs_hint_slot(batch[i], pid, FALSE);
+            if (hint && hint->valid) {
+                count = hg_tabs_read_scoped(automation, batch[i], hint, s_titles, HG_TABS_MAX_PER_WINDOW,
+                                            strip_limit);
+                if (count >= 1)
+                    walk_note = L's';
+                else
+                    hint->valid = FALSE;
+            }
+            if (count < 1) {
                 count = automation ? hg_tabs_read_titles(automation, batch[i], s_titles, HG_TABS_MAX_PER_WINDOW,
                                                          strip_limit)
                                    : -1;
+                if (count >= 0)
+                    walk_note = L'f';
+                if (count >= 1)
+                    hg_tabs_hint_rebuild(automation, batch[i], pid);
             }
 
             DWORD elapsed = hg_tabs_now_ms() - started;
-            hg_tabs_store_result(batch[i], pid, provider, msaa_note, count < 0, elapsed, s_titles,
+            hg_tabs_store_result(batch[i], pid, L'U', walk_note, count < 0, elapsed, s_titles,
                                  (count < 0) ? 0 : count);
         }
 
@@ -943,9 +920,9 @@ void hg_tabs_report(void (*emit)(const WCHAR *line))
     WCHAR line[256];
     EnterCriticalSection(&s_tabs_lock);
     hellgates_wsprintf(line, HG_ARRAYSIZE(line),
-                       L"tabs: queued %u, answered %u (failed %u, msaa %u, over 50 ms %u), "
+                       L"tabs: queued %u, answered %u (failed %u, scoped %u, over 50 ms %u), "
                        L"dropped: queue-full %u, table-full %u, shutdown timeouts %u",
-                       s_stat_queued, s_stat_completed, s_stat_failed, s_stat_msaa, s_stat_slow, s_stat_req_overflow,
+                       s_stat_queued, s_stat_completed, s_stat_failed, s_stat_scoped, s_stat_slow, s_stat_req_overflow,
                        s_stat_pass_overflow, s_stat_shutdown_timeouts);
     emit(line);
     for (int i = 0; i < HG_TABS_WORKER_WINDOWS; ++i) {
@@ -954,14 +931,13 @@ void hg_tabs_report(void (*emit)(const WCHAR *line))
             continue;
         WCHAR title[64] = L"";
         GetWindowTextW(slot->hwnd, title, (int)HG_ARRAYSIZE(title));
-        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  %ls(%lc) %2d tab(s) %4u ms %ls%ls  %.48ls",
-                           (slot->provider == L'M') ? L"msaa" : L"uia ", slot->msaa_note ? slot->msaa_note : L'-',
-                           slot->count, (unsigned)slot->elapsed_ms, slot->failed ? L"FAILED " : L"",
-                           slot->fresh ? L"pending " : L"", title);
+        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  uia(%lc) %2d tab(s) %4u ms %ls%ls  %.48ls",
+                           slot->walk_note ? slot->walk_note : L'-', slot->count, (unsigned)slot->elapsed_ms,
+                           slot->failed ? L"FAILED " : L"", slot->fresh ? L"pending " : L"", title);
         emit(line);
     }
-    emit(L"  (letter after the provider: why MSAA did not answer - r no root,"
-         L" e stub tree, b budget, t empty strip, x no strip, - not tried)");
+    emit(L"  (letter: s = scoped strip refresh, f = full-window discovery,"
+         L" ! = the ask failed, - = nothing asked yet)");
     LeaveCriticalSection(&s_tabs_lock);
 }
 

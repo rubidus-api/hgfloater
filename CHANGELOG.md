@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.4.0] - 2026-08-07
+
+### Changed
+- **Tab reading now remembers where the strip lives, and asks only there.**
+  The full-window walk made the browser consider its entire tree - Explorer
+  its whole folder view - to find a strip that sits in one small container.
+  Discovery now records the container's address (the property chain from the
+  window root down to it) and every later refresh descends that chain and
+  queries just the container's own subtree. A provider that rebuilds its tree
+  breaks the chain harmlessly: that one ask falls back to a full discovery
+  and re-records it. In `show tabs`, `s` marks the scoped reads (the expected
+  steady state, at a fraction of the old cost), `f` the full discoveries,
+  `!` a failed ask.
+
+### Removed
+- **The MSAA fast path, retired by its own exit criteria.** Two instrumented
+  field runs settled it: Chrome still exhausted a tripled budget with a
+  top-first walk - MSAA's one-round-trip-per-element cost model cannot beat
+  a one-call UIA query at any budget - and Explorer's XAML bridge never
+  exposes a tab-strip role at all. Meanwhile the failed attempt was adding up
+  to 60 ms to every ask. The RFC keeps the full story, including the numbers.
+
 ## [v0.3.2] - 2026-08-06
 
 ### Changed
