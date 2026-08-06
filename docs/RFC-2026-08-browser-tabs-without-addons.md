@@ -413,3 +413,23 @@ the sections above:
 - Chromium accessibility architecture and Windows API support:
   <https://www.chromium.org/developers/design-documents/accessibility/>
 - Existing design history: `docs/RFC-2026-07-tabs-as-task-icons.md`
+
+## Field Result (2026-08-06, v0.3.0 first runtime evidence)
+
+The maintainer's first `show tabs` run answered **uia for every Chromium
+window** - the MSAA fast path never engaged. The leading hypothesis, to be
+confirmed by the instrumented note now shipped ('r'/'e'/'b'/'t'/'x' beside the
+provider): modern Chromium serves a **stub MSAA tree** ('e') until its
+progressive-accessibility machinery decides the client deserves a real one,
+and a plain WM_GETOBJECT + IAccessible walk no longer qualifies as such a
+client - while a UIA connection does, which is why UIA keeps answering.
+
+If 'e' is confirmed, B2 is a dead end for stock Chrome/Edge **by Chrome's own
+gating**, not by MSAA's shape: the activation that would populate the tree
+(the IAccessible2/screen-reader honeypot) is exactly the switch that turns on
+web-content accessibility - the cost this whole RFC exists to avoid. The MSAA
+attempt stays (it is nearly free, and it will serve Chromium variants and
+Electron apps whose accessibility is already active), but the performance
+road for stock browsers then runs through B3, scoped UIA, as re-specified
+above. 'b'/'x' would instead mean the budgets or the walk need tuning, which
+is a smaller conversation.
