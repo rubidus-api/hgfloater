@@ -62,6 +62,7 @@ typedef struct HgTabsResult {
     BOOL failed;      /* the ask broke; count is meaningless */
     DWORD elapsed_ms; /* self-measured cost of the whole ask */
     WCHAR provider;   /* L'M' = MSAA, L'U' = UIA */
+    WCHAR msaa_note;  /* why MSAA did not answer: r/e/b/t/x, '-' = not tried */
     BOOL fresh;       /* set by the worker, cleared by hg_tabs_take_result */
     WCHAR titles[HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
 } HgTabsResult;
@@ -425,12 +426,21 @@ static int hg_tabs_msaa_harvest(IAccessible *tablist, WCHAR titles[][HG_MAX_STR]
 }
 
 /* The bounded walk. -1 = no usable tab strip found within the budgets (the
- * caller falls back to UIA); >= 1 = adopted MSAA answer. */
-static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LONG strip_limit)
+ * caller falls back to UIA); >= 1 = adopted MSAA answer.
+ *
+ * out_reason says where a failed attempt died, because "MSAA did not answer"
+ * has causes with opposite fixes: 'r' no root object; 'e' a root with no
+ * enumerable children - the stub tree Chromium serves until it has decided a
+ * client deserves accessibility at all; 'b' budget exhausted mid-walk; 't' a
+ * tab strip was found but held nothing usable; 'x' a full walk found no strip. */
+static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LONG strip_limit, WCHAR *out_reason)
 {
+    *out_reason = L'x';
     IAccessible *root = NULL;
-    if (FAILED(AccessibleObjectFromWindow(hwnd, (DWORD)OBJID_CLIENT, &IID_IAccessible, (void **)&root)) || !root)
+    if (FAILED(AccessibleObjectFromWindow(hwnd, (DWORD)OBJID_CLIENT, &IID_IAccessible, (void **)&root)) || !root) {
+        *out_reason = L'r';
         return -1;
+    }
 
     /* Breadth-first queue of full IAccessible objects; simple (VT_I4) children
      * are leaves and are examined inline, never queued. Worker-only statics. */
@@ -439,6 +449,8 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
     int head = 0, tail = 0;
     int visited = 0;
     int found = -1;
+    int children_seen = 0;
+    BOOL saw_tablist = FALSE;
     DWORD started = hg_tabs_now_ms();
 
     IAccessible_AddRef(root);
@@ -453,6 +465,7 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
 
         if (++visited > HG_TABS_MSAA_MAX_VISITED || hg_tabs_now_ms() - started > HG_TABS_MSAA_BUDGET_MS) {
             IAccessible_Release(node);
+            *out_reason = L'b';
             break;
         }
 
@@ -463,6 +476,7 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
             VARIANT children[HG_TABS_MSAA_MAX_CHILDREN];
             LONG fetched = 0;
             if (SUCCEEDED(AccessibleChildren(node, 0, child_count, children, &fetched))) {
+                children_seen += (int)fetched;
                 for (LONG i = 0; i < fetched; ++i) {
                     if (V_VT(&children[i]) != VT_DISPATCH || !V_DISPATCH(&children[i])) {
                         VariantClear(&children[i]);
@@ -483,6 +497,7 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
                     LONG role = hg_tabs_msaa_role(acc, &self);
 
                     if (role == ROLE_SYSTEM_PAGETABLIST) {
+                        saw_tablist = TRUE;
                         int got = hg_tabs_msaa_harvest(acc, titles, max, strip_limit);
                         IAccessible_Release(acc);
                         if (got >= 1) {
@@ -517,6 +532,14 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
     /* Anything still queued was never visited; give the references back. */
     for (; head < tail; ++head)
         IAccessible_Release(s_queue[head]);
+
+    if (found < 0 && *out_reason != L'b') {
+        if (children_seen == 0)
+            *out_reason = L'e'; /* the stub tree: nothing enumerable at all */
+        else if (saw_tablist)
+            *out_reason = L't'; /* a strip answered, with nothing usable in it */
+        /* else 'x': a real walk that simply found no strip */
+    }
     return found;
 }
 
@@ -644,8 +667,8 @@ static int hg_tabs_read_titles(IUIAutomation *automation, HWND hwnd, WCHAR title
 /* Store one window's answer. Slot choice: the window's existing slot, then an
  * empty one, then one whose window has died, then round-robin - the table is
  * as large as the request batch, so a live batch always fits. */
-static void hg_tabs_store_result(HWND hwnd, DWORD pid, WCHAR provider, BOOL failed, DWORD elapsed_ms,
-                                 const WCHAR titles[][HG_MAX_STR], int count)
+static void hg_tabs_store_result(HWND hwnd, DWORD pid, WCHAR provider, WCHAR msaa_note, BOOL failed,
+                                 DWORD elapsed_ms, const WCHAR titles[][HG_MAX_STR], int count)
 {
     static int s_next = 0; /* worker-only */
 
@@ -675,6 +698,7 @@ static void hg_tabs_store_result(HWND hwnd, DWORD pid, WCHAR provider, BOOL fail
     slot->hwnd = hwnd;
     slot->pid = pid;
     slot->provider = provider;
+    slot->msaa_note = msaa_note;
     slot->failed = failed;
     slot->elapsed_ms = elapsed_ms;
     slot->count = failed ? 0 : count;
@@ -731,7 +755,7 @@ static DWORD WINAPI hg_tabs_worker(LPVOID unused)
 
             RECT window_rc;
             if (!GetWindowRect(batch[i], &window_rc) || window_rc.bottom <= window_rc.top) {
-                hg_tabs_store_result(batch[i], pid, L'U', TRUE, 0, s_titles, 0);
+                hg_tabs_store_result(batch[i], pid, L'U', L'-', TRUE, 0, s_titles, 0);
                 continue;
             }
             /* The upper quarter: the band a window's own tab strip lives in. */
@@ -739,14 +763,17 @@ static DWORD WINAPI hg_tabs_worker(LPVOID unused)
 
             DWORD started = hg_tabs_now_ms();
             WCHAR provider = L'U';
+            WCHAR msaa_note = L'-'; /* not a Chromium window: never tried */
             int count = -1;
 
             /* Chromium first through MSAA, which its own documentation calls
              * complete where UIA is limited - and whose bounded walk never
              * touches web content. Adopted per attempt, on evidence: a walk
-             * that found no real tab strip falls through to UIA. */
+             * that found no real tab strip falls through to UIA, and the note
+             * records where the attempt died, so `show tabs` can say WHY a
+             * window keeps answering over UIA. */
             if (hg_tabs_chromium_class(batch[i])) {
-                count = hg_tabs_msaa_read(batch[i], s_titles, HG_TABS_MAX_PER_WINDOW, strip_limit);
+                count = hg_tabs_msaa_read(batch[i], s_titles, HG_TABS_MAX_PER_WINDOW, strip_limit, &msaa_note);
                 if (count >= 1)
                     provider = L'M';
             }
@@ -757,7 +784,8 @@ static DWORD WINAPI hg_tabs_worker(LPVOID unused)
             }
 
             DWORD elapsed = hg_tabs_now_ms() - started;
-            hg_tabs_store_result(batch[i], pid, provider, count < 0, elapsed, s_titles, (count < 0) ? 0 : count);
+            hg_tabs_store_result(batch[i], pid, provider, msaa_note, count < 0, elapsed, s_titles,
+                                 (count < 0) ? 0 : count);
         }
 
         /* Even an all-zero answer is an answer: the list may be waiting to
@@ -913,11 +941,14 @@ void hg_tabs_report(void (*emit)(const WCHAR *line))
             continue;
         WCHAR title[64] = L"";
         GetWindowTextW(slot->hwnd, title, (int)HG_ARRAYSIZE(title));
-        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  %ls %2d tab(s) %4u ms %ls%ls  %.48ls",
-                           (slot->provider == L'M') ? L"msaa" : L"uia ", slot->count, (unsigned)slot->elapsed_ms,
-                           slot->failed ? L"FAILED " : L"", slot->fresh ? L"pending " : L"", title);
+        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  %ls(%lc) %2d tab(s) %4u ms %ls%ls  %.48ls",
+                           (slot->provider == L'M') ? L"msaa" : L"uia ", slot->msaa_note ? slot->msaa_note : L'-',
+                           slot->count, (unsigned)slot->elapsed_ms, slot->failed ? L"FAILED " : L"",
+                           slot->fresh ? L"pending " : L"", title);
         emit(line);
     }
+    emit(L"  (letter after the provider: why MSAA did not answer - r no root,"
+         L" e stub tree, b budget, t empty strip, x no strip, - not tried)");
     LeaveCriticalSection(&s_tabs_lock);
 }
 
