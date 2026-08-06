@@ -309,17 +309,13 @@ static void hg_tabs_release(IUIAutomationElement **elements, int count)
  * decided by evidence rather than by class name. */
 #define HG_TABS_MSAA_MAX_DEPTH 8
 #define HG_TABS_MSAA_MAX_VISITED 256
-#define HG_TABS_MSAA_BUDGET_MS 20
+/* 60, not the RFC's first guess of 20: the field said 'b' - every Chromium
+ * attempt died on the clock while the tree was genuinely answering. Each
+ * element access is a cross-process round trip of a few milliseconds, so 20 ms
+ * bought only a handful of nodes. 60 ms is still well under the measured UIA
+ * walks it replaces (106-649 ms in the first field sample). */
+#define HG_TABS_MSAA_BUDGET_MS 60
 #define HG_TABS_MSAA_MAX_CHILDREN 64
-
-static BOOL hg_tabs_chromium_class(HWND hwnd)
-{
-    WCHAR class_name[64];
-    if (GetClassNameW(hwnd, class_name, (int)HG_ARRAYSIZE(class_name)) <= 0)
-        return FALSE;
-    /* Chrome_WidgetWin_0/1/...: compare the stable stem. */
-    return wcsncmp(class_name, L"Chrome_WidgetWin_", 17) == 0;
-}
 
 static DWORD hg_tabs_now_ms(void)
 {
@@ -446,6 +442,7 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
      * are leaves and are examined inline, never queued. Worker-only statics. */
     static IAccessible *s_queue[HG_TABS_MSAA_MAX_VISITED];
     static int s_depth[HG_TABS_MSAA_MAX_VISITED];
+    static LONG s_top[HG_TABS_MSAA_MAX_VISITED];
     int head = 0, tail = 0;
     int visited = 0;
     int found = -1;
@@ -456,6 +453,7 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
     IAccessible_AddRef(root);
     s_queue[tail] = root;
     s_depth[tail] = 0;
+    s_top[tail] = 0;
     ++tail;
 
     while (head < tail && found < 0) {
@@ -515,13 +513,29 @@ static int hg_tabs_msaa_read(HWND hwnd, WCHAR titles[][HG_MAX_STR], int max, LON
                         continue;
                     }
                     LONG left = 0, top = 0, width = 0, height = 0;
-                    if (SUCCEEDED(IAccessible_accLocation(acc, &left, &top, &width, &height, self)) && height > 0 &&
-                        top > strip_limit) {
-                        IAccessible_Release(acc); /* wholly below the band */
-                        continue;
+                    LONG sort_top = MAXLONG; /* unknown rects go last */
+                    if (SUCCEEDED(IAccessible_accLocation(acc, &left, &top, &width, &height, self))) {
+                        if (height > 0 && top > strip_limit) {
+                            IAccessible_Release(acc); /* wholly below the band */
+                            continue;
+                        }
+                        sort_top = top;
                     }
-                    s_queue[tail] = acc;
-                    s_depth[tail] = depth + 1;
+
+                    /* Highest first among this node's children: the strip
+                     * lives at the top of the window, and on a clock budget
+                     * the order of the walk is the walk. Insertion keeps the
+                     * still-unvisited tail of the queue sorted per level. */
+                    int at = tail;
+                    while (at > head && s_depth[at - 1] == depth + 1 && s_top[at - 1] > sort_top) {
+                        s_queue[at] = s_queue[at - 1];
+                        s_depth[at] = s_depth[at - 1];
+                        s_top[at] = s_top[at - 1];
+                        --at;
+                    }
+                    s_queue[at] = acc;
+                    s_depth[at] = depth + 1;
+                    s_top[at] = sort_top;
                     ++tail;
                 }
             }
@@ -763,20 +777,19 @@ static DWORD WINAPI hg_tabs_worker(LPVOID unused)
 
             DWORD started = hg_tabs_now_ms();
             WCHAR provider = L'U';
-            WCHAR msaa_note = L'-'; /* not a Chromium window: never tried */
+            WCHAR msaa_note = L'-';
             int count = -1;
 
-            /* Chromium first through MSAA, which its own documentation calls
-             * complete where UIA is limited - and whose bounded walk never
-             * touches web content. Adopted per attempt, on evidence: a walk
-             * that found no real tab strip falls through to UIA, and the note
-             * records where the attempt died, so `show tabs` can say WHY a
-             * window keeps answering over UIA. */
-            if (hg_tabs_chromium_class(batch[i])) {
-                count = hg_tabs_msaa_read(batch[i], s_titles, HG_TABS_MAX_PER_WINDOW, strip_limit, &msaa_note);
-                if (count >= 1)
-                    provider = L'M';
-            }
+            /* MSAA first, for every tab-class window - the field sample said
+             * the priciest walks were Explorer's, which the old Chromium-only
+             * gate never even tried. The attempt is bounded, adoption is per
+             * attempt on evidence (a walk that found no real tab strip falls
+             * through to UIA in the same ask), and the note records where a
+             * failed attempt died, so `show tabs` can say WHY a window keeps
+             * answering over UIA. */
+            count = hg_tabs_msaa_read(batch[i], s_titles, HG_TABS_MAX_PER_WINDOW, strip_limit, &msaa_note);
+            if (count >= 1)
+                provider = L'M';
             if (count < 1 && provider == L'U') {
                 count = automation ? hg_tabs_read_titles(automation, batch[i], s_titles, HG_TABS_MAX_PER_WINDOW,
                                                          strip_limit)

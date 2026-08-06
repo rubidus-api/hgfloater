@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.3.2] - 2026-08-06
+
+### Changed
+- **The MSAA verdict came back `b` - the budget, not the browser - so the
+  budget moved.** The first instrumented field run showed Chrome serving a
+  real MSAA tree and the walk dying on its 20 ms clock, which at a few
+  milliseconds per cross-process element access bought only a handful of
+  nodes. The budget is now 60 ms - still far under the 106-649 ms UIA walks
+  it replaces - and the walk visits each level's children **top-first**,
+  because on a clock budget the order of the walk is the walk, and a tab
+  strip is by definition at the top of the window.
+- **Every tab-class window now gets the MSAA attempt**, not just Chromium:
+  the same field run showed the priciest walks were Explorer's (644 and
+  649 ms over UIA), which the old gate never even offered to MSAA. Adoption
+  stays per attempt, on evidence, with UIA in the same ask when the walk
+  finds no real strip - and `show tabs` still says how far each attempt got.
+
 ## [v0.3.1] - 2026-08-06
 
 ### Added
