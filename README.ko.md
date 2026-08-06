@@ -4,6 +4,8 @@
 
 **v0.3.0** — 빌드 2026-08-06 10:19 KST
 
+**[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
+
 hgfloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 마우스를 올리면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인
 창 전환, 볼륨·밝기·투명도 조절, 명령 콘솔을 한 번의 조작으로 처리합니다. 순수 C와 Win32
