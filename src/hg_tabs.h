@@ -50,7 +50,7 @@ typedef struct HgTabsAnswer {
     BOOL failed;
     DWORD pid;        /* of the window the worker actually asked */
     DWORD elapsed_ms; /* what the whole ask cost, self-measured */
-    WCHAR provider;   /* L'M' = MSAA fast path, L'U' = UIA */
+    WCHAR provider;   /* L'U' = UIA (MSAA was tried and retired; see the RFC) */
 } HgTabsAnswer;
 
 /* The worker's answer for this window, if a fresh one is waiting: copies the

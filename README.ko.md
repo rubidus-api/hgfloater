@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.3.2** — 빌드 2026-08-06 23:39 KST
+**v0.4.0** — 빌드 2026-08-07 00:24 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -68,7 +68,7 @@ hgfloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.3.2)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.4.0)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -464,7 +464,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `show note` | `s n` | 모든 노트를, `note` 명령이 받는 번호와 함께 표시 |
 | `show monitor` | `s m` | 모든 모니터를 번호·크기·위치와 함께, 미리보기가 떠 있는지까지 표시 |
 | `show monitor 1` | `s m 1` | 1번 모니터의 [미리보기 창](#9-모니터-썸네일)을 띄웁니다. 다시 하면 닫힙니다 |
-| `show tabs` | `s t` | 탭 읽기의 자체 수치: 창별로 어느 provider(MSAA/UIA)가 답했는지, 탭 몇 개, 몇 ms 걸렸는지 — 그리고 큐잉/실패/느린 ask 합계 |
+| `show tabs` | `s t` | 탭 읽기의 자체 수치: 창별로 범위 한정 읽기(s)와 전체 발견(f) 중 무엇이 답했는지, 탭 몇 개, 몇 ms 걸렸는지 — 그리고 큐잉/실패/느린 ask 합계 |
 | `show sensors` | `s s` | 찾아낸 온도 센서 전부에 번호를 붙여 표시하고, `TMP`·`GPU`가 무엇인지 |
 | `show sensors 2` | `s s 2` | 2번 센서만, 단위를 붙여서 |
 | `show value` | `s v` | 바꿀 수 있는 값들에 번호를 붙여, 지금 값과 함께 표시 |
