@@ -433,3 +433,34 @@ Electron apps whose accessibility is already active), but the performance
 road for stock browsers then runs through B3, scoped UIA, as re-specified
 above. 'b'/'x' would instead mean the budgets or the walk need tuning, which
 is a smaller conversation.
+
+**Verdict (2026-08-06, second run, v0.3.1 letters): `b` - the budgets.** The
+instrumented sample:
+
+```
+tabs: queued 4, answered 4 (failed 0, msaa 0, over 50 ms 4)
+  uia (-)  2 tab(s)  644 ms   Explorer window
+  uia (b)  1 tab(s)  106 ms   Chrome window
+  uia (b)  4 tab(s)  120 ms   Chrome window
+  uia (-)  2 tab(s)  649 ms   Explorer window
+```
+
+Two facts, two responses:
+
+1. **Chrome answers MSAA with a real tree** ('b', not 'e' - the stub-tree
+   hypothesis is dead) and the walk died on the 20 ms clock, which at a few
+   milliseconds per cross-process element access bought only a handful of
+   nodes. Response: budget raised to 60 ms (still far under the 106-649 ms
+   UIA walks it replaces), and the walk now visits each level's children
+   **top-first** - on a clock budget the order of the walk is the walk, and
+   the strip is by definition at the top.
+2. **The priciest walks belonged to Explorer** (644/649 ms UIA), which the
+   Chromium-only gate never even offered to MSAA. Response: the gate is gone;
+   every tab-class window gets the bounded MSAA attempt first, and the letter
+   says how far it got. If Explorer's XAML-to-MSAA bridge answers with
+   PAGETABLIST, the biggest single cost in the sample disappears; if it
+   answers 'x'/'e', the evidence decides B3's priority. (Parked alternative
+   for Explorer specifically: each tab is already an entry in the
+   IShellWindows collection this program walks for paths - tab titles could
+   come from shell COM with no UIA at all, at the price of an unverified
+   ordering. Worth an experiment if the MSAA bridge disappoints.)
