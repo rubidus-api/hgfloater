@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.2.1** — 빌드 2026-08-06 04:46 KST
+**v0.3.0** — 빌드 2026-08-06 10:19 KST
 
 hgfloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 마우스를 올리면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인
@@ -66,7 +66,7 @@ hgfloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.2.1)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.3.0)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
