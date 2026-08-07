@@ -46,6 +46,28 @@ typedef enum HgCommandBoxMode {
 
 static HgCommandBoxMode s_cb_mode = HG_CB_MODE_NONE;
 
+/* The history list, shown over the transcript while history mode is on:
+ * every line, numbered from 1 at the oldest so a number never changes
+ * meaning as new commands arrive. */
+static HWND s_cb_hist_wnd = NULL;
+
+static void commandbox_history_fill(void)
+{
+    if (!s_cb_hist_wnd || !IsWindow(s_cb_hist_wnd))
+        return;
+    SendMessageW(s_cb_hist_wnd, LB_RESETCONTENT, 0, 0);
+    int count = hg_command_history_count();
+    for (int i = 0; i < count; ++i) {
+        WCHAR line[HG_MAX_STR + 16];
+        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%d: %ls", i + 1, hg_command_history_at(i));
+        SendMessageW(s_cb_hist_wnd, LB_ADDSTRING, 0, (LPARAM)line);
+    }
+    if (count > 0) {
+        SendMessageW(s_cb_hist_wnd, LB_SETCURSEL, (WPARAM)(count - 1), 0); /* start on the newest */
+        SendMessageW(s_cb_hist_wnd, LB_SETTOPINDEX, (WPARAM)(count - 1), 0);
+    }
+}
+
 static void commandbox_set_mode(HgCommandBoxMode mode)
 {
     if (s_cb_mode == mode)
@@ -59,29 +81,62 @@ static void commandbox_set_mode(HgCommandBoxMode mode)
         SetWindowTextW(hg_g_commandbox_wnd, L"Command Box - SCROLL: up/down a line, left/right a page, Esc to leave");
         break;
     case HG_CB_MODE_HISTORY:
-        SetWindowTextW(hg_g_commandbox_wnd, L"Command Box - HISTORY: up/down through it, Enter to run, Esc to leave");
+        SetWindowTextW(hg_g_commandbox_wnd, L"Command Box - HISTORY: up/down, Enter picks into the input, Esc leaves");
         break;
     default:
         SetWindowTextW(hg_g_commandbox_wnd, L"Command Box");
         break;
     }
+
+    /* The list exists exactly as long as the mode does. */
+    if (s_cb_hist_wnd && IsWindow(s_cb_hist_wnd)) {
+        if (mode == HG_CB_MODE_HISTORY) {
+            commandbox_history_fill();
+            ShowWindow(s_cb_hist_wnd, SW_SHOW);
+        } else {
+            ShowWindow(s_cb_hist_wnd, SW_HIDE);
+        }
+    }
+    /* The mode borders are painted by the parent; repaint both ways. */
+    InvalidateRect(hg_g_commandbox_wnd, NULL, TRUE);
+}
+
+/* Put the selected history line into the input - not run it - and leave the
+ * mode. Enter means "I want this one back to edit or run myself". */
+static void commandbox_history_commit(void)
+{
+    int sel = (int)SendMessageW(s_cb_hist_wnd, LB_GETCURSEL, 0, 0);
+    const WCHAR *line = hg_command_history_at(sel);
+    commandbox_set_mode(HG_CB_MODE_NONE);
+    if (line && hg_g_commandbox_in_wnd) {
+        SetWindowTextW(hg_g_commandbox_in_wnd, line);
+        int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
+        SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
+    }
+    if (hg_g_commandbox_in_wnd)
+        SetFocus(hg_g_commandbox_in_wnd);
+}
+
+static void commandbox_history_move(int delta)
+{
+    int count = (int)SendMessageW(s_cb_hist_wnd, LB_GETCOUNT, 0, 0);
+    if (count <= 0)
+        return;
+    int sel = (int)SendMessageW(s_cb_hist_wnd, LB_GETCURSEL, 0, 0);
+    if (sel < 0)
+        sel = count - 1;
+    sel += delta;
+    if (sel < 0)
+        sel = 0;
+    if (sel >= count)
+        sel = count - 1;
+    SendMessageW(s_cb_hist_wnd, LB_SETCURSEL, (WPARAM)sel, 0);
 }
 
 static void commandbox_scroll(int bar)
 {
     if (hg_g_commandbox_out_wnd && IsWindow(hg_g_commandbox_out_wnd))
         SendMessageW(hg_g_commandbox_out_wnd, WM_VSCROLL, (WPARAM)bar, 0);
-}
-
-static BOOL commandbox_recall(int direction)
-{
-    const WCHAR *line = hg_command_history_step(direction);
-    if (!line)
-        return FALSE;
-    SetWindowTextW(hg_g_commandbox_in_wnd, line);
-    int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
-    SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
-    return TRUE;
 }
 
 /* TRUE when the key was the mode's. Anything the mode has no use for drops the
@@ -102,12 +157,11 @@ static BOOL commandbox_mode_key(WPARAM key)
 
     if (s_cb_mode == HG_CB_MODE_HISTORY) {
         switch (key) {
-        case VK_UP: commandbox_recall(1); return TRUE;   /* older */
-        case VK_DOWN: commandbox_recall(-1); return TRUE; /* newer */
+        case VK_UP: commandbox_history_move(-1); return TRUE;   /* towards older */
+        case VK_DOWN: commandbox_history_move(1); return TRUE;  /* towards newer */
+        case VK_RETURN: commandbox_history_commit(); return TRUE;
         default: break;
         }
-        /* Enter runs what the history put in the box, so leaving the mode and
-         * letting it through is exactly right. */
         commandbox_set_mode(HG_CB_MODE_NONE);
         return FALSE;
     }
@@ -421,8 +475,18 @@ void show_commandbox_window()
             0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)103, GetModuleHandle(NULL), NULL
         );
 
+        /* Created last so it sits above the transcript it covers; shown only
+         * while history mode is on. */
+        s_cb_hist_wnd = CreateWindowExW(
+            WS_EX_CLIENTEDGE, L"LISTBOX", NULL,
+            WS_CHILD | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT | LBS_USETABSTOPS,
+            0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)105, GetModuleHandle(NULL), NULL
+        );
+
         SetWindowSubclass(hg_g_commandbox_out_wnd, commandbox_edit_subclass_proc, 1, 0);
         SetWindowSubclass(hg_g_commandbox_in_wnd, commandbox_edit_subclass_proc, 2, 0);
+        if (s_cb_hist_wnd)
+            SetWindowSubclass(s_cb_hist_wnd, commandbox_edit_subclass_proc, 3, 0);
 
         /* The transcript trims itself; the control's own limit just has to sit
          * above the trim budget so the trim is what binds, never the EDIT. */
@@ -431,6 +495,8 @@ void show_commandbox_window()
         SendMessageW(hg_g_commandbox_out_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
         SendMessageW(hg_g_commandbox_in_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
         SendMessageW(hg_g_commandbox_btn_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
+        if (s_cb_hist_wnd)
+            SendMessageW(s_cb_hist_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
 
         RECT rc_client;
         GetClientRect(hg_g_commandbox_wnd, &rc_client);
@@ -471,13 +537,18 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
             commandbox_execute();
             return 0;
         }
+        if (LOWORD(w_param) == 105 && HIWORD(w_param) == LBN_DBLCLK) {
+            /* A double-click is the mouse's Enter. */
+            commandbox_history_commit();
+            return 0;
+        }
         break;
 
 
     case WM_SIZE: {
         int cx = LOWORD(l_param);
         int cy = HIWORD(l_param);
-        
+
         double ws = hg_window_scale(hwnd);
         int border = SCW(ws, 8);
         int btn_h = SCW(ws, 26);
@@ -485,48 +556,87 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
 
         int line_h = commandbox_line_height(hwnd, ws);
 
+        /* The input is exactly three lines, always: tall enough to see a
+         * multi-line paste coming, small enough that the transcript owns the
+         * window. It tracks the font and nothing else - resizing the window
+         * resizes the transcript - and past three lines it scrolls. */
         int min_out_h = line_h * 3 + SCW(ws, 6);
-        int min_in_h = line_h * 1 + SCW(ws, 6);
+        int in_h = line_h * 3 + SCW(ws, 8);
 
         int rem_h = cy - (border * 4 + btn_h);
-        int out_h = (rem_h * 7) / 10;
-        int in_h = rem_h - out_h;
-
-        if (out_h < min_out_h) {
+        int out_h = rem_h - in_h;
+        if (out_h < min_out_h)
             out_h = min_out_h;
-            in_h = rem_h - out_h;
-        }
-        if (in_h < min_in_h) {
-            in_h = min_in_h;
-            out_h = rem_h - in_h;
-        }
 
         if (hg_g_commandbox_out_wnd)
             MoveWindow(hg_g_commandbox_out_wnd, border, border, cx_inner, out_h, TRUE);
+        if (s_cb_hist_wnd)
+            /* The history list sits exactly where the transcript is; being a
+             * later sibling it covers it while shown. */
+            MoveWindow(s_cb_hist_wnd, border, border, cx_inner, out_h, TRUE);
         if (hg_g_commandbox_in_wnd)
             MoveWindow(hg_g_commandbox_in_wnd, border, border * 2 + out_h, cx_inner, in_h, TRUE);
         if (hg_g_commandbox_btn_wnd)
             MoveWindow(hg_g_commandbox_btn_wnd, border, border * 3 + out_h + in_h, cx_inner, btn_h, TRUE);
+        /* The mode border lives in the margins; a resize has to repaint it. */
+        InvalidateRect(hwnd, NULL, TRUE);
         return 0;
     }
 
     case WM_GETMINMAXINFO: {
         MINMAXINFO *mmi = (MINMAXINFO *)l_param;
-        
+
         double ws = hg_window_scale(hwnd);
         int border = SCW(ws, 8);
         int btn_h = SCW(ws, 26);
         int line_h = commandbox_line_height(hwnd, ws);
 
         int min_out_h = line_h * 3 + SCW(ws, 6);
-        int min_in_h = line_h * 1 + SCW(ws, 6);
+        int min_in_h = line_h * 3 + SCW(ws, 8); /* the fixed three-line input */
         int min_cy = border * 4 + min_out_h + min_in_h + btn_h;
 
         RECT rc_win = {0, 0, SCW(ws, 200), min_cy};
-        AdjustWindowRectEx(&rc_win, WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME, FALSE, WS_EX_TOOLWINDOW | WS_EX_LAYERED);
+        AdjustWindowRectEx(&rc_win,
+                           WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME,
+                           FALSE, WS_EX_APPWINDOW | WS_EX_LAYERED);
 
         mmi->ptMinTrackSize.x = rc_win.right - rc_win.left;
         mmi->ptMinTrackSize.y = rc_win.bottom - rc_win.top;
+        return 0;
+    }
+
+    case WM_PAINT: {
+        /* The mode borders. A mode silently remapping the arrow keys is easy
+         * to forget; the caption says so in words, and this says so at a
+         * glance - scroll mode frames the transcript the arrows now scroll,
+         * history mode frames the input the picked line will land in. */
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        if (s_cb_mode != HG_CB_MODE_NONE) {
+            HWND framed = (s_cb_mode == HG_CB_MODE_SCROLL)
+                              ? ((s_cb_hist_wnd && IsWindowVisible(s_cb_hist_wnd)) ? s_cb_hist_wnd
+                                                                                  : hg_g_commandbox_out_wnd)
+                              : hg_g_commandbox_in_wnd;
+            if (framed && IsWindow(framed)) {
+                RECT rc;
+                GetWindowRect(framed, &rc);
+                MapWindowPoints(NULL, hwnd, (POINT *)&rc, 2);
+                double ws = hg_window_scale(hwnd);
+                int thickness = SCW(ws, 3);
+                InflateRect(&rc, thickness, thickness);
+                COLORREF color = hg_g_has_system_accent_color ? hg_g_system_accent_color
+                                                              : GetSysColor(COLOR_HIGHLIGHT);
+                HBRUSH brush = CreateSolidBrush(color);
+                if (brush) {
+                    for (int i = 0; i < thickness; ++i) {
+                        FrameRect(hdc, &rc, brush);
+                        InflateRect(&rc, -1, -1);
+                    }
+                    DeleteObject(brush);
+                }
+            }
+        }
+        EndPaint(hwnd, &ps);
         return 0;
     }
 

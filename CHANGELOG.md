@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.6.0] - 2026-08-07
+
+### Added
+- **Modes you can see.** The command box's scroll mode frames the transcript
+  and history mode frames the input, in the system accent color - the pane
+  with the border is the pane the arrow keys now belong to. The title bar
+  keeps saying it in words.
+- **History mode is a list now.** `Ctrl+H` shows every remembered command over
+  the transcript, numbered from `1:` at the oldest so a number never changes
+  meaning. Up/Down move the selection, `Enter` or a double click puts the line
+  into the input - not runs it - and leaves the mode.
+
+### Changed
+- **The command box input is always exactly three lines tall.** It tracks the
+  font, not the window: resizing the box resizes the transcript, and typing or
+  pasting past three lines scrolls the input.
+- **The maximize-button menu reaches more windows.** hgfloater's own document
+  windows - notes, the note list, the command box, About - now get it (only
+  the floater, taskbox and toolbar stay out), and so do windows that answer
+  title-bar hit-tests their own way, PuTTY-style: when a window will not name
+  its caption buttons, the DWM-computed button bounds decide which third the
+  click landed on (windows without a real maximize button stay excluded).
+
+### Fixed
+- **The maximize-button menu now dismisses when you click elsewhere.** The
+  menu's owner needs the foreground for an outside click to reach it, and a
+  plain SetForegroundWindow is refused while another application holds it -
+  which it always does here, the click having just landed on that
+  application's title bar. The menu now takes the foreground the way the rest
+  of hgfloater does, and an outside click closes it like any other popup.
+
 ## [v0.5.0] - 2026-08-07
 
 ### Changed

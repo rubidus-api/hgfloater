@@ -316,3 +316,30 @@ rebuilt from nothing. Three changes, independent and stacked:
 The user-visible trade: a tab strip changed without a title change (rare) can
 lag up to 30 seconds. Ordinary tab switching and navigation update within the
 usual beat.
+
+## D8 - Proposed: tabs behind a hover sub-box, not beside the windows (2026-08-07)
+
+The fan-out has structural problems the maintainer has now named: tab items
+crowd the grid, cannot be reordered (their order is the strip's, not the
+user's), and keeping their titles fresh is what all of D6/D7/B3's machinery
+exists to pay for. The proposal inverts the presentation:
+
+- The taskbox shows **one icon per window**, always - no fan-out. A window
+  whose class can have tabs carries a small corner mark so the affordance is
+  discoverable.
+- **Hovering** that icon (a short settle, ~350 ms) opens a **sub-box**: a
+  small popup listing that window's tabs, numbered, in strip order. Click
+  switches to the tab; right-click closes it; the box dismisses when the
+  pointer leaves it and the icon.
+- **Enumeration happens only then.** The hover posts one request for that one
+  window; the sub-box draws the cached titles immediately and folds the fresh
+  answer in when HG_MSG_TABS_READY lands. No timer-driven re-asks at all -
+  the title gate, backstop and breaker become the sub-box's freshness rules
+  rather than a background cadence.
+
+What this retires: the per-second fan-out rebuild, the tab items' icon
+sharing, the reorder problem (windows reorder as windows always did), and the
+steady-state UIA traffic (zero while nobody hovers). What it keeps: the
+worker, the scoped read, `show tabs`, and hg_tabs_activate/close as the
+sub-box's verbs. Status: agreed with the maintainer 2026-08-07, next
+implementation batch after v0.6.0.

@@ -111,6 +111,21 @@ void hg_command_history_reset(void)
     s_history_cursor = -1;
 }
 
+/* The whole history, oldest first, for the command box's history list. Index 0
+ * is the oldest entry so the on-screen numbers can start at 1 and never move
+ * as new commands arrive. */
+int hg_command_history_count(void)
+{
+    return s_history_count;
+}
+
+const WCHAR *hg_command_history_at(int oldest_index)
+{
+    if (oldest_index < 0 || oldest_index >= s_history_count)
+        return NULL;
+    return s_history[s_history_count - 1 - oldest_index]; /* storage is newest first */
+}
+
 /* direction > 0 walks towards older lines. Returns NULL at either end, and an
  * empty string when walking back past the newest, which is how the input box
  * gets cleared rather than stuck on the first entry. */
