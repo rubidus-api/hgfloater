@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.8.0] - 2026-08-08
+
+### Fixed
+- **`Space` on a focused window now leaves the dashboard, the way clicking
+  one does.** Activating raised the window but left the taskbox standing;
+  with the mouse it collapsed anyway, because the pointer had wandered off it
+  and the hover timer noticed. The keyboard had no such accident to rely on.
+  Activating any task icon now closes the tab box, collapses the taskbox, and
+  then brings the window forward - in that order, so the window is the one
+  that ends up in front.
+- **The tab box opens for the keyboard too.** It appeared on hover only, so
+  arrowing onto a browser icon showed nothing. Arriving at an icon is
+  arriving at an icon, whichever way you travelled.
+
+### Changed
+- **The tab box has two states, and the keys say which.** Open, it answers
+  the digits (`1`-`9`, `0`) and `Tab`. `Tab` steps into it - a frame appears -
+  and then the arrows, `Home`/`End`, the letter labels, `Enter`/`Space` and
+  `Esc` are all the box's. The letters wait for `Tab` on purpose: outside the
+  box `WASD` moves the grid and `C` and `N` open other windows, and a hover
+  box that silently took those would break navigation every time the focus
+  passed a browser.
+- **`show tabs` (`s t`) now lists tabs, not diagnostics.** Every tab of every
+  tabbed window, numbered across all of them - and **`go tab <n>`
+  (`g t <n>`)** switches to one, whichever window is holding it. The old
+  counters moved to **`show tabsinfo`**, which has no shorthand because it is
+  a diagnostic.
+
+### Added
+- **`clear` (`cls`)** empties the command box transcript. The command history
+  is a different thing and is left alone.
+- `help` lists `clear`, and points at `help key`, which is not a command and
+  so had no row of its own to be found by. The key help itself now describes
+  the history list, the mode frames, and the three-line input.
+
 ## [v0.7.0] - 2026-08-07
 
 ### Changed

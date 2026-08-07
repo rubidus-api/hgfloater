@@ -309,6 +309,16 @@ void activate_taskbar_item(int index)
         return;
     HWND target = hg_g_window_items[index].hwnd;
 
+    /* Going to a window means leaving the dashboard: collapse first, then
+     * raise. Collapsing first is what makes the target the last window to
+     * take the foreground, and doing it here rather than in the callers is
+     * what makes the keyboard behave like the mouse - a click happened to
+     * collapse the taskbox as a side effect of the pointer being elsewhere,
+     * and Space had no such accident to rely on. */
+    hg_tabbox_close();
+    if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd))
+        hide_taskbox(hg_g_taskbox_wnd);
+
     if (hg_g_window_items[index].is_tab) {
         /* Raises the window and selects the tab; if the tab has gone the window
          * still comes forward, which is the useful half of the answer. */
@@ -319,7 +329,7 @@ void activate_taskbar_item(int index)
     if (IsWindow(target)) {
         if (IsIconic(target))
             ShowWindow(target, SW_RESTORE);
-        SetForegroundWindow(target);
+        hg_force_foreground(target);
     }
 }
 
@@ -859,6 +869,26 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                 hg_taskbox_focus.index = total_cells - 1 - new_cell;
             }
             update_focus_message(-2, -2);
+
+            /* The keyboard focus opens the tab box exactly as hovering does -
+             * arriving at an icon is arriving at an icon, whichever way you
+             * travelled - and closes it on anything else. */
+            HWND tab_target = NULL;
+            if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index >= 0 &&
+                hg_taskbox_focus.index < hg_g_window_count) {
+                HWND candidate = hg_g_window_items[hg_taskbox_focus.index].hwnd;
+                if (hg_tabs_enabled() && hg_tabs_window_may_have_tabs(candidate))
+                    tab_target = candidate;
+            }
+            if (tab_target) {
+                RECT rc_item;
+                get_toolbar_item_rect(0, hg_taskbox_focus.index, rc_toolbar.right, rc_toolbar.bottom, icon_size,
+                                      &rc_item);
+                MapWindowPoints(hg_g_toolbar_wnd, NULL, (POINT *)&rc_item, 2);
+                hg_tabbox_open(tab_target, &rc_item);
+            } else if (hg_tabbox_is_open()) {
+                hg_tabbox_close();
+            }
         }
 
         InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);

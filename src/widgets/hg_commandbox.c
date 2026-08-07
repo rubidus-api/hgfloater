@@ -298,6 +298,13 @@ static void commandbox_trim_transcript(int incoming_cch)
     SendMessageW(hg_g_commandbox_out_wnd, EM_REPLACESEL, FALSE, (LPARAM)L"");
 }
 
+void commandbox_clear(void)
+{
+    if (!hg_g_commandbox_out_wnd || !IsWindow(hg_g_commandbox_out_wnd))
+        return;
+    SetWindowTextW(hg_g_commandbox_out_wnd, L"");
+}
+
 void commandbox_print(const WCHAR *text)
 {
     if (!hg_g_commandbox_out_wnd || !IsWindow(hg_g_commandbox_out_wnd) || !text)
