@@ -168,8 +168,11 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
     static WCHAR cached_asked_title[HG_TABS_CACHE_WINDOWS][HG_MAX_STR];
     static ULONGLONG cached_asked_tick[HG_TABS_CACHE_WINDOWS];
     /* Per-window breaker: a window whose asks run slow or keep failing earns
-     * a quiet period, no matter what its title does. 50 ms buys 30 seconds;
-     * 200 ms, or three failures in a row, buys two minutes. */
+     * a quiet period, no matter what its title does. 150 ms buys 30 seconds;
+     * 300 ms, or three failures in a row, buys two minutes. The thresholds
+     * moved up when the scoped read landed: healthy scoped refreshes measure
+     * 60-112 ms in the field, and a breaker tuned for the 600 ms full-walk
+     * era was punishing exactly the reads that fixed it. */
     static ULONGLONG cached_earliest[HG_TABS_CACHE_WINDOWS];
     static int cached_fails[HG_TABS_CACHE_WINDOWS];
     static int cache_used = 0;
@@ -231,9 +234,9 @@ static int expand_window_tabs(WindowItem *items, int count, BOOL force)
                     } else {
                         cached_count[slot] = fresh;
                         cached_fails[slot] = 0;
-                        if (answer.elapsed_ms > 200)
+                        if (answer.elapsed_ms > 300)
                             cached_earliest[slot] = now + 120000;
-                        else if (answer.elapsed_ms > 50)
+                        else if (answer.elapsed_ms > 150)
                             cached_earliest[slot] = now + HG_TABS_BACKSTOP_MS;
                         else
                             cached_earliest[slot] = 0;

@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.5.0] - 2026-08-07
+
+### Changed
+- **The command box is an ordinary application window now**, like the note
+  windows before it: its own taskbar button, its own Alt-Tab entry, no owner,
+  and no always-on-top. Its opacity keeps working.
+- **All three caption buttons — minimize, maximize, close — on the command
+  box, the note list, and every note editor.** Minimize parks them on the
+  taskbar; Alt-Tab (with Shift for the reverse walk), the taskbar, and the
+  taskbox's own task icons all reach them.
+- **The tab breaker's thresholds caught up with the scoped read.** Field
+  numbers confirmed B3 working (an Explorer window's refresh fell from
+  1018 ms at discovery to 112 ms scoped; Chrome to 64 ms) - and showed the
+  50 ms slow threshold, tuned in the full-walk era, putting those healthy
+  refreshes on a 30-second leash. Slow now starts at 150 ms, the two-minute
+  circuit at 300 ms; three straight failures still trip it.
+
 ## [v0.4.0] - 2026-08-07
 
 ### Changed

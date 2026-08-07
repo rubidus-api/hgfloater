@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.4.0** — built 2026-08-07 00:24 KST
+**v0.5.0** — built 2026-08-07 20:32 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -75,7 +75,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.4.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.5.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -205,15 +205,15 @@ built-in buttons.
   each going straight to its own window.
 
   That now includes **hgfloater's own windows** — every open note editor, the
-  note list, the clipboard history, the command box. The clipboard history and
-  the command box are tool windows, so Windows keeps them out of Alt-Tab, which
-  is right for a widget's controls but wrong for a list whose whole job is
-  reaching them — so this list carries them anyway. **The note windows are
-  ordinary application windows**: a note is a document, so each editor and the
-  note list get their own taskbar button and Alt-Tab entry, and they stay open
-  regardless of what the floater and taskbox do, until you close them. The
-  floater, the taskbox and the toolbar stay out: they are the thing you are
-  looking at.
+  note list, the clipboard history, the command box. The clipboard history is
+  a tool window, so Windows keeps it out of Alt-Tab, which is right for a
+  widget's controls but wrong for a list whose whole job is reaching them — so
+  this list carries it anyway. **The note windows and the command box are
+  ordinary application windows**: each gets its own taskbar button, its own
+  Alt-Tab entry, and all three caption buttons — minimize, maximize, close —
+  and they stay open regardless of what the floater and taskbox do, until you
+  close them. The floater, the taskbox and the toolbar stay out: they are the
+  thing you are looking at.
 - **Shortcut icons** follow: one per `.lnk` or `.url` in your shortcuts folder.
 
 > ### 📌 How to add a shortcut icon
