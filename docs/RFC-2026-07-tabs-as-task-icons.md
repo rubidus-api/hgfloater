@@ -328,9 +328,19 @@ exists to pay for. The proposal inverts the presentation:
   whose class can have tabs carries a small corner mark so the affordance is
   discoverable.
 - **Hovering** that icon (a short settle, ~350 ms) opens a **sub-box**: a
-  small popup listing that window's tabs, numbered, in strip order. Click
-  switches to the tab; right-click closes it; the box dismisses when the
-  pointer leaves it and the icon.
+  small popup listing that window's tabs **as titles, not icons** - one row
+  per tab, in strip order, each prefixed with its label and a colon
+  (`1: Inbox`). Click switches to the tab; right-click closes it; the box
+  dismisses when the pointer leaves it and the icon.
+- **Labels run 1-9, then a-z, then A-Z** (more than enough for the 24-tab
+  cap), and **pressing a label key jumps to that row; `0` jumps to the last
+  row** - the same philosophy as the taskbox badges, small keys for small
+  distances.
+- **The keyboard works without the box stealing focus.** The box opens
+  no-activate; while it is visible the toolbar's key handler routes to it:
+  Up/Down move the selection, a label key jumps, Enter switches to the
+  selected tab, and **Esc closes the box and the keyboard is back in the
+  taskbox** exactly where it was.
 - **Enumeration happens only then.** The hover posts one request for that one
   window; the sub-box draws the cached titles immediately and folds the fresh
   answer in when HG_MSG_TABS_READY lands. No timer-driven re-asks at all -

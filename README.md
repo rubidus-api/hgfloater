@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.6.0** — built 2026-08-07 23:28 KST
+**v0.6.1** — built 2026-08-07 23:35 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -75,7 +75,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.6.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.6.1)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -703,6 +703,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Space` | Activate the focused item |
 | `Enter` / `F2` | Open the focused item's context menu |
 | `C` | Open the Command Box |
+| `N` | Open the note list |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
 ### Inside the note list
