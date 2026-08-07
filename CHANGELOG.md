@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.6.1] - 2026-08-07
+
+### Fixed
+- **`N` in the taskbox opens the note list now.** The N toolbar button had the
+  mouse's path and nothing had the keyboard's; bare `N` joins bare `C` (the
+  command box) as a keyboard shortcut. `Shift+N` stays the task badge it was.
+- **Ctrl+Wheel font sizing in the command box works with every mouse.** The
+  handler existed but trusted the modifier flags packed into the wheel
+  message, which some pointing drivers do not set; the key state is now asked
+  directly as well. The history list follows the font too.
+
+### Changed
+- RFC-2026-07 D8 (the agreed tab hover sub-box, not yet implemented) now
+  specifies the interaction in full: title rows labelled `1-9`, `a-z`, `A-Z`,
+  a label key jumps to its row and `0` to the last, Up/Down move, Enter
+  switches, Esc closes the box and hands the keyboard back to the taskbox.
+
 ## [v0.6.0] - 2026-08-07
 
 ### Added

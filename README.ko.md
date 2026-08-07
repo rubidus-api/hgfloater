@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.6.0** — 빌드 2026-08-07 23:28 KST
+**v0.6.1** — 빌드 2026-08-07 23:35 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -68,7 +68,7 @@ hgfloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.6.0)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.6.1)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -622,6 +622,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `Space` | 포커스된 항목 실행 |
 | `Enter` / `F2` | 포커스된 항목의 컨텍스트 메뉴 |
 | `C` | 커맨드 박스 열기 |
+| `N` | 노트 목록 열기 |
 | `Esc` | 태스크박스 숨기고 단축 아이콘 다시 읽기 |
 
 ### 노트 목록에서

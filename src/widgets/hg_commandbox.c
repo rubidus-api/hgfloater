@@ -248,7 +248,8 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
         /* Ctrl resizes the text and Alt changes the opacity, both the window's
          * business. A plain wheel is the control's, and forwarding it too left
          * the transcript unable to scroll. */
-        if ((GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL) || (GetKeyState(VK_MENU) < 0)) {
+        if ((GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL) || GetKeyState(VK_CONTROL) < 0 ||
+            (GetKeyState(VK_MENU) < 0)) {
             SendMessageW(parent, msg, w_param, l_param);
             return 0;
         }
@@ -716,7 +717,11 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
 
     case WM_MOUSEWHEEL: {
         short delta = (short)HIWORD(w_param);
-        if (LOWORD(w_param) & MK_CONTROL) {
+        /* The key state ALSO asked directly: some pointing drivers deliver
+         * wheel messages without the modifier flags packed into wParam, and
+         * a documented shortcut that works with one mouse and not another
+         * reads as broken. */
+        if ((LOWORD(w_param) & MK_CONTROL) || GetKeyState(VK_CONTROL) < 0) {
             double ws = hg_window_scale(hwnd);
             int size = (int)(ABS(hg_g_commandbox_font_size) / (ws > 0 ? ws : 1.0) + 0.5);
             size += (delta > 0 ? 1 : -1);
@@ -732,6 +737,8 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
                 SendMessageW(hg_g_commandbox_in_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
             if (hg_g_commandbox_btn_wnd)
                 SendMessageW(hg_g_commandbox_btn_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
+            if (s_cb_hist_wnd)
+                SendMessageW(s_cb_hist_wnd, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
 
             RECT rc;
             GetClientRect(hwnd, &rc);
