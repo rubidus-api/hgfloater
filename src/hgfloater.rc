@@ -8,12 +8,12 @@
  * still produces a valid resource. */
 #ifndef HG_RC_VER_MAJOR
 #define HG_RC_VER_MAJOR 0
-#define HG_RC_VER_MINOR 6
-#define HG_RC_VER_PATCH 1
+#define HG_RC_VER_MINOR 7
+#define HG_RC_VER_PATCH 0
 #endif
 #ifndef HG_RC_VER_MINOR_STR
-#define HG_RC_VER_MINOR_STR 6
-#define HG_RC_VER_PATCH_STR 1
+#define HG_RC_VER_MINOR_STR 7
+#define HG_RC_VER_PATCH_STR 0
 #endif
 
 #define HG_RC_STR_HELPER(x) #x

@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.7.0] - 2026-08-07
+
+### Changed
+- **Tabs left the grid. They live in a hover box now.** A tabbed window is one
+  icon again, like every other window — orderable, uncrowded — and hovering
+  that icon opens a small list beside it: one row per tab, titled, labelled
+  `1`-`9` then `a`-`z` then `A`-`Z`.
+  - **Press a label and you are there.** `0` goes to the last row. `Up`/`Down`
+    (and `Home`/`End`) move the selection, `Enter` switches, **`Esc` closes
+    the box and leaves the keyboard in the taskbox** where it was. Clicking a
+    row switches to it; right-clicking closes that tab and keeps the list up,
+    because closing several is why anyone right-clicks a tab list.
+  - **Nothing is read until somebody looks.** Opening the box asks for that
+    one window's tabs, once. The background cadence that kept every tabbed
+    window's titles fresh — the five-second re-asks, the per-window title
+    gate, the circuit breaker — is gone, along with the work it did whether
+    or not anyone cared.
+  - The box never takes the focus (hovering must not be a destructive act),
+    and the taskbox counts it as inside itself, so moving the pointer from
+    the icon onto the list does not collapse anything.
+  - Design and the two field studies behind it:
+    `docs/RFC-2026-07-tabs-as-task-icons.md`, section D8.
+
 ## [v0.6.1] - 2026-08-07
 
 ### Fixed

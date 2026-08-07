@@ -2,6 +2,7 @@
 #include "hg_utils.h"
 #include "hg_config.h"
 #include "widgets/hg_clip.h"
+#include "widgets/hg_tabbox.h"
 #include "hg_tabs.h"
 #include "hg_caphook.h"
 
@@ -48,6 +49,7 @@ static BOOL register_app_window_classes(HINSTANCE instance, HICON icon_large, HI
         {HG_CLASS_NOTE_LIST, note_list_proc, hg_g_main_bg_brush, L"Failed to register note list class.", 0, NULL},
         {HG_CLASS_NOTE_EDIT, note_edit_proc, hg_g_main_bg_brush, L"Failed to register note editor class.", 0, NULL},
         {HG_CLASS_CLIP, clip_wnd_proc, hg_g_main_bg_brush, L"Failed to register clipboard class.", 0, NULL},
+        {HG_CLASS_TABBOX, tabbox_proc, hg_g_main_bg_brush, L"Failed to register tab box class.", 0, NULL},
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(specs); ++i) {
@@ -63,6 +65,7 @@ static void unregister_app_window_classes(HINSTANCE instance)
     const WCHAR *classes[] = {
         HG_CLASS_FLOATER_WIDGET, HG_CLASS_ABOUT,     HG_CLASS_TASKBOX,   HG_CLASS_MONITOR, HG_CLASS_COMMANDBOX,
         HG_CLASS_TOOLBAR,        HG_CLASS_NOTE_LIST, HG_CLASS_NOTE_EDIT, HG_CLASS_CLIP,
+        HG_CLASS_TABBOX,
     };
 
     for (int i = 0; i < (int)HG_ARRAYSIZE(classes); ++i) {

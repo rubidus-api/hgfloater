@@ -73,7 +73,7 @@
  * the build scripts; the stamp is the moment the exe was built. Fallbacks
  * cover an IDE or ad-hoc compile that passes neither. */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v0.6.1"
+#define HG_VERSION_W L"v0.7.0"
 #endif
 #ifndef HG_BUILD_STAMP_W
 #define HG_BUILD_STAMP_W L"unknown"
@@ -446,6 +446,7 @@ static const WCHAR HG_CLASS_COMMANDBOX[] = L"hgcommandbox_class";
 static const WCHAR HG_CLASS_NOTE_LIST[] = L"hgnotelist_class";
 static const WCHAR HG_CLASS_NOTE_EDIT[] = L"hgnoteedit_class";
 static const WCHAR HG_CLASS_CLIP[] = L"hgclip_class";
+static const WCHAR HG_CLASS_TABBOX[] = L"hgtabbox_class";
 static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";
 
 #endif /* HG_COMMON_H */

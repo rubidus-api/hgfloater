@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.6.1** — built 2026-08-07 23:35 KST
+**v0.7.0** — built 2026-08-07 23:48 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -75,7 +75,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.6.1)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.7.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -257,11 +257,22 @@ most, and a digit is one keystroke to find. Past 36 icons there is no label and
 no key. `Shift` is what keeps this clear of the bare-letter grid movement
 (`WASD`) and of the bare `C` that opens the command box.
 
-**A tabbed application's tabs can have their own icons.** Off by default; turn
-it on with **Show Tabs as Task Icons** in the `O` menu, or `show_tabs=1` under
-`[taskbox]` in `config.ini`. With it on, a window with eight tabs contributes
-eight icons; clicking one switches to that tab, and middle-clicking or
-**Close Tab** closes that tab alone.
+**Hover a tabbed application's icon and its tabs appear beside it.** Off by
+default; turn it on with **Show Tabs as Task Icons** in the `O` menu, or
+`show_tabs=1` under `[taskbox]` in `config.ini`. The window keeps its single
+icon — orderable like any other — and the hover box lists its tabs by title:
+
+| Key or click | What it does |
+| :--- | :--- |
+| `1`-`9`, then `a`-`z`, `A`-`Z` | The label on the row. Press it and you are on that tab. |
+| `0` | The last row. |
+| `Up` / `Down`, `Home` / `End` | Move the selection. |
+| `Enter`, or a click | Switch to the selected tab. |
+| Right click | Close that tab. The list stays up. |
+| `Esc` | Close the box. The keyboard stays in the taskbox. |
+
+**The tabs are read when you look at them**, once per box, and never on a
+timer — a window nobody hovers costs nothing at all.
 
 Nothing about this is specific to browsers. What limits it is cost: a tab is not
 a window, so the only supported way to find one is **UI Automation** — a call
@@ -289,11 +300,11 @@ Run **`show windows class`** (`s w class`) in the command box to see the class o
 every open window, which is where those names come from. An application whose
 tabs UI Automation does not publish will simply keep its single icon.
 
-It re-reads tabs every five seconds rather than every second, **on a background
-thread** — the reading is a cross-process call whose cost grows with the
-browser's own accessibility data, so the dashboard draws from its cache and
-folds new answers in when they arrive rather than ever waiting. Anything that
-fails falls back silently to one icon for the window. Some applications do not
+The reading happens **on a background thread**, and the box draws from what was
+last known while the fresh answer is on its way — a cross-process call whose
+cost grows with the browser's own accessibility data is never waited for.
+Anything that fails falls back silently to one icon for the window. Some
+applications do not
 publish off-screen tabs at all, and those tabs will not appear. The design and
 what it costs are in `docs/RFC-2026-07-tabs-as-task-icons.md`.
 - **Left drag** on a task icon reorders it within the grid.

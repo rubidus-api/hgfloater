@@ -119,214 +119,11 @@ static BOOL explorer_path_for(IShellWindows **shell_windows, HWND hwnd, const WC
     return slot->resolved;
 }
 
-/* One item per tab, for the windows that have them, in place of the one item
- * the window would have contributed.
- *
- * Its own clock: the enumeration is a cross-process call and the list refreshes
- * every second, so tabs are re-requested every fifth pass and reused in
- * between. A tab title five seconds stale costs nobody anything; a taskbox
- * that stutters once a second costs everybody.
- *
- * And the asking itself happens on the tab worker thread, never here: a UIA
- * walk into Chrome can take a hundred milliseconds once its accessibility
- * tree has grown, and this function runs on the expand path, where that
- * hundred milliseconds is the stutter the user sees. Each pass takes whatever
- * answers have arrived (hg_tabs_take_result), draws from the cache, and files
- * the next request on its way out; HG_MSG_TABS_READY brings the answer back
- * through another pass. */
-static int expand_window_tabs(WindowItem *items, int count, BOOL force)
-{
-    if (!hg_tabs_enabled())
-        return count;
-
-    /* Wall-clock, not pass-count: the ready message triggers a pass of its
-     * own, and a pass-counted cadence would count those too - each answer
-     * hastening the next question until the worker never sleeps. */
-    static ULONGLONG s_last_request = 0;
-    ULONGLONG now = GetTickCount64();
-    BOOL requery = force || (now - s_last_request >= 5000);
-
-    HWND want[HG_TABS_WORKER_WINDOWS];
-    const WCHAR *want_title[HG_TABS_WORKER_WINDOWS];
-    int want_slot[HG_TABS_WORKER_WINDOWS];
-    int want_count = 0;
-
-    /* Titles are remembered between passes so the four seconds in between cost
-     * nothing at all, keyed by the window they came from. Beside them, what the
-     * window's own title was when we last asked: a UIA walk makes the target
-     * build its accessibility tree, which for a browser full of pages is the
-     * heaviest thing this program ever causes - so a window is only re-asked
-     * when its title says something changed (switching or navigating a tab
-     * retitles the window), with a slow backstop for the changes a title does
-     * not carry, like a background tab quietly appearing. */
-#define HG_TABS_CACHE_WINDOWS 16
-#define HG_TABS_BACKSTOP_MS 30000
-    static HWND cached_hwnd[HG_TABS_CACHE_WINDOWS];
-    static DWORD cached_pid[HG_TABS_CACHE_WINDOWS]; /* a recycled HWND is a different window */
-    static WCHAR cached_titles[HG_TABS_CACHE_WINDOWS][HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
-    static int cached_count[HG_TABS_CACHE_WINDOWS];
-    static WCHAR cached_asked_title[HG_TABS_CACHE_WINDOWS][HG_MAX_STR];
-    static ULONGLONG cached_asked_tick[HG_TABS_CACHE_WINDOWS];
-    /* Per-window breaker: a window whose asks run slow or keep failing earns
-     * a quiet period, no matter what its title does. 150 ms buys 30 seconds;
-     * 300 ms, or three failures in a row, buys two minutes. The thresholds
-     * moved up when the scoped read landed: healthy scoped refreshes measure
-     * 60-112 ms in the field, and a breaker tuned for the 600 ms full-walk
-     * era was punishing exactly the reads that fixed it. */
-    static ULONGLONG cached_earliest[HG_TABS_CACHE_WINDOWS];
-    static int cached_fails[HG_TABS_CACHE_WINDOWS];
-    static int cache_used = 0;
-
-    /* Static, not local. A WindowItem is about 4 KB - two HG_MAX_STR strings -
-     * so a thousand of them is a four-megabyte stack frame on a one-megabyte
-     * stack, which is a crash at the first call and not a subtle one. The rest
-     * of this file keeps its item arrays in static storage for exactly this
-     * reason; this function has to as well. Only ever the UI thread. */
-    static WindowItem out[HG_MAX_WINDOW_ITEMS];
-    int out_count = 0;
-    int consumed = 0;
-
-    for (int i = 0; i < count && out_count < HG_MAX_WINDOW_ITEMS; ++i, consumed = i) {
-        int tabs = 0;
-        int slot = -1;
-
-        if (hg_tabs_window_may_have_tabs(items[i].hwnd)) {
-            for (int c = 0; c < cache_used; ++c) {
-                if (cached_hwnd[c] == items[i].hwnd) {
-                    slot = c;
-                    break;
-                }
-            }
-            if (slot < 0 && cache_used >= (int)HG_ARRAYSIZE(cached_hwnd)) {
-                hg_tabs_note_overflow(); /* the cap must fail loudly, not silently */
-            }
-            if (slot < 0 && cache_used < (int)HG_ARRAYSIZE(cached_hwnd)) {
-                slot = cache_used++;
-                cached_hwnd[slot] = items[i].hwnd;
-                cached_pid[slot] = items[i].process_id;
-                cached_count[slot] = 0;
-                cached_asked_title[slot][0] = L'\0';
-                cached_asked_tick[slot] = 0;
-                cached_earliest[slot] = 0;
-                cached_fails[slot] = 0;
-                requery = TRUE; /* a window we have not asked about yet */
-            }
-            if (slot >= 0) {
-                HgTabsAnswer answer;
-                int fresh = hg_tabs_take_result(items[i].hwnd, cached_titles[slot], HG_TABS_MAX_PER_WINDOW, &answer);
-                if (fresh >= 0) {
-                    if (answer.pid != 0 && cached_pid[slot] != 0 && answer.pid != cached_pid[slot]) {
-                        /* The HWND was recycled between ask and answer: this
-                         * result belongs to a window that no longer exists.
-                         * Start the slot over for the window that does. */
-                        cached_pid[slot] = answer.pid;
-                        cached_count[slot] = 0;
-                        cached_asked_tick[slot] = 0;
-                        cached_earliest[slot] = 0;
-                        cached_fails[slot] = 0;
-                    } else if (answer.failed) {
-                        /* The ask broke; the tabs are whatever they were. A
-                         * transient provider failure must not fold a living
-                         * fan-out back into one icon. */
-                        cached_fails[slot]++;
-                        cached_earliest[slot] =
-                            now + ((cached_fails[slot] >= 3) ? 120000 : HG_TABS_BACKSTOP_MS);
-                    } else {
-                        cached_count[slot] = fresh;
-                        cached_fails[slot] = 0;
-                        if (answer.elapsed_ms > 300)
-                            cached_earliest[slot] = now + 120000;
-                        else if (answer.elapsed_ms > 150)
-                            cached_earliest[slot] = now + HG_TABS_BACKSTOP_MS;
-                        else
-                            cached_earliest[slot] = 0;
-                    }
-                }
-                tabs = cached_count[slot];
-
-                BOOL ask = (cached_asked_tick[slot] == 0) ||
-                           (lstrcmpW(cached_asked_title[slot], items[i].title) != 0) ||
-                           (now - cached_asked_tick[slot] >= HG_TABS_BACKSTOP_MS);
-                if (now < cached_earliest[slot])
-                    ask = FALSE; /* the breaker outranks even a changed title */
-                if (ask && want_count < HG_TABS_WORKER_WINDOWS) {
-                    want[want_count] = items[i].hwnd;
-                    want_title[want_count] = items[i].title;
-                    want_slot[want_count] = slot;
-                    ++want_count;
-                }
-            }
-        }
-
-        /* One tab is a window with a tab strip nobody is using; showing it as a
-         * tab item would say something the reader cannot act on. */
-        if (tabs <= 1 || slot < 0) {
-            out[out_count++] = items[i];
-            continue;
-        }
-
-        for (int t = 0; t < tabs && out_count < HG_MAX_WINDOW_ITEMS; ++t) {
-            out[out_count] = items[i];
-            out[out_count].is_tab = TRUE;
-            out[out_count].tab_index = t;
-            StringCchCopyW(out[out_count].title, HG_MAX_STR, cached_titles[slot][t]);
-
-            /* The icon handle is owned exactly once, by the first tab, which
-             * inherits the window's handle and its ownership flag. The rest
-             * share the same handle without owning it: every item of a fan-out
-             * is rebuilt together each pass and released together when the
-             * window goes, so the share can never outlive the owner - and it
-             * replaces a CopyIcon plus DestroyIcon per extra tab per second. */
-            if (t > 0) {
-                out[out_count].icon = items[i].icon;
-                out[out_count].own_icon = FALSE;
-            }
-            ++out_count;
-        }
-    }
-
-    /* A full output table ends the loop with input items still unconsumed, and
-     * every one of those may own its icon handle. They are about to be
-     * overwritten by the copy-back, so this is the last moment to let go. */
-    for (int i = consumed; i < count; ++i)
-        release_window_item_icon(&items[i]);
-
-    /* The request goes out after the drawing is done, so even the pass that
-     * asks pays nothing for asking. Asked-state is stamped only when a request
-     * really left, and before the compaction below can move any slot. */
-    if (requery && want_count > 0) {
-        hg_tabs_request(want, want_count);
-        s_last_request = now;
-        for (int w = 0; w < want_count; ++w) {
-            StringCchCopyW(cached_asked_title[want_slot[w]], HG_MAX_STR, want_title[w]);
-            cached_asked_tick[want_slot[w]] = now;
-        }
-    }
-
-    /* Windows that have gone leave their cache entry behind; compact it here so
-     * a long session does not fill the table with dead handles. */
-    int kept = 0;
-    for (int c = 0; c < cache_used; ++c) {
-        if (!IsWindow(cached_hwnd[c]))
-            continue;
-        if (kept != c) {
-            cached_hwnd[kept] = cached_hwnd[c];
-            cached_pid[kept] = cached_pid[c];
-            cached_count[kept] = cached_count[c];
-            memcpy(cached_titles[kept], cached_titles[c], sizeof(cached_titles[c]));
-            memcpy(cached_asked_title[kept], cached_asked_title[c], sizeof(cached_asked_title[c]));
-            cached_asked_tick[kept] = cached_asked_tick[c];
-            cached_earliest[kept] = cached_earliest[c];
-            cached_fails[kept] = cached_fails[c];
-        }
-        ++kept;
-    }
-    cache_used = kept;
-
-    for (int i = 0; i < out_count; ++i)
-        items[i] = out[i];
-    return out_count;
-}
+/* Tabs no longer fan out into the grid. They live in the hover sub-box
+ * instead - one window is one icon, orderable like any other, and the tab
+ * list is read when somebody looks at it rather than on a background clock.
+ * See docs/RFC-2026-07-tabs-as-task-icons.md, D8; the reading machinery is
+ * hg_tabs.c and the presentation is widgets/hg_tabbox.c. */
 
 void refresh_window_list(BOOL force)
 {
@@ -343,9 +140,7 @@ void refresh_window_list(BOOL force)
             continue;
         }
 
-        /* The previous pass may have expanded a window into several tab items.
-         * Reuse rebuilds windows, not tabs, so a window that is already in the
-         * new list is skipped and the expansion below does the fan-out again. */
+        /* One entry per window; a duplicate can only be a leftover. */
         BOOL already_added = FALSE;
         for (int j = 0; j < new_count; ++j) {
             if (hg_g_new_items[j].hwnd == hg_g_window_items[i].hwnd) {
@@ -464,7 +259,6 @@ void refresh_window_list(BOOL force)
 
     HG_RELEASE_COM(shell_windows);
 
-    new_count = expand_window_tabs(hg_g_new_items, new_count, force);
 
     BOOL changed = force || (new_count != hg_g_window_count);
     if (!changed) {
