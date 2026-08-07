@@ -344,15 +344,19 @@ static const WCHAR *const cmd_key_help[] = {
     L"  Enter              run what is typed",
     L"  Shift+Enter        new line - several commands, run in order",
     L"  Ctrl+S             scroll mode: up/down a line, left/right a page",
-    L"  Ctrl+H             history mode: up/down through what you have run",
+    L"  Ctrl+H             history mode: the list, numbered from the oldest;",
+    L"                     up/down choose, Enter puts one in the input box",
     L"  Esc                leave the mode, or close and go back to the taskbox",
     L"  Ctrl+Space         jump to the input box",
     L"  Ctrl+Wheel         text size          Alt+Wheel   opacity",
     L"  Alt+arrows         move this window   Ctrl+arrows resize it",
     L"",
     L"  The arrows stay the caret's until a mode is on, so selecting and",
-    L"  editing text works the way it does everywhere else. The title bar",
-    L"  says which mode you are in.",
+    L"  editing text works the way it does everywhere else. A mode says so",
+    L"  twice: in the title bar, and as a coloured frame around the pane",
+    L"  the arrows now belong to - the transcript, or the input box.",
+    L"",
+    L"  The input box is always three lines tall and scrolls past that.",
     L"",
     L"Type 'help' for the commands, or 'h <command>' for one in detail.",
 };
@@ -370,7 +374,8 @@ static const WCHAR *const cmd_help_show[] = {
     L"  The number beside a window is the one go, resize, and move take,",
     L"  so this is where those commands get their arguments.",
     L"  Kinds: windows (w), resize (r), shortcut (c), note (n),",
-    L"         monitor (m), sensors (s), value (v).",
+    L"         monitor (m), sensors (s), tabs (t), value (v),",
+    L"         tabsinfo (no shorthand - a diagnostic).",
     L"",
     L"Examples:",
     L"  show                every window, numbered",
@@ -383,7 +388,9 @@ static const WCHAR *const cmd_help_show[] = {
     L"  s m 1               turn display 1's preview window on - again to close",
     L"  s s                 every temperature sensor, numbered",
     L"  s s 2               just sensor 2, with its unit",
+    L"  s t                 every tab of every tabbed window, numbered",
     L"  s v                 the settable values and what they are now",
+    L"  show tabsinfo       what the tab reader itself is doing, and costing",
     L"",
     L"  'show sensors' is a diagnostic. The floater shows one CPU",
     L"  temperature, chosen from whatever the firmware exposes; this",
@@ -394,13 +401,20 @@ static const WCHAR *const cmd_help_show[] = {
 
 static const WCHAR *const cmd_help_go[] = {
     L"go <window>",
+    L"go tab <n>          (g t <n>)",
     L"",
     L"  Brings a window to the front, restoring it first if it is",
     L"  minimised. <window> is the number 'list' printed beside it.",
     L"",
+    L"  'go tab' takes a number from 'show tabs' instead - that list",
+    L"  runs across every tabbed window, so it reaches a tab without",
+    L"  your having to know which window is holding it.",
+    L"",
     L"Examples:",
     L"  list                read the numbers",
     L"  go 3                switch to the third window",
+    L"  s t                 read the tab numbers",
+    L"  g t 4               switch to the fourth tab in that list",
 };
 
 static const WCHAR *const cmd_help_resize[] = {
@@ -538,6 +552,14 @@ static const WCHAR *const cmd_help_write[] = {
     L"  w v clip-max 32     keep 32 clipboard entries from now on",
 };
 
+static const WCHAR *const cmd_help_clear[] = {
+    L"clear               (cls)",
+    L"",
+    L"  Empties the transcript above. The command history is a",
+    L"  different thing and is left alone - Ctrl+H still has every",
+    L"  line you have run.",
+};
+
 static const HgCommandHelp cmd_help_table[] = {
     {L"help", L"h", L"this list, one command in detail, or the keys", cmd_help_help, HG_ARRAYSIZE(cmd_help_help)},
     {L"show", L"s", L"windows, presets, shortcuts, notes, displays, values", cmd_help_show,
@@ -550,6 +572,7 @@ static const HgCommandHelp cmd_help_table[] = {
     {L"clipboard", L"b", L"the clipboard history, or take one entry", cmd_help_clipboard, HG_ARRAYSIZE(cmd_help_clipboard)},
     {L"write", L"w", L"set one of the values 'show value' lists", cmd_help_write, HG_ARRAYSIZE(cmd_help_write)},
     {L"config", L"c", L"open config.ini in Notepad", cmd_help_config, HG_ARRAYSIZE(cmd_help_config)},
+    {L"clear", L"cls", L"empty the transcript above", cmd_help_clear, HG_ARRAYSIZE(cmd_help_clear)},
 };
 
 static const HgCommandHelp *cmd_help_lookup(const WCHAR *word)
@@ -580,10 +603,81 @@ static void cmd_help(int argc, WCHAR *argv[])
 
     for (size_t i = 0; i < HG_ARRAYSIZE(cmd_help_table); ++i) {
         const HgCommandHelp *entry = &cmd_help_table[i];
-        cmd_printf(L"%-8ls %-4ls %ls", entry->name, entry->shorthand ? entry->shorthand : L"", entry->summary);
+        cmd_printf(L"%-10ls %-4ls %ls", entry->name, entry->shorthand ? entry->shorthand : L"", entry->summary);
     }
+    /* 'key' is not a command, so it has no row above - but it is the thing a
+     * reader looks for first and finding it must not require guessing. */
+    cmd_printf(L"%-10ls %-4ls %ls", L"help key", L"h k", L"every key this window answers");
     commandbox_print(L"");
     commandbox_print(L"'help <command>' explains one of them, with examples.");
+}
+
+/* Every tab of every tabbed window, in one numbered list.
+ *
+ * The numbers are this list's own and run across windows, because that is what
+ * `go tab <n>` takes: the hover box is for the tabs of the window under the
+ * pointer, and this is for finding a tab when you do not know which window it
+ * is in. The table below is remembered so `go tab` means the same thing the
+ * reader just read - the same contract `show windows` has with `go`. */
+#define HG_CMD_TAB_LIST_MAX 128
+static struct {
+    HWND hwnd;
+    int tab_index;
+} s_tab_list[HG_CMD_TAB_LIST_MAX];
+static int s_tab_list_count = 0;
+
+static void cmd_list_tabs(void)
+{
+    cmd_refresh_windows();
+    s_tab_list_count = 0;
+
+    if (!hg_tabs_enabled()) {
+        commandbox_print(L"tabs are off - turn on Show Tabs as Task Icons, or [taskbox] show_tabs=1");
+        return;
+    }
+
+    /* Ask for everything first, then read: the worker staggers the windows
+     * and the answers land while this prints, so a first run may show a
+     * window's tabs as pending and a second run has them. */
+    HWND ask[HG_TABS_WORKER_WINDOWS];
+    int ask_count = 0;
+    for (int i = 0; i < hg_g_window_count && ask_count < HG_TABS_WORKER_WINDOWS; ++i) {
+        if (hg_tabs_window_may_have_tabs(hg_g_window_items[i].hwnd))
+            ask[ask_count++] = hg_g_window_items[i].hwnd;
+    }
+    if (ask_count > 0)
+        hg_tabs_request(ask, ask_count);
+
+    static WCHAR titles[HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
+    int windows_seen = 0;
+    for (int i = 0; i < hg_g_window_count; ++i) {
+        HWND hwnd = hg_g_window_items[i].hwnd;
+        if (!hg_tabs_window_may_have_tabs(hwnd))
+            continue;
+        ++windows_seen;
+
+        int count = hg_tabs_take_result(hwnd, titles, HG_TABS_MAX_PER_WINDOW, NULL);
+        cmd_printf(L"[%ls]", hg_g_window_items[i].title);
+        if (count < 0) {
+            commandbox_print(L"     (reading - run it again in a moment)");
+            continue;
+        }
+        if (count == 0) {
+            commandbox_print(L"     (no tabs)");
+            continue;
+        }
+        for (int t = 0; t < count && s_tab_list_count < HG_CMD_TAB_LIST_MAX; ++t) {
+            s_tab_list[s_tab_list_count].hwnd = hwnd;
+            s_tab_list[s_tab_list_count].tab_index = t;
+            ++s_tab_list_count;
+            cmd_printf(L"%3d  %ls", s_tab_list_count, titles[t]);
+        }
+    }
+
+    if (windows_seen == 0)
+        commandbox_print(L"no windows that can have tabs are open");
+    else if (s_tab_list_count > 0)
+        commandbox_print(L"'go tab <n>' (g t <n>) switches to one");
 }
 
 /* With `class`, the window class beside each title. That is the name
@@ -797,10 +891,14 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_show_monitors(argc, argv);
     } else if (cmd_word_is(argv[1], L"value", L"v") || cmd_word_is(argv[1], L"values", NULL)) {
         cmd_show_values();
-    } else if (cmd_word_is(argv[1], L"tabs", L"t") || cmd_word_is(argv[1], L"tab", NULL)) {
-        /* The tab worker's own numbers: per window, which provider answered
-         * and what it cost; in total, what was queued, dropped, and slow. */
+    } else if (cmd_word_is(argv[1], L"tabsinfo", NULL)) {
+        /* The tab reader's own numbers: per window, whether the scoped read
+         * or a full discovery answered and what it cost; in total, what was
+         * queued, dropped and slow. A diagnostic, so no shorthand - it is not
+         * something anyone reaches for in a hurry. */
         hg_tabs_report(commandbox_print);
+    } else if (cmd_word_is(argv[1], L"tabs", L"t") || cmd_word_is(argv[1], L"tab", NULL)) {
+        cmd_list_tabs();
     } else {
         cmd_printf(L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value)",
                    argv[1]);
@@ -907,6 +1005,31 @@ static BOOL cmd_clipboard(int argc, WCHAR *argv[])
 static BOOL cmd_go(int argc, WCHAR *argv[])
 {
     int number = 0;
+
+    /* `go tab <n>` takes the number from `show tabs`, which spans windows -
+     * so this raises that tab's window and selects the tab in it. */
+    if (argc >= 2 && (cmd_word_is(argv[1], L"tab", L"t") || cmd_word_is(argv[1], L"tabs", NULL))) {
+        if (argc < 3 || !cmd_parse_int(argv[2], &number)) {
+            commandbox_print(L"go tab: needs a number from 'show tabs', as in 'go tab 1'");
+            return FALSE;
+        }
+        if (number < 1 || number > s_tab_list_count) {
+            cmd_printf(L"go tab: no tab %d - run 'show tabs' first", number);
+            return FALSE;
+        }
+        HWND hwnd = s_tab_list[number - 1].hwnd;
+        if (!IsWindow(hwnd)) {
+            commandbox_print(L"go tab: that window has gone - run 'show tabs' again");
+            return FALSE;
+        }
+        if (!hg_tabs_activate(hwnd, s_tab_list[number - 1].tab_index)) {
+            cmd_printf(L"go tab %d: the window came forward, but the tab could not be selected", number);
+            return TRUE;
+        }
+        cmd_printf(L"go tab %d", number);
+        return TRUE;
+    }
+
     if (argc < 2 || !cmd_parse_int(argv[1], &number)) {
         commandbox_print(L"go: needs a window number, as in 'go 1'");
         return FALSE;
@@ -1160,6 +1283,10 @@ BOOL hg_command_execute(const WCHAR *line)
         cmd_write(argc, argv);
     } else if (cmd_word_is(argv[0], L"config", L"c")) {
         cmd_config();
+    } else if (cmd_word_is(argv[0], L"clear", L"cls")) {
+        /* The transcript only. The history is what you typed and outlives
+         * what it printed; `write value history-max 0` is how you drop that. */
+        commandbox_clear();
     } else {
         cmd_printf(L"unknown command '%ls' - type help", argv[0]);
     }

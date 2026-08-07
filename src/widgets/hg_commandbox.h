@@ -5,6 +5,8 @@
 
 LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 void commandbox_focus_input(void);
+/* Empty the transcript. The history is a separate thing and is left alone. */
+void commandbox_clear(void);
 void show_commandbox_window(void);
 void load_commandbox_font(void);
 

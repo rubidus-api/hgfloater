@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.7.0** — built 2026-08-07 23:48 KST
+**v0.8.0** — built 2026-08-08 00:05 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -75,7 +75,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.7.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.8.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -262,14 +262,22 @@ default; turn it on with **Show Tabs as Task Icons** in the `O` menu, or
 `show_tabs=1` under `[taskbox]` in `config.ini`. The window keeps its single
 icon — orderable like any other — and the hover box lists its tabs by title:
 
+The box opens on hover **and** when the keyboard focus lands on the icon, so
+both ways of getting there work the same.
+
 | Key or click | What it does |
 | :--- | :--- |
-| `1`-`9`, then `a`-`z`, `A`-`Z` | The label on the row. Press it and you are on that tab. |
-| `0` | The last row. |
-| `Up` / `Down`, `Home` / `End` | Move the selection. |
-| `Enter`, or a click | Switch to the selected tab. |
+| `1`-`9` | Straight to that tab, whether or not you have stepped into the box. |
+| `0` | The last tab, the same way. |
+| `Tab` | Step into the box — the frame appears, and from here the rest of the keys are the box's. |
+| `Up` / `Down`, `Home` / `End` | Move the selection (inside the box). |
+| `a`-`z`, `A`-`Z` | The labels past the ninth row (inside the box, because those letters move the grid outside it). |
+| `Enter` / `Space`, or a click | Switch to the selected tab. |
 | Right click | Close that tab. The list stays up. |
 | `Esc` | Close the box. The keyboard stays in the taskbox. |
+
+Digits work immediately because the grid does not use them; the letters wait
+for `Tab` because `WASD` moves the focus and `C` and `N` open other things.
 
 **The tabs are read when you look at them**, once per box, and never on a
 timer — a window nobody hovers costs nothing at all.
@@ -556,11 +564,13 @@ could come and go between the list you read and the number you typed.
 | `show note` | `s n` | Every note, numbered for the `note` command. |
 | `show monitor` | `s m` | Every display, numbered, with its size, its place, and whether its preview is up. |
 | `show monitor 1` | `s m 1` | Turn display 1's [preview window](#9-monitor-thumbnails) on; run it again to close it. |
-| `show tabs` | `s t` | The tab reader's own numbers: per window, whether the scoped read or a full discovery answered, how many tabs, and how long the ask took; plus totals for queued, failed, and slow asks. |
+| `show tabs` | `s t` | Every tab of every tabbed window, numbered across all of them — which is the number `go tab` takes. |
+| `show tabsinfo` | — | What the tab reader itself is doing: per window, whether the scoped read or a full discovery answered, how many tabs and how long it took, plus totals for queued, failed, and slow asks. A diagnostic, so no shorthand. |
 | `show sensors` | `s s` | Every temperature sensor found, numbered, and which one `TMP` and `GPU` show. |
 | `show sensors 2` | `s s 2` | Just sensor 2, with its unit. |
 | `show value` | `s v` | The settable values, numbered, with what each one is now. |
 | `go 1` | — | Focus window 1, restoring it if it is minimised. |
+| `go tab 4` | `g t 4` | Switch to tab 4 of the `show tabs` list, whichever window is holding it. |
 | `resize 1 1` | `r 1 1` | Resize window 1 to preset 1. |
 | `move 1 100 100` | `m 1 100 100` | Move window 1 to 100, 100 on the display it is already on. |
 | `move 1 100 100 2` | `m 1 100 100 2` | Move window 1 to 100, 100 on display 2. |
@@ -576,6 +586,7 @@ could come and go between the list you read and the number you typed.
 | `clipboard 3` | `b 3` | Make entry 3 the current clipboard, pushing the ones above it down. |
 | `write value 1 60` | `w v 1 60` | Set value 1 to 60. The name works too, shortened: `w v bright 60`. |
 | `config` | `c` | Open `config.ini` in Notepad. |
+| `clear` | `cls` | Empty the transcript. The command history is untouched. |
 
 `X` and `Y` are measured from the target display's own top-left corner, not from
 the virtual desktop's, so the same pair of numbers means the same place on every
@@ -711,8 +722,9 @@ creation time of day goes there too, since the file name only carries the day.
 | Key | Action |
 | :--- | :--- |
 | `Arrow keys` / `WASD` | Move focus between icons |
-| `Space` | Activate the focused item |
+| `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
+| `Tab` | With a tab box open (see below), step into it |
 | `C` | Open the Command Box |
 | `N` | Open the note list |
 | `Esc` | Hide the taskbox and re-scan shortcuts |

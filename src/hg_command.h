@@ -12,6 +12,7 @@ BOOL hg_command_execute(const WCHAR *line);
 
 /* Append one line to the command box transcript. */
 void commandbox_print(const WCHAR *text);
+void commandbox_clear(void);
 
 /* The key reference: `help key`, and what the window prints when it opens. */
 void hg_command_print_key_help(void);

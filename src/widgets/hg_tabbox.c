@@ -18,6 +18,17 @@
 #include "../hg_tabs.h"
 #include "hg_taskbox.h"
 
+/* Whether the keyboard is *in* the box.
+ *
+ * An open box and a focused box are different states, because the letters
+ * that label its rows are also the taskbox's own keys - WASD moves the grid,
+ * C opens the command box, N the notes. A box that grabbed those the moment
+ * it appeared would break navigation every time the focus passed a browser.
+ *
+ * So: an open box takes the digits (which the grid does not use) and Tab.
+ * Tab enters it, and a focused box takes everything - arrows, letters, Enter,
+ * Space. Escape leaves, closing the box, which is where the reader started. */
+static BOOL s_focused = FALSE;
 static HWND s_wnd = NULL;
 static HWND s_target = NULL;
 static RECT s_anchor = {0, 0, 0, 0};
@@ -143,6 +154,7 @@ void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc)
         s_target = target;
         s_count = 0;
         s_selected = 0;
+        s_focused = FALSE; /* a new box is never entered until Tab says so */
     }
     s_anchor = *anchor_screen_rc;
 
@@ -161,6 +173,7 @@ void hg_tabbox_close(void)
     s_target = NULL;
     s_count = 0;
     s_selected = 0;
+    s_focused = FALSE;
 }
 
 BOOL hg_tabbox_is_open(void)
@@ -207,7 +220,26 @@ BOOL hg_tabbox_handle_key(WPARAM key)
     if (!hg_tabbox_is_open())
         return FALSE;
 
+    if (!s_focused) {
+        /* Open, not entered: the digits and Tab, and nothing else. */
+        if (key == VK_TAB) {
+            s_focused = TRUE;
+            InvalidateRect(s_wnd, NULL, TRUE);
+            return TRUE;
+        }
+        if (key >= L'0' && key <= L'9') {
+            int index = tabbox_index_for_key(key);
+            if (index >= 0 && index < s_count) {
+                tabbox_activate(index);
+                return TRUE;
+            }
+        }
+        return FALSE;
+    }
+
     switch (key) {
+    case VK_TAB:
+        return TRUE; /* already in */
     case VK_ESCAPE:
         /* Closes the box and nothing else: the keyboard is already the
          * taskbox's, which is where the reader was. */
@@ -232,6 +264,7 @@ BOOL hg_tabbox_handle_key(WPARAM key)
         InvalidateRect(s_wnd, NULL, TRUE);
         return TRUE;
     case VK_RETURN:
+    case VK_SPACE:
         tabbox_activate(s_selected);
         return TRUE;
     default:
@@ -317,9 +350,24 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             DrawTextW(dc, L"(reading tabs...)", -1, &row, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
         }
 
+        /* An entered box says so with a frame, because the keys it answers
+         * change the moment it is entered. */
+        if (s_focused) {
+            HBRUSH frame = CreateSolidBrush(hg_g_has_system_accent_color ? hg_g_system_accent_color
+                                                                        : GetSysColor(COLOR_HIGHLIGHT));
+            if (frame) {
+                RECT edge = rc;
+                for (int i = 0; i < SCW(ws, 2); ++i) {
+                    FrameRect(dc, &edge, frame);
+                    InflateRect(&edge, -1, -1);
+                }
+                DeleteObject(frame);
+            }
+        }
+
         for (int i = 0; i < s_count; ++i) {
             RECT row = {pad, pad + i * row_h, rc.right - pad, pad + (i + 1) * row_h};
-            if (i == s_selected) {
+            if (i == s_selected && s_focused) {
                 HBRUSH sel = CreateSolidBrush(hg_g_has_system_accent_color ? hg_g_system_accent_color
                                                                            : GetSysColor(COLOR_HIGHLIGHT));
                 if (sel) {
