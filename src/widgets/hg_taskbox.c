@@ -4,6 +4,7 @@
 #include "../hg_globals.h"
 #include "hg_taskbox_internal.h"
 #include "hg_note.h"
+#include "hg_tabbox.h"
 #include "hg_clip.h"
 #include "../hg_tabs.h"
 #include "../hg_caphook.h"
@@ -587,6 +588,13 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
 }
 static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
+    /* The tab box has no focus of its own - it must not steal the keyboard on
+     * a hover - so its keys are offered here first, before anything else can
+     * claim them. Esc closes it and stops there, which is why the taskbox's
+     * own Esc does not also fire. */
+    if (hg_tabbox_is_open() && hg_tabbox_handle_key(w_param))
+        return 0;
+
     int dx = 0, dy = 0;
     int move_step = SC(20);
     BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
@@ -1080,11 +1088,23 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                     }
                 }
                 
+                /* The tab box counts as inside: the pointer travelling from an
+                 * icon onto the list it just opened must not read as leaving,
+                 * and the box closes itself when the pointer is on neither. */
+                BOOL inside = PtInRect(&rc, pt);
+                if (!inside && hg_tabbox_is_open()) {
+                    RECT box;
+                    if (GetWindowRect(hg_tabbox_window(), &box) && PtInRect(&box, pt))
+                        inside = TRUE;
+                }
+                if (hg_tabbox_is_open() && !inside)
+                    hg_tabbox_close();
+
                 /* Collapse to the floater only after the cursor has stayed outside
                  * for 0.5s (re-checked every 100ms tick); coming back inside resets
                  * the count so a brief exit doesn't collapse the taskbox. */
                 if (hg_g_hover_check_armed && !hg_g_taskbox_pinned) {
-                    if (!PtInRect(&rc, pt)) {
+                    if (!inside) {
                         s_hover_outside_ticks++;
                         if (s_hover_outside_ticks >= 5) {
                             hide_taskbox(hwnd);

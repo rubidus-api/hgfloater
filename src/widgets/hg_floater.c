@@ -1,6 +1,7 @@
 #include "hg_floater.h"
 #include "../hg_utils.h"
 #include "../hg_tabs.h"
+#include "hg_tabbox.h"
 #include "../hg_caphook.h"
 #include "../hg_config.h"
 
@@ -1334,12 +1335,12 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         return 0;
     }
     case HG_MSG_TABS_READY:
-        /* The tab worker finished a batch. Fold it in now if the list is on
-         * screen; if not, the results wait in the worker's table and the next
-         * expand picks them up in its own pass. */
-        if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
-            refresh_window_list(FALSE);
-        }
+        /* The tab worker finished the batch the hover asked for. Only the tab
+         * box wants it now - the window list stopped fanning tabs out into
+         * the grid (RFC-2026-07 D8), so a refresh here would redraw nothing
+         * new. A box that has since closed drops the answer, which then waits
+         * in the worker's table for the next hover. */
+        hg_tabbox_refresh();
         return 0;
     case WM_COPYDATA:
         return handle_copydata_command_line((const COPYDATASTRUCT *)l_param);

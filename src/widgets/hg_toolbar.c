@@ -4,6 +4,7 @@
 #include "../hg_config.h"
 #include "../hg_globals.h"
 #include "../hg_tabs.h"
+#include "hg_tabbox.h"
 
 static int toolbar_clamp_percent(int pct)
 {
@@ -462,6 +463,24 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         }
         update_focus_message(state->hovered_type, state->hovered_index);
         InvalidateRect(hwnd, NULL, FALSE);
+
+        /* A task icon whose window can have tabs opens the tab box, anchored
+         * to the icon. Every other icon closes it. This is the only thing
+         * that ever asks for tabs - nobody hovering means nothing asked. */
+        HWND tab_target = NULL;
+        if (cur_type == 0 && cur_index >= 0 && cur_index < hg_g_window_count) {
+            HWND candidate = hg_g_window_items[cur_index].hwnd;
+            if (hg_tabs_enabled() && hg_tabs_window_may_have_tabs(candidate))
+                tab_target = candidate;
+        }
+        if (tab_target) {
+            RECT rc_item;
+            get_toolbar_item_rect(0, cur_index, rc.right, rc.bottom, icon_size, &rc_item);
+            MapWindowPoints(hwnd, NULL, (POINT *)&rc_item, 2);
+            hg_tabbox_open(tab_target, &rc_item);
+        } else if (hg_tabbox_is_open()) {
+            hg_tabbox_close();
+        }
     }
 
     TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};

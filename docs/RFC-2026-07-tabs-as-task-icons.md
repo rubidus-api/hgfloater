@@ -351,5 +351,27 @@ What this retires: the per-second fan-out rebuild, the tab items' icon
 sharing, the reorder problem (windows reorder as windows always did), and the
 steady-state UIA traffic (zero while nobody hovers). What it keeps: the
 worker, the scoped read, `show tabs`, and hg_tabs_activate/close as the
-sub-box's verbs. Status: agreed with the maintainer 2026-08-07, next
-implementation batch after v0.6.0.
+sub-box's verbs. Status: **implemented 2026-08-07 (v0.7.0)**. What shipped and where it
+differs from the sketch above:
+
+- `widgets/hg_tabbox.c` is the box: a WS_EX_NOACTIVATE popup anchored beside
+  the icon, flipping to the other side and clamping to the work area when
+  there is no room. It never takes focus, so hovering can never be a
+  destructive act.
+- The keys arrive because `taskbox_controller_on_keydown` offers them to
+  `hg_tabbox_handle_key` before anything else claims them - the box has no
+  focus to receive them itself. Up/Down/Home/End move, Enter and label keys
+  activate, Esc closes and stops there (the taskbox's own Esc does not also
+  fire).
+- Opening asks once (`hg_tabs_request` for that one window) and draws the
+  cached titles immediately; `HG_MSG_TABS_READY` now routes to the box rather
+  than to a window-list refresh, because the list no longer fans out.
+- The taskbox's hover-collapse timer counts the box as inside itself, so
+  travelling from the icon onto the list does not read as leaving; the box
+  closes when the pointer is on neither.
+- Activating a tab closes the box and collapses the taskbox: a picked tab is
+  a destination.
+- `expand_window_tabs` and its per-window title cache, breaker and title gate
+  are deleted from the window list. The reading machinery (worker, scoped
+  read, `show tabs`) stays exactly as it was - it simply has one caller now,
+  and that caller is a hover.
