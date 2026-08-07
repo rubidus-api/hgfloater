@@ -505,3 +505,25 @@ ask pays one full discovery, rebuilding it. `show tabs` letters are now
 `s` (scoped), `f` (full discovery), `!` (failed); steady state should be all
 `s` with milliseconds in the low tens, and `f` only after a provider rebuilds
 its tree.
+
+## Field Result 3 - B3 confirmed working (2026-08-07)
+
+Fourth run, first with the scoped read shipped. Two consecutive `show tabs`:
+
+```
+first ask (discovery, as designed):
+  uia(f)  1 tab(s) 1018 ms   Explorer
+  uia(f)  5 tab(s)  602 ms   Chrome
+  uia(f)  5 tab(s)  139 ms   Chrome
+later (hints in place):
+  uia(s)  1 tab(s)  112 ms   Explorer      (was 1018 - 9x)
+  uia(s)  5 tab(s)   64 ms   Chrome
+  uia(f) 10 tab(s)  226 ms   Chrome        (a new window: discovery, correct)
+```
+
+The scoped read behaves exactly as specified: `f` only on first contact and
+provider rebuilds, `s` thereafter at a fraction of the cost. One consequence
+tuned in response: the per-window breaker's slow threshold (50 ms) predated
+these numbers and was putting healthy 60-112 ms scoped reads on a 30-second
+leash; it moved to 150 ms (circuit threshold 200 to 300 ms) so the breaker
+once again marks only what is actually slow for the new normal.

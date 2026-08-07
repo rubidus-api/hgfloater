@@ -1171,8 +1171,9 @@ static void note_open_editor(int index)
      * reads as "my note closed". Unowned on purpose: its lifetime is its own,
      * not the taskbox's. */
     HWND wnd = CreateWindowExW(WS_EX_APPWINDOW, HG_CLASS_NOTE_EDIT, note->title,
-                               WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN, x, y, w, h, NULL,
-                               NULL, GetModuleHandle(NULL), NULL);
+                               WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME |
+                                   WS_CLIPCHILDREN,
+                               x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
     if (!wnd)
         return;
 
@@ -1486,8 +1487,9 @@ void show_note_list_window(void)
      * neither follows the taskbox down nor gets lost behind other windows
      * with no way back. See the editor's note above. */
     s_note_list_wnd = CreateWindowExW(WS_EX_APPWINDOW, HG_CLASS_NOTE_LIST, L"Notes",
-                                      WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN, x, y, w,
-                                      h, NULL, NULL, GetModuleHandle(NULL), NULL);
+                                      WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
+                                          WS_THICKFRAME | WS_CLIPCHILDREN,
+                                      x, y, w, h, NULL, NULL, GetModuleHandle(NULL), NULL);
     if (!s_note_list_wnd)
         return;
 

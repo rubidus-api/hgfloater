@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.4.0** — 빌드 2026-08-07 00:24 KST
+**v0.5.0** — 빌드 2026-08-07 20:32 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -68,7 +68,7 @@ hgfloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.4.0)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.5.0)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -179,10 +179,10 @@ hgfloater 가 떠 있는 동안, **아무 창이나** 최대화 버튼(X 버튼 
   순서대로 놓입니다. 창을 넷 열어 둔 프로그램은 아이콘도 넷이고, 각각 자기 창으로 바로 갑니다.
 
   여기에 **hgfloater 자신의 창들**도 포함됩니다 — 열려 있는 노트 편집창 하나하나, 노트 목록,
-  클립보드 히스토리, 커맨드 박스. 클립보드 히스토리와 커맨드 박스는 도구 창이라 윈도우가
-  Alt-Tab 에서 빼는데, 위젯의 부속으로서는 맞는 처사지만 "창에 가 닿는 것"이 일인 이 목록은
-  그래도 싣습니다. **노트 창들은 보통 응용프로그램 창입니다**: 노트는 문서니까, 편집창
-  하나하나와 노트 목록이 각자 작업표시줄 버튼과 Alt-Tab 항목을 가지며, 플로터·태스크박스가
+  클립보드 히스토리, 커맨드 박스. 클립보드 히스토리는 도구 창이라 윈도우가 Alt-Tab 에서
+  빼는데, 위젯의 부속으로서는 맞는 처사지만 "창에 가 닿는 것"이 일인 이 목록은 그래도
+  싣습니다. **노트 창들과 커맨드 박스는 보통 응용프로그램 창입니다**: 각자 작업표시줄 버튼과
+  Alt-Tab 항목을 가지고, 최소화·최대화·닫기 세 캡션 버튼이 모두 달리며, 플로터·태스크박스가
   무엇을 하든 직접 닫기 전까지 계속 떠 있습니다. 플로터·태스크박스·툴바는 그대로 빠집니다.
   그건 지금 보고 있는 물건 자체니까요.
 - **단축 아이콘**이 그 뒤를 잇습니다. 단축 아이콘 폴더의 `.lnk`/`.url` 하나당 하나입니다.

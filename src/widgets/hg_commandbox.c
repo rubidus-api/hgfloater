@@ -385,10 +385,15 @@ void show_commandbox_window()
         win_h = required_win_h;
     }
 
+    /* An ordinary application window, like the note windows became: its own
+     * taskbar button, its own Alt-Tab entry, all three caption buttons, and
+     * no owner - the box outlives the taskbox's collapses on its own feet
+     * rather than by an ownership technicality. Layered stays for the alpha;
+     * topmost went with the tool-window life. */
     hg_g_commandbox_wnd = CreateWindowExW(
-        WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TOPMOST, HG_CLASS_COMMANDBOX, L"Command Box",
-        WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN,
-        x, y, win_w, win_h, hg_g_taskbox_wnd, NULL, GetModuleHandle(NULL), NULL
+        WS_EX_APPWINDOW | WS_EX_LAYERED, HG_CLASS_COMMANDBOX, L"Command Box",
+        WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME | WS_CLIPCHILDREN,
+        x, y, win_w, win_h, NULL, NULL, GetModuleHandle(NULL), NULL
     );
 
     if (hg_g_commandbox_wnd) {
