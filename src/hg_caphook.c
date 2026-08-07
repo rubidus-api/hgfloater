@@ -58,13 +58,21 @@ static BOOL caphook_is_maximize_button(HWND hwnd, POINT screen_pt)
     if (SendMessageTimeoutW(hwnd, WM_NCHITTEST, 0, packed, SMTO_ABORTIFHUNG, 60, &hit)) {
         if (hit == HTMAXBUTTON)
             return TRUE;
-        /* A definite answer that is not the maximize button ends it; only
-         * silence or a client-area answer is worth a second opinion, because an
-         * application drawing its own title bar reports the whole thing as
-         * client. */
-        if (hit != HTCLIENT && hit != HTNOWHERE)
+        /* Silence and client-area answers always earn the geometric second
+         * opinion, because an application drawing its own title bar reports
+         * the whole thing as client. So do caption-area answers (caption or a
+         * neighbouring button): some applications answer HTCAPTION across
+         * their whole button row, and the DWM-computed thirds below say which
+         * button the point really sits on. Any other definite answer ends it. */
+        if (hit != HTCLIENT && hit != HTNOWHERE && hit != HTCAPTION && hit != HTMINBUTTON && hit != HTCLOSE)
             return FALSE;
     }
+
+    /* The geometric opinion only applies to a window that actually has a
+     * maximize button to sit on. */
+    LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    if (!(style & WS_MAXIMIZEBOX) || !(style & WS_CAPTION))
+        return FALSE;
 
     RECT buttons;
     if (FAILED(DwmGetWindowAttribute(hwnd, DWMWA_CAPTION_BUTTON_BOUNDS, &buttons, sizeof(buttons))))
@@ -103,7 +111,11 @@ static BOOL caphook_is_our_window(HWND hwnd)
  * installed it, so no interlocking. */
 static HWND s_armed = NULL;
 
-/* The top-level window at a screen point, or NULL if it is one of ours. */
+/* The top-level window at a screen point, or NULL when the menu has no
+ * business there. Our own document windows - notes, the note list, the
+ * command box, About - are ordinary resizable windows now and deserve the
+ * menu like anyone else; only the widget surfaces themselves stay out,
+ * because moving or resizing those is the widget's own job. */
 static HWND caphook_target_at(POINT pt)
 {
     HWND under = WindowFromPoint(pt);
@@ -111,7 +123,10 @@ static HWND caphook_target_at(POINT pt)
         return NULL;
 
     HWND top = GetAncestor(under, GA_ROOT);
-    if (!top || caphook_is_our_window(top))
+    if (!top)
+        return NULL;
+    if (caphook_is_our_window(top) &&
+        (top == hg_g_floater_wnd || top == hg_g_taskbox_wnd || top == hg_g_toolbar_wnd))
         return NULL;
     return top;
 }
@@ -347,9 +362,13 @@ void hg_caphook_show_menu(HWND owner, HWND target)
     GetCursorPos(&pt);
 
     /* A popup owned by a window that is not in the foreground never gets the
-     * click that should dismiss it; these two calls are the documented way
-     * around that. */
-    SetForegroundWindow(owner);
+     * click that should dismiss it. A plain SetForegroundWindow is refused
+     * whenever another application holds the foreground - which is the normal
+     * case here, since the click just happened on that application's title
+     * bar - and a refused foreground is exactly the menu that will not
+     * dismiss. hg_force_foreground is the project's answer to that refusal;
+     * the WM_NULL afterwards is the other documented half. */
+    hg_force_foreground(owner);
 
     /* The owner is the taskbox, and the taskbox has a timer that collapses it
      * once the cursor has been outside it for half a second - which the cursor

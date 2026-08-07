@@ -22,6 +22,9 @@ void hg_command_history_add(const WCHAR *line);
 void hg_command_history_reset(void);
 /* direction > 0 for older, < 0 for newer. NULL at the end; L"" past the newest. */
 const WCHAR *hg_command_history_step(int direction);
+/* Oldest first, so display numbers start at 1 and stay put. */
+int hg_command_history_count(void);
+const WCHAR *hg_command_history_at(int oldest_index);
 int hg_command_history_max(void);
 void hg_command_set_history_max(int value);
 

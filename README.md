@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.5.0** — built 2026-08-07 20:32 KST
+**v0.6.0** — built 2026-08-07 23:28 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -75,7 +75,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.5.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.6.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -172,6 +172,12 @@ of the X — on **any** window, and you get hgfloater's menu for that window:
 which shuts the menu without touching the window. Left-clicking the button still
 maximizes; right-clicking a caption button does nothing in Windows, so nothing
 was taken away.
+
+It works on hgfloater's own document windows too — a note, the note list, the
+command box, the About window — and on any window whose title bar answers
+hit-tests its own way (a PuTTY-style utility): where the window declines to
+name its buttons, the DWM-computed button bounds say which third the click
+landed on.
 
 Switch it off with **Menu on Maximize Button** in the `O` menu, or
 `caption_menu=0` under `[etc]`. **Close hgfloater and the behaviour is gone** —
@@ -489,15 +495,21 @@ list `help key` prints.
 | `Enter` | Run what is typed. |
 | `Shift + Enter` | A new line. Several commands run in order, top to bottom. |
 | `Ctrl + S` | **Scroll mode**: `Up`/`Down` move the transcript a line, `Left`/`Right` a page. |
-| `Ctrl + H` | **History mode**: `Up`/`Down` walk through what you have run. |
+| `Ctrl + H` | **History mode**: the history appears as a list, numbered from `1:` at the oldest. `Up`/`Down` move the selection, `Enter` (or a double click) puts that line into the input and leaves the mode. |
 | `Esc` | Leave the mode, or — with no mode on — close the box and go back to the taskbox. |
 | `Ctrl + Space` | Jump to the input box. |
 
 **The arrows stay the caret's** until you ask for a mode, so selecting and
 editing text in the input box works the way it does in every other text box on
-the machine. The title bar says which mode is on, and any key the mode has no
-use for drops the mode and is then handled normally — typing never lands in a
-hole.
+the machine. A mode announces itself twice: the title bar says which one is
+on, and an **accent-colored frame** marks the pane the arrows now belong to —
+the transcript in scroll mode, the input in history mode. Any key the mode has
+no use for drops the mode and is then handled normally — typing never lands in
+a hole.
+
+**The input box is always exactly three lines tall** — it tracks the font, not
+the window, so resizing the box resizes the transcript. Type or paste past
+three lines and the input scrolls.
 
 The history keeps the last **64** lines by default, changed with
 `write value history-max <n>` or the `history_max` key in `config.ini`. Running
