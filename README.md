@@ -2,10 +2,25 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.8.0** — built 2026-08-08 00:05 KST
+**v0.8.1** — built 2026-08-09 22:40 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
+> ## ⚠ v0.8.1 has two features switched off on purpose
+>
+> **Start with Windows** and **Menu on Maximize Button** are **temporarily
+> disabled** in this build. Both entries are still in the `O` menu, greyed, and
+> say so.
+>
+> Neither was ever doing anything untoward — but a global mouse hook and a
+> write to the `Run` key are the two things heuristic scanners weigh most
+> heavily, and an unsigned binary with a few dozen downloads has no reputation
+> to weigh against them. Taking them out of the shipped build is how we find
+> out whether they were the cause at all: **if the warnings persist without
+> them, the code was never the problem** — and that is worth knowing.
+>
+> They will come back once this is settled. Everything else works as it did.
+>
 > **If your browser or antivirus warns you about the download**, that is a
 > reputation warning, not a finding. This binary is not code-signed and each
 > release is a brand-new file that almost nobody has downloaded yet, which is
@@ -88,7 +103,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.8.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.8.1)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -116,7 +131,9 @@ you can check yourself":
   and the build is reproducible from the included `Makefile` / `build.bat`.
 
 Three Win32 calls are what heuristic scanners usually notice. Each is here for
-one visible feature, and none of them is optional to hide:
+one visible feature. **In v0.8.1 the first two are switched off** — see the
+notice at the top of this page — so the shipped build installs no hook and
+writes nothing to the registry at all:
 
 | What scanners see | What it is actually for |
 | :--- | :--- |

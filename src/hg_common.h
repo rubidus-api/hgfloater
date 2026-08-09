@@ -69,11 +69,27 @@
 #define MOD_NOREPEAT 0x4000
 #endif
 
+/* Two features are switched off at compile time while the reputation of this
+ * binary is being established.
+ *
+ * Neither was ever doing anything untoward, and both are documented in the
+ * README - but a global low-level mouse hook and a write to the Run key are
+ * the two things a heuristic scanner weighs most heavily, and an unsigned
+ * binary with a few dozen downloads has no reputation to weigh against them.
+ * So they come out of the shipped build rather than out of the source: the
+ * menu entries stay, greyed, saying why, and turning this define off restores
+ * both exactly as they were.
+ *
+ * Removing them is not an admission that they were the problem. It is a way
+ * to find out - if the warnings persist without them, the cause was never
+ * the code, and that is worth knowing. */
+#define HG_TEMP_DISABLE_FLAGGED_FEATURES 1
+
 /* Build-time versioning. The version is semantic and comes from VER.txt via
  * the build scripts; the stamp is the moment the exe was built. Fallbacks
  * cover an IDE or ad-hoc compile that passes neither. */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v0.8.0"
+#define HG_VERSION_W L"v0.8.1"
 #endif
 #ifndef HG_BUILD_STAMP_W
 #define HG_BUILD_STAMP_W L"unknown"
