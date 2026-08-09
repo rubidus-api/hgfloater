@@ -6,6 +6,19 @@
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
+> **If your browser or antivirus warns you about the download**, that is a
+> reputation warning, not a finding. This binary is not code-signed and each
+> release is a brand-new file that almost nobody has downloaded yet, which is
+> the profile browser download-protection and machine-learning antivirus rules
+> react to. What you can check instead: the whole source is here under the MIT
+> licence and builds reproducibly, the release notes carry the **SHA-256** of
+> every file so you can verify what you downloaded, and the binary imports no
+> networking API at all — there is no socket, HTTP, or download function in it.
+> Each release also ships a **`.zip`** of the same executable, which some
+> browsers object to less. Details, including the three Win32 APIs the
+> heuristics tend to notice and what each is for, are in
+> [section 2](#2-install-and-first-run).
+
 hgfloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
@@ -87,6 +100,33 @@ Design principles worth knowing before you use it:
 
 Only one instance runs at a time. Launching `hgfloater.exe` again simply
 signals the running copy instead of starting a second one.
+
+### If a browser or antivirus warns you
+
+Unsigned software with few downloads gets warned about. That is the rule
+working as designed, and the honest answer is not "trust me" but "here is what
+you can check yourself":
+
+- **Verify the file.** Every release lists the **SHA-256** of both downloads.
+  In PowerShell: `Get-FileHash .\hgfloater.exe -Algorithm SHA256`. If it
+  matches the release notes, you have the file that was built here.
+- **Try the `.zip`.** Each release carries the same executable inside a zip,
+  which browser download-protection tends to treat less harshly.
+- **Read the source.** All of it is in this repository under the MIT licence,
+  and the build is reproducible from the included `Makefile` / `build.bat`.
+
+Three Win32 calls are what heuristic scanners usually notice. Each is here for
+one visible feature, and none of them is optional to hide:
+
+| What scanners see | What it is actually for |
+| :--- | :--- |
+| A low-level **mouse** hook | The [maximize-button menu](#6-the-toolbar). It reads the mouse button and the cursor position, nothing else — **there is no keyboard hook in this program**. Turn it off with `caption_menu=0` and no hook is installed at all. |
+| A **registry** write | Only the **Start with Windows** toggle, which writes one value named `hgfloater` under the ordinary per-user `Run` key and deletes it when you switch it off. |
+| **`OpenProcess`** | Reading the program name and icon of the windows in the switcher. It asks for `PROCESS_QUERY_LIMITED_INFORMATION` — query-only access — and never touches another process's memory. |
+
+What the binary demonstrably cannot do: **reach the network**. It imports no
+socket, HTTP, or download function of any kind, so it cannot phone home, fetch
+anything, or send anything anywhere.
 
 ## 3. The Two Windows
 
