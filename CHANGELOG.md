@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.8.2] - 2026-08-09
+
+### Changed
+- The two suspended menu entries now read **`(off in this build)`** rather than
+  `(temporarily disabled)`. The greyed state already says the entry cannot be
+  used, so repeating it spent the only words there was room for; what the grey
+  cannot say is that this was a decision about this version rather than a
+  fault - and "in this build" carries the temporariness without claiming it.
+  No behaviour changed.
+
 ## [v0.8.1] - 2026-08-09
 
 ### Changed
@@ -29,7 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
       reputation to offset it.
   - **What this build does instead:** it installs **no hook** and writes
     **nothing to the registry**. Both menu entries stay in the `O` menu, greyed,
-    reading `(temporarily disabled)`, because a feature that vanishes entirely
+    reading `(off in this build)`, because a feature that vanishes entirely
     leaves you unsure it was ever there.
   - **Nothing else changed.** Task switching, the tab hover list, notes,
     clipboard history, monitor previews, the command box and per-display
