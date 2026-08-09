@@ -156,12 +156,17 @@ HMENU taskbox_create_main_popup_menu(void)
      * wondering whether they imagined it; a greyed entry that says why leaves
      * them informed - and says, in the one place they would look for it, that
      * this is temporary. */
+    /* "off in this build", not "disabled": the greyed state already says the
+     * entry cannot be used, so repeating it wastes the only words there is
+     * room for. What the reader cannot see from the grey is that this was a
+     * decision about this version rather than a fault - and "in this build"
+     * carries the temporariness without having to claim it. */
     AppendMenuW(h_menu, MF_STRING | MF_GRAYED, HG_IDM_STARTUP,
-                L"Start with Windows  (temporarily disabled)");
+                L"Start with Windows  (off in this build)");
     AppendMenuW(h_menu, MF_STRING | (hg_tabs_enabled() ? MF_CHECKED : 0u), HG_IDM_SHOW_TABS,
                 L"Show Tabs as Task Icons");
     AppendMenuW(h_menu, MF_STRING | MF_GRAYED, HG_IDM_CAPTION_MENU,
-                L"Menu on Maximize Button  (temporarily disabled)");
+                L"Menu on Maximize Button  (off in this build)");
 #else
     AppendMenuW(h_menu, MF_STRING | (hg_startup_is_enabled() ? MF_CHECKED : 0u), HG_IDM_STARTUP,
                 L"Start with Windows");

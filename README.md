@@ -2,14 +2,14 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.8.1** — built 2026-08-09 22:40 KST
+**v0.8.2** — built 2026-08-09 23:13 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
-> ## v0.8.0 was flagged by some scanners. v0.8.1 is not.
+> ## v0.8.0 was flagged by some scanners. Builds since then are not.
 >
 > Some browsers and antivirus products warned users away from the **v0.8.0**
-> download. **v0.8.1 does not reproduce that**, because the two features those
+> download. **v0.8.1 and later do not reproduce that**, because the two features those
 > scanners were reacting to are **temporarily switched off** in it.
 >
 > **Why they were flagged.** Antivirus software cannot judge what a program
@@ -32,9 +32,9 @@
 > their APIs keep. With an **unsigned binary that few people have downloaded**,
 > there is no reputation to offset that, and warnings follow.
 >
-> **In v0.8.1** both are disabled: this build installs **no hook** and writes
+> **Since v0.8.1** both are disabled: this build installs **no hook** and writes
 > **nothing to the registry**. Their menu entries stay in the `O` menu, greyed,
-> reading `(temporarily disabled)`. Everything else — task switching, tabs,
+> reading `(off in this build)`. Everything else — task switching, tabs,
 > notes, clipboard, monitor previews, the command box, per-display brightness
 > and scaling — works exactly as before. They will return once the real fix,
 > code signing, is in place.
@@ -112,7 +112,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.8.1)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.8.2)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
