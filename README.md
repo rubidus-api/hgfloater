@@ -1,4 +1,4 @@
-# hgfloater
+# HGFloater
 
 **English** | [한국어](README.ko.md)
 
@@ -19,7 +19,7 @@
 > heuristics tend to notice and what each is for, are in
 > [section 2](#2-install-and-first-run).
 
-hgfloater is a lightweight desktop utility for **Windows 11 and above**. A small
+HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; hovering it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
@@ -60,7 +60,7 @@ it starts instantly and stays out of your way.
 
 ## 1. Overview
 
-hgfloater aims at one thing: making everyday desktop control faster than the
+HGFloater aims at one thing: making everyday desktop control faster than the
 stock taskbar allows. It works as a **quick launcher**, a **task switcher**, a
 **system control panel** (volume, per-display brightness and scaling, window
 opacity, screen lock), a **command box** for driving windows by name and number,
@@ -130,7 +130,7 @@ anything, or send anything anywhere.
 
 ## 3. The Two Windows
 
-hgfloater is built from two windows that trade places:
+HGFloater is built from two windows that trade places:
 
 | Window | What it is | How you get it |
 | :--- | :--- | :--- |
@@ -177,11 +177,11 @@ of other windows.
   it lags under a sudden load. Many machines expose no zone at all - on those
   the row simply is not there, the same way the battery row is absent on a
   desktop. If you need true per-core readings, use a tool built around a
-  hardware-monitoring driver; hgfloater will not become one.
+  hardware-monitoring driver; HGFloater will not become one.
 
   Firmware usually declares **several** zones, and often puts one it never
   updates in front of the live one, so a single reading taken blindly is a coin
-  toss. hgfloater reads **every** zone, from both surfaces Windows offers - the
+  toss. HGFloater reads **every** zone, from both surfaces Windows offers - the
   WMI class and the thermal performance counters, which do not always agree
   about being available - and prefers a zone it has watched change over one that
   has only ever held the same number. Type **`list sensors`** in the command box
@@ -206,33 +206,33 @@ half-second grace period, so brushing past the edge does not dismiss it.
 
 ### 4.1 The maximize button menu
 
-While hgfloater is running, **right-click the maximize button** — the one left
-of the X — on **any** window, and you get hgfloater's menu for that window:
+While HGFloater is running, **right-click the maximize button** — the one left
+of the X — on **any** window, and you get HGFloater's menu for that window:
 **Move to (0, 0)**, the same size presets the task icons offer, and **Close**,
 which shuts the menu without touching the window. Left-clicking the button still
 maximizes; right-clicking a caption button does nothing in Windows, so nothing
 was taken away.
 
-It works on hgfloater's own document windows too — a note, the note list, the
+It works on HGFloater's own document windows too — a note, the note list, the
 command box, the About window — and on any window whose title bar answers
 hit-tests its own way (a PuTTY-style utility): where the window declines to
 name its buttons, the DWM-computed button bounds say which third the click
 landed on.
 
 Switch it off with **Menu on Maximize Button** in the `O` menu, or
-`caption_menu=0` under `[etc]`. **Close hgfloater and the behaviour is gone** —
+`caption_menu=0` under `[etc]`. **Close HGFloater and the behaviour is gone** —
 there is nothing installed and nothing to uninstall.
 
 Three cases where the click does what it always did, none of them a failure:
 
 - **Windows running as administrator.** Windows does not let an unelevated
-  program touch input bound for an elevated one, and hgfloater runs unelevated
+  program touch input bound for an elevated one, and HGFloater runs unelevated
   on purpose.
 - **Windows with no maximize button** — nothing to right-click.
 - **Applications that report neither a maximize button nor caption-button
   bounds.** Rare, and they simply keep their ordinary behaviour.
 
-This is the only thing hgfloater does outside its own windows, and it needs a
+This is the only thing HGFloater does outside its own windows, and it needs a
 system-wide mouse hook to do it. The hook reads the button and the coordinates
 and nothing else; it holds no keyboard hook and never has. Because a global
 mouse hook is also a thing keyloggers do, an antivirus may take an interest —
@@ -250,7 +250,7 @@ built-in buttons.
   order Windows reports them. A program with four windows open gets four icons,
   each going straight to its own window.
 
-  That now includes **hgfloater's own windows** — every open note editor, the
+  That now includes **HGFloater's own windows** — every open note editor, the
   note list, the clipboard history, the command box. The clipboard history is
   a tool window, so Windows keeps it out of Alt-Tab, which is right for a
   widget's controls but wrong for a list whose whole job is reaching them — so
@@ -326,7 +326,7 @@ Nothing about this is specific to browsers. What limits it is cost: a tab is not
 a window, so the only supported way to find one is **UI Automation** — a call
 into the other application's own UI thread, which is slow and can block if that
 thread is busy. Asking every window on the desktop would make that cost the cost
-of running hgfloater, so it asks only windows whose **class** is on a list:
+of running HGFloater, so it asks only windows whose **class** is on a list:
 
 | Built in | |
 | :--- | :--- |
@@ -396,7 +396,7 @@ Thirteen built-in buttons sit in the same grid as the icons. Their order is fixe
 | :--- | :--- | :--- |
 | **`R`** Resize | — | **Drag** resizes the taskbox grid. |
 | **`M`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
-| **`X`** Exit | Quits hgfloater. | — |
+| **`X`** Exit | Quits HGFloater. | — |
 | **`D`** Desktop | Minimizes every window; click again to restore. | — |
 | **`O`** Options | Opens the [options menu](#7-the-options-menu). | — |
 | **`C`** Command | Opens the [Command Box](#8-the-command-box). | — |
@@ -419,7 +419,7 @@ has room, nothing moves.
 opacity and volume. The `O` menu offers quarter steps per display when you want
 a specific level rather than a nudge.
 
-hgfloater tries three things per display, in order, and remembers which one
+HGFloater tries three things per display, in order, and remembers which one
 answered. First the **low-level DDC/CI** path: it reads the monitor's
 capabilities string and, if that advertises the luminance control, drives it on
 whatever scale the monitor actually reports — which is often not 0 to 100. Then
@@ -433,7 +433,7 @@ advertises a control it does not honour. That display shows
 **Brightness (unavailable)** rather than accepting a click that does nothing.
 
 A **laptop's internal panel** is not a DDC/CI device at all, so none of that
-would reach it. It gets its own path: hgfloater recognises the built-in display
+would reach it. It gets its own path: HGFloater recognises the built-in display
 by its connector and drives the real backlight through Windows' own brightness
 service, the same one the system slider uses. That moves the lamp, not the
 picture.
@@ -455,7 +455,7 @@ the global hotkey, a floater click — still work. Click again to unpin.
 again and it closes.
 
 Capture runs whether or not that window is open — a history that only recorded
-while you were looking at it would not be a history — so hgfloater keeps a
+while you were looking at it would not be a history — so HGFloater keeps a
 clipboard listener alive for as long as it is running. **Text only.** Copying an
 image or a file leaves the history untouched rather than adding an empty row.
 
@@ -481,15 +481,15 @@ number.
 **The history is bounded in bytes as well as in count.** Very large clips are
 capped individually, and the whole history is capped in total; past the total,
 the oldest clips go first and the newest always stays. Copying enormous text
-blocks all day cannot make hgfloater's memory grow without limit.
+blocks all day cannot make HGFloater's memory grow without limit.
 
 **Nothing is written to disk.** The history lives in memory and dies with the
 program; only the maximum is saved. This is deliberate, and it is the one place
-hgfloater does less than the clipboard managers it was measured against: a
+HGFloater does less than the clipboard managers it was measured against: a
 clipboard history on disk is a file containing every password and recovery code
 that passed through the clipboard, and a floating clock widget should not be the
 program that owns that file. The cost is stated rather than hidden — **restarting
-hgfloater empties the history.**
+HGFloater empties the history.**
 
 ---
 
@@ -501,12 +501,12 @@ Open it with the `O` toolbar button or by right-clicking the status line.
   how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts).
 - **Edit Configuration** — opens `config.ini` in Notepad.
 - **Menu on Maximize Button** — checked while the maximize button of **every**
-  window answers a right-click with hgfloater's move-and-resize menu. See
+  window answers a right-click with HGFloater's move-and-resize menu. See
   [4.1](#41-the-maximize-button-menu).
 - **Show Tabs as Task Icons** — checked when a tabbed application's tabs get
   their own task icons. See [5.1](#51-running-windows-and-shortcuts) for which
   applications, how to add one, and why it is off by default.
-- **Start with Windows** — checked when hgfloater launches at sign-in. Toggling
+- **Start with Windows** — checked when HGFloater launches at sign-in. Toggling
   it writes or removes one value under
   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, holding the quoted
   path of the running executable. No installer, no elevation, nothing else
@@ -668,7 +668,7 @@ or closing the taskbox does not touch them — a note stays open until you close
 it.
 
 Each note is a plain UTF-8 `.txt` file, so it stays readable and editable
-outside hgfloater. **The first line is the title**; everything after it is the
+outside HGFloater. **The first line is the title**; everything after it is the
 body. Notes live in `%USERPROFILE%\.HellGates\hgfloater\note\` and are named
 `note-<id>-YYYYMMDD.txt`, where the date is the day the note was created.
 
@@ -879,7 +879,7 @@ Its own `x`, `y`, `w`, `h`, `alpha`, `font_size`, and `font_name`, plus:
 | `history_max` | How many command lines `Shift + Left/Right` walk back through, 1–256 (default `64`) |
 
 Both this and `[clipboard] max` have no control anywhere in the interface, so
-hgfloater writes them into `config.ini` on first run with a comment block
+HGFloater writes them into `config.ini` on first run with a comment block
 explaining them. The lines and the clips themselves are never written to disk.
 
 ### `[etc]`
@@ -887,7 +887,7 @@ explaining them. The lines and the clips themselves are never written to disk.
 | Key | Meaning |
 | :--- | :--- |
 | `font_name` | Font for edit controls, tooltips, and the About dialog (default `Segoe UI`) |
-| `caption_menu` | `0` stops right-clicking any window's maximize button from opening hgfloater's menu (default `1`) |
+| `caption_menu` | `0` stops right-clicking any window's maximize button from opening HGFloater's menu (default `1`) |
 
 ### `[colors]`
 
@@ -919,7 +919,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 
 That is the complete list on disk. The only thing written outside it is the
 `Run` registry value behind [Start with Windows](#7-the-options-menu), and only
-while that is switched on. hgfloater writes no log files, no caches, and no
+while that is switched on. HGFloater writes no log files, no caches, and no
 temporary files, and nothing it writes grows without bound.
 
 <!-- SKIP_START -->
