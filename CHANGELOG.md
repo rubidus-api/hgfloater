@@ -7,25 +7,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [v0.8.1] - 2026-08-09
 
 ### Changed
-- **Two features are switched off in this build, on purpose: Start with
-  Windows, and the menu on the maximize button.** Both entries stay in the `O`
-  menu, greyed, saying `(temporarily disabled)`, because a feature that simply
-  vanishes leaves you wondering whether you imagined it.
-  - Why: a global low-level mouse hook and a write to the `Run` key are the two
-    things heuristic scanners weigh most heavily, and an unsigned binary with a
-    few dozen downloads has no reputation to weigh against them. Neither was
-    ever doing anything untoward — the mouse hook read a button and a cursor
-    position, the registry write was one value under the ordinary per-user
-    `Run` key — but "not doing anything wrong" is not something a scanner can
-    see, and reputation is what it weighs instead.
-  - **This is an experiment, not an admission.** If the warnings persist
-    without these two, the cause was never the code, and that is worth knowing
-    before spending money on a certificate. Either way they come back.
-  - Nothing else changed. The taskbox, tabs, notes, clipboard, monitor
-    previews, command box and every other feature work exactly as in v0.8.0.
-  - Under the hood this is one compile-time switch
-    (`HG_TEMP_DISABLE_FLAGGED_FEATURES` in `hg_common.h`); the code is intact
-    and turning the switch off restores both features unchanged.
+- **Two features are temporarily disabled: Start with Windows, and the menu on
+  the maximize button.** Some browsers and antivirus products warned users away
+  from the v0.8.0 download; v0.8.1 does not reproduce that.
+  - **Why they were flagged.** A scanner cannot judge what a program does with
+    a given Windows facility, so it classifies by the facility: programs using
+    a particular API are statistically more often malicious, and a harmless
+    feature joins that category simply for using it.
+    - **Menu on Maximize Button** needed a **global mouse hook** to reach other
+      applications' windows. The hook read the mouse button and the cursor
+      position, to decide whether that point was a maximize button — **no
+      keyboard hook exists anywhere in this program** — but a global input hook
+      is the same family of call a keylogger uses, and static analysis cannot
+      easily separate the two.
+    - **Start with Windows** wrote one value named `hgfloater` under the
+      ordinary per-user `Run` key and removed it when switched off. That is
+      also where malware registers itself to survive a reboot, so writing there
+      raises the score by itself.
+    - Neither was doing anything harmful. Both were classified by the company
+      their APIs keep, and an unsigned binary with few downloads has no
+      reputation to offset it.
+  - **What this build does instead:** it installs **no hook** and writes
+    **nothing to the registry**. Both menu entries stay in the `O` menu, greyed,
+    reading `(temporarily disabled)`, because a feature that vanishes entirely
+    leaves you unsure it was ever there.
+  - **Nothing else changed.** Task switching, the tab hover list, notes,
+    clipboard history, monitor previews, the command box and per-display
+    brightness and scaling all behave exactly as in v0.8.0.
+  - Both features come back once the underlying issue is addressed properly -
+    code signing being the real fix. In the source this is one compile-time
+    switch (`HG_TEMP_DISABLE_FLAGGED_FEATURES` in `hg_common.h`); the code is
+    intact and turning it off restores them unchanged.
 
 ## [v0.8.0] - 2026-08-08
 
