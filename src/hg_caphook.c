@@ -17,8 +17,10 @@
 #include "hg_globals.h"
 #include "widgets/hg_taskbox.h"
 
+#if !HG_TEMP_DISABLE_FLAGGED_FEATURES
 static BOOL s_read = FALSE;
 static BOOL s_enabled = FALSE;
+#endif
 static HHOOK s_hook = NULL;
 
 /* The watchdog's evidence. Written only by the hook, which runs on the thread
@@ -28,6 +30,14 @@ static unsigned s_callbacks = 0;
 
 BOOL hg_caphook_enabled(void)
 {
+#if HG_TEMP_DISABLE_FLAGGED_FEATURES
+    /* Suspended in this build. Answering FALSE here is what keeps every other
+     * path honest: the menu draws unchecked, hg_caphook_apply installs
+     * nothing, and the watchdog stands down - all without a second flag to
+     * keep in step. The config key is left untouched, so a build with the
+     * define off restores whatever the reader had chosen. */
+    return FALSE;
+#else
     if (!s_read) {
         s_read = TRUE;
         /* On by default: this is meant to replace a separate utility, and a
@@ -35,14 +45,19 @@ BOOL hg_caphook_enabled(void)
         s_enabled = (GetPrivateProfileIntW(L"etc", L"caption_menu", 1, hg_g_config_path) != 0);
     }
     return s_enabled;
+#endif
 }
 
 void hg_caphook_set_enabled(BOOL enabled)
 {
+#if HG_TEMP_DISABLE_FLAGGED_FEATURES
+    (void)enabled; /* the menu entry is greyed; nothing should reach here */
+#else
     (void)hg_caphook_enabled();
     s_enabled = enabled ? TRUE : FALSE;
     WritePrivateProfileStringW(L"etc", L"caption_menu", s_enabled ? L"1" : L"0", hg_g_config_path);
     hg_caphook_apply();
+#endif
 }
 
 /* Is this point the maximize button of that window?
@@ -215,6 +230,7 @@ static LRESULT CALLBACK caphook_proc(int code, WPARAM w_param, LPARAM l_param)
  * not doing what you assumed - so the hook comes out on every exit this
  * process can still run code on, and the system's cleanup stays the backstop
  * rather than the plan. */
+#if !HG_TEMP_DISABLE_FLAGGED_FEATURES
 static LPTOP_LEVEL_EXCEPTION_FILTER s_previous_filter = NULL;
 static BOOL s_filter_installed = FALSE;
 
@@ -225,9 +241,17 @@ static LONG WINAPI caphook_unhandled_exception(EXCEPTION_POINTERS *info)
      * filter runs if there was one, and the default does if there was not. */
     return s_previous_filter ? s_previous_filter(info) : EXCEPTION_CONTINUE_SEARCH;
 }
+#endif /* !HG_TEMP_DISABLE_FLAGGED_FEATURES */
 
 void hg_caphook_apply(void)
 {
+#if HG_TEMP_DISABLE_FLAGGED_FEATURES
+    /* SetWindowsHookExW is never reached in this build. The import stays in
+     * the binary because the code is still compiled; what a scanner watches
+     * for - a process that actually installs a low-level hook - does not
+     * happen. */
+    return;
+#else
     BOOL wanted = hg_caphook_enabled();
 
     if (wanted && !s_hook) {
@@ -246,6 +270,7 @@ void hg_caphook_apply(void)
          * have seen it is gone. */
         s_armed = NULL;
     }
+#endif
 }
 
 void hg_caphook_shutdown(void)

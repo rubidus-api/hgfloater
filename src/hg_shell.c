@@ -11,6 +11,7 @@
  * registry value hgfloater ever writes, and only when asked.
  * ========================================================================= */
 
+#if !HG_TEMP_DISABLE_FLAGGED_FEATURES
 static const WCHAR HG_RUN_KEY[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 static const WCHAR HG_RUN_VALUE[] = L"hgfloater";
 
@@ -24,9 +25,17 @@ static BOOL hg_startup_command(WCHAR *out, size_t out_cch)
         return FALSE;
     return SUCCEEDED(StringCchPrintfW(out, out_cch, L"\"%ls\"", path));
 }
+#endif /* !HG_TEMP_DISABLE_FLAGGED_FEATURES */
 
 BOOL hg_startup_is_enabled(void)
 {
+#if HG_TEMP_DISABLE_FLAGGED_FEATURES
+    /* Reported as off while the feature is suspended, so the menu draws
+     * unchecked and nothing claims a state the build cannot deliver. Reading
+     * the key would be harmless, but a checkmark on a disabled entry is a
+     * promise that the program is starting with Windows when it is not. */
+    return FALSE;
+#else
     HKEY key;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, HG_RUN_KEY, 0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS)
         return FALSE;
@@ -34,10 +43,16 @@ BOOL hg_startup_is_enabled(void)
     LSTATUS status = RegQueryValueExW(key, HG_RUN_VALUE, NULL, NULL, NULL, NULL);
     RegCloseKey(key);
     return (status == ERROR_SUCCESS);
+#endif
 }
 
 BOOL hg_startup_set_enabled(BOOL enabled)
 {
+#if HG_TEMP_DISABLE_FLAGGED_FEATURES
+    /* The one place this build touches the registry, and it does not. */
+    (void)enabled;
+    return FALSE;
+#else
     HKEY key;
     if (RegOpenKeyExW(HKEY_CURRENT_USER, HG_RUN_KEY, 0, KEY_SET_VALUE, &key) != ERROR_SUCCESS)
         return FALSE;
@@ -61,6 +76,7 @@ BOOL hg_startup_set_enabled(BOOL enabled)
 
     RegCloseKey(key);
     return (status == ERROR_SUCCESS);
+#endif
 }
 
 /* Our own windows that are documents rather than the widget itself: a note

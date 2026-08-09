@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.8.1] - 2026-08-09
+
+### Changed
+- **Two features are switched off in this build, on purpose: Start with
+  Windows, and the menu on the maximize button.** Both entries stay in the `O`
+  menu, greyed, saying `(temporarily disabled)`, because a feature that simply
+  vanishes leaves you wondering whether you imagined it.
+  - Why: a global low-level mouse hook and a write to the `Run` key are the two
+    things heuristic scanners weigh most heavily, and an unsigned binary with a
+    few dozen downloads has no reputation to weigh against them. Neither was
+    ever doing anything untoward — the mouse hook read a button and a cursor
+    position, the registry write was one value under the ordinary per-user
+    `Run` key — but "not doing anything wrong" is not something a scanner can
+    see, and reputation is what it weighs instead.
+  - **This is an experiment, not an admission.** If the warnings persist
+    without these two, the cause was never the code, and that is worth knowing
+    before spending money on a certificate. Either way they come back.
+  - Nothing else changed. The taskbox, tabs, notes, clipboard, monitor
+    previews, command box and every other feature work exactly as in v0.8.0.
+  - Under the hood this is one compile-time switch
+    (`HG_TEMP_DISABLE_FLAGGED_FEATURES` in `hg_common.h`); the code is intact
+    and turning the switch off restores both features unchanged.
+
 ## [v0.8.0] - 2026-08-08
 
 ### Fixed
