@@ -6,33 +6,42 @@
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
-> ## ⚠ v0.8.1 has two features switched off on purpose
+> ## v0.8.0 was flagged by some scanners. v0.8.1 is not.
 >
-> **Start with Windows** and **Menu on Maximize Button** are **temporarily
-> disabled** in this build. Both entries are still in the `O` menu, greyed, and
-> say so.
+> Some browsers and antivirus products warned users away from the **v0.8.0**
+> download. **v0.8.1 does not reproduce that**, because the two features those
+> scanners were reacting to are **temporarily switched off** in it.
 >
-> Neither was ever doing anything untoward — but a global mouse hook and a
-> write to the `Run` key are the two things heuristic scanners weigh most
-> heavily, and an unsigned binary with a few dozen downloads has no reputation
-> to weigh against them. Taking them out of the shipped build is how we find
-> out whether they were the cause at all: **if the warnings persist without
-> them, the code was never the problem** — and that is worth knowing.
+> **Why they were flagged.** Antivirus software cannot judge what a program
+> does with a given Windows facility — it classifies by the facility itself:
+> *"programs that use this kind of API are more often malicious."* A harmless
+> feature lands in that category simply for using the API, and two of
+> HGFloater's did:
 >
-> They will come back once this is settled. Everything else works as it did.
+> - **Menu on Maximize Button** needed a **global mouse hook** to work on other
+>   applications' windows. It read the mouse button and cursor position, to tell
+>   whether that point was a maximize button — **there is no keyboard hook
+>   anywhere in this program**. But a global input hook is the same family of
+>   call a keylogger uses, and static analysis cannot easily separate the two.
+> - **Start with Windows** wrote one value named `hgfloater` under the ordinary
+>   per-user `Run` key, and deleted it when switched off. That is also the
+>   location malware uses to survive a reboot, so the API alone raises the
+>   score.
 >
-> **If your browser or antivirus warns you about the download**, that is a
-> reputation warning, not a finding. This binary is not code-signed and each
-> release is a brand-new file that almost nobody has downloaded yet, which is
-> the profile browser download-protection and machine-learning antivirus rules
-> react to. What you can check instead: the whole source is here under the MIT
-> licence and builds reproducibly, the release notes carry the **SHA-256** of
-> every file so you can verify what you downloaded, and the binary imports no
-> networking API at all — there is no socket, HTTP, or download function in it.
-> Each release also ships a **`.zip`** of the same executable, which some
-> browsers object to less. Details, including the three Win32 APIs the
-> heuristics tend to notice and what each is for, are in
-> [section 2](#2-install-and-first-run).
+> Neither feature was doing anything harmful; both were flagged for the company
+> their APIs keep. With an **unsigned binary that few people have downloaded**,
+> there is no reputation to offset that, and warnings follow.
+>
+> **In v0.8.1** both are disabled: this build installs **no hook** and writes
+> **nothing to the registry**. Their menu entries stay in the `O` menu, greyed,
+> reading `(temporarily disabled)`. Everything else — task switching, tabs,
+> notes, clipboard, monitor previews, the command box, per-display brightness
+> and scaling — works exactly as before. They will return once the real fix,
+> code signing, is in place.
+>
+> **You can still verify any download**: every release lists the **SHA-256** of
+> both files, ships a **`.zip`** alongside the `.exe`, and the whole source is
+> here under the MIT licence. More in [section 2](#2-install-and-first-run).
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; hovering it opens a dashboard that
