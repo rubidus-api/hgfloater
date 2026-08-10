@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.9.0] - 2026-08-10
+
+### Added
+- **A menu on each row of the clipboard history**, opened by a right-click or
+  by the keyboard's context-menu key: **Copy to Clipboard**, **Delete**,
+  **Delete All**. The row under the pointer is selected before the menu opens,
+  because a menu that acts on something other than what was aimed at is a menu
+  that deletes the wrong clip.
+- **`Del` deletes the selected clip.** The selection stays at the same row
+  afterwards, so clearing out a run of stale clips is one key pressed
+  repeatedly rather than a re-aim between each.
+
+### Changed
+- **The clipboard history is an ordinary application window now**, like the
+  notes and the command box: its own taskbar button, its own Alt-Tab entry, and
+  all three caption buttons - minimize, maximize, close. It was a tool window,
+  which Windows keeps out of both; that is right for a widget's controls and
+  wrong for a window you work in.
+- **Taking a clip no longer closes the window.** Copying three things out of
+  the history in a row is exactly what a history is for, and the window
+  vanishing after each one meant reopening it in between. Closing is `Esc`, the
+  X, or the `L` button, and nothing else - clicking elsewhere leaves it alone.
+- The `L` button only hides the history when it is already the window in front.
+  A minimized or buried history is raised instead, since that is what asking
+  for it means.
+
 ## [v0.8.2] - 2026-08-09
 
 ### Changed
