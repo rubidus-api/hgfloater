@@ -23,7 +23,28 @@ DIST=${1:-dist}
 EXE="$DIST/hgfloater.exe"
 VERSION=$(cat VER.txt | tr -d '\r\n')
 
-[ -f "$EXE" ] || { echo "package-release: no $EXE - build it first" >&2; exit 1; }
+# The build writes build-mingw/hgfloater.exe and nothing else; staging it here
+# is the packaging step's job. Doing it any other way once put a stale binary
+# from the previous release inside a correctly named zip, with a checksum that
+# was perfectly accurate about the wrong file.
+BUILT=build-mingw/hgfloater.exe
+if [ -f "$BUILT" ]; then
+    mkdir -p "$DIST"
+    cp -f "$BUILT" "$EXE"
+fi
+
+[ -f "$EXE" ] || { echo "package-release: no $EXE and no $BUILT - build it first" >&2; exit 1; }
+
+# The version in the file has to be the version on the label. A binary built
+# before the last version bump is the failure this catches. HG_VERSION_W is a
+# wide string, so the bytes to look for are UTF-16.
+if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import sys
+exe, version = sys.argv[1], sys.argv[2]
+with open(exe, "rb") as f:
+    if version.encode("utf-16-le") not in f.read():
+        sys.exit("package-release: %s does not carry %s - rebuild it" % (exe, version))' "$EXE" "$VERSION" || exit 1
+fi
 
 ZIP="$DIST/hgfloater-$VERSION.zip"
 rm -f "$ZIP"
