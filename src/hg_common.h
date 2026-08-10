@@ -89,7 +89,7 @@
  * the build scripts; the stamp is the moment the exe was built. Fallbacks
  * cover an IDE or ad-hoc compile that passes neither. */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v0.8.2"
+#define HG_VERSION_W L"v0.9.0"
 #endif
 #ifndef HG_BUILD_STAMP_W
 #define HG_BUILD_STAMP_W L"unknown"
@@ -180,6 +180,9 @@
 #define HG_IDM_SHOW_TABS 218
 #define HG_IDM_CAPTION_MENU 219
 #define HG_IDM_CAPTION_DISMISS 220
+#define HG_IDM_CLIP_TAKE 221
+#define HG_IDM_CLIP_DELETE 222
+#define HG_IDM_CLIP_CLEAR 223
 
 #define HG_COPYDATA_COMMAND_LINE 0x4847434CU
 

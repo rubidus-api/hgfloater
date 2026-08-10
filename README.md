@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.8.2** — built 2026-08-09 23:13 KST
+**v0.9.0** — built 2026-08-10 13:44 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -112,7 +112,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.8.2)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.9.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -277,13 +277,10 @@ built-in buttons.
   each going straight to its own window.
 
   That now includes **HGFloater's own windows** — every open note editor, the
-  note list, the clipboard history, the command box. The clipboard history is
-  a tool window, so Windows keeps it out of Alt-Tab, which is right for a
-  widget's controls but wrong for a list whose whole job is reaching them — so
-  this list carries it anyway. **The note windows and the command box are
-  ordinary application windows**: each gets its own taskbar button, its own
-  Alt-Tab entry, and all three caption buttons — minimize, maximize, close —
-  and they stay open regardless of what the floater and taskbox do, until you
+  note list, the clipboard history, the command box. All of them are **ordinary
+  application windows**: each gets its own taskbar button, its own Alt-Tab
+  entry, and all three caption buttons — minimize, maximize, close — and they
+  stay open regardless of what the floater and taskbox do, until you
   close them. The floater, the taskbox and the toolbar stay out: they are the
   thing you are looking at.
 - **Shortcut icons** follow: one per `.lnk` or `.url` in your shortcuts folder.
@@ -432,7 +429,7 @@ Thirteen built-in buttons sit in the same grid as the icons. Their order is fixe
 | **`F`** Floater | Collapses to the floater for tuning (see below). | — |
 | **`P`** Pin | Pins the taskbox open. | — |
 | **`N`** Note | Opens the [note list](#10-notes). | — |
-| **`L`** Clipboard | Opens the clipboard history; press again to close it. | — |
+| **`L`** Clipboard | Opens the clipboard history; press again, with it in front, to close it. | — |
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -478,7 +475,13 @@ the global hotkey, a floater click — still work. Click again to unpin.
 ### The clipboard history
 
 **`L`** opens a window listing what you have copied, newest first. Press `L`
-again and it closes.
+again while it is the window in front and it closes; if it is minimized or
+buried, `L` brings it back instead.
+
+It is an **ordinary application window** — its own taskbar button, its own
+Alt-Tab entry, minimize, maximize and close in the title bar — and it stays
+open until you close it. Clicking elsewhere does not dismiss it, and neither
+does taking a clip.
 
 Capture runs whether or not that window is open — a history that only recorded
 while you were looking at it would not be a history — so HGFloater keeps a
@@ -487,7 +490,9 @@ image or a file leaves the history untouched rather than adding an empty row.
 
 | What | What it does |
 | :--- | :--- |
-| **Click** a row, or `Enter` | Makes that clip the current one and closes the window. |
+| **Click** a row, or `Enter` | Makes that clip the current one. **The window stays open**, so taking several clips in a row needs no reopening. |
+| **Right click** a row | A menu for that clip: **Copy to Clipboard**, **Delete**, **Delete All**. The row under the pointer is selected first, so the menu always acts on what you aimed at. |
+| `Del` | Deletes the selected clip. The selection stays where it was, so deleting several needs no re-aiming. |
 | **Search box**, top left | Shows only the clips containing what you type, ignoring case. Clear it to see them all again. |
 | **Number box**, top right | The most clips to keep. Default 16, set with the spin buttons, the arrow keys, or the wheel over it. |
 | `Esc` | Closes the window. |

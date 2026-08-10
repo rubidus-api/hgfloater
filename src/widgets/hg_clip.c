@@ -298,6 +298,32 @@ static void clip_list_fill(void)
         SendMessageW(list, LB_SETCURSEL, 0, 0);
 }
 
+/* Drop one clip and close the gap. The history is a plain array of owned
+ * pointers, so removing from the middle is a free and a memmove; s_clip_count
+ * is what every other function reads, and it is the last thing updated. */
+static void clip_remove(int index)
+{
+    if (index < 0 || index >= s_clip_count)
+        return;
+
+    free(s_clips[index]);
+    if (index + 1 < s_clip_count)
+        memmove(&s_clips[index], &s_clips[index + 1], sizeof(s_clips[0]) * (size_t)(s_clip_count - index - 1));
+    s_clips[s_clip_count - 1] = NULL;
+    --s_clip_count;
+}
+
+/* The row's own index into the history, or -1. The listbox is filtered by the
+ * search box, so a row number is not a history index and the two must never be
+ * confused - LB_GETITEMDATA is what carries the real one. */
+static int clip_index_at_row(HWND list, int row)
+{
+    if (!list || row < 0)
+        return -1;
+    int index = (int)SendMessageW(list, LB_GETITEMDATA, (WPARAM)row, 0);
+    return (index >= 0 && index < s_clip_count) ? index : -1;
+}
+
 static void clip_take_selected(HWND hwnd)
 {
     HWND list = GetDlgItem(hwnd, HG_CLIP_LIST_ID);
@@ -311,10 +337,75 @@ static void clip_take_selected(HWND hwnd)
         return;
 
     clip_promote(index);
-    /* Choosing a clip is the first half of pasting it, so the window gets out
-     * of the way rather than leaving the reader to dismiss it first. */
-    ShowWindow(hwnd, SW_HIDE);
+    /* The window stays. Taking a clip is often the first of several - copying
+     * three things out of the history in a row is exactly what a history is
+     * for - and a window that vanished after each one would have to be
+     * reopened between them. Closing is Esc, the X, or the L button. */
     clip_list_fill();
+}
+
+/* The row menu: what can be done to one clip. Opened by a right-click on the
+ * row, and by the keyboard's own context-menu key, so neither hand has to
+ * reach for the other. */
+static void clip_show_row_menu(HWND hwnd, HWND list, int row, POINT screen_pt)
+{
+    int index = clip_index_at_row(list, row);
+    if (index < 0)
+        return;
+
+    /* The row that was right-clicked becomes the selected row first: a menu
+     * that acts on something other than what the pointer is over is a menu
+     * that deletes the wrong thing. */
+    SendMessageW(list, LB_SETCURSEL, (WPARAM)row, 0);
+
+    HMENU menu = CreatePopupMenu();
+    if (!menu)
+        return;
+    AppendMenuW(menu, MF_STRING, HG_IDM_CLIP_TAKE, L"Copy to Clipboard\tEnter");
+    AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(menu, MF_STRING, HG_IDM_CLIP_DELETE, L"Delete\tDel");
+    AppendMenuW(menu, MF_STRING, HG_IDM_CLIP_CLEAR, L"Delete All");
+
+    if (screen_pt.x == -1 && screen_pt.y == -1) {
+        /* Raised from the keyboard: anchor it to the row rather than to
+         * wherever the pointer happens to be resting. */
+        RECT rc;
+        if (SendMessageW(list, LB_GETITEMRECT, (WPARAM)row, (LPARAM)&rc)) {
+            POINT anchor = {rc.left, rc.bottom};
+            ClientToScreen(list, &anchor);
+            screen_pt = anchor;
+        } else {
+            GetCursorPos(&screen_pt);
+        }
+    }
+
+    hg_g_menu_active = TRUE;
+    int cmd = (int)TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, screen_pt.x, screen_pt.y, hwnd, NULL);
+    hg_g_menu_active = FALSE;
+    DestroyMenu(menu);
+
+    switch (cmd) {
+    case HG_IDM_CLIP_TAKE:
+        clip_take_selected(hwnd);
+        break;
+    case HG_IDM_CLIP_DELETE:
+        clip_remove(index);
+        clip_list_fill();
+        /* Keep the selection where the deleted row was, so deleting several in
+         * a row needs no re-aiming. */
+        if (list) {
+            int count = (int)SendMessageW(list, LB_GETCOUNT, 0, 0);
+            if (count > 0)
+                SendMessageW(list, LB_SETCURSEL, (WPARAM)((row < count) ? row : count - 1), 0);
+        }
+        break;
+    case HG_IDM_CLIP_CLEAR:
+        clip_drop_from(0);
+        clip_list_fill();
+        break;
+    default:
+        break;
+    }
 }
 
 /* ------------------------------------------------------------------- capture */
@@ -469,12 +560,55 @@ static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
         }
     }
 
+    /* Right-click opens the row menu. A listbox does not move its selection on
+     * a right-click, so the row has to be worked out from the point; the menu
+     * itself is what selects it. Handling this here and returning means no
+     * WM_CONTEXTMENU follows, so the menu cannot open twice. */
+    if (msg == WM_RBUTTONUP) {
+        HWND parent = GetParent(hwnd);
+        if (parent && hwnd == GetDlgItem(parent, HG_CLIP_LIST_ID)) {
+            POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+            int row = (int)SendMessageW(hwnd, LB_ITEMFROMPOINT, 0, MAKELPARAM(pt.x, pt.y));
+            if (HIWORD(row) == 0) { /* the high word is set when the point is past the last row */
+                POINT screen_pt = pt;
+                ClientToScreen(hwnd, &screen_pt);
+                clip_show_row_menu(parent, hwnd, LOWORD(row), screen_pt);
+            }
+            return 0;
+        }
+    }
+    /* The keyboard's context-menu key arrives this way, with (-1,-1) for the
+     * point; the menu anchors itself to the selected row when it sees that. */
+    if (msg == WM_CONTEXTMENU) {
+        HWND parent = GetParent(hwnd);
+        if (parent && hwnd == GetDlgItem(parent, HG_CLIP_LIST_ID)) {
+            POINT screen_pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+            int row = (int)SendMessageW(hwnd, LB_GETCURSEL, 0, 0);
+            clip_show_row_menu(parent, hwnd, row, screen_pt);
+            return 0;
+        }
+    }
+
     if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
         PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
         return 0;
     }
     if (msg == WM_KEYDOWN && w_param == VK_RETURN) {
         clip_take_selected(GetParent(hwnd));
+        return 0;
+    }
+    /* Del deletes the selected clip, leaving the selection at the same row so
+     * that clearing out a run of them is one key pressed repeatedly. */
+    if (msg == WM_KEYDOWN && w_param == VK_DELETE) {
+        int row = (int)SendMessageW(hwnd, LB_GETCURSEL, 0, 0);
+        int index = clip_index_at_row(hwnd, row);
+        if (index >= 0) {
+            clip_remove(index);
+            clip_list_fill();
+            int count = (int)SendMessageW(hwnd, LB_GETCOUNT, 0, 0);
+            if (count > 0)
+                SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)((row < count) ? row : count - 1), 0);
+        }
         return 0;
     }
 
@@ -625,12 +759,15 @@ void hg_clip_toggle_window(void)
     hg_clip_init(); /* the L button may be the first thing that runs */
 
     if (s_clip_wnd && IsWindow(s_clip_wnd)) {
-        if (IsWindowVisible(s_clip_wnd)) {
+        /* Now that this is a real window it can be minimized, and it can be
+         * open but buried. In either case the button means "show me the
+         * history", so only a window already in front is toggled away. */
+        if (IsWindowVisible(s_clip_wnd) && !IsIconic(s_clip_wnd) && GetForegroundWindow() == s_clip_wnd) {
             ShowWindow(s_clip_wnd, SW_HIDE);
             return;
         }
         clip_list_fill();
-        ShowWindow(s_clip_wnd, SW_SHOWNORMAL);
+        ShowWindow(s_clip_wnd, IsIconic(s_clip_wnd) ? SW_RESTORE : SW_SHOWNORMAL);
         hg_force_foreground(s_clip_wnd);
         return;
     }
@@ -639,9 +776,15 @@ void hg_clip_toggle_window(void)
     GetCursorPos(&pt);
     double ws = hg_point_scale(pt);
 
-    s_clip_wnd = CreateWindowExW(WS_EX_TOOLWINDOW, HG_CLASS_CLIP, L"Clipboard History",
-                                 WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN, pt.x, pt.y,
-                                 SCW(ws, 440), SCW(ws, 320), NULL, NULL, GetModuleHandleW(NULL), NULL);
+    /* An ordinary application window, like the notes and the command box: its
+     * own taskbar button, its own Alt-Tab entry, and all three caption
+     * buttons. The history is somewhere you work for a while - picking several
+     * clips, deleting the ones that have served their purpose - not a popup
+     * that answers one question and leaves. */
+    s_clip_wnd = CreateWindowExW(WS_EX_APPWINDOW, HG_CLASS_CLIP, L"Clipboard History",
+                                 WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
+                                     WS_THICKFRAME | WS_CLIPCHILDREN,
+                                 pt.x, pt.y, SCW(ws, 440), SCW(ws, 320), NULL, NULL, GetModuleHandleW(NULL), NULL);
     if (!s_clip_wnd)
         return;
 
