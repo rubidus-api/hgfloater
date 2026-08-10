@@ -36,4 +36,28 @@ PY
 
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-docs.py
 
+# src/hg_about_text.h is generated from README.md and committed, so it can be
+# committed stale: edit the README after a build and the tree carries an About
+# window describing the previous version. Regenerating into a scratch copy and
+# comparing is the only way to see that.
+PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
+import pathlib, subprocess, shutil, sys, tempfile
+
+root = pathlib.Path(".").resolve()
+header = root / "src" / "hg_about_text.h"
+current = header.read_bytes() if header.exists() else b""
+
+with tempfile.TemporaryDirectory() as tmp:
+    scratch = pathlib.Path(tmp)
+    (scratch / "src").mkdir()
+    shutil.copy(root / "README.md", scratch / "README.md")
+    subprocess.run([sys.executable, str(root / "scripts" / "gen_about.py"), str(scratch)],
+                   check=True, stdout=subprocess.DEVNULL)
+    fresh = (scratch / "src" / "hg_about_text.h").read_bytes()
+
+if fresh != current:
+    sys.exit("project-check: src/hg_about_text.h is stale - "
+             "run python3 scripts/gen_about.py and commit the result")
+PY
+
 printf '%s\n' "project-check: ok"
