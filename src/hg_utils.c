@@ -325,6 +325,24 @@ BOOL hg_step_alpha_value(BYTE *alpha, int delta)
 }
 
 /* Shared WM_CTLCOLOR* handling for the scheme-colored edit controls. */
+/* Our own windows that are documents rather than widgets: a page you read or
+ * type in, as opposed to a control you press. They take the document colours,
+ * and they keep their own keys - Ctrl+X is Cut there, not a command of ours.
+ * The monitor previews are widgets despite being separate windows. */
+BOOL hg_is_document_window(HWND hwnd)
+{
+    if (!hwnd || !IsWindow(hwnd))
+        return FALSE;
+
+    WCHAR class_name[64];
+    if (GetClassNameW(hwnd, class_name, (int)HG_ARRAYSIZE(class_name)) <= 0)
+        return FALSE;
+
+    return lstrcmpiW(class_name, HG_CLASS_NOTE_EDIT) == 0 || lstrcmpiW(class_name, HG_CLASS_NOTE_LIST) == 0 ||
+           lstrcmpiW(class_name, HG_CLASS_CLIP) == 0 || lstrcmpiW(class_name, HG_CLASS_COMMANDBOX) == 0 ||
+           lstrcmpiW(class_name, HG_CLASS_ABOUT) == 0;
+}
+
 /* What the theme says a page of text should look like, with no inversion. High
  * contrast is the one case that is not ours to decide: the user has named the
  * exact colors, and a fixed pair would override the setting that exists to be
