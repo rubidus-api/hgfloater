@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.10.0** — built 2026-08-12 23:08 KST
+**v0.10.1** — built 2026-08-12 23:24 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -117,7 +117,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.1)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -839,13 +839,21 @@ creation time of day goes there too, since the file name only carries the day.
 | :--- | :--- |
 | `F1` | About |
 | `T` | Open the taskbox (from the floater) |
-| `Ctrl` + `Q` / `X`, `Alt + F4` | Quit |
+| `Ctrl + Q` | Quit. Works from any HGFloater window. |
+| `Alt + F4` | Quits from the floater or the taskbox; closes just that window from a note, the note list, the clipboard history, the command box or About. |
 | `Enter` | Execute (inside the Command Box) |
 | `Shift + Enter` | New line (inside the Command Box) |
 | `Ctrl + S` / `Ctrl + H` | Scroll mode / history mode (inside the Command Box) |
 | `Shift` + `0`–`9`, `A`–`Z` | Activate the task icon with that label |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
 | `Ctrl + Wheel` | Text size (inside the Command Box) |
+
+The **document windows** - notes, the note list, the clipboard history, the
+command box, About - keep the standard Windows editing keys for themselves:
+`Ctrl + X` cuts, `Ctrl + C` copies, `Ctrl + V` pastes, `Ctrl + Z` and `Ctrl + Y`
+undo and redo, `Ctrl + A` selects all. Only `Ctrl + Q` and `F1` reach past them
+to the program, so nothing you press while typing resets a setting or resizes a
+widget.
 
 ## 12. Mouse Reference
 

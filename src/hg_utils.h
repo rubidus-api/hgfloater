@@ -178,6 +178,7 @@ typedef struct HgDocumentColors {
     COLORREF bg;
     COLORREF text;
 } HgDocumentColors;
+BOOL hg_is_document_window(HWND hwnd);
 HgDocumentColors hg_document_colors(void);
 HgDocumentColors hg_document_field_colors(void);
 LRESULT hg_on_ctlcolor_document(HDC hdc);

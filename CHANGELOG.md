@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.10.1] - 2026-08-12
+
+### Fixed
+- **`Ctrl + X` cuts again.** It was a second binding for quitting the program,
+  which meant a note, a command line and a search box all lost their cut to it.
+  **Quit is `Ctrl + Q`** now, and nothing else.
+- **The program's keys no longer reach into the text you are typing.** The
+  accelerator table was translated in the message loop, and
+  `TranslateAccelerator` matches on the message rather than on the window it was
+  headed for - so every one of those keys applied to every keystroke in the
+  process. `Ctrl + X` was the one that got noticed, but it was never alone:
+  `Ctrl + R` and `F5` reset every setting mid sentence, `Ctrl + 0` and
+  `Ctrl + +/-` resized the widget font instead of the text, and `Alt + F4`
+  closed the whole program rather than the note it was pressed in. The document
+  windows - notes, the note list, the clipboard history, the command box, About
+  - now keep the standard Windows editing keys, and only `Ctrl + Q` and `F1`
+  reach past them.
+- `Alt + F4` closes the focused document window. From the floater or the
+  taskbox it still quits.
+
+### Changed
+- The note's context menu names the key beside each editing command, and the
+  command box's `help key` lists the editing and quit keys.
+- The Korean key reference no longer lists `Ctrl + Enter` in the command box;
+  that binding was removed some releases ago and `Enter` runs what is typed.
+
 ## [v0.10.0] - 2026-08-12
 
 ### Changed

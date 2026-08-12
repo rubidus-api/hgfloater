@@ -1095,15 +1095,18 @@ static void note_editor_show_context_menu(HWND editor, HWND edit, POINT screen_p
     UINT paste = note_menu_flags(writable && IsClipboardFormatAvailable(CF_UNICODETEXT));
     UINT any_text = note_menu_flags(note_edit_text_length(edit) > 0);
 
-    AppendMenuW(menu, undo, HG_NOTE_CMD_UNDO, L"Undo");
-    AppendMenuW(menu, redo, HG_NOTE_CMD_REDO, L"Redo");
+    /* The keys are named on the entries: they are the standard Windows editing
+     * shortcuts and they all work here, which is worth saying in the one place
+     * a reader looks when they are not sure. */
+    AppendMenuW(menu, undo, HG_NOTE_CMD_UNDO, L"Undo\tCtrl+Z");
+    AppendMenuW(menu, redo, HG_NOTE_CMD_REDO, L"Redo\tCtrl+Y");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(menu, change_sel, HG_NOTE_CMD_CUT, L"Cut");
-    AppendMenuW(menu, selection, HG_NOTE_CMD_COPY, L"Copy");
-    AppendMenuW(menu, paste, HG_NOTE_CMD_PASTE, L"Paste");
-    AppendMenuW(menu, change_sel, HG_NOTE_CMD_CLEAR, L"Delete");
+    AppendMenuW(menu, change_sel, HG_NOTE_CMD_CUT, L"Cut\tCtrl+X");
+    AppendMenuW(menu, selection, HG_NOTE_CMD_COPY, L"Copy\tCtrl+C");
+    AppendMenuW(menu, paste, HG_NOTE_CMD_PASTE, L"Paste\tCtrl+V");
+    AppendMenuW(menu, change_sel, HG_NOTE_CMD_CLEAR, L"Delete\tDel");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(menu, any_text, HG_NOTE_CMD_SELECT_ALL, L"Select All");
+    AppendMenuW(menu, any_text, HG_NOTE_CMD_SELECT_ALL, L"Select All\tCtrl+A");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_ARCHIVE, note->archived ? L"Restore" : L"Archive");
     AppendMenuW(menu, MF_STRING, HG_NOTE_CMD_DELETE, L"Delete Note and Close");

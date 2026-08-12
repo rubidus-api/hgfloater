@@ -341,6 +341,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     HICON icon_large = NULL;
     HICON icon_small = NULL;
     HACCEL accel_table = NULL;
+    HACCEL accel_doc_table = NULL; /* the subset a note or a command line keeps */
     int exit_code = 0;
 
     (void)prev_instance;
@@ -450,8 +451,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     hg_caphook_apply();
     dispatch_pending_command_line();
 
+    /* Quit is Ctrl+Q. Ctrl+X was a second binding for it, and Ctrl+X is Cut
+     * everywhere else in Windows: a note, a command line and a search box all
+     * lost their cut to it. One quit key that collides with nothing is worth
+     * more than two. */
     ACCEL accel[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP},
-                     {FCONTROL | FVIRTKEY, 'X', HG_IDM_CLOSE_APP},
                      {FALT | FVIRTKEY, VK_F4, HG_IDM_CLOSE_APP},
                      {FVIRTKEY, VK_F1, HG_IDM_ABOUT},
                      {FCONTROL | FSHIFT | FVIRTKEY, 'R', HG_IDM_RESET_ALL},
@@ -464,6 +468,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
                      {FCONTROL | FVIRTKEY, VK_SUBTRACT, HG_IDM_FONT_DOWN}};
     accel_table = CreateAcceleratorTableW(accel, HG_ARRAYSIZE(accel));
 
+    /* What a document window keeps of the table above. Quit belongs everywhere:
+     * it is the program's one exit and it collides with no editing command.
+     * The rest do collide - Ctrl+R and F5 would reset every setting mid
+     * sentence, Ctrl+0 and Ctrl+/- would resize the widgets rather than the
+     * text, and Alt+F4 has to close the note it was pressed in, not the
+     * program. */
+    ACCEL accel_doc[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP}, {FVIRTKEY, VK_F1, HG_IDM_ABOUT}};
+    accel_doc_table = CreateAcceleratorTableW(accel_doc, HG_ARRAYSIZE(accel_doc));
+
     MSG msg_struct;
     BOOL bRet;
     while ((bRet = GetMessageW(&msg_struct, NULL, 0, 0)) != 0) {
@@ -474,12 +487,23 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
 
 
+        /* TranslateAccelerator matches on the message, not on the window it was
+         * for, so one table translated in the message loop applies to every
+         * keystroke in the process - including the ones typed into a note. That
+         * is how Ctrl+X came to mean quit while editing text, and it was never
+         * only Ctrl+X: Ctrl+R and F5 reset every setting, Ctrl+0 and Ctrl+/-
+         * resized the widget font, and Alt+F4 closed the program instead of the
+         * note. Which table applies is therefore decided by the window the
+         * keystroke was headed for. */
+        HWND key_target = GetAncestor(msg_struct.hwnd, GA_ROOT);
+        HACCEL table = hg_is_document_window(key_target) ? accel_doc_table : accel_table;
+
         BOOL accel_handled = FALSE;
-        if (accel_table && hg_g_taskbox_wnd && TranslateAcceleratorW(hg_g_taskbox_wnd, accel_table, &msg_struct)) {
+        if (table && hg_g_taskbox_wnd && TranslateAcceleratorW(hg_g_taskbox_wnd, table, &msg_struct)) {
             accel_handled = TRUE;
         }
-        if (!accel_handled && accel_table && hg_g_floater_wnd &&
-            TranslateAcceleratorW(hg_g_floater_wnd, accel_table, &msg_struct)) {
+        if (!accel_handled && table && hg_g_floater_wnd &&
+            TranslateAcceleratorW(hg_g_floater_wnd, table, &msg_struct)) {
             accel_handled = TRUE;
         }
 
@@ -499,6 +523,10 @@ cleanup_finish:
     hg_notes_shutdown();       /* an edit made a second ago must not be the one lost */
     hg_backlight_shutdown();   /* the cached WMI connection, before COM goes away */
     restore_system_gamma();
+    if (accel_doc_table) {
+        DestroyAcceleratorTable(accel_doc_table);
+        accel_doc_table = NULL;
+    }
     if (accel_table) {
         DestroyAcceleratorTable(accel_table);
         accel_table = NULL;
