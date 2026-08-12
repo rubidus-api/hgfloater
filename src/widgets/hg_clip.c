@@ -619,16 +619,20 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
 {
     switch (msg) {
     case WM_CREATE: {
-        hg_apply_class_background(hwnd);
-        apply_dwm_attributes(hwnd);
+        /* A document window: the page follows the system theme rather than the
+         * widgets' inversion of it, and paints its own background. */
+        hg_apply_dwm_attributes_document(hwnd);
         HINSTANCE instance = GetModuleHandleW(NULL);
 
-        CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL, WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
+        /* No WS_EX_CLIENTEDGE on any of the three. The list is the page and
+         * needs no line around it; the two boxes are told apart by their field
+         * colour instead. */
+        CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
                         0, hwnd, (HMENU)HG_CLIP_SEARCH_ID, instance, NULL);
-        CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL,
+        CreateWindowExW(0, L"EDIT", NULL,
                         WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd,
                         (HMENU)HG_CLIP_MAX_ID, instance, NULL);
-        CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", NULL,
+        CreateWindowExW(0, L"LISTBOX", NULL,
                         WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_HASSTRINGS, 0, 0, 0, 0,
                         hwnd, (HMENU)HG_CLIP_LIST_ID, instance, NULL);
 
@@ -693,10 +697,28 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
         }
         break;
 
+    case WM_ERASEBKGND:
+        hg_document_paint_background(hwnd, (HDC)w_param);
+        return 1;
+
+    case WM_SETTINGCHANGE:
+        if (should_refresh_theme_on_setting_change(l_param)) {
+            update_theme_colors();
+            hg_apply_dwm_attributes_document(hwnd);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        return 0;
+
+    /* The list is the page; the search box and the number box are fields. */
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORLISTBOX:
-        return hg_on_ctlcolor_edit((HDC)w_param);
+    case WM_CTLCOLORLISTBOX: {
+        HWND child = (HWND)l_param;
+        int id = child ? GetDlgCtrlID(child) : 0;
+        if (id == HG_CLIP_SEARCH_ID || id == HG_CLIP_MAX_ID)
+            return hg_on_ctlcolor_field((HDC)w_param);
+        return hg_on_ctlcolor_document((HDC)w_param);
+    }
 
     case WM_DPICHANGED:
         hg_apply_dpi_suggested_rect(hwnd, l_param);

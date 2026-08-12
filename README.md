@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.9.0** — built 2026-08-10 13:44 KST
+**v0.10.0** — built 2026-08-12 23:08 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -107,12 +107,17 @@ Design principles worth knowing before you use it:
 - **Keyboard and mouse are equal citizens.** Every action has both a pointer
   gesture and a key.
 - **It follows the system theme.** Switching Windows between light and dark mode
-  re-colors the widgets immediately.
+  re-colors everything immediately. The **widgets** invert it on purpose - a
+  control has to stand out against the desktop behind it - while the **document
+  windows** (notes, note list, clipboard history, command box, About) follow it
+  directly: light grey page with black text on a light theme, black page with
+  white text on a dark one. Under high contrast both defer to the colors you
+  chose there.
 
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.9.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -925,7 +930,9 @@ explaining them. The lines and the clips themselves are never written to disk.
 Every accent color as `RRGGBB` hex, for example `FFD228`:
 
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
-  — the dark palette.
+  — the dark palette. These are the **widget** colors: the floater, the taskbox
+  and the toolbar. The document windows take their page colors from the system
+  theme instead and have no keys here.
 - `focus_bg` — the keyboard/mouse focus highlight.
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /

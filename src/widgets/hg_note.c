@@ -294,21 +294,38 @@ static WCHAR *note_edit_read_text(HWND edit)
 }
 
 /* RichEdit never sends WM_CTLCOLOREDIT, so its colours are set rather than
- * answered. Both the existing text and the default for what is typed next. */
+ * answered. Both the existing text and the default for what is typed next.
+ * Document colours, not the widget scheme: a note is a page of text. */
 static void note_edit_apply_theme(HWND edit)
 {
     if (!edit || !s_richedit_ready)
         return;
 
-    SendMessageW(edit, EM_SETBKGNDCOLOR, 0, (LPARAM)hg_g_color_scheme_selected.bg);
+    HgDocumentColors doc = hg_document_colors();
+    SendMessageW(edit, EM_SETBKGNDCOLOR, 0, (LPARAM)doc.bg);
 
     CHARFORMAT2W cf;
     SecureZeroMemory(&cf, sizeof(cf));
     cf.cbSize = sizeof(cf);
     cf.dwMask = CFM_COLOR;
-    cf.crTextColor = hg_g_color_scheme_selected.text;
+    cf.crTextColor = doc.text;
     SendMessageW(edit, EM_SETCHARFORMAT, 0, (LPARAM)&cf);        /* what is typed next */
     SendMessageW(edit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&cf);  /* what is already there */
+}
+
+/* Everything the theme touches in one editor window, so that the settings
+ * change, the DPI change and creation cannot drift apart. */
+static void note_editor_apply_theme(HWND hwnd)
+{
+    if (!hwnd || !IsWindow(hwnd))
+        return;
+
+    hg_apply_dwm_attributes_document(hwnd);
+    HWND edit = GetDlgItem(hwnd, HG_NOTE_EDIT_ID);
+    note_edit_apply_theme(edit);
+    InvalidateRect(hwnd, NULL, TRUE);
+    if (edit)
+        InvalidateRect(edit, NULL, TRUE);
 }
 
 /* ---------------------------------------------------------------- text size */
@@ -1209,9 +1226,15 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
          * stamp its geometry. The sentinel makes this window belong to no note
          * until note_open_editor says otherwise. */
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)-1);
-        hg_apply_class_background(hwnd);
-        apply_dwm_attributes(hwnd);
-        HWND edit = CreateWindowExW(WS_EX_CLIENTEDGE, note_edit_class(), NULL,
+        /* No hg_apply_class_background here: the class brush is the widget
+         * colour shared with the floater, and this window paints its own
+         * document background in WM_ERASEBKGND. */
+        hg_apply_dwm_attributes_document(hwnd);
+        /* No WS_EX_CLIENTEDGE. The sunken edge drew a frame around the text
+         * that only made sense when the control's background differed from the
+         * window's; now that they are the same colour it was a line around
+         * nothing. */
+        HWND edit = CreateWindowExW(0, note_edit_class(), NULL,
                                     WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL |
                                         ES_WANTRETURN | ES_NOHIDESEL,
                                     0, 0, 0, 0, hwnd, (HMENU)HG_NOTE_EDIT_ID, GetModuleHandle(NULL), NULL);
@@ -1288,17 +1311,26 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         return 0;
     }
 
+    case WM_ERASEBKGND:
+        hg_document_paint_background(hwnd, (HDC)w_param);
+        return 1;
+
     /* The system theme can change while a note is open, and RichEdit does not
-     * ask for its colours the way an EDIT does. */
+     * ask for its colours the way an EDIT does. update_theme_colors runs here
+     * rather than being waited for: WM_SETTINGCHANGE reaches every top-level
+     * window in no defined order, so the window that refreshes the globals may
+     * well be behind this one in the queue. It only re-reads the system. */
     case WM_SETTINGCHANGE:
-        if (should_refresh_theme_on_setting_change(l_param))
-            note_edit_apply_theme(GetDlgItem(hwnd, HG_NOTE_EDIT_ID));
+        if (should_refresh_theme_on_setting_change(l_param)) {
+            update_theme_colors();
+            note_editor_apply_theme(hwnd);
+        }
         return 0;
 
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
         /* Only reached on the EDIT fallback; RichEdit is coloured explicitly. */
-        return hg_on_ctlcolor_edit((HDC)w_param);
+        return hg_on_ctlcolor_document((HDC)w_param);
 
     case WM_DPICHANGED: {
         hg_apply_dpi_suggested_rect(hwnd, l_param);
@@ -1680,9 +1712,10 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
 {
     switch (msg) {
     case WM_CREATE: {
-        hg_apply_class_background(hwnd);
-        apply_dwm_attributes(hwnd);
-        HWND list = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", NULL,
+        /* A document window, coloured like the notes it lists: see the editor's
+         * WM_CREATE for why the class brush is left alone. */
+        hg_apply_dwm_attributes_document(hwnd);
+        HWND list = CreateWindowExW(0, L"LISTBOX", NULL,
                                     WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOTIFY | LBS_HASSTRINGS, 0, 0, 0, 0,
                                     hwnd, (HMENU)HG_NOTE_LIST_ID, GetModuleHandle(NULL), NULL);
         if (list)
@@ -1751,10 +1784,22 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
             return 0;
         break;
 
+    case WM_ERASEBKGND:
+        hg_document_paint_background(hwnd, (HDC)w_param);
+        return 1;
+
+    case WM_SETTINGCHANGE:
+        if (should_refresh_theme_on_setting_change(l_param)) {
+            update_theme_colors();
+            hg_apply_dwm_attributes_document(hwnd);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        return 0;
+
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
     case WM_CTLCOLORLISTBOX:
-        return hg_on_ctlcolor_edit((HDC)w_param);
+        return hg_on_ctlcolor_document((HDC)w_param);
 
     case WM_DPICHANGED:
         hg_apply_dpi_suggested_rect(hwnd, l_param);

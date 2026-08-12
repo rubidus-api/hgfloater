@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.10.0] - 2026-08-12
+
+### Changed
+- **The document windows follow the system theme directly.** Notes, the note
+  list, the clipboard history, the command box and About are pages of text, and
+  a page should look like the theme says a page looks: **light grey with black
+  text on a light theme, black with white text on a dark one**. The widgets -
+  the floater, the taskbox, the toolbar - still invert the theme on purpose,
+  because a control has to stand out against the desktop behind it. That
+  inversion was never right for a note, which on a dark desktop came out as a
+  white sheet. Under high contrast both defer to the colors the user chose
+  there.
+- **The sunken edge is gone from the text controls in those windows**, and each
+  window's background is now the same color as the control filling it. The
+  border was drawn to separate two surfaces that are now one color, so it was a
+  line around nothing.
+- **Small input fields keep one step of separation**: the clipboard's search and
+  count boxes and the command line are painted white on a light theme and near
+  black on a dark one, a shade off the page behind them. Without an outline
+  *and* without a shade, a box you are meant to type in gives no sign of being
+  one.
+- **A document window's title bar is coloured like its page.** Left on the
+  widget scheme it inverted against its own client area - a light grey note
+  under a black caption - which read as two windows stuck together. The frame
+  colour stays with the widgets: it is the one edge that has to be findable
+  against whatever is behind the window.
+
+### Fixed
+- A theme change now repaints these windows regardless of the order
+  `WM_SETTINGCHANGE` reaches them in. Each one refreshes the theme globals
+  itself rather than assuming the window that owns them was served first.
+
 ## [v0.9.0] - 2026-08-10
 
 ### Added
