@@ -325,6 +325,100 @@ BOOL hg_step_alpha_value(BYTE *alpha, int delta)
 }
 
 /* Shared WM_CTLCOLOR* handling for the scheme-colored edit controls. */
+/* What the theme says a page of text should look like, with no inversion. High
+ * contrast is the one case that is not ours to decide: the user has named the
+ * exact colors, and a fixed pair would override the setting that exists to be
+ * obeyed. */
+HgDocumentColors hg_document_colors(void)
+{
+    if (hg_g_is_high_contrast) {
+        HgDocumentColors hc = {GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT)};
+        return hc;
+    }
+    if (hg_g_is_dark_mode) {
+        HgDocumentColors dark = {HG_DOC_DARK_BG, HG_DOC_DARK_TEXT};
+        return dark;
+    }
+    HgDocumentColors light = {HG_DOC_LIGHT_BG, HG_DOC_LIGHT_TEXT};
+    return light;
+}
+
+/* A small input field, one step off the page so that it still reads as a place
+ * to type once its outline is gone. High contrast keeps the system pair: there
+ * the field is told apart by the caret and the focus rectangle the user chose. */
+HgDocumentColors hg_document_field_colors(void)
+{
+    HgDocumentColors field = hg_document_colors();
+    if (hg_g_is_high_contrast)
+        return field;
+    field.bg = hg_g_is_dark_mode ? HG_DOC_DARK_FIELD_BG : HG_DOC_LIGHT_FIELD_BG;
+    return field;
+}
+
+/* The document counterpart of hg_on_ctlcolor_edit. The brush comes from the
+ * cache rather than a global, so a theme change cannot leave a control holding
+ * a deleted handle: the cache is flushed and the next paint asks again. */
+static LRESULT hg_on_ctlcolor_pair(HDC hdc, HgDocumentColors colors)
+{
+    SetTextColor(hdc, colors.text);
+    SetBkMode(hdc, OPAQUE);
+    SetBkColor(hdc, colors.bg);
+    HBRUSH brush = hg_cached_solid_brush(colors.bg);
+    return brush ? (LRESULT)brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+}
+
+LRESULT hg_on_ctlcolor_document(HDC hdc)
+{
+    return hg_on_ctlcolor_pair(hdc, hg_document_colors());
+}
+
+LRESULT hg_on_ctlcolor_field(HDC hdc)
+{
+    return hg_on_ctlcolor_pair(hdc, hg_document_field_colors());
+}
+
+/* A document window's own client area, behind and around its controls. Painted
+ * here rather than through the class brush because the class brush is the
+ * widget colour shared with the floater, and because a brush the class holds
+ * is a handle that a theme change can delete underneath it. */
+void hg_document_paint_background(HWND hwnd, HDC hdc)
+{
+    if (!hwnd || !hdc)
+        return;
+
+    HBRUSH brush = hg_cached_solid_brush(hg_document_colors().bg);
+    if (!brush)
+        return;
+
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+    FillRect(hdc, &rc, brush);
+}
+
+/* A document window's title bar belongs to the page, not to the widgets. Left
+ * on the widget scheme it inverts against its own client area - a light grey
+ * note under a black caption - which reads as two windows stuck together. */
+void hg_apply_dwm_attributes_document(HWND hwnd)
+{
+    if (!hwnd || !IsWindow(hwnd))
+        return;
+
+    HgDocumentColors doc = hg_document_colors();
+    BOOL use_immersive_dark_mode = hg_g_is_dark_mode && !hg_g_is_high_contrast;
+    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &use_immersive_dark_mode,
+                          sizeof(use_immersive_dark_mode));
+    DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &doc.bg, sizeof(doc.bg));
+    DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &doc.text, sizeof(doc.text));
+    /* The frame keeps the widget border: it is the one edge that has to be
+     * findable against whatever is behind the window, and the caption color
+     * cannot serve as its own outline. */
+    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &hg_g_color_scheme_selected.border,
+                          sizeof(hg_g_color_scheme_selected.border));
+
+    int corner_pref = DWMWCP_DONOTROUND;
+    DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
+}
+
 LRESULT hg_on_ctlcolor_edit(HDC hdc)
 {
     SetTextColor(hdc, hg_g_color_scheme_selected.text);
@@ -365,8 +459,15 @@ void refresh_theme_surfaces(HWND hwnd)
     if (hg_g_floater_wnd && hg_g_floater_wnd != hwnd) {
         apply_dwm_attributes(hg_g_floater_wnd);
     }
+    /* Document windows get the document caption, not the widget one. Doing it
+     * here as well as in their own WM_SETTINGCHANGE is what makes the order the
+     * broadcast reaches them in stop mattering: whichever runs last, both write
+     * the same answer. */
     if (hg_g_about_wnd && hg_g_about_wnd != hwnd) {
-        apply_dwm_attributes(hg_g_about_wnd);
+        hg_apply_dwm_attributes_document(hg_g_about_wnd);
+    }
+    if (hg_g_commandbox_wnd && hg_g_commandbox_wnd != hwnd) {
+        hg_apply_dwm_attributes_document(hg_g_commandbox_wnd);
     }
 
     hg_flush_solid_brush_cache();
@@ -376,10 +477,13 @@ void refresh_theme_surfaces(HWND hwnd)
      * keeps a deleted handle; lazily created windows heal their class on creation. */
     hg_apply_class_background(hwnd);
     hg_apply_class_background(hg_g_floater_wnd);
-    hg_apply_class_background(hg_g_commandbox_wnd);
+    /* The command box and the About window are not re-stamped: they paint their
+     * own document background, so the class brush is never asked for. */
 
+    if (hg_g_commandbox_wnd && IsWindow(hg_g_commandbox_wnd)) {
+        InvalidateRect(hg_g_commandbox_wnd, NULL, TRUE);
+    }
     if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
-        hg_apply_class_background(hg_g_about_wnd);
         InvalidateRect(hg_g_about_wnd, NULL, TRUE);
         HWND edit_wnd = GetDlgItem(hg_g_about_wnd, 100);
         if (edit_wnd) {

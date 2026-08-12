@@ -459,11 +459,16 @@ void show_commandbox_window()
     );
 
     if (hg_g_commandbox_wnd) {
-        hg_apply_class_background(hg_g_commandbox_wnd);
+        /* A document window: it paints its own page-coloured background rather
+         * than taking the widget brush off the class. */
+        hg_apply_dwm_attributes_document(hg_g_commandbox_wnd);
         SetLayeredWindowAttributes(hg_g_commandbox_wnd, 0, hg_g_commandbox_alpha, LWA_ALPHA);
-        
+
+        /* No WS_EX_CLIENTEDGE below: the sunken edge is what the mode border
+         * used to be drawn just outside of, and with the children the same
+         * colour as the window there is nothing for it to separate. */
         hg_g_commandbox_out_wnd = CreateWindowExW(
-            WS_EX_CLIENTEDGE, L"EDIT", NULL,
+            0, L"EDIT", NULL,
             /* No ES_AUTOHSCROLL: on a multiline edit that is the switch that
              * turns word wrap off, and a transcript of window titles and help
              * text is worth reading without a horizontal scrollbar. */
@@ -472,7 +477,7 @@ void show_commandbox_window()
         );
 
         hg_g_commandbox_in_wnd = CreateWindowExW(
-            WS_EX_CLIENTEDGE, L"EDIT", NULL,
+            0, L"EDIT", NULL,
             WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
             0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)102, GetModuleHandle(NULL), NULL
         );
@@ -486,7 +491,7 @@ void show_commandbox_window()
         /* Created last so it sits above the transcript it covers; shown only
          * while history mode is on. */
         s_cb_hist_wnd = CreateWindowExW(
-            WS_EX_CLIENTEDGE, L"LISTBOX", NULL,
+            0, L"LISTBOX", NULL,
             WS_CHILD | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT | LBS_USETABSTOPS,
             0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)105, GetModuleHandle(NULL), NULL
         );
@@ -762,10 +767,28 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         break;
     }
 
+    case WM_ERASEBKGND:
+        hg_document_paint_background(hwnd, (HDC)w_param);
+        return 1;
+
+    case WM_SETTINGCHANGE:
+        if (should_refresh_theme_on_setting_change(l_param)) {
+            update_theme_colors();
+            hg_apply_dwm_attributes_document(hwnd);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        return 0;
+
+    /* The transcript and the history list are the page; the command line is
+     * the one field, so it keeps its own shade. */
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORLISTBOX:
-        return hg_on_ctlcolor_edit((HDC)w_param);
+    case WM_CTLCOLORLISTBOX: {
+        HWND child = (HWND)l_param;
+        if (child && child == hg_g_commandbox_in_wnd)
+            return hg_on_ctlcolor_field((HDC)w_param);
+        return hg_on_ctlcolor_document((HDC)w_param);
+    }
 
     case WM_CLOSE:
         commandbox_set_mode(HG_CB_MODE_NONE);

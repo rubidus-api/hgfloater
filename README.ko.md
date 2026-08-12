@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.9.0** — 빌드 2026-08-10 13:44 KST
+**v0.10.0** — 빌드 2026-08-12 23:08 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -97,11 +97,15 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 - **모든 것을 그 자리에서 조절합니다.** 크기, 투명도, 글꼴 크기, 격자 모양, 색을 휠이나
   키보드로 즉시 바꾸고, 저장은 알아서 됩니다.
 - **키보드와 마우스가 동등합니다.** 모든 동작에 포인터 제스처와 단축키가 모두 있습니다.
-- **시스템 테마를 따릅니다.** 윈도우의 라이트/다크 모드를 바꾸면 즉시 색이 반전됩니다.
+- **시스템 테마를 따릅니다.** 윈도우의 라이트/다크 모드를 바꾸면 즉시 색이 바뀝니다.
+  **위젯**은 일부러 테마를 뒤집습니다 — 조작하는 물건은 뒤에 깔린 바탕화면과 구분되어야
+  하니까요. 반면 **문서 창들**(메모, 메모 목록, 클립보드 히스토리, 커맨드 박스, About)은
+  테마를 그대로 따릅니다: 라이트 테마에서는 밝은 회색 바탕에 검은 글씨, 다크 테마에서는
+  검은 바탕에 흰 글씨입니다. 고대비 모드에서는 양쪽 모두 사용자가 지정하신 색을 씁니다.
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.9.0)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.0)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -820,7 +824,8 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 모든 강조 색을 `RRGGBB` 16진수(예: `FFD228`)로 지정합니다.
 
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
-  — 다크 팔레트
+  — 다크 팔레트. **위젯**(플로터·태스크박스·툴바)의 색입니다. 문서 창의 지면 색은
+  시스템 테마에서 가져오므로 여기에 해당하는 항목이 없습니다
 - `focus_bg` — 키보드/마우스 포커스 강조
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — 플로터 상태 막대
 - `value_alpha_low`/`value_alpha_high`, `value_brightness_low`/`value_brightness_high`,

@@ -89,7 +89,7 @@
  * the build scripts; the stamp is the moment the exe was built. Fallbacks
  * cover an IDE or ad-hoc compile that passes neither. */
 #ifndef HG_VERSION_W
-#define HG_VERSION_W L"v0.9.0"
+#define HG_VERSION_W L"v0.10.0"
 #endif
 #ifndef HG_BUILD_STAMP_W
 #define HG_BUILD_STAMP_W L"unknown"
@@ -239,6 +239,25 @@
 #define HG_THEME_CUSTOM_TEXT RGB(255, 255, 255)
 #define HG_THEME_CUSTOM_FLASH RGB(180, 130, 240)
 #define HG_THEME_CUSTOM_SELECTED RGB(80, 80, 80)
+
+/* Document colors: the surfaces you read and type in, as opposed to the
+ * widgets you press. The widget scheme deliberately inverts the system theme
+ * so that the floater stands out against the desktop behind it (see
+ * update_theme_colors), which is right for a control and wrong for a page of
+ * text - a note on a dark desktop should not be a white sheet. These follow
+ * the system theme directly instead. */
+#define HG_DOC_LIGHT_BG RGB(240, 240, 240)
+#define HG_DOC_LIGHT_TEXT RGB(0, 0, 0)
+#define HG_DOC_DARK_BG RGB(0, 0, 0)
+#define HG_DOC_DARK_TEXT RGB(255, 255, 255)
+
+/* Small input fields - a search box, a number box, the command line - are the
+ * one place the document colour cannot simply be repeated. The content control
+ * fills its window, so losing its outline costs nothing; a small field painted
+ * exactly like the window behind it and with no outline is a place to type
+ * that gives no sign of being one. One step off the page is that sign. */
+#define HG_DOC_LIGHT_FIELD_BG RGB(255, 255, 255)
+#define HG_DOC_DARK_FIELD_BG RGB(26, 26, 26)
 
 /* Default accent colors. The runtime values live in hg_globals and every one
  * of them can be overridden from config.ini's [colors] section (RRGGBB hex);

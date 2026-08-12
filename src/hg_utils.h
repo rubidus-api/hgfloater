@@ -174,6 +174,16 @@ void hg_update_status_clock(void);
 void draw_outlined_text(HDC hdc, const WCHAR *text, int len, RECT *rc, UINT format, COLORREF text_color, COLORREF outline_color);
 int hg_measure_edit_height(HWND edit_wnd, HFONT font, double scale);
 LRESULT hg_on_ctlcolor_edit(HDC hdc);
+typedef struct HgDocumentColors {
+    COLORREF bg;
+    COLORREF text;
+} HgDocumentColors;
+HgDocumentColors hg_document_colors(void);
+HgDocumentColors hg_document_field_colors(void);
+LRESULT hg_on_ctlcolor_document(HDC hdc);
+LRESULT hg_on_ctlcolor_field(HDC hdc);
+void hg_document_paint_background(HWND hwnd, HDC hdc);
+void hg_apply_dwm_attributes_document(HWND hwnd);
 BOOL hg_step_alpha_value(BYTE *alpha, int delta);
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect);
 typedef enum HgToolbarTextMode {

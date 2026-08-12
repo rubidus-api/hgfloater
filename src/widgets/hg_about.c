@@ -22,8 +22,12 @@ void show_about_window(void)
         return;
     }
 
-    hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                                     CW_USEDEFAULT, SC(400), SC(300), NULL, NULL, GetModuleHandle(NULL), NULL);
+    /* WS_CLIPCHILDREN so the background fill stops at the text control instead
+     * of painting under it and being painted over - the flicker the other
+     * document windows already avoid this way. */
+    hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+                                     CW_USEDEFAULT, CW_USEDEFAULT, SC(400), SC(300), NULL, NULL,
+                                     GetModuleHandle(NULL), NULL);
     if (hg_g_about_wnd) {
         ShowWindow(hg_g_about_wnd, SW_SHOW);
     }
@@ -50,8 +54,9 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
         hg_apply_dpi_suggested_rect(hwnd, l_param);
         return 0;
     case WM_CREATE: {
-        hg_apply_class_background(hwnd);
-        apply_dwm_attributes(hwnd);
+        /* A page of text, so the document colours rather than the widgets'
+         * inversion of the system theme. */
+        hg_apply_dwm_attributes_document(hwnd);
         double ws = hg_window_scale(hwnd);
         HWND edit_wnd =
             CreateWindowExW(0, L"EDIT", HG_ABOUT_TEXT_W,
@@ -78,9 +83,19 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
         }
         return 0;
     }
+    case WM_ERASEBKGND:
+        hg_document_paint_background(hwnd, (HDC)w_param);
+        return 1;
+    case WM_SETTINGCHANGE:
+        if (should_refresh_theme_on_setting_change(l_param)) {
+            update_theme_colors();
+            hg_apply_dwm_attributes_document(hwnd);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        return 0;
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
-        return hg_on_ctlcolor_edit((HDC)w_param);
+        return hg_on_ctlcolor_document((HDC)w_param);
     case WM_KEYDOWN: {
         if (w_param == VK_ESCAPE) {
             PostMessageW(hwnd, WM_CLOSE, 0, 0);
