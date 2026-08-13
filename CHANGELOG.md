@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.10.6] - 2026-08-13
+
+### Added
+- **`Ctrl + L` calls up the clipboard history** from the floater or the taskbox.
+  It is the letter the toolbar button already carries, so the key and the button
+  say the same thing, and it toggles the way that button does: already in front
+  means hide, minimized or buried means come back.
+
 ## [v0.10.5] - 2026-08-13
 
 ### Added

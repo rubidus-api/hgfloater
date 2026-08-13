@@ -658,6 +658,14 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             return 0;
         }
 
+        /* Ctrl+L calls up the clipboard history - the same letter its toolbar
+         * button carries, so the key and the button say the same thing. It
+         * toggles the way that button does: already in front means hide. */
+        if (w_param == 'L' && !is_alt) {
+            hg_clip_toggle_window();
+            return 0;
+        }
+
         if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
             update_edit_font_size(1);
             return 0;

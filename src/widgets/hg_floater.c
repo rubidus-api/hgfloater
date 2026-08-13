@@ -2,6 +2,7 @@
 #include "../hg_utils.h"
 #include "../hg_tabs.h"
 #include "hg_tabbox.h"
+#include "hg_clip.h"
 #include "../hg_caphook.h"
 #include "../hg_config.h"
 
@@ -837,11 +838,14 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             update_floater_font_size(-1);
             return 0;
         } else if (w_param == 'E' && !is_alt) {
-            /* The same key the taskbox answers. These two are one surface -
+            /* The same keys the taskbox answers. These two are one surface -
              * hovering the floater is what opens the taskbox - so a key that
              * worked in one and not the other would read as a key that
              * sometimes works. */
             show_commandbox_window();
+            return 0;
+        } else if (w_param == 'L' && !is_alt) {
+            hg_clip_toggle_window();
             return 0;
         }
     }

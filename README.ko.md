@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.10.5** — 빌드 2026-08-13 17:02 KST
+**v0.10.6** — 빌드 2026-08-13 17:10 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -105,7 +105,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.5)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.6)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -388,7 +388,7 @@ tab_classes=SomeApp_Frame;OtherApp
 | **`F`** Floater | 플로터만 남기고 접어 조정 모드로 전환(아래 참고) | — |
 | **`P`** Pin | 태스크박스를 열린 상태로 고정 | — |
 | **`N`** Note | [노트 목록](#10-노트) 열기 | — |
-| **`L`** Clipboard | 클립보드 히스토리 열기(앞에 있을 때 다시 누르면 닫힘) | — |
+| **`L`** Clipboard | 클립보드 히스토리 열기(`Ctrl + L` 과 동일, 앞에 있을 때 다시 누르면 닫힘) | — |
 
 **`M` — 비켜나기.** 드래그하지 않고 클릭하면, 방금 있던 영역을 딱 벗어날 만큼만 스스로
 움직입니다. 진행 방향은 유지되므로 계속 누르면 같은 방향으로 화면을 가로질러 이동하고, 그
@@ -427,8 +427,9 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 
 ### 클립보드 히스토리
 
-**`L`**을 누르면 복사해 온 것들이 최신순으로 뜨는 창이 열립니다. 그 창이 앞에 있을 때
-다시 누르시면 닫히고, 최소화되었거나 다른 창에 가려져 있을 때는 도로 앞으로 올라옵니다.
+툴바의 **`L`** 버튼, 또는 플로터·태스크박스에서 **`Ctrl + L`** 을 누르시면 복사해 온
+것들이 최신순으로 뜨는 창이 열립니다. 그 창이 앞에 있을 때 다시 누르시면 닫히고,
+최소화되었거나 다른 창에 가려져 있을 때는 도로 앞으로 올라옵니다.
 
 이 창은 **보통 응용프로그램 창**입니다 — 자기 작업표시줄 버튼과 Alt-Tab 항목을 가지고,
 제목 표시줄에 최소화·최대화·닫기가 모두 있습니다 — 그리고 직접 닫으시기 전까지 계속
@@ -719,6 +720,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `Tab` | 탭 박스가 열려 있으면(아래 참조) 그 안으로 들어갑니다 |
 | `C`, `Ctrl + E` | 커맨드 박스를 엽니다 |
 | `N`, `Ctrl + N` | 노트 목록을 엽니다 |
+| `Ctrl + L` | 클립보드 히스토리를 엽니다 |
 | `Esc` | 태스크박스 숨기고 단축 아이콘 다시 읽기 |
 
 ### 노트 목록에서

@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.10.5** — built 2026-08-13 17:02 KST
+**v0.10.6** — built 2026-08-13 17:10 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -117,7 +117,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.5)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.6)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -435,7 +435,7 @@ Thirteen built-in buttons sit in the same grid as the icons. Their order is fixe
 | **`F`** Floater | Collapses to the floater for tuning (see below). | — |
 | **`P`** Pin | Pins the taskbox open. | — |
 | **`N`** Note | Opens the [note list](#10-notes). | — |
-| **`L`** Clipboard | Opens the clipboard history; press again, with it in front, to close it. | — |
+| **`L`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -480,9 +480,10 @@ the global hotkey, a floater click — still work. Click again to unpin.
 
 ### The clipboard history
 
-**`L`** opens a window listing what you have copied, newest first. Press `L`
-again while it is the window in front and it closes; if it is minimized or
-buried, `L` brings it back instead.
+The **`L`** toolbar button, or **`Ctrl + L`** from the floater or the taskbox,
+opens a window listing what you have copied, newest first. Press it again while
+that window is in front and it closes; if it is minimized or buried, it comes
+back instead.
 
 It is an **ordinary application window** — its own taskbar button, its own
 Alt-Tab entry, minimize, maximize and close in the title bar — and it stays
@@ -807,6 +808,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Tab` | With a tab box open (see below), step into it |
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
+| `Ctrl + L` | Open the clipboard history |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
 ### Inside the note list
