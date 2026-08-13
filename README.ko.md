@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.10.3** — 빌드 2026-08-13 16:45 KST
+**v0.10.4** — 빌드 2026-08-13 16:52 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -105,7 +105,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.3)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.4)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -754,6 +754,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | 키 | 동작 |
 | :--- | :--- |
 | `F1` | 정보 창 |
+| `Ctrl + W` | 포커스된 문서 창을 닫습니다(메모·메모 목록·클립보드 히스토리·커맨드 박스·정보 창) |
 | `T` | (플로터에서) 태스크박스 열기 |
 | `Ctrl + Q` | 종료. HGFloater 의 어느 창에서나 동작합니다 |
 | `Alt + F4` | 플로터·태스크박스에서는 종료, 메모·메모 목록·클립보드 히스토리·커맨드 박스·About 에서는 그 창만 닫습니다 |
@@ -769,6 +770,10 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 `Ctrl + Z`/`Ctrl + Y` 실행 취소·다시 실행, `Ctrl + A` 전체 선택. 이 창들에서 프로그램에까지
 닿는 키는 `Ctrl + Q` 와 `F1` 뿐이라, 글을 쓰시는 중에 누른 키가 설정을 초기화하거나 위젯
 크기를 바꾸는 일이 없습니다.
+
+**`Ctrl + W` 로는 이 창들을 닫으실 수 있습니다.** 다른 프로그램에서 탭이나 문서를 닫는
+것과 같습니다. 커맨드 박스에서만 `Esc` 와 뜻이 다릅니다 — `Esc` 는 닫고 태스크박스로
+돌아가고, `Ctrl + W` 는 그냥 닫습니다.
 
 ## 12. 마우스 조작 요약
 

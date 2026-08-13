@@ -39,6 +39,12 @@ static LRESULT CALLBACK about_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
     if (hg_readonly_edit_common(hwnd, msg, w_param)) {
         return 0;
     }
+    /* Ctrl+W closes this window, as it does in the other document windows.
+     * Checked before Ctrl+C and the rest reach the read-only text. */
+    if (msg == WM_KEYDOWN && w_param == 'W' && (GetKeyState(VK_CONTROL) < 0) && !(GetKeyState(VK_MENU) < 0)) {
+        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+        return 0;
+    }
     if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
         PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
         return 0;
@@ -97,6 +103,12 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
     case WM_CTLCOLOREDIT:
         return hg_on_ctlcolor_document((HDC)w_param);
     case WM_KEYDOWN: {
+        /* Reached when the focus is on the window rather than on the text,
+         * which answers both keys through its subclass. */
+        if (w_param == 'W' && (GetKeyState(VK_CONTROL) < 0) && !(GetKeyState(VK_MENU) < 0)) {
+            PostMessageW(hwnd, WM_CLOSE, 0, 0);
+            return 0;
+        }
         if (w_param == VK_ESCAPE) {
             PostMessageW(hwnd, WM_CLOSE, 0, 0);
         }

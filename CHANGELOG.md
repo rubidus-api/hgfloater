@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.10.4] - 2026-08-13
+
+### Added
+- **`Ctrl + W` closes the About window** too. All five document windows - note
+  editors, the note list, the clipboard history, the command box and About -
+  answer it now, which is the same set that takes the document colours and the
+  document accelerator table.
+
 ## [v0.10.3] - 2026-08-13
 
 ### Fixed
