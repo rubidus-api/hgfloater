@@ -752,10 +752,15 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         return 0;
     }
 
-    /* Bare N opens the note list, the same thing the N toolbar button does.
-     * The button had the mouse's path and nothing had the keyboard's; Shift+N
-     * stays the task badge, handled above. */
-    if (w_param == 'N' && !is_ctrl && !is_alt) {
+    /* N opens the note list, the same thing the N toolbar button does. The
+     * button had the mouse's path and nothing had the keyboard's; Shift+N
+     * stays the task badge, handled above.
+     *
+     * Ctrl+N does the same. It is what a hand reaches for after years of other
+     * programs, it was bound to nothing here, and the list opens on +Add Note
+     * with the arrows already meaning what they should - so the shortcut needs
+     * no second half. */
+    if (w_param == 'N' && !is_alt) {
         show_note_list_window();
         return 0;
     }
