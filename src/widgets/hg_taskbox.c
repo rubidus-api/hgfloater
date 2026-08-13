@@ -648,6 +648,16 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
     if (is_ctrl) {
         int icon_size = taskbox_toolbar_icon_size();
 
+        /* Ctrl+E opens the command box, beside the bare C that already did.
+         * E for Execute, which is what the box's own button says, and it is
+         * left-hand reachable while the right hand is on the mouse. The letter
+         * was free of every Ctrl binding and of every toolbar letter; Ctrl+R,
+         * the other candidate, is Reset All. */
+        if (w_param == 'E' && !is_alt) {
+            show_commandbox_window();
+            return 0;
+        }
+
         if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
             update_edit_font_size(1);
             return 0;

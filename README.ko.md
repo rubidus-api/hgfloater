@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.10.4** — 빌드 2026-08-13 16:52 KST
+**v0.10.5** — 빌드 2026-08-13 17:02 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -105,7 +105,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.4)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.5)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -206,7 +206,7 @@ HGFloater는 서로 자리를 바꾸는 두 개의 창으로 이루어집니다.
 - **Alt + 휠** — 투명도.
 - **Ctrl + 휠** 또는 **Ctrl + 왼쪽 드래그** — 글꼴 크기(위젯 전체가 함께 커집니다).
 - **Alt + 방향키 / WASD** — 키보드로 창 이동.
-- **`T`** — 태스크박스 열기, **`C`** — 커맨드 박스, **`F1`** — 정보 창.
+- **`T`** — 태스크박스 열기, **`C`** 또는 **`Ctrl + E`** — 커맨드 박스, **`F1`** — 정보 창.
 
 커서가 태스크박스를 벗어나면 약 0.5초의 유예 후 접힙니다. 가장자리를 살짝 스쳤다고 사라지지
 않습니다.
@@ -717,7 +717,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `Space` | 포커스된 항목을 실행합니다. 창이라면 그 창이 앞으로 나오고 대시보드는 플로터로 접힙니다 — 클릭했을 때와 똑같습니다 |
 | `Enter` / `F2` | 포커스된 항목의 컨텍스트 메뉴를 엽니다 |
 | `Tab` | 탭 박스가 열려 있으면(아래 참조) 그 안으로 들어갑니다 |
-| `C` | 커맨드 박스를 엽니다 |
+| `C`, `Ctrl + E` | 커맨드 박스를 엽니다 |
 | `N`, `Ctrl + N` | 노트 목록을 엽니다 |
 | `Esc` | 태스크박스 숨기고 단축 아이콘 다시 읽기 |
 

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.10.5] - 2026-08-13
+
+### Added
+- **`Ctrl + E` opens the command box** from the floater or the taskbox, beside
+  the bare `C` that already did. `E` for Execute, which is what the box's own
+  button says, and it is reachable with the left hand while the right one is on
+  the mouse. The letter was free of every Ctrl binding in the program and of
+  every toolbar letter.
+
+  `Ctrl + R` was the first thought and is not available: **Reset Settings**
+  holds it. Handing it over would have meant taking the key from a destructive
+  action and leaving it beside the one a hand reaches for when it wants a
+  command line - so reset keeps `Ctrl + R`, `Ctrl + Shift + R`, `F5`, `Ctrl + 0`
+  and its menu entry, unchanged.
+
 ## [v0.10.4] - 2026-08-13
 
 ### Added
