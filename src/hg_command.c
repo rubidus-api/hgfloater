@@ -351,7 +351,7 @@ static const WCHAR *const cmd_key_help[] = {
     L"  Ctrl+Wheel         text size          Alt+Wheel   opacity",
     L"  Alt+arrows         move this window   Ctrl+arrows resize it",
     L"  Ctrl+X/C/V         cut, copy, paste   Ctrl+Z/Y    undo, redo",
-    L"  Ctrl+Q             quit hgfloater     Alt+F4      close this window",
+    L"  Ctrl+Q             quit hgfloater     Ctrl+W      close this window",
     L"",
     L"  The arrows stay the caret's until a mode is on, so selecting and",
     L"  editing text works the way it does everywhere else. A mode says so",

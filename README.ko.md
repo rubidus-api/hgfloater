@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.10.2** — 빌드 2026-08-13 16:36 KST
+**v0.10.3** — 빌드 2026-08-13 16:45 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -105,7 +105,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.2)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.3)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -445,7 +445,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `Del` | 선택한 클립을 지웁니다. 선택 위치는 그대로 남아, 여러 개를 연달아 지우실 때 다시 겨냥하지 않으셔도 됩니다 |
 | 왼쪽 위 **검색창** | 입력한 글자가 든 클립만 보여줍니다(대소문자 무시). 비우면 다시 전부 |
 | 오른쪽 위 **숫자칸** | 보관할 최대 개수. 기본 16, 위아래 버튼·화살표 키·그 위에서의 휠로 조정 |
-| `Esc` | 창을 닫습니다 |
+| `Esc`, `Ctrl + W` | 창을 닫습니다 |
 
 **예전 클립을 고르면 그것이 맨 위로 오고 그 위에 있던 것들이 한 칸씩 밀립니다.** 잃는 것도
 없고 고른 것 아래는 움직이지 않습니다 — 그 글을 그냥 다시 복사했을 때와 같은 순서가 됩니다.
@@ -523,6 +523,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `Ctrl + S` | **스크롤 모드**: `위`/`아래`로 결과창을 한 줄씩, `좌`/`우`로 한 페이지씩 |
 | `Ctrl + H` | **히스토리 모드**: 히스토리가 리스트로 나타나고, 가장 오래된 것부터 `1:` 번호가 붙습니다. `위`/`아래`로 선택을 옮기고 `Enter`(또는 더블클릭)를 누르면 그 줄이 입력칸에 들어가면서 모드가 끝납니다 |
 | `Esc` | 모드에서 빠져나오고, 모드가 없으면 커맨드 박스를 닫고 태스크박스로 돌아갑니다 |
+| `Ctrl + W` | 커맨드 박스만 닫습니다(태스크박스는 그대로) |
 | `Ctrl + Space` | 입력칸으로 이동 |
 
 **화살표는 모드에 들어가기 전까지 캐럿 몫입니다.** 그래서 입력칸에서 글자를 고르고 고치는 일이

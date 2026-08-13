@@ -197,6 +197,20 @@ static void commandbox_escape(HWND hwnd)
         SetFocus(hg_g_toolbar_wnd);
 }
 
+/* The Execute button, which keeps only the one key it would otherwise swallow.
+ * Everything else stays the button's, Enter and Space included. */
+static LRESULT CALLBACK commandbox_button_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
+                                                        UINT_PTR subclass_id, DWORD_PTR ref_data)
+{
+    (void)subclass_id;
+    (void)ref_data;
+    if (msg == WM_KEYDOWN && w_param == 'W' && (GetKeyState(VK_CONTROL) < 0) && !(GetKeyState(VK_MENU) < 0)) {
+        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+        return 0;
+    }
+    return DefSubclassProc(hwnd, msg, w_param, l_param);
+}
+
 LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
                                                UINT_PTR subclass_id, DWORD_PTR ref_data)
 {
@@ -210,6 +224,13 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
 
         if (is_ctrl && !is_alt && (w_param == 'S' || w_param == 'H')) {
             commandbox_set_mode((w_param == 'S') ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
+            return 0;
+        }
+
+        /* Ctrl+W closes this window, as it does in a note. Esc goes back to the
+         * taskbox instead, so the two are not the same door. */
+        if (is_ctrl && !is_alt && w_param == 'W') {
+            PostMessageW(parent, WM_CLOSE, 0, 0);
             return 0;
         }
 
@@ -498,6 +519,12 @@ void show_commandbox_window()
 
         SetWindowSubclass(hg_g_commandbox_out_wnd, commandbox_edit_subclass_proc, 1, 0);
         SetWindowSubclass(hg_g_commandbox_in_wnd, commandbox_edit_subclass_proc, 2, 0);
+        /* Clicking Execute leaves the focus on it, and a button forwards no
+         * keys to its parent - so without this, Ctrl+W would go quiet after one
+         * click. Its own subclass rather than the edits' because a button's
+         * Enter and Space are its way of being pressed. */
+        if (hg_g_commandbox_btn_wnd)
+            SetWindowSubclass(hg_g_commandbox_btn_wnd, commandbox_button_subclass_proc, 4, 0);
         if (s_cb_hist_wnd)
             SetWindowSubclass(s_cb_hist_wnd, commandbox_edit_subclass_proc, 3, 0);
 
@@ -668,6 +695,13 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     case WM_KEYDOWN: {
         BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
         BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+        /* Reached when the focus is on the window itself rather than on one of
+         * the controls, which answer this key through their subclasses.
+         * Checked before the Ctrl-arrow resize below, which only wants arrows. */
+        if (is_ctrl && !is_alt && w_param == 'W') {
+            PostMessageW(hwnd, WM_CLOSE, 0, 0);
+            return 0;
+        }
         if (w_param == VK_SPACE && is_ctrl) {
             SetFocus(hg_g_commandbox_in_wnd);
             int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
