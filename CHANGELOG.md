@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.10.2] - 2026-08-13
+
+### Added
+- **`Ctrl + N` opens the note list** from the taskbox, alongside the bare `N`
+  that already did. It was bound to nothing at all - the only two places `'N'`
+  appeared in the source were that key and the letter drawn on the toolbar
+  button - so it cost nothing to answer the key a hand reaches for out of
+  habit. The list opens with `+Add Note` selected and the arrows already
+  meaning what they should, so the shortcut needs no second half.
+- **`Ctrl + W` closes a note editor or the note list**, the way it closes a tab
+  or a document elsewhere. `Esc` still does the same. A note's text is written
+  on the way out, as it is for every other closing path.
+
 ## [v0.10.1] - 2026-08-12
 
 ### Fixed

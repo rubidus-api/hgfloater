@@ -958,6 +958,14 @@ static LRESULT CALLBACK note_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         return 0;
     }
 
+    /* Ctrl+W closes this note, the way it closes a tab or a document
+     * everywhere else. The text is saved on the way out, as it is for every
+     * other closing path. */
+    if (msg == WM_KEYDOWN && w_param == 'W' && (GetKeyState(VK_CONTROL) < 0)) {
+        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+        return 0;
+    }
+
     /* Ctrl+Z already reaches the control; Ctrl+Y is the half RichEdit does not
      * bind by default. */
     if (msg == WM_KEYDOWN && w_param == 'Y' && (GetKeyState(VK_CONTROL) < 0)) {
@@ -1313,6 +1321,15 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         }
         return 0;
     }
+
+    /* Reached when the focus is on the window rather than on the editor; the
+     * editor's own subclass answers the same key. */
+    case WM_KEYDOWN:
+        if (w_param == 'W' && (GetKeyState(VK_CONTROL) < 0)) {
+            PostMessageW(hwnd, WM_CLOSE, 0, 0);
+            return 0;
+        }
+        break;
 
     case WM_ERASEBKGND:
         hg_document_paint_background(hwnd, (HDC)w_param);
@@ -1673,6 +1690,14 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
 {
     (void)subclass_id;
     (void)ref_data;
+    /* Ctrl+W closes this window, the way it closes a tab or a document
+     * everywhere else. Checked before the plain keys below so the bare letters
+     * keep their meanings. */
+    if (msg == WM_KEYDOWN && w_param == 'W' && (GetKeyState(VK_CONTROL) < 0)) {
+        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+        return 0;
+    }
+
     /* The list box would swallow these; the window above it owns what they mean. */
     if (msg == WM_KEYDOWN && (w_param == VK_ESCAPE || w_param == VK_RETURN || w_param == VK_DELETE ||
                               w_param == VK_INSERT || w_param == 'K')) {
@@ -1751,6 +1776,12 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         break;
 
     case WM_KEYDOWN:
+        /* Reached when the focus is on the window rather than on the list; the
+         * list's own subclass answers the same key. */
+        if (w_param == 'W' && (GetKeyState(VK_CONTROL) < 0)) {
+            PostMessageW(hwnd, WM_CLOSE, 0, 0);
+            return 0;
+        }
         switch (w_param) {
         case VK_RETURN:
             note_list_open_selected(hwnd);

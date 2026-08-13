@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.10.1** — built 2026-08-12 23:24 KST
+**v0.10.2** — built 2026-08-13 16:36 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -117,7 +117,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.1)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.2)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -695,7 +695,8 @@ display.
 
 ## 10. Notes
 
-Open the note list with the **`N`** toolbar button or the `note` command.
+Open the note list with the **`N`** toolbar button, the `N` or `Ctrl + N` key
+in the taskbox, or the `note` command.
 
 **Note windows stand on their own.** The list and every open editor are
 ordinary application windows: each has its taskbar button and Alt-Tab entry,
@@ -726,7 +727,7 @@ archived - until then the list is just notes, and a label would be noise.
 | `Insert` | Create a note and open it, from any row. |
 | `K` | Archive the selected note, or restore it. |
 | `Delete` | Delete the selected note. |
-| `Esc` | Close the list. |
+| `Esc`, `Ctrl + W` | Close the list. |
 
 **Right-click a note** (or a heading) for that half of the list:
 
@@ -749,7 +750,8 @@ The two halves sort independently: you can keep what you are writing by most
 recently changed and your archive by title. Each half remembers its own order.
 
 **The editors** are separate windows, and several can be open at once. Typing
-updates the title as soon as the first line changes. `Esc` closes an editor.
+updates the title as soon as the first line changes. `Esc` or `Ctrl + W` closes
+an editor, and `Ctrl + W` closes the list the same way.
 
 **Right-click inside an editor** for the text and for the note itself: **Undo**,
 **Redo**, **Cut**, **Copy**, **Paste**, **Delete** (the selection), **Select All**, then
@@ -802,7 +804,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Enter` / `F2` | Open the focused item's context menu |
 | `Tab` | With a tab box open (see below), step into it |
 | `C` | Open the Command Box |
-| `N` | Open the note list |
+| `N`, `Ctrl + N` | Open the note list |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
 ### Inside the note list
@@ -814,7 +816,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Insert` | Create a note, from any row |
 | `K` | Archive the selected note, or restore it |
 | `Delete` | Delete the selected note (to the Recycle Bin) |
-| `Esc` | Close the list |
+| `Esc`, `Ctrl + W` | Close the list |
 
 ### Inside a note editor
 
@@ -822,7 +824,7 @@ creation time of day goes there too, since the file name only carries the day.
 | :--- | :--- |
 | `Ctrl + Z` / `Ctrl + Y` | Undo / redo, a hundred levels deep |
 | `Ctrl + Wheel` | Note text size, shared with the list and every other editor |
-| `Esc` | Close the editor (pending edits are written first) |
+| `Esc`, `Ctrl + W` | Close the editor (pending edits are written first) |
 
 ### Window manipulation (focused or hovered floater/taskbox)
 
