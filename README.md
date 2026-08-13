@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.10.3** — built 2026-08-13 16:45 KST
+**v0.10.4** — built 2026-08-13 16:52 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -117,7 +117,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.3)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.4)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -841,6 +841,7 @@ creation time of day goes there too, since the file name only carries the day.
 | Key | Action |
 | :--- | :--- |
 | `F1` | About |
+| `Ctrl + W` | Close the focused document window (note, note list, clipboard history, command box, About) |
 | `T` | Open the taskbox (from the floater) |
 | `Ctrl + Q` | Quit. Works from any HGFloater window. |
 | `Alt + F4` | Quits from the floater or the taskbox; closes just that window from a note, the note list, the clipboard history, the command box or About. |
@@ -857,6 +858,10 @@ command box, About - keep the standard Windows editing keys for themselves:
 undo and redo, `Ctrl + A` selects all. Only `Ctrl + Q` and `F1` reach past them
 to the program, so nothing you press while typing resets a setting or resizes a
 widget.
+
+**`Ctrl + W` closes any of them**, the way it closes a tab or a document
+elsewhere. In the command box it differs from `Esc`, which closes the box and
+returns to the taskbox; `Ctrl + W` just closes.
 
 ## 12. Mouse Reference
 
