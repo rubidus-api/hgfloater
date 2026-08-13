@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.10.3] - 2026-08-13
+
+### Fixed
+- **`Del` in the clipboard history's search box deleted the newest clip instead
+  of a character**, and swallowed the key so the character stayed. The `Del`
+  handler added in v0.9.0 sat in a subclass shared by the list and the two edit
+  boxes, without checking which one it was on: an EDIT answers 0 to
+  `LB_GETCURSEL` and `LB_GETITEMDATA` the way it answers any message it does not
+  know, and 0 reads as "row 0, history entry 0". It now runs only on the list.
+
+### Added
+- **`Ctrl + W` closes the clipboard history and the command box** too, the way
+  it already closed a note. In the command box it differs from `Esc`, which goes
+  back to the taskbox; `Ctrl + W` just closes. The Execute button answers it as
+  well - a button keeps the focus once clicked and forwards no keys to its
+  parent, so without that the key would have gone quiet after one click.
+
 ## [v0.10.2] - 2026-08-13
 
 ### Added

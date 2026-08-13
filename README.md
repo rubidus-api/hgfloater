@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.10.2** — built 2026-08-13 16:36 KST
+**v0.10.3** — built 2026-08-13 16:45 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -117,7 +117,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.2)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.3)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -500,7 +500,7 @@ image or a file leaves the history untouched rather than adding an empty row.
 | `Del` | Deletes the selected clip. The selection stays where it was, so deleting several needs no re-aiming. |
 | **Search box**, top left | Shows only the clips containing what you type, ignoring case. Clear it to see them all again. |
 | **Number box**, top right | The most clips to keep. Default 16, set with the spin buttons, the arrow keys, or the wheel over it. |
-| `Esc` | Closes the window. |
+| `Esc`, `Ctrl + W` | Closes the window. |
 
 **Choosing an old clip moves it to the top and pushes everything above it down
 one.** Nothing is lost and nothing below your choice moves: the list ends up in
@@ -592,6 +592,7 @@ list `help key` prints.
 | `Ctrl + S` | **Scroll mode**: `Up`/`Down` move the transcript a line, `Left`/`Right` a page. |
 | `Ctrl + H` | **History mode**: the history appears as a list, numbered from `1:` at the oldest. `Up`/`Down` move the selection, `Enter` (or a double click) puts that line into the input and leaves the mode. |
 | `Esc` | Leave the mode, or — with no mode on — close the box and go back to the taskbox. |
+| `Ctrl + W` | Close the box and leave the taskbox alone. |
 | `Ctrl + Space` | Jump to the input box. |
 
 **The arrows stay the caret's** until you ask for a mode, so selecting and
