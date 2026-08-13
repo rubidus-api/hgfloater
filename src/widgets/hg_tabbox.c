@@ -97,7 +97,15 @@ static void tabbox_layout(void)
     int height = rows * row_h + pad * 2;
     int width = SCW(ws, 320);
 
-    /* Beside the icon, and flipped to whichever side of it has room. */
+    /* Above or below the icon, flush against it, never beside it: the icon is
+     * what the reader is pointing at and what they will point at next, so the
+     * one thing this box must not cover is that. Four placements - the box
+     * running right or left from the icon, sitting under it or over it - and
+     * the first that fits the work area whole is the one used.
+     *
+     * Running "right" means the box's left edge starts at the icon's left, so
+     * the icon's whole width lands inside the box's width and the two read as
+     * attached. Running "left" mirrors it from the icon's right edge. */
     HMONITOR monitor = MonitorFromRect(&s_anchor, MONITOR_DEFAULTTONEAREST);
     MONITORINFO mi;
     SecureZeroMemory(&mi, sizeof(mi));
@@ -106,17 +114,49 @@ static void tabbox_layout(void)
     if (GetMonitorInfoW(monitor, &mi))
         work = mi.rcWork;
 
-    int x = s_anchor.right + SCW(ws, 4);
-    if (x + width > work.right)
-        x = s_anchor.left - width - SCW(ws, 4);
-    if (x < work.left)
-        x = work.left;
+    int x_right = s_anchor.left;          /* box runs right from the icon's left edge */
+    int x_left = s_anchor.right - width;  /* box runs left from the icon's right edge */
+    BOOL fits_right = (x_right >= work.left) && (x_right + width <= work.right);
+    BOOL fits_left = (x_left >= work.left) && (x_left + width <= work.right);
 
-    int y = s_anchor.top;
-    if (y + height > work.bottom)
-        y = work.bottom - height;
-    if (y < work.top)
-        y = work.top;
+    int x;
+    if (fits_right)
+        x = x_right;
+    else if (fits_left)
+        x = x_left;
+    else {
+        /* Wider than the display it is on. Nothing to choose between, so keep
+         * it on screen; the icon stays uncovered either way, because what
+         * decides that is above-or-below and not this. */
+        x = work.left;
+        if (width > work.right - work.left)
+            width = work.right - work.left;
+    }
+
+    int y_below = s_anchor.bottom;         /* flush under the icon */
+    int y_above = s_anchor.top - height;   /* flush over it */
+    BOOL fits_below = (y_below + height <= work.bottom) && (y_below >= work.top);
+    BOOL fits_above = (y_above >= work.top) && (y_above + height <= work.bottom);
+
+    int y;
+    if (fits_below)
+        y = y_below;
+    else if (fits_above)
+        y = y_above;
+    else {
+        /* Too tall for either side. Take the roomier one and give up the rows
+         * that do not fit rather than any part of the icon: a clamped y would
+         * slide the box back over the thing the reader is pointing at. */
+        int room_below = work.bottom - s_anchor.bottom;
+        int room_above = s_anchor.top - work.top;
+        if (room_below >= room_above) {
+            y = s_anchor.bottom;
+            height = (room_below > 0) ? room_below : 0;
+        } else {
+            height = (room_above > 0) ? room_above : 0;
+            y = s_anchor.top - height;
+        }
+    }
 
     SetWindowPos(s_wnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE | SWP_SHOWWINDOW);
     InvalidateRect(s_wnd, NULL, TRUE);

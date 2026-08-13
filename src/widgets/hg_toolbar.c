@@ -126,7 +126,10 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
         if (hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer)) {
             HDC mem_dc = paint_buffer.dc;
 
-                COLORREF bg_color = HG_COLOR_BG_TOOLBAR;
+                /* The colour key, like the taskbox behind it: this child covers
+                 * nearly all of that window, so leaving it opaque would make
+                 * the transparency there visible only as a thin margin. */
+                COLORREF bg_color = HG_TRANSPARENT_KEY;
                 if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
                     bg_color = HG_COLOR_BG_FLASH;
                 }

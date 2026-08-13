@@ -565,8 +565,19 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     RECT rc;
     GetClientRect(hwnd, &rc);
 
-    /* 하이라이트 효과 (깜빡임) */
-    COLORREF bg_color = HG_CLICKABLE_BG;
+    /* The background is the colour key, so the desktop shows through it and
+     * only the icons, their labels and the border are drawn. The window is
+     * already layered with LWA_COLORKEY for exactly this colour, so this costs
+     * nothing but the choice of brush.
+     *
+     * What that gives up is the mouse in the gaps: colour-keyed pixels are
+     * click-through. The collapse-on-leave test survives it, because it asks
+     * GetCursorPos against the window rectangle rather than waiting for mouse
+     * messages - geometry, not events.
+     *
+     * The attention flash stays opaque. A flash you can see through is not a
+     * flash. */
+    COLORREF bg_color = HG_TRANSPARENT_KEY;
     if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
         bg_color = HG_COLOR_BG_FLASH;
     }

@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.10.6** — built 2026-08-13 17:10 KST
+**v0.11.0** — built 2026-08-13 17:30 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -106,6 +106,10 @@ Design principles worth knowing before you use it:
   themselves.
 - **Keyboard and mouse are equal citizens.** Every action has both a pointer
   gesture and a key.
+- **The taskbox has no background of its own.** The desktop shows through
+  between the icons; only the icons, their labels and the border are drawn. A
+  side effect worth knowing: clicks land on whatever is behind those gaps, so
+  drag the box by its `M` button rather than by the space between icons.
 - **It follows the system theme.** Switching Windows between light and dark mode
   re-colors everything immediately. The **widgets** invert it on purpose - a
   control has to stand out against the desktop behind it - while the **document
@@ -117,7 +121,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.6)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.11.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -326,13 +330,19 @@ most, and a digit is one keystroke to find. Past 36 icons there is no label and
 no key. `Shift` is what keeps this clear of the bare-letter grid movement
 (`WASD`) and of the bare `C` that opens the command box.
 
-**Hover a tabbed application's icon and its tabs appear beside it.** Off by
+**Hover a tabbed application's icon and its tabs appear next to it.** Off by
 default; turn it on with **Show Tabs as Task Icons** in the `O` menu, or
 `show_tabs=1` under `[taskbox]` in `config.ini`. The window keeps its single
 icon — orderable like any other — and the hover box lists its tabs by title:
 
 The box opens on hover **and** when the keyboard focus lands on the icon, so
 both ways of getting there work the same.
+
+**It never covers the icon.** The box sits flush above or below it — never
+beside it — running right from the icon's left edge or left from its right
+edge, so the icon's whole width falls inside the box's and the two read as one
+piece. Of those four placements it takes the first that fits the display whole,
+which is what keeps it from running off an edge near a corner.
 
 | Key or click | What it does |
 | :--- | :--- |
@@ -502,6 +512,9 @@ image or a file leaves the history untouched rather than adding an empty row.
 | `Del` | Deletes the selected clip. The selection stays where it was, so deleting several needs no re-aiming. |
 | **Search box**, top left | Shows only the clips containing what you type, ignoring case. Clear it to see them all again. |
 | **Number box**, top right | The most clips to keep. Default 16, set with the spin buttons, the arrow keys, or the wheel over it. |
+| `Ctrl + Wheel` | Text size in this window, kept separate from the rest. |
+| `Alt + Wheel` | Opacity of this window. |
+| `Alt` + arrows | Move the window. `Ctrl` + arrows resizes it. |
 | `Esc`, `Ctrl + W` | Closes the window. |
 
 **Choosing an old clip moves it to the top and pushes everything above it down
