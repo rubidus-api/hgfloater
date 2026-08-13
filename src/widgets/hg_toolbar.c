@@ -5,6 +5,7 @@
 #include "../hg_globals.h"
 #include "../hg_tabs.h"
 #include "hg_tabbox.h"
+#include "hg_hilite.h"
 
 static int toolbar_clamp_percent(int pct)
 {
@@ -473,8 +474,13 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         HWND tab_target = NULL;
         if (cur_type == 0 && cur_index >= 0 && cur_index < hg_g_window_count) {
             HWND candidate = hg_g_window_items[cur_index].hwnd;
+            /* Every task icon outlines its window, tabs or not - "which one is
+             * that" is a question about all of them. */
+            hg_hilite_show(candidate);
             if (hg_tabs_enabled() && hg_tabs_window_may_have_tabs(candidate))
                 tab_target = candidate;
+        } else {
+            hg_hilite_hide();
         }
         if (tab_target) {
             RECT rc_item;
@@ -706,6 +712,10 @@ static LRESULT toolbar_controller_on_mouse_leave(HWND hwnd, ToolbarControllerSta
 {
     state->hovered_type = -1;
     state->hovered_index = -1;
+    /* The pointer is off the icons, so there is nothing being pointed at for
+     * the outline to answer for. The keyboard path re-shows it if the focus is
+     * still resting on an icon. */
+    hg_hilite_hide();
     if (!state->is_resizing && !state->is_moving_taskbox && !drag_state->is_dragging) {
         state->pressed_type = -1;
         state->pressed_index = -1;

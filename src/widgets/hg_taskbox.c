@@ -5,6 +5,7 @@
 #include "hg_taskbox_internal.h"
 #include "hg_note.h"
 #include "hg_tabbox.h"
+#include "hg_hilite.h"
 #include "hg_clip.h"
 #include "../hg_tabs.h"
 #include "../hg_caphook.h"
@@ -171,6 +172,9 @@ void hide_taskbox(HWND hwnd)
     /* The hover-check timer must die on every hide path, not only its own collapse. */
     KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
     s_hover_outside_ticks = 0;
+    /* Same reasoning, one layer up: with the taskbox gone there is no icon
+     * being pointed at, so the outline has nothing left to answer for. */
+    hg_hilite_hide();
     if (hg_g_floater_wnd) {
         RECT f_rc;
         GetWindowRect(hg_g_floater_wnd, &f_rc);
@@ -911,8 +915,13 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index >= 0 &&
                 hg_taskbox_focus.index < hg_g_window_count) {
                 HWND candidate = hg_g_window_items[hg_taskbox_focus.index].hwnd;
+                /* The keyboard gets the outline too: arriving at an icon is
+                 * arriving at an icon, whichever way you travelled. */
+                hg_hilite_show(candidate);
                 if (hg_tabs_enabled() && hg_tabs_window_may_have_tabs(candidate))
                     tab_target = candidate;
+            } else {
+                hg_hilite_hide();
             }
             if (tab_target) {
                 RECT rc_item;
