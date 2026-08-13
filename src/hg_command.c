@@ -336,22 +336,77 @@ static const WCHAR *const cmd_help_help[] = {
     L"  h k                 the keys, not the commands",
 };
 
-/* The keys, in one place, because this is both `help key` and what the window
- * shows when it opens: a box with a blinking cursor and no other clue is a box
- * you have to be told about elsewhere. */
-static const WCHAR *const cmd_key_help[] = {
-    L"Keys",
+/* The keys, by where you press them.
+ *
+ * One list of every key in the program would be the wrong shape: the same key
+ * means different things in the taskbox and in a note, and a reader is always
+ * standing in one of those places rather than in all of them. So the keys are
+ * grouped by the window they belong to, `help key` prints the lot with an index
+ * at the top, and `help key <topic>` prints one.
+ *
+ * This is also what the command box shows when it opens, which is why the
+ * commandbox topic comes with a paragraph rather than a bare table: a box with
+ * a blinking cursor and no other clue is a box you have to be told about
+ * somewhere else. */
+static const WCHAR *const cmd_key_global[] = {
+    L"Everywhere",
+    L"  Win+Alt+Space      show or hide the taskbox, from any program",
+    L"  F1                 About",
+    L"  Ctrl+Q             quit hgfloater, from any of its windows",
+    L"  Alt+F4             quit, from the floater or the taskbox; from a",
+    L"                     note, the clipboard or the command box it closes",
+    L"                     that window instead",
+    L"  Ctrl+R  Ctrl+0     reset position, size and opacity (widgets only,",
+    L"  F5  Ctrl+Shift+R   so these are safe to press while typing)",
+};
+
+static const WCHAR *const cmd_key_floater[] = {
+    L"The floater - the small clock widget",
+    L"  hover it           open the taskbox   T           the same",
+    L"  C   Ctrl+E         the command box",
+    L"  Ctrl+N             the note list      Ctrl+L      the clipboard",
+    L"  Alt+arrows/WASD    move it            Alt+drag    the same",
+    L"  Ctrl+ + / -        font size          Ctrl+wheel  the same",
+    L"  Alt+ + / -         opacity            Alt+wheel   the same",
+};
+
+static const WCHAR *const cmd_key_taskbox[] = {
+    L"The taskbox - the dashboard the floater opens into",
+    L"  arrows / WASD      move the focus between icons",
+    L"  Space              activate it: the window comes forward and the",
+    L"                     dashboard folds back into the floater",
+    L"  Enter  F2          the focused icon's menu",
+    L"  Shift+0-9, A-Z     straight to the icon with that label",
+    L"  C   Ctrl+E         the command box",
+    L"  N   Ctrl+N         the note list      Ctrl+L      the clipboard",
+    L"  Esc                hide it, and re-read the shortcuts folder",
+    L"  Ctrl+arrows/WASD   how many columns and rows the grid has",
+    L"  Alt+arrows/WASD    move the window    Ctrl+ + / -  icon size",
+    L"",
+    L"  On an icon with tabs, a box of its tabs opens beside it:",
+    L"  1-9  0             straight to that tab, and to the last one",
+    L"  Tab                step into the box - the frame appears, and the",
+    L"                     rest of the keys are the box's from then on",
+    L"  up/down  Home/End  move the selection (inside the box)",
+    L"  a-z  A-Z           the labels past the ninth row (inside the box:",
+    L"                     outside it those letters move the grid)",
+    L"  Enter  Space       switch to the selected tab",
+    L"  Esc                close the box, keyboard stays in the taskbox",
+};
+
+static const WCHAR *const cmd_key_commandbox[] = {
+    L"The command box - this window",
     L"  Enter              run what is typed",
     L"  Shift+Enter        new line - several commands, run in order",
     L"  Ctrl+S             scroll mode: up/down a line, left/right a page",
     L"  Ctrl+H             history mode: the list, numbered from the oldest;",
     L"                     up/down choose, Enter puts one in the input box",
     L"  Esc                leave the mode, or close and go back to the taskbox",
+    L"  Ctrl+W             close this window, leaving the taskbox alone",
     L"  Ctrl+Space         jump to the input box",
     L"  Ctrl+Wheel         text size          Alt+Wheel   opacity",
     L"  Alt+arrows         move this window   Ctrl+arrows resize it",
     L"  Ctrl+X/C/V         cut, copy, paste   Ctrl+Z/Y    undo, redo",
-    L"  Ctrl+Q             quit hgfloater     Ctrl+W      close this window",
     L"",
     L"  The arrows stay the caret's until a mode is on, so selecting and",
     L"  editing text works the way it does everywhere else. A mode says so",
@@ -359,14 +414,146 @@ static const WCHAR *const cmd_key_help[] = {
     L"  the arrows now belong to - the transcript, or the input box.",
     L"",
     L"  The input box is always three lines tall and scrolls past that.",
-    L"",
-    L"Type 'help' for the commands, or 'h <command>' for one in detail.",
 };
 
+static const WCHAR *const cmd_key_note[] = {
+    L"Notes - the list, and each editor window",
+    L"  In the list:",
+    L"  Enter              open the selected note; on +Add Note, make one",
+    L"  Insert             make a note from any row",
+    L"  K                  archive the selected note, or restore it",
+    L"  Delete             delete it (to the Recycle Bin)",
+    L"  Esc  Ctrl+W        close the list",
+    L"",
+    L"  In an editor:",
+    L"  Ctrl+X/C/V         cut, copy, paste",
+    L"  Ctrl+Z  Ctrl+Y     undo and redo, a hundred levels deep",
+    L"  Ctrl+A             select all         right-click  the full menu",
+    L"  Ctrl+Wheel         text size, shared by the list and every editor",
+    L"  Esc  Ctrl+W        close it - what you typed is saved first",
+};
+
+static const WCHAR *const cmd_key_clipboard[] = {
+    L"The clipboard history",
+    L"  Ctrl+L             open it, from the floater or the taskbox",
+    L"  Enter  click       make that clip the current one; the window stays",
+    L"  right-click        that clip's menu: copy, delete, delete all",
+    L"  Del                delete the selected clip, selection stays put",
+    L"  Esc  Ctrl+W        close it",
+    L"  Ctrl+Wheel         text size          Alt+Wheel   opacity",
+    L"  Alt+arrows         move this window   Ctrl+arrows resize it",
+    L"",
+    L"  The search box at the top filters the list; the number box at the",
+    L"  top right is how many clips to keep. Capture runs whether or not",
+    L"  this window is open.",
+};
+
+typedef struct HgKeyTopic {
+    const WCHAR *name;
+    const WCHAR *summary;
+    const WCHAR *const *lines;
+    size_t line_count;
+} HgKeyTopic;
+
+static const HgKeyTopic cmd_key_topics[] = {
+    {L"global", L"the keys that work from anywhere", cmd_key_global, HG_ARRAYSIZE(cmd_key_global)},
+    {L"floater", L"the small clock widget", cmd_key_floater, HG_ARRAYSIZE(cmd_key_floater)},
+    {L"taskbox", L"the dashboard, its grid and its tab boxes", cmd_key_taskbox, HG_ARRAYSIZE(cmd_key_taskbox)},
+    {L"commandbox", L"this window", cmd_key_commandbox, HG_ARRAYSIZE(cmd_key_commandbox)},
+    {L"note", L"the note list and the note editors", cmd_key_note, HG_ARRAYSIZE(cmd_key_note)},
+    {L"clipboard", L"the clipboard history", cmd_key_clipboard, HG_ARRAYSIZE(cmd_key_clipboard)},
+};
+
+static void cmd_key_print_topic(const HgKeyTopic *topic)
+{
+    for (size_t i = 0; i < topic->line_count; ++i)
+        commandbox_print(topic->lines[i]);
+}
+
+static void cmd_key_print_index(void)
+{
+    commandbox_print(L"Keys, by where you press them.  'h k <topic>' for one:");
+    for (size_t i = 0; i < HG_ARRAYSIZE(cmd_key_topics); ++i)
+        cmd_printf(L"  %-12ls %ls", cmd_key_topics[i].name, cmd_key_topics[i].summary);
+    commandbox_print(L"");
+    commandbox_print(L"  As many letters as it takes to be the only one: 'h k f',");
+    commandbox_print(L"  'h k g', 'h k n', 'h k t' - and 'cl' or 'co' for the two");
+    commandbox_print(L"  that both start with c.");
+}
+
+/* Enough letters to be the only match. An exact name wins outright, so a topic
+ * whose name is a prefix of another would still be reachable by typing it in
+ * full - none is today, and this costs one comparison to keep true. */
+static const HgKeyTopic *cmd_key_topic_lookup(const WCHAR *word, int *out_matches)
+{
+    if (out_matches)
+        *out_matches = 0;
+    if (!word || !*word)
+        return NULL;
+
+    size_t len = wcslen(word);
+    const HgKeyTopic *found = NULL;
+    int matches = 0;
+
+    for (size_t i = 0; i < HG_ARRAYSIZE(cmd_key_topics); ++i) {
+        const WCHAR *name = cmd_key_topics[i].name;
+        if (lstrcmpiW(word, name) == 0) {
+            if (out_matches)
+                *out_matches = 1;
+            return &cmd_key_topics[i];
+        }
+        if (wcslen(name) >= len && CompareStringOrdinal(word, (int)len, name, (int)len, TRUE) == CSTR_EQUAL) {
+            ++matches;
+            found = &cmd_key_topics[i];
+        }
+    }
+
+    if (out_matches)
+        *out_matches = matches;
+    return (matches == 1) ? found : NULL;
+}
+
+/* No topic: the index, then every topic under it. The index alone would make a
+ * reader type a second command to see anything, and this window scrolls. */
 void hg_command_print_key_help(void)
 {
-    for (size_t i = 0; i < HG_ARRAYSIZE(cmd_key_help); ++i)
-        commandbox_print(cmd_key_help[i]);
+    cmd_key_print_index();
+    for (size_t i = 0; i < HG_ARRAYSIZE(cmd_key_topics); ++i) {
+        commandbox_print(L"");
+        cmd_key_print_topic(&cmd_key_topics[i]);
+    }
+    commandbox_print(L"");
+    commandbox_print(L"Type 'help' for the commands, or 'h <command>' for one in detail.");
+}
+
+static void cmd_key_help(const WCHAR *topic_word)
+{
+    if (!topic_word) {
+        hg_command_print_key_help();
+        return;
+    }
+
+    int matches = 0;
+    const HgKeyTopic *topic = cmd_key_topic_lookup(topic_word, &matches);
+    if (topic) {
+        cmd_key_print_topic(topic);
+        return;
+    }
+
+    if (matches > 1) {
+        cmd_printf(L"help key: '%ls' fits more than one topic - type another letter:", topic_word);
+        size_t len = wcslen(topic_word);
+        for (size_t i = 0; i < HG_ARRAYSIZE(cmd_key_topics); ++i) {
+            const WCHAR *name = cmd_key_topics[i].name;
+            if (wcslen(name) >= len && CompareStringOrdinal(topic_word, (int)len, name, (int)len, TRUE) == CSTR_EQUAL)
+                cmd_printf(L"  %-12ls %ls", name, cmd_key_topics[i].summary);
+        }
+        return;
+    }
+
+    cmd_printf(L"help key: no topic called '%ls'.", topic_word);
+    commandbox_print(L"");
+    cmd_key_print_index();
 }
 
 static const WCHAR *const cmd_help_show[] = {
@@ -592,7 +779,7 @@ static void cmd_help(int argc, WCHAR *argv[])
         const HgCommandHelp *entry = cmd_help_lookup(argv[1]);
         if (!entry) {
             if (cmd_word_is(argv[1], L"key", L"k") || cmd_word_is(argv[1], L"keys", NULL)) {
-                hg_command_print_key_help();
+                cmd_key_help((argc >= 3) ? argv[2] : NULL);
                 return;
             }
             cmd_printf(L"help: no command called '%ls' - type help, or 'h k' for the keys", argv[1]);
@@ -609,7 +796,7 @@ static void cmd_help(int argc, WCHAR *argv[])
     }
     /* 'key' is not a command, so it has no row above - but it is the thing a
      * reader looks for first and finding it must not require guessing. */
-    cmd_printf(L"%-10ls %-4ls %ls", L"help key", L"h k", L"every key this window answers");
+    cmd_printf(L"%-10ls %-4ls %ls", L"help key", L"h k", L"every key, grouped by where you press it");
     commandbox_print(L"");
     commandbox_print(L"'help <command>' explains one of them, with examples.");
 }

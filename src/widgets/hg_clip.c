@@ -43,6 +43,17 @@ static HWND s_clip_listener = NULL; /* message-only; outlives the window */
 static HFONT s_clip_font = NULL;
 static BOOL s_clip_started = FALSE;
 
+/* This window's own text size and opacity, not the shared ones. The list is
+ * read at a different distance than the taskbox is glanced at, and a window you
+ * park beside another wants its own transparency. Unscaled points, so a size
+ * chosen on a 200% display reads the same on a 100% one. */
+#define HG_CLIP_FONT_MIN 8
+#define HG_CLIP_FONT_MAX 72
+#define HG_CLIP_FONT_DEFAULT 16
+static int s_clip_font_pt = HG_CLIP_FONT_DEFAULT;
+static BYTE s_clip_alpha = 255;
+static BOOL s_clip_view_loaded = FALSE;
+
 static void clip_list_fill(void);
 
 /* ----------------------------------------------------------------- settings */
@@ -67,6 +78,36 @@ static void clip_save_max(void)
     WCHAR text[16];
     hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d", s_clip_max);
     WritePrivateProfileStringW(L"clipboard", L"max", text, hg_g_config_path);
+}
+
+static void clip_write_int(const WCHAR *key, int value)
+{
+    WCHAR text[16];
+    hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d", value);
+    WritePrivateProfileStringW(L"clipboard", key, text, hg_g_config_path);
+}
+
+/* Read once. The window is created long after the config is, and reading on
+ * every open would undo a size the reader had just set with the wheel. */
+static void clip_load_view(void)
+{
+    if (s_clip_view_loaded)
+        return;
+    s_clip_view_loaded = TRUE;
+
+    int pt = (int)GetPrivateProfileIntW(L"clipboard", L"font_size", HG_CLIP_FONT_DEFAULT, hg_g_config_path);
+    if (pt < HG_CLIP_FONT_MIN)
+        pt = HG_CLIP_FONT_MIN;
+    if (pt > HG_CLIP_FONT_MAX)
+        pt = HG_CLIP_FONT_MAX;
+    s_clip_font_pt = pt;
+
+    int alpha = (int)GetPrivateProfileIntW(L"clipboard", L"alpha", 255, hg_g_config_path);
+    if (alpha < 32) /* the floor the wheel stops at: a window you cannot see is a window you cannot close */
+        alpha = 32;
+    if (alpha > 255)
+        alpha = 255;
+    s_clip_alpha = (BYTE)alpha;
 }
 
 /* -------------------------------------------------------------- the history */
@@ -470,8 +511,9 @@ void hg_clip_shutdown(void)
 
 static void clip_apply_font(HWND hwnd)
 {
+    clip_load_view();
     double ws = hg_window_scale(hwnd);
-    HFONT font = CreateFontW(-SCW(ws, hg_g_edit_font_size), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+    HFONT font = CreateFontW(SCW(ws, s_clip_font_pt), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
                              DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                              DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
     if (!font)
@@ -523,6 +565,89 @@ static void clip_layout(HWND hwnd, int width, int height)
     }
 }
 
+/* Text size, opacity, move and resize - the same four the command box answers,
+ * because this window is parked and read the same way. Returns TRUE when the
+ * message was one of them. Called from the window and from its children, since
+ * the focus is normally on a control and the wheel goes wherever it points. */
+static BOOL clip_adjust_message(HWND wnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
+    if (!wnd)
+        return FALSE;
+
+    /* The key state is asked directly as well: some pointing drivers deliver
+     * wheel messages without the modifier bits packed into wParam, and a
+     * documented shortcut that works with one mouse and not another reads as
+     * broken. Same reasoning as the command box. */
+    if (msg == WM_MOUSEWHEEL) {
+        BOOL ctrl = (LOWORD(w_param) & MK_CONTROL) || (GetKeyState(VK_CONTROL) < 0);
+        BOOL alt = (GetKeyState(VK_MENU) < 0);
+        int delta = ((short)HIWORD(w_param) > 0) ? 1 : -1;
+
+        if (alt) {
+            if (hg_step_alpha_value(&s_clip_alpha, delta)) {
+                SetLayeredWindowAttributes(wnd, 0, s_clip_alpha, LWA_ALPHA);
+                clip_write_int(L"alpha", (int)s_clip_alpha);
+            }
+            return TRUE;
+        }
+        if (ctrl) {
+            int pt = s_clip_font_pt + delta;
+            if (pt < HG_CLIP_FONT_MIN)
+                pt = HG_CLIP_FONT_MIN;
+            if (pt > HG_CLIP_FONT_MAX)
+                pt = HG_CLIP_FONT_MAX;
+            if (pt != s_clip_font_pt) {
+                s_clip_font_pt = pt;
+                clip_write_int(L"font_size", pt);
+                clip_apply_font(wnd);
+                RECT rc;
+                GetClientRect(wnd, &rc);
+                clip_layout(wnd, rc.right, rc.bottom);
+            }
+            return TRUE;
+        }
+        return FALSE;
+    }
+
+    if (msg != WM_KEYDOWN && msg != WM_SYSKEYDOWN)
+        return FALSE;
+
+    BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
+    BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+    if (!is_ctrl && !is_alt)
+        return FALSE;
+
+    int step = SCW(hg_window_scale(wnd), 20);
+    int dx = 0, dy = 0;
+    if (w_param == VK_LEFT)
+        dx = -step;
+    else if (w_param == VK_RIGHT)
+        dx = step;
+    else if (w_param == VK_UP)
+        dy = -step;
+    else if (w_param == VK_DOWN)
+        dy = step;
+
+    if (dx || dy) {
+        if (is_alt)
+            move_window_by_offset(wnd, dx, dy);
+        else
+            resize_window_by_offset(wnd, dx, dy);
+        return TRUE;
+    }
+
+    BOOL plus = (w_param == VK_OEM_PLUS || w_param == VK_ADD);
+    BOOL minus = (w_param == VK_OEM_MINUS || w_param == VK_SUBTRACT);
+    if (plus || minus) {
+        /* wParam differs but the meaning does not, so route both through the
+         * wheel path rather than writing the clamps out a second time. */
+        WPARAM wheel = MAKEWPARAM(is_ctrl ? MK_CONTROL : 0, plus ? WHEEL_DELTA : (WORD)-WHEEL_DELTA);
+        return clip_adjust_message(wnd, WM_MOUSEWHEEL, wheel, l_param);
+    }
+
+    return FALSE;
+}
+
 /* The wheel over the spin adjusts the maximum wherever the focus happens to be,
  * so the three children hand that case up and keep everything else. */
 static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
@@ -530,6 +655,14 @@ static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
 {
     (void)subclass_id;
     (void)ref_data;
+
+    /* Asked first: with the focus on a control, these never reach the window.
+     * Ctrl+left/right stops meaning "by word" in the search box as a result -
+     * the same trade the command box's input box makes, and the same reason:
+     * a window key that works in the window but not in its boxes is a window
+     * key that looks broken. */
+    if (clip_adjust_message(GetParent(hwnd), msg, w_param, l_param))
+        return 0;
 
     if (msg == WM_MOUSEWHEEL) {
         HWND parent = GetParent(hwnd);
@@ -699,7 +832,15 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
         }
         break;
 
+    case WM_MOUSEWHEEL:
+        if (clip_adjust_message(hwnd, msg, w_param, l_param))
+            return 0;
+        break;
+
+    case WM_SYSKEYDOWN:
     case WM_KEYDOWN:
+        if (clip_adjust_message(hwnd, msg, w_param, l_param))
+            return 0;
         /* Reached when the focus is on the window rather than on a control;
          * the children answer this key through their subclass. */
         if (w_param == 'W' && (GetKeyState(VK_CONTROL) < 0) && !(GetKeyState(VK_MENU) < 0)) {
@@ -822,12 +963,17 @@ void hg_clip_toggle_window(void)
      * buttons. The history is somewhere you work for a while - picking several
      * clips, deleting the ones that have served their purpose - not a popup
      * that answers one question and leaves. */
-    s_clip_wnd = CreateWindowExW(WS_EX_APPWINDOW, HG_CLASS_CLIP, L"Clipboard History",
+    /* WS_EX_LAYERED for the Alt+wheel opacity, the way the command box carries
+     * it. Alpha alone costs nothing while it is 255. */
+    s_clip_wnd = CreateWindowExW(WS_EX_APPWINDOW | WS_EX_LAYERED, HG_CLASS_CLIP, L"Clipboard History",
                                  WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
                                      WS_THICKFRAME | WS_CLIPCHILDREN,
                                  pt.x, pt.y, SCW(ws, 440), SCW(ws, 320), NULL, NULL, GetModuleHandleW(NULL), NULL);
     if (!s_clip_wnd)
         return;
+
+    clip_load_view();
+    SetLayeredWindowAttributes(s_clip_wnd, 0, s_clip_alpha, LWA_ALPHA);
 
     clip_list_fill();
     ensure_window_visible(s_clip_wnd, NULL);

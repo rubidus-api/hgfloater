@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.11.0] - 2026-08-13
+
+### Changed
+- **The taskbox has no background of its own.** The desktop shows through
+  between the icons; only the icons, their labels and the border are drawn. The
+  window was already layered with a colour key for exactly this, so it costs
+  nothing. One consequence worth knowing: colour-keyed pixels are click-through,
+  so a click in the gaps lands on whatever is behind - drag the box by its `M`
+  button rather than by the space between icons. The collapse-on-leave test is
+  unaffected, because it compares the cursor position against the window
+  rectangle rather than waiting for mouse messages.
+- **`help key` is grouped by where you press the keys.** One flat list was the
+  wrong shape: the same key means different things in the taskbox and in a note,
+  and a reader is always standing in one of those places. `h k` prints an index
+  and then every group; **`h k <topic>`** prints one, and a topic needs only
+  enough letters to be the only match - `h k f`, `h k g`, `h k n`, `h k t`, and
+  `cl` or `co` for the two that start with c. The topics are global, floater,
+  taskbox, commandbox, note and clipboard.
+- **The tab hover box never covers the icon.** It sits flush above or below it,
+  never beside it, running right from the icon's left edge or left from its
+  right edge so the icon's whole width falls inside the box's. Of those four
+  placements it takes the first that fits the display whole, which is what stops
+  it running off an edge near a corner.
+
+### Added
+- **The clipboard history answers the same four adjustments the command box
+  does**: `Ctrl + Wheel` for text size, `Alt + Wheel` for opacity, `Alt` +
+  arrows to move it and `Ctrl` + arrows to resize it. Both settings are this
+  window's own, kept under `[clipboard]`, rather than the shared ones the
+  taskbox uses. `Ctrl` + left/right stops meaning "by word" in its search box as
+  a result - the same trade the command box's input box already makes.
+
 ## [v0.10.6] - 2026-08-13
 
 ### Added
