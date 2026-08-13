@@ -288,6 +288,19 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                                                                   : toolbar_invert_color(bg_color);
                     BOOL keep_value_bg = (i == HG_TOOL_ICON_ALPHA || i == HG_TOOL_ICON_BRIGHTNESS ||
                                           i == HG_TOOL_ICON_VOLUME);
+                    /* No plate behind a function button or a shortcut: the
+                     * desktop shows through, the same as everywhere else in
+                     * this window now. The three value buttons keep theirs,
+                     * because for them the background is not decoration - it is
+                     * the reading, and A, B and V say the current opacity,
+                     * brightness and volume by how bright they are.
+                     *
+                     * This also undoes an accident of making the toolbar
+                     * transparent: these plates were painted as the inverse of
+                     * the toolbar background, and the inverse of the colour key
+                     * is very nearly white. */
+                    if (!keep_value_bg)
+                        button_bg = HG_TRANSPARENT_KEY;
                     HBRUSH hbr_opp = hg_cached_solid_brush(button_bg);
                     if (hbr_opp) {
                         FillRect(mem_dc, &rc_btn, hbr_opp);
@@ -316,6 +329,19 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                             }
                         }
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
+                    }
+
+                    /* One white line around each lettered function button. With
+                     * the plate gone the letters would otherwise float loose
+                     * over the desktop, and a button needs an edge to be a
+                     * button. Drawn after the pressed and hover fills so it
+                     * survives them - the yellow still fills the button, and
+                     * the line still frames it - and before the state border,
+                     * which is a louder mark and should win where both apply. */
+                    if (i < HG_NUM_BASIC_ICONS) {
+                        HBRUSH hbr_edge = hg_cached_solid_brush(RGB(255, 255, 255));
+                        if (hbr_edge)
+                            FrameRect(mem_dc, &rc_btn, hbr_edge);
                     }
 
                     if ((i == HG_TOOL_ICON_VOLUME && get_system_mute()) ||
