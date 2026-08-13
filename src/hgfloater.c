@@ -3,6 +3,7 @@
 #include "hg_config.h"
 #include "widgets/hg_clip.h"
 #include "widgets/hg_tabbox.h"
+#include "widgets/hg_hilite.h"
 #include "hg_tabs.h"
 #include "hg_caphook.h"
 
@@ -518,6 +519,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 cleanup_finish:
     hg_config_flush_pending(); /* debounced settings must survive the exit */
     hg_caphook_shutdown();
+    hg_hilite_shutdown();
     hg_tabs_shutdown();
     hg_clip_shutdown();
     hg_notes_shutdown();       /* an edit made a second ago must not be the one lost */

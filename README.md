@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.11.0** — built 2026-08-13 17:30 KST
+**v0.12.0** — built 2026-08-13 19:45 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -121,7 +121,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.11.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.12.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -334,6 +334,15 @@ no key. `Shift` is what keeps this clear of the bare-letter grid movement
 default; turn it on with **Show Tabs as Task Icons** in the `O` menu, or
 `show_tabs=1` under `[taskbox]` in `config.ini`. The window keeps its single
 icon — orderable like any other — and the hover box lists its tabs by title:
+
+**Pointing at a task icon outlines its window on the desktop.** A frame appears
+around the window itself, so "which one is that?" is answered by where it is and
+not only by its name. Nothing else happens - the window is not raised, not
+focused, and the outline takes no clicks, because pointing at something is not
+choosing it. The keyboard focus does the same as the pointer. A **minimized**
+window is left alone: there is no place on the desktop to point at, and a frame
+around where it used to be would be a lie. A window sitting **behind** others is
+outlined all the same - the frame says where it is, not what is in front of it.
 
 The box opens on hover **and** when the keyboard focus lands on the icon, so
 both ways of getting there work the same.

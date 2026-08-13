@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.12.0] - 2026-08-13
+
+### Added
+- **Pointing at a task icon outlines its window on the desktop.** A frame is
+  drawn around the window itself, so "which one is that?" is answered by where
+  it is and not only by its name. Nothing else happens: the window is not
+  raised, not focused, and the outline takes no clicks - pointing at something
+  is not choosing it. The keyboard focus does the same as the pointer, and every
+  task icon gets it, not only the ones with tabs.
+
+  A **minimized** window is left alone; there is no place on the desktop to
+  point at, and a frame around where it used to be would be a lie. A window
+  **behind** others is outlined all the same - the frame says where it is, not
+  what is in front of it.
+
+  It is one layered popup with a see-through middle, marked transparent to the
+  mouse so it cannot eat the hover it exists to serve, and no-activate so it
+  cannot take the keyboard. The rectangle comes from the window's extended frame
+  bounds rather than `GetWindowRect`, which since Windows 10 includes an
+  invisible resize border several pixels wide.
+
 ## [v0.11.0] - 2026-08-13
 
 ### Changed
