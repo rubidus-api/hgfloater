@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.10.4** — built 2026-08-13 16:52 KST
+**v0.10.5** — built 2026-08-13 17:02 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -117,7 +117,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.4)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.10.5)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -230,7 +230,8 @@ of other windows.
 - **Ctrl + Wheel** or **Ctrl + Left drag** — font size, which scales the whole
   widget with it.
 - **Alt + Arrows / WASD** — moves the window from the keyboard.
-- **`T`** — opens the taskbox. **`C`** — opens the Command Box. **`F1`** — About.
+- **`T`** — opens the taskbox. **`C`** or **`Ctrl + E`** — opens the Command
+  Box. **`F1`** — About.
 
 When the cursor leaves the taskbox, it collapses back to the floater after a
 half-second grace period, so brushing past the edge does not dismiss it.
@@ -804,7 +805,7 @@ creation time of day goes there too, since the file name only carries the day.
 | `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
 | `Tab` | With a tab box open (see below), step into it |
-| `C` | Open the Command Box |
+| `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
