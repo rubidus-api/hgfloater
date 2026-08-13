@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.12.0** — built 2026-08-13 19:45 KST
+**v0.12.1** — built 2026-08-13 20:05 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -107,8 +107,12 @@ Design principles worth knowing before you use it:
 - **Keyboard and mouse are equal citizens.** Every action has both a pointer
   gesture and a key.
 - **The taskbox has no background of its own.** The desktop shows through
-  between the icons; only the icons, their labels and the border are drawn. A
-  side effect worth knowing: clicks land on whatever is behind those gaps, so
+  between the icons and behind the function buttons and shortcuts; only the
+  icons, their labels and the border are drawn. Each lettered function button
+  keeps **one white line** around it, because a button needs an edge to be a
+  button. The three value buttons - `A`, `B` and `V` - keep their coloured
+  backgrounds, since for them the colour is the reading rather than decoration.
+  A side effect worth knowing: clicks land on whatever is behind those gaps, so
   drag the box by its `M` button rather than by the space between icons.
 - **It follows the system theme.** Switching Windows between light and dark mode
   re-colors everything immediately. The **widgets** invert it on purpose - a
@@ -121,7 +125,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.12.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.12.1)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`

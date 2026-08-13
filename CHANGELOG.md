@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.12.1] - 2026-08-13
+
+### Changed
+- **The function buttons and shortcuts have no background plate.** The desktop
+  shows through behind them, the same as everywhere else in that window since
+  v0.11.0. **`A`, `B` and `V` keep theirs**, because for those three the
+  background colour is not decoration: it is the reading, brightening with the
+  opacity, brightness and volume they set.
+
+  This also corrects an accident of making the toolbar transparent. Those plates
+  were painted as the *inverse* of the toolbar's background, and the inverse of
+  the colour key is very nearly white - so making the toolbar see-through had
+  left a grid of near-white squares on it.
+- **One white line around each lettered function button.** With the plate gone
+  the letters would float loose over the desktop, and a button needs an edge to
+  be a button. The line is drawn after the hover fill, so the yellow still fills
+  the button and the line still frames it.
+- **The window outline is thicker** - six pixels rather than three. It is read
+  from the corner of the eye, while the eye itself is on the taskbox, so it
+  wants to be a signal rather than a hairline.
+
 ## [v0.12.0] - 2026-08-13
 
 ### Added

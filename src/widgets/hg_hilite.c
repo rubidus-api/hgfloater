@@ -21,9 +21,10 @@ static const WCHAR HG_CLASS_HILITE[] = L"hghilite_class";
 static HWND s_wnd = NULL;
 static BOOL s_class_ready = FALSE;
 
-/* Thick enough to read against a busy desktop, thin enough that it cannot be
- * mistaken for part of the window it surrounds. */
-#define HG_HILITE_THICKNESS 3
+/* Thick enough to read against a busy desktop at a glance, from the corner of
+ * the eye, while the eye itself is on the taskbox. Three pixels was legible but
+ * easy to miss - this is a signal, not a hairline. */
+#define HG_HILITE_THICKNESS 6
 
 static COLORREF hilite_color(void)
 {
