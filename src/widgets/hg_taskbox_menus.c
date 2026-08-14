@@ -5,6 +5,7 @@
 #include "../hg_globals.h"
 #include "../hg_tabs.h"
 #include "../hg_caphook.h"
+#include "../hg_options.h"
 
 static HMENU taskbox_create_audio_submenu(void)
 {
@@ -141,6 +142,43 @@ int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND 
     return cmd;
 }
 
+/* One row per option, checked from its current value. An option that cannot be
+ * switched in this build is greyed and says why rather than vanishing: a
+ * feature that disappears leaves the reader wondering whether they imagined
+ * it, while a greyed line that reads "(off in this build)" leaves them
+ * informed, in the one place they would look. */
+static HMENU taskbox_create_options_submenu(void)
+{
+    HMENU menu = CreatePopupMenu();
+    if (!menu)
+        return NULL;
+
+    int count = hg_option_count();
+    for (int i = 1; i <= count; ++i) {
+        HgOptionInfo info;
+        if (!hg_option_info(i, &info))
+            continue;
+
+        WCHAR text[160];
+        if (info.available) {
+            StringCchCopyW(text, HG_ARRAYSIZE(text), info.label);
+        } else {
+            StringCchPrintfW(text, HG_ARRAYSIZE(text), L"%ls  (%ls)", info.label,
+                             info.unavailable_note ? info.unavailable_note : L"unavailable");
+        }
+
+        UINT flags = MF_STRING;
+        if (!info.available)
+            flags |= MF_GRAYED;
+        else if (hg_option_get(i))
+            flags |= MF_CHECKED;
+
+        AppendMenuW(menu, flags, (UINT_PTR)(HG_IDM_OPTION_BASE + (UINT)i), text);
+    }
+
+    return menu;
+}
+
 HMENU taskbox_create_main_popup_menu(void)
 {
     update_audio_device_list();
@@ -151,30 +189,17 @@ HMENU taskbox_create_main_popup_menu(void)
 
     AppendMenuW(h_menu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
-#if HG_TEMP_DISABLE_FLAGGED_FEATURES
-    /* Greyed rather than hidden. A feature that vanishes leaves the reader
-     * wondering whether they imagined it; a greyed entry that says why leaves
-     * them informed - and says, in the one place they would look for it, that
-     * this is temporary. */
-    /* "off in this build", not "disabled": the greyed state already says the
-     * entry cannot be used, so repeating it wastes the only words there is
-     * room for. What the reader cannot see from the grey is that this was a
-     * decision about this version rather than a fault - and "in this build"
-     * carries the temporariness without having to claim it. */
-    AppendMenuW(h_menu, MF_STRING | MF_GRAYED, HG_IDM_STARTUP,
-                L"Start with Windows  (off in this build)");
-    AppendMenuW(h_menu, MF_STRING | (hg_tabs_enabled() ? MF_CHECKED : 0u), HG_IDM_SHOW_TABS,
-                L"Show Tabs as Task Icons");
-    AppendMenuW(h_menu, MF_STRING | MF_GRAYED, HG_IDM_CAPTION_MENU,
-                L"Menu on Maximize Button  (off in this build)");
-#else
-    AppendMenuW(h_menu, MF_STRING | (hg_startup_is_enabled() ? MF_CHECKED : 0u), HG_IDM_STARTUP,
-                L"Start with Windows");
-    AppendMenuW(h_menu, MF_STRING | (hg_tabs_enabled() ? MF_CHECKED : 0u), HG_IDM_SHOW_TABS,
-                L"Show Tabs as Task Icons");
-    AppendMenuW(h_menu, MF_STRING | (hg_caphook_enabled() ? MF_CHECKED : 0u), HG_IDM_CAPTION_MENU,
-                L"Menu on Maximize Button");
-#endif
+
+    /* Every switch in one place. They used to sit loose at the top of this
+     * menu, three of them, each with its own command id - and the fourth would
+     * have made four. One submenu built from the options table means a new
+     * toggle appears here by existing. */
+    HMENU options_menu = taskbox_create_options_submenu();
+    if (options_menu) {
+        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)options_menu, L"Options")) {
+            DestroyMenu(options_menu);
+        }
+    }
     AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(h_menu, MF_STRING, HG_IDM_ABOUT, L"About...");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");

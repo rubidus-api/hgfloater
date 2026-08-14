@@ -15,6 +15,7 @@
 #include "widgets/hg_clip.h"
 #include "widgets/hg_monitor.h"
 #include "hg_values.h"
+#include "hg_options.h"
 
 #define HG_CMD_MAX_ARGS 8
 
@@ -564,7 +565,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"  so this is where those commands get their arguments.",
     L"  Kinds: windows (w), resize (r), shortcut (c), note (n),",
     L"         monitor (m), sensors (s), tabs (t), value (v),",
-    L"         tabsinfo (no shorthand - a diagnostic).",
+    L"         option (o), tabsinfo (no shorthand - a diagnostic).",
     L"",
     L"Examples:",
     L"  show                every window, numbered",
@@ -579,6 +580,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"  s s 2               just sensor 2, with its unit",
     L"  s t                 every tab of every tabbed window, numbered",
     L"  s v                 the settable values and what they are now",
+    L"  s o                 the on/off options and what they are now",
     L"  show tabsinfo       what the tab reader itself is doing, and costing",
     L"",
     L"  'show sensors' is a diagnostic. The floater shows one CPU",
@@ -720,7 +722,8 @@ static const WCHAR *const cmd_help_clipboard[] = {
 };
 
 static const WCHAR *const cmd_help_write[] = {
-    L"write value <what> <number>       (w v)",
+    L"write value <what> <number>            (w v)",
+    L"write option <what> <on|off|toggle>    (w o)",
     L"",
     L"  Sets one of the values 'show value' lists. <what> is either the",
     L"  number beside it or its name, and a unique leading piece of the",
@@ -739,6 +742,15 @@ static const WCHAR *const cmd_help_write[] = {
     L"  write value 1 60    by number",
     L"  w v bright 60       by name, shortened",
     L"  w v clip-max 32     keep 32 clipboard entries from now on",
+    L"",
+    L"  'write option' is the same idea for the switches - the ones the",
+    L"  O button lists under Options - by number or by name, set to on,",
+    L"  off, or toggle. The change reaches the settings file and the",
+    L"  running program at once, so nothing waits for a restart.",
+    L"",
+    L"  s o                 the options and what they are now",
+    L"  w o hover on        open the taskbox on hover again",
+    L"  w o tabs toggle     turn tabs-as-icons the other way",
 };
 
 static const WCHAR *const cmd_help_clear[] = {
@@ -759,7 +771,8 @@ static const HgCommandHelp cmd_help_table[] = {
     {L"move", L"m", L"move a window, optionally to another display", cmd_help_move, HG_ARRAYSIZE(cmd_help_move)},
     {L"note", L"n", L"the note list, a new note, or one by number", cmd_help_note, HG_ARRAYSIZE(cmd_help_note)},
     {L"clipboard", L"b", L"the clipboard history, or take one entry", cmd_help_clipboard, HG_ARRAYSIZE(cmd_help_clipboard)},
-    {L"write", L"w", L"set one of the values 'show value' lists", cmd_help_write, HG_ARRAYSIZE(cmd_help_write)},
+    {L"write", L"w", L"set a value or an option, as 'show value' and 'show option' list them",
+     cmd_help_write, HG_ARRAYSIZE(cmd_help_write)},
     {L"config", L"c", L"open config.ini in Notepad", cmd_help_config, HG_ARRAYSIZE(cmd_help_config)},
     {L"clear", L"cls", L"empty the transcript above", cmd_help_clear, HG_ARRAYSIZE(cmd_help_clear)},
 };
@@ -1058,6 +1071,21 @@ static void cmd_show_values(void)
     commandbox_print(L"     set one with 'write value <number|name> <value>'");
 }
 
+static void cmd_show_options(void)
+{
+    int count = hg_option_count();
+    for (int i = 1; i <= count; ++i) {
+        HgOptionInfo info;
+        if (!hg_option_info(i, &info))
+            continue;
+        const WCHAR *state = !info.available
+                                 ? (info.unavailable_note ? info.unavailable_note : L"unavailable")
+                                 : (hg_option_get(i) ? L"on" : L"off");
+        cmd_printf(L"%3d  %-15ls %-18ls %ls", i, info.name, state, info.about);
+    }
+    commandbox_print(L"     set one with 'write option <number|name> <on|off|toggle>'");
+}
+
 static void cmd_show(int argc, WCHAR *argv[])
 {
     if (argc < 2) {
@@ -1080,6 +1108,8 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_show_monitors(argc, argv);
     } else if (cmd_word_is(argv[1], L"value", L"v") || cmd_word_is(argv[1], L"values", NULL)) {
         cmd_show_values();
+    } else if (cmd_word_is(argv[1], L"option", L"o") || cmd_word_is(argv[1], L"options", NULL)) {
+        cmd_show_options();
     } else if (cmd_word_is(argv[1], L"tabsinfo", NULL)) {
         /* The tab reader's own numbers: per window, whether the scoped read
          * or a full discovery answered and what it cost; in total, what was
@@ -1089,17 +1119,61 @@ static void cmd_show(int argc, WCHAR *argv[])
     } else if (cmd_word_is(argv[1], L"tabs", L"t") || cmd_word_is(argv[1], L"tab", NULL)) {
         cmd_list_tabs();
     } else {
-        cmd_printf(L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value)",
+        cmd_printf(
+            L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value, option)",
                    argv[1]);
     }
 }
 
 /* ------------------------------------------------------- write, config, b */
 
+static void cmd_write_option(int argc, WCHAR *argv[])
+{
+    if (argc < 3) {
+        commandbox_print(L"write option <number|name> <on|off|toggle> - 'show option' lists them:");
+        cmd_show_options();
+        return;
+    }
+
+    int number = 0;
+    if (!cmd_parse_int(argv[2], &number))
+        number = hg_option_find(argv[2]);
+
+    HgOptionInfo info;
+    if (!hg_option_info(number, &info)) {
+        cmd_printf(L"write option: no option called '%ls' (see 'show option')", argv[2]);
+        return;
+    }
+
+    /* No value given means toggle. It is what the menu item does, and the
+     * shortest thing to type is the thing most often wanted. */
+    BOOL wanted = hg_option_get(number) ? FALSE : TRUE;
+    if (argc >= 4 && !hg_option_parse_value(number, argv[3], &wanted)) {
+        cmd_printf(L"write option: '%ls' is not on, off or toggle", argv[3]);
+        return;
+    }
+
+    const WCHAR *message = NULL;
+    if (!hg_option_set(number, wanted, &message)) {
+        cmd_printf(L"write option: %ls could not be set%ls%ls", info.name, message ? L" - " : L"",
+                   message ? message : L"");
+        return;
+    }
+
+    cmd_printf(L"%ls  %ls", info.name, hg_option_get(number) ? L"on" : L"off");
+    if (message)
+        commandbox_print(message);
+}
+
 static void cmd_write(int argc, WCHAR *argv[])
 {
+    if (argc >= 2 && (cmd_word_is(argv[1], L"option", L"o") || cmd_word_is(argv[1], L"options", NULL))) {
+        cmd_write_option(argc, argv);
+        return;
+    }
+
     if (argc < 2 || !(cmd_word_is(argv[1], L"value", L"v") || cmd_word_is(argv[1], L"values", NULL))) {
-        commandbox_print(L"write: only 'write value' so far, as in 'w v brightness 60'");
+        commandbox_print(L"write: 'write value' or 'write option', as in 'w v brightness 60' or 'w o tabs on'");
         return;
     }
     if (argc < 4) {

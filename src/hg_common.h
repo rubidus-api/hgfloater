@@ -176,9 +176,6 @@
 #define HG_IDM_MUTE 214
 #define HG_IDM_OPEN_SHORTCUTS 215
 #define HG_IDM_EDIT_CONFIG 216
-#define HG_IDM_STARTUP 217
-#define HG_IDM_SHOW_TABS 218
-#define HG_IDM_CAPTION_MENU 219
 #define HG_IDM_CAPTION_DISMISS 220
 #define HG_IDM_CLIP_TAKE 221
 #define HG_IDM_CLIP_DELETE 222
@@ -214,6 +211,8 @@
 #define HG_IDM_MONITOR_BASE 6000     /* preview toggle, one id per display */
 #define HG_IDM_SCALE_BASE 6100       /* 10 displays x 6 percentages -> 6100..6159 */
 #define HG_IDM_BRIGHTNESS_BASE 6200  /* 10 displays x 5 percentages -> 6200..6249 */
+#define HG_IDM_OPTION_BASE 6300      /* one id per row of the hg_options table */
+#define HG_IDM_OPTION_LIMIT 6400
 
 #define HG_MAX_MONITORS 10
 
