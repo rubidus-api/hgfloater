@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [v0.15.0] - 2026-08-14
+## [v0.15.0] - 2026-08-15
 
 ### Added
 - **Two more switches under `Options`.** **Outline the Window Under the

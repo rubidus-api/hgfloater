@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.15.0** — 빌드 2026-08-14 23:10 KST
+**v0.15.0** — 빌드 2026-08-15 00:10 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
