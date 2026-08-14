@@ -14,6 +14,12 @@
  * program keeps. */
 
 void hg_settings_toggle_window(void);
+
+/* TRUE while the settings window is waiting for a chord to bind. The message
+ * loop asks, because an accelerator is translated before any window sees the
+ * key: F1 would otherwise open About on its way to being recorded as F1, and a
+ * key that fires what it is being bound to cannot be bound at all. */
+BOOL hg_settings_capturing(void);
 LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 
 #endif /* HG_SETTINGS_H */

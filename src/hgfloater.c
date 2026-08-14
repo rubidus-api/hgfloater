@@ -485,6 +485,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         HWND key_target = GetAncestor(msg_struct.hwnd, GA_ROOT);
         HACCEL table = hg_keys_accel_table(hg_is_document_window(key_target));
 
+        /* Nothing is translated while the settings window is listening for a
+         * chord. The table is what runs a key before its window sees it, which
+         * is exactly what must not happen to a key being recorded: F1 would
+         * open About, Ctrl+Q would quit the program, and neither would ever
+         * reach the row waiting for it. */
+        if (hg_settings_capturing())
+            table = NULL;
+
         BOOL accel_handled = FALSE;
         if (table && hg_g_taskbox_wnd && TranslateAcceleratorW(hg_g_taskbox_wnd, table, &msg_struct)) {
             accel_handled = TRUE;

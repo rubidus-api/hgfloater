@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.14.0** — built 2026-08-14 18:10 KST
+**v0.15.0** — built 2026-08-14 23:10 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -125,7 +125,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.14.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -228,9 +228,10 @@ of other windows.
 
 **What you can do to it**
 
-- **Left click** — toggles the taskbox. It opens in place, and the floater
-  hides itself while the taskbox is up. Merely passing the pointer over the
-  floater does nothing.
+- **Left click** — toggles the taskbox, from anywhere on the floater. It opens
+  in place, and the floater hides itself while the taskbox is up. Merely passing
+  the pointer over the floater does nothing unless **Open the Taskbox on Hover**
+  is on, and then only over the clock.
 - **Left drag** — moves the floater anywhere on any monitor. A press and
   release without moving is a click and toggles the taskbox; a few pixels of
   travel makes it a drag instead. `Alt + drag` does the same and is the one to
@@ -565,8 +566,17 @@ Open it with the `O` toolbar button or by right-clicking the status line.
   it is on, and one that cannot be used in this build is greyed and says so
   rather than disappearing:
   - **Open the Taskbox on Hover** — off by default. On, the pointer resting on
-    the floater opens the dashboard the way it did before v0.13.0; off, opening
-    is a click. See [4](#4-the-floater).
+    **the clock** opens the dashboard the way it did before v0.13.0; off,
+    opening is a click. Only the clock answers, because the rest of the floater
+    is what a hand crosses on its way elsewhere — and a click opens it from
+    anywhere on the floater either way. See [4](#4-the-floater).
+  - **Outline the Window Under the Pointer** — on by default. Pointing at a task
+    icon draws a frame around the window it stands for, so "which one is that"
+    is answered without switching to it.
+  - **Show a Window's Tabs on Hover** — on by default. Pointing at a tabbed
+    window's icon opens the list of its tabs beside it. It needs
+    **Show Tabs as Task Icons** to be on as well, since that is what reads the
+    tabs at all.
   - **Show Tabs as Task Icons** — checked when a tabbed application's tabs get
     their own task icons. See [5.1](#51-running-windows-and-shortcuts) for which
     applications, how to add one, and why it is off by default.
@@ -618,10 +628,15 @@ Open it with the `O` toolbar button or by right-clicking the status line.
   to keep, how many command lines to remember. `Left` and `Right` change the
   selected one, by five for a percentage and by one otherwise.
 - **Keys** — **window, function, keys**, which is how they are stored. A heading
-  names the window (`system`, `widget`, `floater`, `taskbox`), each row under it
-  is a function, and the right-hand column is the chords that reach it — none,
-  one, or up to four. `Enter` waits for a chord and adds it, `Del` takes the last
-  one away, `Ctrl + Del` takes them all, and `R` restores the built-in default.
+  names the window, each row under it is a function, and **each chord is its own
+  row** beneath the function it runs. On a function row, `Enter` waits for a
+  chord and adds it, `Del` takes every key away, and `R` restores the built-in
+  default. On a chord row, `Del` removes **that** chord and `Enter` replaces it
+  with the next key you press — the old one goes only once the new one is in, so
+  `Esc` halfway through leaves it as it was.
+
+  While the window is waiting for a chord, nothing else in the program answers
+  the keyboard: `F1` records `F1` instead of opening About.
 
 Nothing here has an OK button. Every change reaches `config.ini` and the running
 program at the moment it is made, which is what the wheel and the menus have
@@ -856,7 +871,7 @@ creation time of day goes there too, since the file name only carries the day.
 
 | Key | Action |
 | :--- | :--- |
-| `Win + Alt + Space` | Show or hide the taskbox. If a window has drifted off screen, it is pulled back into the nearest monitor's work area. |
+| `Win + Alt + Space` | Show or hide the taskbox. If a window has drifted off screen, it is pulled back into the nearest monitor's work area. The taskbox flashes its outline three times when a key summons it — a click does not, since the pointer is already there. |
 | `Ctrl + ,` | The [settings window](#71-the-settings-window) — options, values, and every key on this page. |
 
 The keys that run a **function** can be changed, in six windows: `system` (the
@@ -1057,6 +1072,20 @@ them without your having to spell anything.
 
 The older `[hotkeys]` pair of numbers is read once, so a global hotkey chosen
 before v0.14.0 carries over into `[keys.system]`, and is then no longer used.
+
+### `[note]`
+
+| Key | Meaning |
+| :--- | :--- |
+| `font_size` | Note text size, in points, shared by the list and every editor |
+| `sort_active`, `sort_archived` | Which column each half of the list is sorted by |
+| `sort_active_desc`, `sort_archived_desc` | `1` for newest or Z first |
+| `list_x`, `list_y`, `list_w`, `list_h` | Where the note list window sits |
+
+Notes themselves keep a `note/note.ini` beside their `.txt` files, but only for
+what is about a note rather than about the program: whether it is archived, when
+it was created, and where its own editor window was. That file travels with the
+notes folder; the settings above belong where the other settings are.
 
 ### `[settings]`
 

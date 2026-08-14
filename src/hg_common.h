@@ -228,6 +228,11 @@
 #define HG_TIMER_HOVER_CHECK 1002
 #define HG_HIGHLIGHT_TICKS 6
 
+/* Show the taskbox. wParam is TRUE when a key asked for it, which is the
+ * only case that flashes the outline: a click is aimed at the thing it
+ * opens, so the reader is already looking where it appears. */
+#define HG_MSG_SHOW_TASKBOX (WM_APP + 42)
+
 #define HG_TRANSPARENT_KEY RGB(1, 2, 3)
 #define HG_BORDER_THICKNESS 5
 #define HG_FLOATER_MIN_FONT_SIZE 12

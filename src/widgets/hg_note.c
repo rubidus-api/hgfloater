@@ -168,6 +168,37 @@ static void note_ini_set_str(const WCHAR *section, const WCHAR *key, const WCHAR
     WritePrivateProfileStringW(section, key, value, path);
 }
 
+/* The settings live in config.ini with every other setting, under [note]. What
+ * stays in note/note.ini is what is *about a note* rather than about the
+ * program: whether it is archived, when it was created, where its own window
+ * was. That file belongs to the notes folder and travels with it; a preference
+ * belongs where the reader looks for preferences.
+ *
+ * The old note.ini value is read as the default, which is the whole migration:
+ * anyone who had set a size or a sort order keeps it, the first write lands in
+ * config.ini, and nothing has to detect a version. */
+static int note_cfg_get_int(const WCHAR *key, int fallback)
+{
+    return (int)GetPrivateProfileIntW(L"note", key, fallback, hg_g_config_path);
+}
+
+static void note_cfg_set_int(const WCHAR *key, int value)
+{
+    WCHAR text[16];
+    hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d", value);
+    WritePrivateProfileStringW(L"note", key, text, hg_g_config_path);
+}
+
+static void note_cfg_get_str(const WCHAR *key, const WCHAR *fallback, WCHAR *out, DWORD out_cch)
+{
+    GetPrivateProfileStringW(L"note", key, fallback, out, out_cch, hg_g_config_path);
+}
+
+static void note_cfg_set_str(const WCHAR *key, const WCHAR *value)
+{
+    WritePrivateProfileStringW(L"note", key, value, hg_g_config_path);
+}
+
 /* ------------------------------------------------------------------- sorting */
 
 static const WCHAR *note_sort_key_name(HgNoteSortKey key)
@@ -202,28 +233,49 @@ static const WCHAR *note_section_desc_key(int section)
     return (section == HG_NOTE_SECTION_ARCHIVED) ? L"archived_desc" : L"active_desc";
 }
 
+static void note_sort_cfg_key(int section, WCHAR *out, size_t out_cch)
+{
+    hellgates_wsprintf(out, out_cch, L"sort_%ls", note_section_key(section));
+}
+
+static void note_sort_cfg_desc_key(int section, WCHAR *out, size_t out_cch)
+{
+    hellgates_wsprintf(out, out_cch, L"sort_%ls", note_section_desc_key(section));
+}
+
 static void note_load_settings(void)
 {
-    s_font_size = note_ini_get_int(L"font", L"size", HG_NOTE_FONT_DEFAULT);
+    s_font_size = note_cfg_get_int(L"font_size", note_ini_get_int(L"font", L"size", HG_NOTE_FONT_DEFAULT));
     if (s_font_size < HG_NOTE_FONT_MIN)
         s_font_size = HG_NOTE_FONT_MIN;
     if (s_font_size > HG_NOTE_FONT_MAX)
         s_font_size = HG_NOTE_FONT_MAX;
 
     for (int section = 0; section < HG_NOTE_SECTION_COUNT; ++section) {
+        WCHAR key[32];
+        WCHAR was[16];
         WCHAR name[16];
-        note_ini_get_str(L"list", note_section_key(section), L"modified", name, HG_ARRAYSIZE(name));
+
+        note_ini_get_str(L"list", note_section_key(section), L"modified", was, HG_ARRAYSIZE(was));
+        note_sort_cfg_key(section, key, HG_ARRAYSIZE(key));
+        note_cfg_get_str(key, was, name, HG_ARRAYSIZE(name));
         s_sort[section].key = note_sort_key_from_name(name);
+
         /* Newest first is the useful default for dates and the harmless one for
          * titles, so both sections start descending. */
-        s_sort[section].descending = (note_ini_get_int(L"list", note_section_desc_key(section), 1) != 0);
+        int was_desc = note_ini_get_int(L"list", note_section_desc_key(section), 1);
+        note_sort_cfg_desc_key(section, key, HG_ARRAYSIZE(key));
+        s_sort[section].descending = (note_cfg_get_int(key, was_desc) != 0);
     }
 }
 
 static void note_save_sort_settings(int section)
 {
-    note_ini_set_str(L"list", note_section_key(section), note_sort_key_name(s_sort[section].key));
-    note_ini_set_int(L"list", note_section_desc_key(section), s_sort[section].descending ? 1 : 0);
+    WCHAR key[32];
+    note_sort_cfg_key(section, key, HG_ARRAYSIZE(key));
+    note_cfg_set_str(key, note_sort_key_name(s_sort[section].key));
+    note_sort_cfg_desc_key(section, key, HG_ARRAYSIZE(key));
+    note_cfg_set_int(key, s_sort[section].descending ? 1 : 0);
 }
 
 /* ------------------------------------------------------------- the edit host
@@ -428,7 +480,7 @@ static void note_font_step(int delta)
         return;
 
     s_font_size = size;
-    note_ini_set_int(L"font", L"size", s_font_size);
+    note_cfg_set_int(L"font_size", s_font_size);
     note_refresh_fonts();
 }
 
@@ -1504,10 +1556,10 @@ static void note_list_save_geometry(HWND hwnd)
     RECT rc;
     if (!GetWindowRect(hwnd, &rc))
         return;
-    note_ini_set_int(L"list", L"x", (int)rc.left);
-    note_ini_set_int(L"list", L"y", (int)rc.top);
-    note_ini_set_int(L"list", L"w", (int)(rc.right - rc.left));
-    note_ini_set_int(L"list", L"h", (int)(rc.bottom - rc.top));
+    note_cfg_set_int(L"list_x", (int)rc.left);
+    note_cfg_set_int(L"list_y", (int)rc.top);
+    note_cfg_set_int(L"list_w", (int)(rc.right - rc.left));
+    note_cfg_set_int(L"list_h", (int)(rc.bottom - rc.top));
 }
 
 void show_note_list_window(void)
@@ -1525,10 +1577,10 @@ void show_note_list_window(void)
     GetCursorPos(&pt);
     double ws = hg_point_scale(pt);
 
-    int w = note_ini_get_int(L"list", L"w", 0);
-    int h = note_ini_get_int(L"list", L"h", 0);
-    int x = note_ini_get_int(L"list", L"x", pt.x);
-    int y = note_ini_get_int(L"list", L"y", pt.y);
+    int w = note_cfg_get_int(L"list_w", note_ini_get_int(L"list", L"w", 0));
+    int h = note_cfg_get_int(L"list_h", note_ini_get_int(L"list", L"h", 0));
+    int x = note_cfg_get_int(L"list_x", note_ini_get_int(L"list", L"x", pt.x));
+    int y = note_cfg_get_int(L"list_y", note_ini_get_int(L"list", L"y", pt.y));
     if (w <= 0 || h <= 0) {
         w = SCW(ws, 460);
         h = SCW(ws, 320);
@@ -1912,7 +1964,7 @@ void hg_note_set_font_size(int size)
     if (size == s_font_size)
         return;
     s_font_size = size;
-    note_ini_set_int(L"font", L"size", s_font_size);
+    note_cfg_set_int(L"font_size", s_font_size);
     note_refresh_fonts();
 }
 
