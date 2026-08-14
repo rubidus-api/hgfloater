@@ -4,6 +4,7 @@
 #include "hg_tabbox.h"
 #include "hg_clip.h"
 #include "hg_note.h"
+#include "hg_settings.h"
 #include "../hg_options.h"
 #include "../hg_keys.h"
 #include "../hg_caphook.h"
@@ -1026,6 +1027,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
         } else if (cmd == HG_IDM_EDIT_CONFIG) {
             ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
+        } else if (cmd == HG_IDM_SETTINGS) {
+            hg_settings_toggle_window();
         } else if (cmd == HG_IDM_ABOUT) {
             show_about_window();
         } else if (cmd == HG_IDM_RESET_ALL) {

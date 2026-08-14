@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.14.0] - 2026-08-14
+
+### Added
+- **A settings window** — `Settings...` in the `O` menu, `Ctrl + ,`, or
+  `settings` in the command box. One list in three parts: the switches, the
+  numbers, and every key as **window, function, chords**. Nothing in it has an
+  OK button; a change reaches `config.ini` and the running program the moment it
+  is made, the way the wheel and the menus always have. It is a view of the same
+  three tables the command box writes through, so the two can never disagree.
+- **Keys are configurable, per window.** They are kept as three levels - the
+  window the key is pressed in, the function it runs, and the chords that reach
+  it, from none up to four. A window is part of the identity rather than
+  decoration: `notes` is one row in the floater and a different row in the
+  taskbox, and the same chord has always meant different things in each. Both
+  Win32 shapes a binding must take - the registered system hotkeys and the
+  accelerator tables - are built from that table, so a rebind needs no restart.
+  `show key`, `bind` and `unbind` do it from the command box; the settings
+  window does it by waiting for the chord itself.
+- **`Open the Taskbox on Hover`,** off by default. v0.13.0 made opening a click;
+  this brings the old behaviour back for anyone who wants it, as a switch rather
+  than a build.
+- **`show option` and `write option`,** so every switch can be read and set from
+  the command box as the numbers already could be.
+- **Ctrl+N opens the note list from the floater.** It answered Ctrl+E and Ctrl+L
+  already, and a key that works in one of the two surfaces and not the other
+  reads as a key that sometimes works.
+
+### Changed
+- **Every switch is under `Options` in the `O` menu.** They used to sit loose at
+  the top of that menu, three of them, each written out three times - a menu
+  item with its own command id, a branch in the floater's WM_COMMAND, and
+  nothing at all on the command line. One table (`hg_options.c`) holds them now,
+  and the submenu, the listing and the setter are each a loop over it.
+- **`Floater Shows System Bars` has a control.** It was in `config.ini` and
+  nowhere else.
+- The `[hotkeys]` pair of numbers is read once, to carry a hotkey chosen before
+  this version into `[keys.system]`, and is then no longer used.
+
 ## [v0.13.0] - 2026-08-14
 
 ### Changed

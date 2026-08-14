@@ -14,6 +14,7 @@
 #include "widgets/hg_note.h"
 #include "widgets/hg_clip.h"
 #include "widgets/hg_monitor.h"
+#include "widgets/hg_settings.h"
 #include "hg_values.h"
 #include "hg_options.h"
 #include "hg_keys.h"
@@ -756,6 +757,19 @@ static const WCHAR *const cmd_help_write[] = {
     L"  w o tabs toggle     turn tabs-as-icons the other way",
 };
 
+static const WCHAR *const cmd_help_settings[] = {
+    L"settings            (set)",
+    L"",
+    L"  Opens the settings window: every option, every value and every",
+    L"  key, in one list. It is a view of the same tables this command",
+    L"  box writes through, so a change made in either shows up in the",
+    L"  other without anything being saved or applied.",
+    L"",
+    L"  'config' is the other half of the same subject and opens the file",
+    L"  itself in Notepad, including the handful of keys that have no",
+    L"  control anywhere.",
+};
+
 static const WCHAR *const cmd_help_bind[] = {
     L"bind <window> <function> <key|default>",
     L"unbind <window> <function> [key]",
@@ -806,6 +820,8 @@ static const HgCommandHelp cmd_help_table[] = {
     {L"write", L"w", L"set a value or an option, as 'show value' and 'show option' list them",
      cmd_help_write, HG_ARRAYSIZE(cmd_help_write)},
     {L"config", L"c", L"open config.ini in Notepad", cmd_help_config, HG_ARRAYSIZE(cmd_help_config)},
+    {L"settings", L"set", L"the settings window: options, values and keys", cmd_help_settings,
+     HG_ARRAYSIZE(cmd_help_settings)},
     {L"bind", NULL, L"give a function a key, in one window", cmd_help_bind, HG_ARRAYSIZE(cmd_help_bind)},
     {L"unbind", NULL, L"take a key away, or every key of one function", cmd_help_bind,
      HG_ARRAYSIZE(cmd_help_bind)},
@@ -1693,6 +1709,9 @@ BOOL hg_command_execute(const WCHAR *line)
         moved_focus = cmd_clipboard(argc, argv);
     } else if (cmd_word_is(argv[0], L"write", L"w")) {
         cmd_write(argc, argv);
+    } else if (cmd_word_is(argv[0], L"settings", L"set")) {
+        hg_settings_toggle_window();
+        commandbox_print(L"settings: the window is open");
     } else if (cmd_word_is(argv[0], L"bind", NULL)) {
         cmd_bind(argc, argv, FALSE);
     } else if (cmd_word_is(argv[0], L"unbind", NULL)) {

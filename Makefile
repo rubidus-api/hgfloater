@@ -72,6 +72,7 @@ SRC := \
 	src/widgets/hg_commandbox.c \
 	src/widgets/hg_note.c \
 	src/widgets/hg_clip.c \
+	src/widgets/hg_settings.c \
 	src/widgets/hg_tabbox.c \
 	src/widgets/hg_hilite.c \
 	src/widgets/hg_about.c
