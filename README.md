@@ -589,8 +589,9 @@ Open it with the `O` toolbar button or by right-clicking the status line.
     path of the running executable. No installer, no elevation, nothing else
     touched. Switching it on again after moving `hgfloater.exe` re-registers
     where the file actually is. **Reset Settings** leaves it alone.
-  - **Floater Shows System Bars** — the battery, CPU and memory line on the
-    floater. It was in `config.ini` and nowhere else until v0.14.0.
+  - **Sensor Bars on the Floater** — the battery, CPU, memory and temperature
+    bars behind the clock. They were in `config.ini` and nowhere else until
+    v0.14.0.
 - **About...** — this document, rendered inside the app.
 - **Reset Settings** — restores default geometry, opacity, sizes, and colors.
 - **Select Audio Device** — lists the output devices with the current one
@@ -643,8 +644,11 @@ program at the moment it is made, which is what the wheel and the menus have
 always done. The window is a view of the same three tables the command box
 writes through, so it re-reads itself whenever it comes back to the front.
 
-`Ctrl + Wheel` sets its text size, `Alt + Wheel` its opacity, `Alt + arrows`
-move it, and `Esc` or `Ctrl + W` closes it.
+It wears the command box's colours and font: the page and the line beneath it
+are the same two tones as that window's transcript and input box, in the same
+fixed-pitch face. `Ctrl + Wheel` sets that shared text size — the command box
+follows — `Alt + Wheel` sets this window's opacity, `Alt + arrows` move it, and
+`Esc` or `Ctrl + W` closes it.
 
 ## 8. The Command Box
 
@@ -1091,8 +1095,10 @@ notes folder; the settings above belong where the other settings are.
 
 | Key | Meaning |
 | :--- | :--- |
-| `font_size` | Text size of the settings window, in points. Default `15` |
-| `alpha` | Its opacity, `32`–`255`. Default `255` |
+| `alpha` | Opacity of the settings window, `32`–`255`. Default `255` |
+
+Its text size is not here: the settings window uses the command box's font and
+size, so `Ctrl + Wheel` in either one moves both.
 
 ## 14. Files and Directories
 
