@@ -45,7 +45,7 @@ static const HgOptionInfo hg_options[] = {
      HG_OPTION_FLAGGED_AVAILABLE, HG_OPTION_FLAGGED_NOTE},
     {L"startup", L"Start with Windows", L"one value under the per-user Run key", HG_OPTION_FLAGGED_AVAILABLE,
      HG_OPTION_FLAGGED_NOTE},
-    {L"stat-bars", L"Stat Bars on the Floater", L"battery, CPU, memory and temperature, behind the clock",
+    {L"statbars", L"Stat Bars on the Floater", L"battery, CPU, memory and temperature, behind the clock",
      TRUE, NULL},
 };
 
