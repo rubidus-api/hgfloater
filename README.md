@@ -231,9 +231,11 @@ of other windows.
 - **Left click** — toggles the taskbox. It opens in place, and the floater
   hides itself while the taskbox is up. Merely passing the pointer over the
   floater does nothing.
-- **Left drag** — in **`F` adjust mode**, moves the floater anywhere on any
-  monitor. Outside that mode a press-and-release on the floater is a click that
-  toggles the taskbox, so press `F` first.
+- **Left drag** — moves the floater anywhere on any monitor. A press and
+  release without moving is a click and toggles the taskbox; a few pixels of
+  travel makes it a drag instead. `Alt + drag` does the same and is the one to
+  use with **Open the Taskbox on Hover** switched on, since the dashboard opens
+  under the pointer before an ordinary drag can start.
 - **Alt + Wheel** — opacity.
 - **Ctrl + Wheel** or **Ctrl + Left drag** — font size, which scales the whole
   widget with it.
@@ -455,7 +457,6 @@ Thirteen built-in buttons sit in the same grid as the icons. Their order is fixe
 | **`A`** Alpha | — | **Wheel** changes taskbox opacity. The red background brightens as opacity rises. |
 | **`B`** Brightness | — | **Wheel** changes screen brightness in 5% steps. The green background brightens with it. |
 | **`V`** Volume | Toggles mute. A thick accent border marks the muted state. | **Wheel** changes the volume. The blue background brightens with it. |
-| **`F`** Floater | Collapses to the floater for tuning (see below). | — |
 | **`P`** Pin | Pins the taskbox open. | — |
 | **`N`** Note | Opens the [note list](#10-notes). | — |
 | **`L`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
@@ -489,12 +490,6 @@ would reach it. It gets its own path: HGFloater recognises the built-in display
 by its connector and drives the real backlight through Windows' own brightness
 service, the same one the system slider uses. That moves the lamp, not the
 picture.
-
-**`F` — floater adjust.** Collapses the dashboard so you can tune the floater
-with `Ctrl + Wheel` (size) and `Alt + Wheel` (opacity) — and **drag it**
-to put it where you want, which is only possible here, because everywhere else
-a press and release on the floater reads as a click and opens the taskbox.
-Click the floater without dragging to go back.
 
 **`P` — pin.** While pinned, moving the mouse away no longer collapses the
 taskbox, and the button carries an accent border. Explicit closes — `X`, `Esc`,
@@ -948,7 +943,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Item context menu** | Right-click an icon |
 | **Options menu** | Left-click `O`, or right-click the status line |
 | **Move a window** | Left-drag empty space, the status line, or the `M` button |
-| **Move the floater** | Left-click `F`, then drag the floater |
+| **Move the floater** | Drag the floater, or `Alt + drag` it |
 | **Move the taskbox aside** | Left-click the `M` button |
 | **Resize the taskbox grid** | Drag a border, or drag the `R` button |
 | **Font / icon size** | `Ctrl` + wheel |

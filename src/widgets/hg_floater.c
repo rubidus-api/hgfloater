@@ -1163,17 +1163,19 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     InvalidateRect(hwnd, NULL, TRUE);
                     save_floater_font_config();
                 }
-            } else if (hg_g_floater_adjust_mode) {
-                /* Adjust mode is the one state where the floater stays put
-                 * under the pointer instead of expanding, which makes it the
-                 * only state where dragging it somewhere is possible at all.
-                 * The delta is measured in client coordinates, which move with
-                 * the window, so the grab point stays under the cursor. */
+            } else {
+                /* Dragging the floater used to need the F button's adjust mode,
+                 * because the pointer arriving on the floater expanded it
+                 * before a drag could start. Opening is a click now, so the
+                 * mode had nothing left to protect and the drag is simply
+                 * available. The delta is measured in client coordinates, which
+                 * move with the window, so the grab point stays under the
+                 * cursor. */
                 int dx = pt.x - hg_g_drag_start_pt.x;
                 int dy = pt.y - hg_g_drag_start_pt.y;
                 if (!move_drag_active) {
-                    /* A few pixels of slop, so a click that wobbles is still a
-                     * click and still leaves adjust mode. */
+                    /* A few pixels of slop, so a click that wobbles is still
+                     * a click and still toggles the taskbox. */
                     int threshold = SC(3);
                     if (threshold < 2)
                         threshold = 2;
@@ -1185,12 +1187,12 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     ensure_window_visible(hwnd, L"floater");
                 }
             }
-        } else if (hg_g_taskbox_open_on_hover && !hg_g_floater_adjust_mode) {
+        } else if (hg_g_taskbox_open_on_hover) {
             /* Off by default: pointer travel across the desktop used to expand
              * the whole dashboard by accident, so opening is something you say
              * with a click. Those who liked reaching it without one switch this
-             * back on. Suppressed in F adjust mode either way, so Ctrl/Alt+Wheel
-             * can tune size and opacity without the taskbox reappearing. */
+             * back on - at the cost of the floater being hard to drag or tune,
+             * since it expands as soon as the pointer arrives. */
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
                 hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
                 /* Make it appear instantly, refresh without forcing icon reload */
@@ -1217,7 +1219,6 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 move_drag_active = FALSE;
                 return 0;
             }
-            hg_g_floater_adjust_mode = FALSE;   /* a click leaves floater-adjust mode */
             if (font_drag_active) {
                 /* Releasing a Ctrl+drag font-resize gesture must not toggle the taskbox. */
                 font_drag_active = FALSE;

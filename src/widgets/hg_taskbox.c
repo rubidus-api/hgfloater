@@ -289,13 +289,6 @@ void activate_toolbar_item(int index)
         if (hg_g_toolbar_wnd)
             InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
         break;
-    case HG_TOOLBAR_CLICK_FLOATER_ADJUST:
-        /* Collapse to the floater for size/alpha tuning: the floater can be
-         * dragged only in this mode (Ctrl+Wheel resizes, Alt+Wheel changes
-         * opacity); a click on the floater returns to the taskbox. */
-        hg_g_floater_adjust_mode = TRUE;
-        hide_taskbox(hg_g_taskbox_wnd);
-        break;
     default:
         break;
     }

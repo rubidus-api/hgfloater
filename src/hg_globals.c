@@ -86,7 +86,6 @@ BOOL hg_g_floater_show_stats = TRUE;
 RECT hg_g_floater_home_rect = {0, 0, 0, 0};
 RECT hg_g_taskbox_expand_rect = {0, 0, 0, 0};
 BOOL hg_g_floater_home_valid = FALSE;
-BOOL hg_g_floater_adjust_mode = FALSE;
 BOOL hg_g_taskbox_pinned = FALSE;
 BOOL hg_g_taskbox_open_on_hover = FALSE;
 ULONGLONG hg_g_edit_msg_tick = 0;
