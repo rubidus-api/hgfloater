@@ -839,7 +839,7 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             return 0;
         } else if (w_param == 'E' && !is_alt) {
             /* The same keys the taskbox answers. These two are one surface -
-             * hovering the floater is what opens the taskbox - so a key that
+             * clicking the floater is what opens the taskbox - so a key that
              * worked in one and not the other would read as a key that
              * sometimes works. */
             show_commandbox_window();
@@ -1171,24 +1171,11 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     ensure_window_visible(hwnd, L"floater");
                 }
             }
-        } else if (!hg_g_floater_adjust_mode) {
-            // Hover logic (suppressed in F floater-adjust mode so Ctrl/Alt+Wheel can
-            // tune size/alpha without the floater expanding into the taskbox)
-            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
-                hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
-                // Make it appear instantly, refresh without forcing icon reload
-                refresh_window_list(FALSE);
-                ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
-                ShowWindow(hwnd, SW_HIDE);
-                /* After a focus-preserving auto-collapse this process may not own
-                 * the foreground anymore, so a plain SetForegroundWindow would be
-                 * refused and keys would keep going to the other application. */
-                hg_force_foreground(hg_g_taskbox_wnd);
-                SetFocus(hg_g_toolbar_wnd);
-                hg_g_hover_check_armed = TRUE;
-                SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
-            }
         }
+        /* Merely passing over the floater does nothing: the taskbox opens on a
+         * click (WM_LBUTTONUP) or the hotkey. Pointer travel across the desktop
+         * used to expand it by accident, which is what the click requirement
+         * exists to stop. */
         return 0;
     }
     case WM_LBUTTONUP: {
