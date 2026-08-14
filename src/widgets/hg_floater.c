@@ -3,6 +3,8 @@
 #include "../hg_tabs.h"
 #include "hg_tabbox.h"
 #include "hg_clip.h"
+#include "hg_note.h"
+#include "../hg_options.h"
 #include "../hg_caphook.h"
 #include "../hg_config.h"
 
@@ -847,6 +849,9 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         } else if (w_param == 'L' && !is_alt) {
             hg_clip_toggle_window();
             return 0;
+        } else if (w_param == 'N' && !is_alt) {
+            show_note_list_window();
+            return 0;
         }
     }
 
@@ -979,13 +984,33 @@ static void floater_refresh_volume_ui(void)
     }
 }
 
+/* Every row of the options table arrives here, as one range rather than one
+ * branch each: the menu item is the option number plus the base, so a toggle
+ * added to the table is switchable the moment it exists. */
+static BOOL floater_dispatch_option_command(UINT cmd)
+{
+    if (cmd <= HG_IDM_OPTION_BASE || cmd >= HG_IDM_OPTION_LIMIT)
+        return FALSE;
+
+    int number = (int)(cmd - HG_IDM_OPTION_BASE);
+    HgOptionInfo info;
+    if (!hg_option_info(number, &info))
+        return FALSE;
+
+    const WCHAR *message = NULL;
+    hg_option_set(number, hg_option_get(number) ? FALSE : TRUE, &message);
+    if (message)
+        append_message(message);
+    return TRUE;
+}
+
 static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
     UINT cmd = LOWORD(w_param);
 
     BOOL handled = floater_dispatch_monitor_command(cmd) || floater_dispatch_scale_command(cmd) ||
                    floater_dispatch_brightness_command(cmd) || floater_dispatch_audio_device_command(cmd) ||
-                   floater_dispatch_volume_command(cmd);
+                   floater_dispatch_volume_command(cmd) || floater_dispatch_option_command(cmd);
     if (!handled) {
         if (cmd == HG_IDM_CLOSE_APP) {
             DestroyWindow(hwnd);
@@ -996,25 +1021,6 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             ShellExecuteW(NULL, L"open", hg_g_shortcuts_path, NULL, NULL, SW_SHOWNORMAL);
         } else if (cmd == HG_IDM_EDIT_CONFIG) {
             ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
-        } else if (cmd == HG_IDM_STARTUP) {
-            BOOL wanted = !hg_startup_is_enabled();
-            if (hg_startup_set_enabled(wanted)) {
-                append_message(wanted ? L"Start with Windows: on" : L"Start with Windows: off");
-            } else {
-                append_message(L"Start with Windows: the registry refused the change");
-            }
-        } else if (cmd == HG_IDM_SHOW_TABS) {
-            BOOL wanted = !hg_tabs_enabled();
-            hg_tabs_set_enabled(wanted);
-            /* Forced, so the list is rebuilt from scratch rather than waiting
-             * for the tab pass to come round on its own clock. */
-            refresh_window_list(TRUE);
-            append_message(wanted ? L"Tabs: shown as their own icons" : L"Tabs: off, one icon per window");
-        } else if (cmd == HG_IDM_CAPTION_MENU) {
-            BOOL wanted = !hg_caphook_enabled();
-            hg_caphook_set_enabled(wanted);
-            append_message(wanted ? L"Maximize button: right-click it on any window"
-                                  : L"Maximize button: left as Windows has it");
         } else if (cmd == HG_IDM_ABOUT) {
             show_about_window();
         } else if (cmd == HG_IDM_RESET_ALL) {
@@ -1171,11 +1177,27 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     ensure_window_visible(hwnd, L"floater");
                 }
             }
+        } else if (hg_g_taskbox_open_on_hover && !hg_g_floater_adjust_mode) {
+            /* Off by default: pointer travel across the desktop used to expand
+             * the whole dashboard by accident, so opening is something you say
+             * with a click. Those who liked reaching it without one switch this
+             * back on. Suppressed in F adjust mode either way, so Ctrl/Alt+Wheel
+             * can tune size and opacity without the taskbox reappearing. */
+            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
+                hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
+                /* Make it appear instantly, refresh without forcing icon reload */
+                refresh_window_list(FALSE);
+                ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
+                ShowWindow(hwnd, SW_HIDE);
+                /* After a focus-preserving auto-collapse this process may not own
+                 * the foreground anymore, so a plain SetForegroundWindow would be
+                 * refused and keys would keep going to the other application. */
+                hg_force_foreground(hg_g_taskbox_wnd);
+                SetFocus(hg_g_toolbar_wnd);
+                hg_g_hover_check_armed = TRUE;
+                SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
+            }
         }
-        /* Merely passing over the floater does nothing: the taskbox opens on a
-         * click (WM_LBUTTONUP) or the hotkey. Pointer travel across the desktop
-         * used to expand it by accident, which is what the click requirement
-         * exists to stop. */
         return 0;
     }
     case WM_LBUTTONUP: {

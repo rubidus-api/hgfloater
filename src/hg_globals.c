@@ -90,6 +90,7 @@ RECT hg_g_taskbox_expand_rect = {0, 0, 0, 0};
 BOOL hg_g_floater_home_valid = FALSE;
 BOOL hg_g_floater_adjust_mode = FALSE;
 BOOL hg_g_taskbox_pinned = FALSE;
+BOOL hg_g_taskbox_open_on_hover = FALSE;
 ULONGLONG hg_g_edit_msg_tick = 0;
 HgRelocateDirection hg_g_relocate_direction = HG_RELOCATE_NORTH;
 BOOL hg_g_menu_active = FALSE;

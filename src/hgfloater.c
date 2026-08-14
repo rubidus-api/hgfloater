@@ -6,6 +6,7 @@
 #include "widgets/hg_hilite.h"
 #include "hg_tabs.h"
 #include "hg_caphook.h"
+#include "hg_options.h"
 
 /* =========================================================================
  * 창 클래스 등록 기능 (Window Class Registration)
@@ -422,6 +423,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     load_hotkey_config();
     load_floater_font_config();
     load_floater_stats_config();
+    hg_options_load();
     load_taskbox_font_config();
 
     hg_g_floater_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_APPWINDOW, HG_CLASS_FLOATER_WIDGET,
