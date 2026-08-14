@@ -2,6 +2,7 @@
 #include "../hg_utils.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
+#include "../hg_keys.h"
 #include "../hg_command.h"
 
 void commandbox_execute(void);
@@ -197,6 +198,35 @@ static void commandbox_escape(HWND hwnd)
         SetFocus(hg_g_toolbar_wnd);
 }
 
+/* The command box's bound functions. `refocus` is what separates the window's
+ * copy of this from the input box's: a mode turned on while the focus was on
+ * the frame has to put the caret back, and one turned on while typing already
+ * has it. */
+static BOOL commandbox_run_key_action(HWND owner, UINT vk, BOOL refocus)
+{
+    HgKeyActionInfo info;
+    if (!hg_key_action_info(hg_key_lookup_now(HG_KEYCTX_COMMANDBOX, vk), &info))
+        return FALSE;
+
+    if (wcscmp(info.name, L"scroll-mode") == 0 || wcscmp(info.name, L"history-mode") == 0) {
+        commandbox_set_mode((wcscmp(info.name, L"scroll-mode") == 0) ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
+        if (refocus)
+            commandbox_focus_input();
+        return TRUE;
+    }
+    if (wcscmp(info.name, L"close") == 0) {
+        PostMessageW(owner, WM_CLOSE, 0, 0);
+        return TRUE;
+    }
+    if (wcscmp(info.name, L"focus-input") == 0) {
+        SetFocus(hg_g_commandbox_in_wnd);
+        int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
+        SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 /* The Execute button, which keeps only the one key it would otherwise swallow.
  * Everything else stays the button's, Enter and Space included. */
 static LRESULT CALLBACK commandbox_button_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
@@ -204,10 +234,8 @@ static LRESULT CALLBACK commandbox_button_subclass_proc(HWND hwnd, UINT msg, WPA
 {
     (void)subclass_id;
     (void)ref_data;
-    if (msg == WM_KEYDOWN && w_param == 'W' && (GetKeyState(VK_CONTROL) < 0) && !(GetKeyState(VK_MENU) < 0)) {
-        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+    if (msg == WM_KEYDOWN && commandbox_run_key_action(GetParent(hwnd), (UINT)w_param, FALSE))
         return 0;
-    }
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
@@ -222,17 +250,11 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
         BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
         BOOL is_shift = (GetKeyState(VK_SHIFT) < 0);
 
-        if (is_ctrl && !is_alt && (w_param == 'S' || w_param == 'H')) {
-            commandbox_set_mode((w_param == 'S') ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
+        /* The bound functions first. Esc is not among them: here it means
+         * "leave the mode, or else go back to the taskbox", which depends on
+         * what the window is doing rather than on a chord. */
+        if (commandbox_run_key_action(parent, (UINT)w_param, FALSE))
             return 0;
-        }
-
-        /* Ctrl+W closes this window, as it does in a note. Esc goes back to the
-         * taskbox instead, so the two are not the same door. */
-        if (is_ctrl && !is_alt && w_param == 'W') {
-            PostMessageW(parent, WM_CLOSE, 0, 0);
-            return 0;
-        }
 
         if (s_cb_mode != HG_CB_MODE_NONE && !is_ctrl && !is_alt) {
             if (w_param == VK_ESCAPE) {
@@ -250,12 +272,6 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
             return 0;
         }
 
-        if (w_param == VK_SPACE && is_ctrl) {
-            SetFocus(hg_g_commandbox_in_wnd);
-            int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
-            SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
-            return 0;
-        }
         if ((is_ctrl || is_alt) && (w_param == VK_LEFT || w_param == VK_RIGHT || w_param == VK_UP || w_param == VK_DOWN)) {
             SendMessageW(parent, msg, w_param, l_param);
             return 0;
@@ -696,18 +712,10 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
         BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
         /* Reached when the focus is on the window itself rather than on one of
-         * the controls, which answer this key through their subclasses.
+         * the controls, which answer the same keys through their subclasses.
          * Checked before the Ctrl-arrow resize below, which only wants arrows. */
-        if (is_ctrl && !is_alt && w_param == 'W') {
-            PostMessageW(hwnd, WM_CLOSE, 0, 0);
+        if (commandbox_run_key_action(hwnd, (UINT)w_param, TRUE))
             return 0;
-        }
-        if (w_param == VK_SPACE && is_ctrl) {
-            SetFocus(hg_g_commandbox_in_wnd);
-            int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
-            SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);
-            return 0;
-        }
         if (is_alt) {
             int dx = 0, dy = 0;
             int move_step = SCW(hg_window_scale(hwnd), 20);
@@ -744,11 +752,6 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
                 resize_window_by_offset(hwnd, dw, dh);
                 return 0;
             }
-        }
-        if (is_ctrl && !is_alt && (w_param == 'S' || w_param == 'H')) {
-            commandbox_set_mode((w_param == 'S') ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
-            commandbox_focus_input();
-            return 0;
         }
         if (s_cb_mode != HG_CB_MODE_NONE && !is_ctrl && !is_alt && w_param != VK_ESCAPE) {
             if (commandbox_mode_key(w_param))

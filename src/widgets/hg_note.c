@@ -14,6 +14,7 @@
 #include "../hg_utils.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
+#include "../hg_keys.h"
 
 #define HG_MAX_NOTES 256
 #define HG_NOTE_TITLE_CCH 128
@@ -1690,17 +1691,12 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
 {
     (void)subclass_id;
     (void)ref_data;
-    /* Ctrl+W closes this window, the way it closes a tab or a document
-     * everywhere else. Checked before the plain keys below so the bare letters
-     * keep their meanings. */
-    if (msg == WM_KEYDOWN && w_param == 'W' && (GetKeyState(VK_CONTROL) < 0)) {
-        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
-        return 0;
-    }
-
-    /* The list box would swallow these; the window above it owns what they mean. */
-    if (msg == WM_KEYDOWN && (w_param == VK_ESCAPE || w_param == VK_RETURN || w_param == VK_DELETE ||
-                              w_param == VK_INSERT || w_param == 'K')) {
+    /* The list box would swallow the keys the window above it owns, so
+     * whatever the note list has bound goes up. Reading the binding rather
+     * than a list of five constants is what lets a rebound key keep working:
+     * the forwarding and the meaning cannot drift apart if only one of them
+     * exists. */
+    if (msg == WM_KEYDOWN && hg_key_lookup_now(HG_KEYCTX_NOTE, (UINT)w_param)) {
         SendMessageW(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
         return 0;
     }
@@ -1775,33 +1771,27 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         }
         break;
 
-    case WM_KEYDOWN:
+    case WM_KEYDOWN: {
         /* Reached when the focus is on the window rather than on the list; the
-         * list's own subclass answers the same key. */
-        if (w_param == 'W' && (GetKeyState(VK_CONTROL) < 0)) {
-            PostMessageW(hwnd, WM_CLOSE, 0, 0);
+         * list's own subclass sends the same key here. */
+        HgKeyActionInfo action;
+        if (hg_key_action_info(hg_key_lookup_now(HG_KEYCTX_NOTE, (UINT)w_param), &action)) {
+            if (wcscmp(action.name, L"open") == 0)
+                note_list_open_selected(hwnd);
+            else if (wcscmp(action.name, L"new-note") == 0)
+                note_list_create(hwnd);
+            else if (wcscmp(action.name, L"delete") == 0)
+                note_list_delete(hwnd, note_list_selected(hwnd));
+            else if (wcscmp(action.name, L"archive") == 0)
+                note_list_toggle_archived(hwnd, note_list_selected(hwnd));
+            else if (wcscmp(action.name, L"close") == 0)
+                ShowWindow(hwnd, SW_HIDE);
+            else
+                break;
             return 0;
-        }
-        switch (w_param) {
-        case VK_RETURN:
-            note_list_open_selected(hwnd);
-            return 0;
-        case VK_INSERT:
-            note_list_create(hwnd);
-            return 0;
-        case VK_DELETE:
-            note_list_delete(hwnd, note_list_selected(hwnd));
-            return 0;
-        case 'K':
-            note_list_toggle_archived(hwnd, note_list_selected(hwnd));
-            return 0;
-        case VK_ESCAPE:
-            ShowWindow(hwnd, SW_HIDE);
-            return 0;
-        default:
-            break;
         }
         break;
+    }
 
     /* An editor posts this on the way out so its row picks up the new title and
      * modification date. */
