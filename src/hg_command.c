@@ -362,7 +362,7 @@ static const WCHAR *const cmd_key_global[] = {
 
 static const WCHAR *const cmd_key_floater[] = {
     L"The floater - the small clock widget",
-    L"  hover it           open the taskbox   T           the same",
+    L"  click it           open the taskbox   T           the same",
     L"  C   Ctrl+E         the command box",
     L"  Ctrl+N             the note list      Ctrl+L      the clipboard",
     L"  Alt+arrows/WASD    move it            Alt+drag    the same",

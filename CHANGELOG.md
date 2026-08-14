@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.13.0] - 2026-08-14
+
+### Changed
+- **The taskbox opens on a click, not on hover.** Passing the pointer over the
+  floater now does nothing at all: a left click toggles the dashboard, exactly
+  as the global hotkey and `T` do. Hover-to-expand made the floater a trap on
+  the way to anything behind it - a cursor crossing the widget on its way
+  somewhere else expanded the whole dashboard over the desktop, unasked. Opening
+  is now something you say, not something the pointer says for you.
+- **The floater drag rule reads the same, for a new reason.** Dragging it still
+  needs `F` adjust mode, because outside that mode a press and release on the
+  floater is a click and a click toggles the taskbox.
+
 ## [v0.12.1] - 2026-08-13
 
 ### Changed

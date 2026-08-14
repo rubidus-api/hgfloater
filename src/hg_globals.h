@@ -87,10 +87,10 @@ extern BOOL hg_g_in_sizemove;
 extern POINT hg_g_last_mouse_pos;
 extern BOOL hg_g_hover_check_armed;
 extern BOOL hg_g_floater_show_stats; /* [floater] show_stats: battery/CPU/memory line */
-extern RECT hg_g_floater_home_rect;   /* floater position before a hover/hotkey expand */
+extern RECT hg_g_floater_home_rect;   /* floater position before a click/hotkey expand */
 extern RECT hg_g_taskbox_expand_rect; /* taskbox position right after that expand */
 extern BOOL hg_g_floater_home_valid;
-extern BOOL hg_g_floater_adjust_mode; /* F button: floater shown for size/alpha tuning (no hover-expand) */
+extern BOOL hg_g_floater_adjust_mode; /* F button: floater shown for size/alpha tuning (drag moves it) */
 extern BOOL hg_g_taskbox_pinned;      /* P button: taskbox stays open, no hover auto-collapse */
 extern ULONGLONG hg_g_edit_msg_tick;  /* tick of the last status-line message */
 extern HgRelocateDirection hg_g_relocate_direction; /* heading the M click is walking */

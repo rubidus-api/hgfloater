@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.12.1** — built 2026-08-13 20:05 KST
+**v0.13.0** — built 2026-08-14 17:00 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -44,7 +44,7 @@
 > here under the MIT licence. More in [section 2](#2-install-and-first-run).
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
-translucent widget floats on your desktop; hovering it opens a dashboard that
+translucent widget floats on your desktop; clicking it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
@@ -125,7 +125,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.12.1)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.13.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -174,7 +174,7 @@ HGFloater is built from two windows that trade places:
 | Window | What it is | How you get it |
 | :--- | :--- | :--- |
 | **floater** | A small always-on-top widget: clock, date, host name, and system bars. | The default state. |
-| **taskbox** | The dashboard: running windows, your shortcuts, and the toolbar. | Hover or click the floater, or press the global hotkey. |
+| **taskbox** | The dashboard: running windows, your shortcuts, and the toolbar. | Click the floater, or press the global hotkey. |
 
 Expanding centers the taskbox on the floater and then pushes it fully inside
 that monitor's work area, so a floater parked at a screen edge never yields a
@@ -228,12 +228,12 @@ of other windows.
 
 **What you can do to it**
 
-- **Hover** — opens the taskbox in place. The floater hides itself while the
-  taskbox is up.
-- **Left click** — toggles the taskbox.
+- **Left click** — toggles the taskbox. It opens in place, and the floater
+  hides itself while the taskbox is up. Merely passing the pointer over the
+  floater does nothing.
 - **Left drag** — in **`F` adjust mode**, moves the floater anywhere on any
-  monitor. Outside that mode the pointer arriving on the floater opens the
-  taskbox before a drag can begin, so press `F` first.
+  monitor. Outside that mode a press-and-release on the floater is a click that
+  toggles the taskbox, so press `F` first.
 - **Alt + Wheel** — opacity.
 - **Ctrl + Wheel** or **Ctrl + Left drag** — font size, which scales the whole
   widget with it.
@@ -490,10 +490,10 @@ by its connector and drives the real backlight through Windows' own brightness
 service, the same one the system slider uses. That moves the lamp, not the
 picture.
 
-**`F` — floater adjust.** Collapses the dashboard and suspends hover-to-expand,
-so you can tune the floater with `Ctrl + Wheel` (size) and `Alt + Wheel`
-(opacity) without the taskbox reappearing under your cursor — and **drag it**
-to put it where you want, which is only possible here for the same reason.
+**`F` — floater adjust.** Collapses the dashboard so you can tune the floater
+with `Ctrl + Wheel` (size) and `Alt + Wheel` (opacity) — and **drag it**
+to put it where you want, which is only possible here, because everywhere else
+a press and release on the floater reads as a click and opens the taskbox.
 Click the floater without dragging to go back.
 
 **`P` — pin.** While pinned, moving the mouse away no longer collapses the
@@ -896,7 +896,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 
 | Action | Gesture |
 | :--- | :--- |
-| **Show / hide the taskbox** | Hover or left-click the floater, or press the global hotkey |
+| **Show / hide the taskbox** | Left-click the floater, or press the global hotkey |
 | **Activate an item** | Left-click an icon |
 | **Reorder icons** | Left-drag a task icon |
 | **Item context menu** | Right-click an icon |
