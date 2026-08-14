@@ -16,6 +16,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   keyboard focus obey it alike.
 
 ### Changed
+- **The settings window wears the command box's colours and font.** The two are
+  the same kind of surface - a fixed-pitch page of rows that have to line up in
+  columns - and a settings window in a different face from the console that sets
+  the same settings reads as a different program. The size is shared too, so
+  `Ctrl + Wheel` in either moves both, and `[settings] font_size` is gone.
+- **`Floater Shows System Bars` is now `Sensor Bars on the Floater`.** Every
+  other row in that menu is a name for what you get rather than a sentence about
+  what the program does. The command-line name follows: `write option
+  sensor-bars off`. The settings file key is untouched, so nothing anyone had
+  set is lost.
 - **Hover-to-open answers over the clock only.** With the option on, the whole
   floater used to be the target, so a hand crossing the system bars on its way
   somewhere else brought the dashboard up. The clock is a small target in the

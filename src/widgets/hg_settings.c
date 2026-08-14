@@ -15,16 +15,14 @@
 #include "hg_settings.h"
 #include "../hg_utils.h"
 #include "../hg_globals.h"
+#include "../hg_config.h"
 #include "../hg_options.h"
 #include "../hg_values.h"
 #include "../hg_keys.h"
+#include "hg_commandbox.h"
 
 #define HG_SETTINGS_LIST_ID 100
 #define HG_SETTINGS_STATUS_ID 101
-
-#define HG_SETTINGS_FONT_MIN 8
-#define HG_SETTINGS_FONT_MAX 72
-#define HG_SETTINGS_FONT_DEFAULT 15
 
 enum {
     HG_ROW_HEADING = 1,
@@ -43,8 +41,6 @@ typedef struct HgSettingsRow {
 #define HG_SETTINGS_MAX_ROWS 256
 
 static HWND s_settings_wnd = NULL;
-static HFONT s_settings_font = NULL;
-static int s_settings_font_pt = HG_SETTINGS_FONT_DEFAULT;
 static BYTE s_settings_alpha = 255;
 static BOOL s_settings_view_loaded = FALSE;
 
@@ -84,13 +80,6 @@ static void settings_load_view(void)
         return;
     s_settings_view_loaded = TRUE;
 
-    int pt = (int)GetPrivateProfileIntW(L"settings", L"font_size", HG_SETTINGS_FONT_DEFAULT, hg_g_config_path);
-    if (pt < HG_SETTINGS_FONT_MIN)
-        pt = HG_SETTINGS_FONT_MIN;
-    if (pt > HG_SETTINGS_FONT_MAX)
-        pt = HG_SETTINGS_FONT_MAX;
-    s_settings_font_pt = pt;
-
     int alpha = (int)GetPrivateProfileIntW(L"settings", L"alpha", 255, hg_g_config_path);
     if (alpha < 32)
         alpha = 32;
@@ -99,34 +88,39 @@ static void settings_load_view(void)
     s_settings_alpha = (BYTE)alpha;
 }
 
-/* Fixed pitch, unlike the other document windows: every row here is two or
- * three columns, and columns that do not line up are columns nobody reads. */
+/* The command box's font, not one of this window's own. The two are the same
+ * kind of surface - a fixed-pitch page of rows that have to line up in columns -
+ * and a settings window in a different face from the console that sets the same
+ * settings reads as a different program. Sharing the size means Ctrl+Wheel in
+ * either one moves both, which is what "the same font" has to mean to be worth
+ * saying. */
 static void settings_apply_font(HWND hwnd)
 {
-    settings_load_view();
-    double ws = hg_window_scale(hwnd);
-    HFONT font = CreateFontW(SCW(ws, s_settings_font_pt), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                             FIXED_PITCH | FF_MODERN, hg_g_commandbox_font_name);
-    if (!font)
+    load_commandbox_font();
+    if (!hg_g_commandbox_font)
         return;
 
     const int ids[] = {HG_SETTINGS_LIST_ID, HG_SETTINGS_STATUS_ID};
     for (int i = 0; i < (int)HG_ARRAYSIZE(ids); ++i) {
         HWND child = GetDlgItem(hwnd, ids[i]);
         if (child)
-            SendMessageW(child, WM_SETFONT, (WPARAM)font, TRUE);
+            SendMessageW(child, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
     }
-    if (s_settings_font)
-        DeleteObject(s_settings_font);
-    s_settings_font = font;
+}
+
+/* The row height the layout reserves for the status line, from the font that is
+ * actually in use. */
+static int settings_line_height(void)
+{
+    int px = ABS(hg_g_commandbox_font_size);
+    return (px > 0) ? px : 16;
 }
 
 static void settings_layout(HWND hwnd, int width, int height)
 {
     double ws = hg_window_scale(hwnd);
     int pad = SCW(ws, 8);
-    int status_h = SCW(ws, s_settings_font_pt) + SCW(ws, 10);
+    int status_h = settings_line_height() + SCW(ws, 10);
 
     HWND status = GetDlgItem(hwnd, HG_SETTINGS_STATUS_ID);
     HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
@@ -556,19 +550,19 @@ static BOOL settings_adjust_message(HWND wnd, UINT msg, WPARAM w_param, LPARAM l
             return TRUE;
         }
         if (ctrl) {
-            int pt = s_settings_font_pt + delta;
-            if (pt < HG_SETTINGS_FONT_MIN)
-                pt = HG_SETTINGS_FONT_MIN;
-            if (pt > HG_SETTINGS_FONT_MAX)
-                pt = HG_SETTINGS_FONT_MAX;
-            if (pt != s_settings_font_pt) {
-                s_settings_font_pt = pt;
-                settings_write_int(L"font_size", pt);
-                settings_apply_font(wnd);
-                RECT rc;
-                GetClientRect(wnd, &rc);
-                settings_layout(wnd, rc.right, rc.bottom);
-            }
+            double ws = hg_window_scale(wnd);
+            int size = (int)(ABS(hg_g_commandbox_font_size) / (ws > 0 ? ws : 1.0) + 0.5);
+            size += delta;
+            if (size < 8)
+                size = 8;
+            if (size > 72)
+                size = 72;
+            hg_g_commandbox_font_size = -SCW(ws, size);
+            save_commandbox_font_config();
+            settings_apply_font(wnd);
+            RECT rc;
+            GetClientRect(wnd, &rc);
+            settings_layout(wnd, rc.right, rc.bottom);
             return TRUE;
         }
         return FALSE;
@@ -687,8 +681,15 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         break;
 
     case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORLISTBOX:
+    case WM_CTLCOLORLISTBOX: {
+        /* The same two-tone the command box has: the list is the page, and the
+         * line beneath it takes the field colour its input box uses, so the
+         * part that talks back is told apart the same way in both windows. */
+        HWND child = (HWND)l_param;
+        if (child && GetDlgCtrlID(child) == HG_SETTINGS_STATUS_ID)
+            return hg_on_ctlcolor_field((HDC)w_param);
         return hg_on_ctlcolor_document((HDC)w_param);
+    }
 
     case WM_DPICHANGED:
         hg_apply_dpi_suggested_rect(hwnd, l_param);

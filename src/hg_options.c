@@ -12,6 +12,9 @@
 #include "widgets/hg_hilite.h"
 #include "widgets/hg_tabbox.h"
 
+/* The ini key stays [floater] show_stats: the label and the command-line name
+ * are what a reader sees, and renaming the file key would only lose the setting
+ * of anyone who already had it. */
 enum {
     HG_OPTION_HOVER_OPEN = 1,
     HG_OPTION_WINDOW_OUTLINE,
@@ -19,7 +22,7 @@ enum {
     HG_OPTION_TABS,
     HG_OPTION_CAPTION_MENU,
     HG_OPTION_STARTUP,
-    HG_OPTION_FLOATER_STATS
+    HG_OPTION_SENSOR_BARS
 };
 
 #if HG_TEMP_DISABLE_FLAGGED_FEATURES
@@ -42,8 +45,8 @@ static const HgOptionInfo hg_options[] = {
      HG_OPTION_FLAGGED_AVAILABLE, HG_OPTION_FLAGGED_NOTE},
     {L"startup", L"Start with Windows", L"one value under the per-user Run key", HG_OPTION_FLAGGED_AVAILABLE,
      HG_OPTION_FLAGGED_NOTE},
-    {L"floater-stats", L"Floater Shows System Bars", L"the battery, CPU and memory line on the floater", TRUE,
-     NULL},
+    {L"sensor-bars", L"Sensor Bars on the Floater", L"battery, CPU, memory and temperature, behind the clock",
+     TRUE, NULL},
 };
 
 int hg_option_count(void)
@@ -74,7 +77,7 @@ BOOL hg_option_get(int number)
         return hg_caphook_enabled();
     case HG_OPTION_STARTUP:
         return hg_startup_is_enabled();
-    case HG_OPTION_FLOATER_STATS:
+    case HG_OPTION_SENSOR_BARS:
         return hg_g_floater_show_stats;
     default:
         return FALSE;
@@ -143,7 +146,7 @@ BOOL hg_option_set(int number, BOOL value, const WCHAR **out_message)
         if (out_message)
             *out_message = value ? L"Start with Windows: on" : L"Start with Windows: off";
         break;
-    case HG_OPTION_FLOATER_STATS:
+    case HG_OPTION_SENSOR_BARS:
         hg_g_floater_show_stats = value;
         WritePrivateProfileStringW(L"floater", L"show_stats", value ? L"1" : L"0", hg_g_config_path);
         if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
@@ -153,7 +156,7 @@ BOOL hg_option_set(int number, BOOL value, const WCHAR **out_message)
             InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
         }
         if (out_message)
-            *out_message = value ? L"Floater: system bars shown" : L"Floater: system bars hidden";
+            *out_message = value ? L"Floater: sensor bars shown" : L"Floater: sensor bars hidden";
         break;
     default:
         return FALSE;
