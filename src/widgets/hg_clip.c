@@ -20,6 +20,7 @@
 #include "hg_clip.h"
 #include "../hg_utils.h"
 #include "../hg_globals.h"
+#include "../hg_keys.h"
 
 #define HG_CLIP_SEARCH_ID 100
 #define HG_CLIP_LIST_ID 101
@@ -722,40 +723,41 @@ static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
         }
     }
 
-    /* Ctrl+W closes this window, as it does in a note. Checked before the plain
-     * keys so the search box keeps its own letters. */
-    if (msg == WM_KEYDOWN && w_param == 'W' && (GetKeyState(VK_CONTROL) < 0) && !(GetKeyState(VK_MENU) < 0)) {
-        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
-        return 0;
-    }
+    /* What this window has bound, whatever it has been rebound to. Two of the
+     * three only make sense on the list: this subclass is on the search box and
+     * the number box as well, and an EDIT answers 0 to LB_GETCURSEL the way it
+     * answers any message it does not know - which reads as "row 0, the newest
+     * clip", so Del pressed while typing in the search box used to delete a
+     * clip instead of a character. Closing is the exception and belongs to
+     * every box in the window. */
+    if (msg == WM_KEYDOWN) {
+        HgKeyActionInfo action;
+        BOOL on_list = (hwnd == GetDlgItem(GetParent(hwnd), HG_CLIP_LIST_ID));
 
-    if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
-        PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
-        return 0;
-    }
-    if (msg == WM_KEYDOWN && w_param == VK_RETURN) {
-        clip_take_selected(GetParent(hwnd));
-        return 0;
-    }
-    /* Del deletes the selected clip, leaving the selection at the same row so
-     * that clearing out a run of them is one key pressed repeatedly.
-     *
-     * Only from the list. This subclass is on the two edit boxes as well, and
-     * an EDIT answers 0 to LB_GETCURSEL and LB_GETITEMDATA the way it answers
-     * any message it does not know - which read as "row 0, history entry 0", so
-     * Del pressed while typing in the search box deleted the newest clip
-     * instead of the character in front of the caret. */
-    if (msg == WM_KEYDOWN && w_param == VK_DELETE && hwnd == GetDlgItem(GetParent(hwnd), HG_CLIP_LIST_ID)) {
-        int row = (int)SendMessageW(hwnd, LB_GETCURSEL, 0, 0);
-        int index = clip_index_at_row(hwnd, row);
-        if (index >= 0) {
-            clip_remove(index);
-            clip_list_fill();
-            int count = (int)SendMessageW(hwnd, LB_GETCOUNT, 0, 0);
-            if (count > 0)
-                SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)((row < count) ? row : count - 1), 0);
+        if (hg_key_action_info(hg_key_lookup_now(HG_KEYCTX_CLIPBOARD, (UINT)w_param), &action)) {
+            if (wcscmp(action.name, L"close") == 0) {
+                PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+                return 0;
+            }
+            if (on_list && wcscmp(action.name, L"take") == 0) {
+                clip_take_selected(GetParent(hwnd));
+                return 0;
+            }
+            /* Del leaves the selection at the same row, so clearing out a run
+             * of clips is one key pressed repeatedly. */
+            if (on_list && wcscmp(action.name, L"delete") == 0) {
+                int row = (int)SendMessageW(hwnd, LB_GETCURSEL, 0, 0);
+                int index = clip_index_at_row(hwnd, row);
+                if (index >= 0) {
+                    clip_remove(index);
+                    clip_list_fill();
+                    int count = (int)SendMessageW(hwnd, LB_GETCOUNT, 0, 0);
+                    if (count > 0)
+                        SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)((row < count) ? row : count - 1), 0);
+                }
+                return 0;
+            }
         }
-        return 0;
     }
 
     return DefSubclassProc(hwnd, msg, w_param, l_param);

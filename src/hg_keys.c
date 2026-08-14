@@ -60,6 +60,29 @@ static const HgKeyActionRow hg_key_actions[] = {
     {HG_KEYCTX_TASKBOX, L"clipboard", L"Clipboard history", L"", L"Ctrl+L", 0, FALSE},
     {HG_KEYCTX_TASKBOX, L"hide", L"Fold back into the floater",
      L"and re-read the shortcuts folder", L"Esc", 0, FALSE},
+
+    /* -- the command box */
+    {HG_KEYCTX_COMMANDBOX, L"scroll-mode", L"Scroll mode",
+     L"the arrows walk the transcript instead of the caret", L"Ctrl+S", 0, FALSE},
+    {HG_KEYCTX_COMMANDBOX, L"history-mode", L"History mode", L"the numbered list of what has been run",
+     L"Ctrl+H", 0, FALSE},
+    {HG_KEYCTX_COMMANDBOX, L"focus-input", L"Jump to the input box", L"", L"Ctrl+Space", 0, FALSE},
+    {HG_KEYCTX_COMMANDBOX, L"close", L"Close the command box", L"leaving the taskbox alone", L"Ctrl+W", 0,
+     FALSE},
+
+    /* -- the note list */
+    {HG_KEYCTX_NOTE, L"open", L"Open the selected note", L"on +Add Note, make one", L"Enter", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"new-note", L"New note", L"from any row", L"Insert", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"archive", L"Archive or restore", L"", L"K", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"delete", L"Delete the selected note", L"to the Recycle Bin", L"Delete", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"close", L"Close the list", L"", L"Esc, Ctrl+W", 0, FALSE},
+
+    /* -- the clipboard history */
+    {HG_KEYCTX_CLIPBOARD, L"take", L"Make that clip the current one", L"the window stays open", L"Enter", 0,
+     FALSE},
+    {HG_KEYCTX_CLIPBOARD, L"delete", L"Delete the selected clip", L"the selection stays put", L"Delete", 0,
+     FALSE},
+    {HG_KEYCTX_CLIPBOARD, L"close", L"Close the history", L"", L"Esc, Ctrl+W", 0, FALSE},
 };
 /* clang-format on */
 
@@ -83,6 +106,9 @@ static const HgKeyContextRow hg_key_contexts[] = {
     {HG_KEYCTX_WIDGET, L"widget", L"the floater and the taskbox, whichever has the keyboard"},
     {HG_KEYCTX_FLOATER, L"floater", L"the small clock widget"},
     {HG_KEYCTX_TASKBOX, L"taskbox", L"the dashboard"},
+    {HG_KEYCTX_COMMANDBOX, L"commandbox", L"the console window"},
+    {HG_KEYCTX_NOTE, L"note", L"the note list"},
+    {HG_KEYCTX_CLIPBOARD, L"clipboard", L"the clipboard history window"},
 };
 
 const WCHAR *hg_key_context_name(int context)

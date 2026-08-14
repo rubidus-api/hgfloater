@@ -764,10 +764,16 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `Win + Alt + Space` | 태스크박스 표시/숨김. 창이 화면 밖으로 밀려났으면 가장 가까운 모니터의 작업 영역 안으로 복구합니다. |
 | `Ctrl + ,` | [설정 창](#71-설정-창) — 옵션·수치, 그리고 이 장의 모든 키 |
 
-이 장과 아래 두 절의 키는 모두 바꿀 수 있습니다. 창·기능·기능키로 저장되며 설정 창,
-`bind`, `config.ini` 중 어디에서든 고칠 수 있습니다. 다만 이동 키는 그 목록에 없습니다 —
-방향키·`WASD`·그리드 조절 키·`Shift +` 글자 배지는 다시 지정할 기능이라기보다 태스크박스
-자체의 언어이기 때문입니다.
+**기능**을 실행하는 키는 모두 바꿀 수 있고, 창은 여섯 가지입니다. `system`(윈도우가 직접
+들고 있는 전역), `widget`(플로터와 태스크박스 공통), `floater`, `taskbox`, `commandbox`,
+`note`(노트 목록), `clipboard`. 창·기능·기능키로 저장되며 설정 창, `bind`, `config.ini`
+중 어디에서든 고칠 수 있습니다.
+
+두 종류는 일부러 뺐습니다. **이동 키** — 방향키·`WASD`·그리드 조절 키·`Shift +` 글자
+배지 — 는 다시 지정할 기능이라기보다 태스크박스 자체의 언어입니다. **편집 키** — 노트
+편집 창 안의 모든 키, `Ctrl + X/C/V`, `Ctrl + Z/Y`, 그리고 커맨드 박스의 모드를 빠져나가는
+`Esc` — 는 커서 아래의 글자에 속합니다. 커맨드 박스의 `Esc` 는 "모드에서 빠져나가고,
+아니면 태스크박스로 돌아간다"는 뜻이라 조합키가 아니라 상태에 달려 있습니다.
 
 ### 태스크박스 안에서
 
@@ -906,7 +912,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 - `value_alpha_low`/`value_alpha_high`, `value_brightness_low`/`value_brightness_high`,
   `value_volume_low`/`value_volume_high` — `A`·`B`·`V` 버튼의 그라데이션
 
-### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`
+### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 
 창마다 한 구역, 기능마다 한 줄이고, 값은 그 기능에 닿는 조합키입니다. 쉼표로 구분해 최대
 네 개까지 씁니다.

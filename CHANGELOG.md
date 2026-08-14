@@ -21,7 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Win32 shapes a binding must take - the registered system hotkeys and the
   accelerator tables - are built from that table, so a rebind needs no restart.
   `show key`, `bind` and `unbind` do it from the command box; the settings
-  window does it by waiting for the chord itself.
+  window does it by waiting for the chord itself. Seven windows are covered:
+  `system`, `widget`, `floater`, `taskbox`, `commandbox`, `note` and
+  `clipboard`. Navigation and editing keys are deliberately left out - the
+  arrows and the grid keys are the taskbox's own language, and the keys inside a
+  note editor belong to the text under the caret.
 - **`Open the Taskbox on Hover`,** off by default. v0.13.0 made opening a click;
   this brings the old behaviour back for anyone who wants it, as a switch rather
   than a build.

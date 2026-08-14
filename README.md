@@ -859,11 +859,19 @@ creation time of day goes there too, since the file name only carries the day.
 | `Win + Alt + Space` | Show or hide the taskbox. If a window has drifted off screen, it is pulled back into the nearest monitor's work area. |
 | `Ctrl + ,` | The [settings window](#71-the-settings-window) — options, values, and every key on this page. |
 
-Every key in this section and the two below it can be changed: they are kept as
-window, function and chords, and the settings window, `bind`, or `config.ini`
-edits them. Navigation is not on that list — the arrows, `WASD`, the grid keys
-and the `Shift +` letter badges are the taskbox's own language rather than
-functions to rebind.
+The keys that run a **function** can be changed, in six windows: `system` (the
+one Windows itself carries), `widget` (the floater and taskbox together),
+`floater`, `taskbox`, `commandbox`, `note` (the list) and `clipboard`. They are
+kept as window, function and chords, and the settings window, `bind`, or
+`config.ini` edits them.
+
+Two kinds of key are deliberately not on that list. **Navigation** — the arrows,
+`WASD`, the grid keys, the `Shift +` letter badges — is the taskbox's own
+language rather than a function. And **editing** — everything inside a note
+editor, `Ctrl + X/C/V`, `Ctrl + Z/Y`, and the `Esc` that leaves a command-box
+mode — belongs to the text under the caret; `Esc` in the command box means
+"leave the mode, or else go back to the taskbox", which is a state rather than
+a chord.
 
 ### Inside the taskbox
 
@@ -1025,7 +1033,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
   gradients behind the `A`, `B`, and `V` buttons.
 
-### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`
+### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 
 One section per window, one line per function, and the value is the chords that
 reach it — up to four, separated by commas:
