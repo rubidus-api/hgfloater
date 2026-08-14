@@ -281,6 +281,26 @@ BOOL hg_key_parse_chord(const WCHAR *text, HgChord *out)
     return TRUE;
 }
 
+BOOL hg_key_is_navigation(HgChord chord)
+{
+    if (chord.mods != 0)
+        return FALSE;
+
+    switch (chord.vk) {
+    case 'W':
+    case 'A':
+    case 'S':
+    case 'D':
+    case VK_UP:
+    case VK_DOWN:
+    case VK_LEFT:
+    case VK_RIGHT:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 BOOL hg_key_chord_text(HgChord chord, WCHAR *out, size_t out_cch)
 {
     if (!out || out_cch == 0)
@@ -506,6 +526,9 @@ BOOL hg_key_add(int action, const WCHAR *chord_text, int *out_conflict)
     /* The Windows key is the system context's alone. Everywhere else the chord
      * never arrives: the shell takes it before any window sees a key. */
     if ((chord.mods & HG_KMOD_WIN) && row->context != HG_KEYCTX_SYSTEM)
+        return FALSE;
+
+    if (hg_key_is_navigation(chord))
         return FALSE;
 
     for (int other = 1; other <= hg_key_action_count(); ++other) {

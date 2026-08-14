@@ -21,11 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   columns - and a settings window in a different face from the console that sets
   the same settings reads as a different program. The size is shared too, so
   `Ctrl + Wheel` in either moves both, and `[settings] font_size` is gone.
-- **`Floater Shows System Bars` is now `Sensor Bars on the Floater`.** Every
-  other row in that menu is a name for what you get rather than a sentence about
-  what the program does. The command-line name follows: `write option
-  sensor-bars off`. The settings file key is untouched, so nothing anyone had
-  set is lost.
+- **`Floater Shows System Bars` is now `Stat Bars on the Floater`.** Every other
+  row in that menu is a name for what you get rather than a sentence about what
+  the program does, and "stat bar" is what a reader of English already calls a
+  small bar standing for a number. The command-line name follows: `write option
+  stat-bars off`. The settings file key is untouched, so nothing anyone had set
+  is lost.
 - **Hover-to-open answers over the clock only.** With the option on, the whole
   floater used to be the target, so a hand crossing the system bars on its way
   somewhere else brought the dashboard up. The clock is a small target in the
@@ -41,6 +42,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   default so nothing is lost. What stays beside the notes is what is about a
   note rather than about the program - archived, created, and each note window's
   own place.
+
+- **WASD walks the settings window,** as it walks the taskbox grid, so a hand on
+  the home row does not have to leave it. `Ctrl+W` still closes and `Alt+A` still
+  moves the window: only the bare letters navigate.
+- **The bare arrows and WASD cannot be bound to anything.** They are how a
+  window is walked rather than a function - in the grid, in the settings list and
+  in the tab box alike - and a window whose navigation had been bound elsewhere
+  could not be walked at all. Held with Ctrl or Alt they bind like any chord.
 
 ### Fixed
 - **A key being bound no longer runs while it is being bound.** Pressing `F1` in

@@ -589,7 +589,7 @@ Open it with the `O` toolbar button or by right-clicking the status line.
     path of the running executable. No installer, no elevation, nothing else
     touched. Switching it on again after moving `hgfloater.exe` re-registers
     where the file actually is. **Reset Settings** leaves it alone.
-  - **Sensor Bars on the Floater** — the battery, CPU, memory and temperature
+  - **Stat Bars on the Floater** — the battery, CPU, memory and temperature
     bars behind the clock. They were in `config.ini` and nowhere else until
     v0.14.0.
 - **About...** — this document, rendered inside the app.
