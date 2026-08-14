@@ -30,12 +30,14 @@ enum {
     HG_ROW_HEADING = 1,
     HG_ROW_OPTION,
     HG_ROW_VALUE,
-    HG_ROW_KEY
+    HG_ROW_KEY,  /* a function */
+    HG_ROW_CHORD /* one of that function's chords */
 };
 
 typedef struct HgSettingsRow {
     int kind;
     int number; /* option number, value number, or key action */
+    int index;  /* HG_ROW_CHORD: which of the action's chords */
 } HgSettingsRow;
 
 #define HG_SETTINGS_MAX_ROWS 256
@@ -54,7 +56,18 @@ static int s_row_count = 0;
  * only way to bind a key that the list itself uses. */
 static int s_capture_action = 0;
 
+/* Set while the chord being pressed is meant to replace one that is already
+ * there. The old chord is dropped only once the new one is in, so pressing Esc
+ * halfway through leaves the binding exactly as it was. */
+static BOOL s_capture_replaces = FALSE;
+static HgChord s_capture_replaced = {0, 0};
+
 static void settings_fill(HWND hwnd);
+
+BOOL hg_settings_capturing(void)
+{
+    return s_capture_action != 0;
+}
 
 /* ------------------------------------------------------------------ view */
 
@@ -138,14 +151,20 @@ static void settings_say(HWND hwnd, const WCHAR *text)
 
 /* ------------------------------------------------------------------ rows */
 
-static void settings_add_row(HWND list, int kind, int number, const WCHAR *text)
+static void settings_add_row_at(HWND list, int kind, int number, int index, const WCHAR *text)
 {
     if (s_row_count >= HG_SETTINGS_MAX_ROWS)
         return;
     s_rows[s_row_count].kind = kind;
     s_rows[s_row_count].number = number;
+    s_rows[s_row_count].index = index;
     SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)text);
     ++s_row_count;
+}
+
+static void settings_add_row(HWND list, int kind, int number, const WCHAR *text)
+{
+    settings_add_row_at(list, kind, number, 0, text);
 }
 
 static void settings_fill(HWND hwnd)
@@ -203,12 +222,28 @@ static void settings_fill(HWND hwnd)
             settings_add_row(list, HG_ROW_HEADING, 0, line);
         }
 
-        WCHAR keys[160];
-        hg_key_bindings_text(action, keys, HG_ARRAYSIZE(keys));
-        if (s_capture_action == action)
-            StringCchCopyW(keys, HG_ARRAYSIZE(keys), L"[press a key, Esc to stop]");
-        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", info.label, keys);
+        /* The function is one row and each of its chords is another, indented
+         * under it. A single row listing "Ctrl+N, Ctrl+Shift+N" could only ever
+         * offer to delete the last one, which is not the one anybody means: a
+         * chord you can point at is a chord you can remove. */
+        int count = hg_key_binding_count(action);
+        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", info.label,
+                         (s_capture_action == action && !s_capture_replaces)
+                             ? L"[press a key, Esc to stop]"
+                             : (count ? L"" : L"(no key)"));
         settings_add_row(list, HG_ROW_KEY, action, line);
+
+        for (int i = 0; i < count; ++i) {
+            HgChord chord;
+            WCHAR text[64];
+            if (!hg_key_binding_chord(action, i, &chord) || !hg_key_chord_text(chord, text, HG_ARRAYSIZE(text)))
+                continue;
+            if (s_capture_action == action && s_capture_replaces && s_capture_replaced.vk == chord.vk &&
+                s_capture_replaced.mods == chord.mods)
+                StringCchCopyW(text, HG_ARRAYSIZE(text), L"[press the key that replaces it, Esc to stop]");
+            StringCchPrintfW(line, HG_ARRAYSIZE(line), L"        %ls", text);
+            settings_add_row_at(list, HG_ROW_CHORD, action, i, line);
+        }
     }
 
     SendMessageW(list, WM_SETREDRAW, TRUE, 0);
@@ -255,8 +290,10 @@ static void settings_describe(HWND hwnd)
         settings_say(hwnd, L"Left/Right changes it - by 5 for a percentage, by 1 otherwise.");
         break;
     case HG_ROW_KEY:
-        settings_say(hwnd, L"Enter adds a key.  Del takes the last one away, Ctrl+Del all of them, R restores "
-                           L"the default.");
+        settings_say(hwnd, L"Enter adds a key.  Del takes them all away, R restores the default.");
+        break;
+    case HG_ROW_CHORD:
+        settings_say(hwnd, L"Del removes this key.  Enter replaces it with the next one you press.");
         break;
     default:
         settings_say(hwnd, L"Up/Down to walk the list.");
@@ -314,8 +351,9 @@ static void settings_capture_chord(HWND hwnd, UINT vk)
 
     if (vk == VK_ESCAPE) {
         s_capture_action = 0;
+        s_capture_replaces = FALSE;
         settings_fill(hwnd);
-        settings_say(hwnd, L"Nothing added.");
+        settings_say(hwnd, L"Nothing changed.");
         return;
     }
 
@@ -323,17 +361,32 @@ static void settings_capture_chord(HWND hwnd, UINT vk)
     WCHAR text[64];
     if (!hg_key_chord_text(chord, text, HG_ARRAYSIZE(text))) {
         s_capture_action = 0;
+        s_capture_replaces = FALSE;
         settings_fill(hwnd);
         settings_say(hwnd, L"That key has no name this program can write down.");
         return;
     }
 
     s_capture_action = 0;
+    BOOL replacing = s_capture_replaces;
+    HgChord replaced = s_capture_replaced;
+    s_capture_replaces = FALSE;
 
     int conflict = 0;
     WCHAR message[220];
     if (hg_key_add(action, text, &conflict)) {
+        /* The old chord goes only now, with the new one already in place: a
+         * replacement that failed halfway would otherwise leave the function
+         * with one key fewer than it started with. */
+        if (replacing) {
+            WCHAR old_text[64];
+            if (hg_key_chord_text(replaced, old_text, HG_ARRAYSIZE(old_text)))
+                hg_key_remove(action, old_text);
+        }
         StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls now runs %ls.", text, info.label);
+    } else if (replacing && chord.vk == replaced.vk && chord.mods == replaced.mods) {
+        /* Replacing a chord with itself is not a conflict, it is a no-op. */
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls left as it was.", text);
     } else if (conflict) {
         HgKeyActionInfo other;
         if (hg_key_action_info(conflict, &other))
@@ -355,7 +408,8 @@ static void settings_capture_chord(HWND hwnd, UINT vk)
     settings_say(hwnd, message);
 }
 
-static void settings_key_row_command(HWND hwnd, int action, UINT vk, BOOL ctrl)
+/* The function row: add a key, take them all away, or go back to the default. */
+static void settings_key_row_command(HWND hwnd, int action, UINT vk)
 {
     HgKeyActionInfo info;
     if (!hg_key_action_info(action, &info))
@@ -366,30 +420,19 @@ static void settings_key_row_command(HWND hwnd, int action, UINT vk, BOOL ctrl)
 
     if (vk == VK_RETURN) {
         s_capture_action = action;
+        s_capture_replaces = FALSE;
         settings_fill(hwnd);
         settings_describe(hwnd);
         return;
     }
 
     if (vk == VK_DELETE) {
-        int count = hg_key_binding_count(action);
-        if (count == 0) {
+        if (hg_key_binding_count(action) == 0) {
             settings_say(hwnd, L"That function has no key to take away.");
             return;
         }
-        if (ctrl) {
-            hg_key_clear(action);
-            StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls has no key now.", info.label);
-        } else {
-            HgChord chord;
-            WCHAR text[64] = L"";
-            if (hg_key_binding_chord(action, count - 1, &chord) &&
-                hg_key_chord_text(chord, text, HG_ARRAYSIZE(text)))
-                hg_key_remove(action, text);
-            hg_key_bindings_text(action, keys, HG_ARRAYSIZE(keys));
-            StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls dropped.  %ls now: %ls", text, info.label,
-                             keys);
-        }
+        hg_key_clear(action);
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls has no key now.", info.label);
         settings_fill(hwnd);
         settings_say(hwnd, message);
         return;
@@ -404,6 +447,37 @@ static void settings_key_row_command(HWND hwnd, int action, UINT vk, BOOL ctrl)
     }
 }
 
+/* A chord row: this one, by name. */
+static void settings_chord_row_command(HWND hwnd, int action, int index, UINT vk)
+{
+    HgKeyActionInfo info;
+    HgChord chord;
+    WCHAR text[64];
+    if (!hg_key_action_info(action, &info) || !hg_key_binding_chord(action, index, &chord) ||
+        !hg_key_chord_text(chord, text, HG_ARRAYSIZE(text)))
+        return;
+
+    WCHAR message[220];
+
+    if (vk == VK_DELETE) {
+        hg_key_remove(action, text);
+        WCHAR keys[160];
+        hg_key_bindings_text(action, keys, HG_ARRAYSIZE(keys));
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls dropped.  %ls now: %ls", text, info.label, keys);
+        settings_fill(hwnd);
+        settings_say(hwnd, message);
+        return;
+    }
+
+    if (vk == VK_RETURN) {
+        s_capture_action = action;
+        s_capture_replaces = TRUE;
+        s_capture_replaced = chord;
+        settings_fill(hwnd);
+        settings_describe(hwnd);
+    }
+}
+
 /* Every key the list answers, in one place, because the list is a child control
  * and the keys would otherwise never reach the window. */
 static BOOL settings_list_key(HWND parent, UINT vk)
@@ -415,6 +489,7 @@ static BOOL settings_list_key(HWND parent, UINT vk)
         settings_capture_chord(parent, vk);
         return TRUE;
     }
+
 
     if (alt)
         return FALSE; /* Alt+arrows move the window; the list wants none of it */
@@ -443,7 +518,13 @@ static BOOL settings_list_key(HWND parent, UINT vk)
         break;
     case HG_ROW_KEY:
         if (vk == VK_RETURN || vk == VK_DELETE || vk == 'R') {
-            settings_key_row_command(parent, row.number, vk, ctrl);
+            settings_key_row_command(parent, row.number, vk);
+            return TRUE;
+        }
+        break;
+    case HG_ROW_CHORD:
+        if (vk == VK_RETURN || vk == VK_DELETE) {
+            settings_chord_row_command(parent, row.number, row.index, vk);
             return TRUE;
         }
         break;
@@ -620,6 +701,7 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
 
     case WM_DESTROY:
         s_capture_action = 0;
+        s_capture_replaces = FALSE;
         s_settings_wnd = NULL;
         return 0;
 

@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.15.0] - 2026-08-14
+
+### Added
+- **Two more switches under `Options`.** **Outline the Window Under the
+  Pointer** and **Show a Window's Tabs on Hover** - the frame a task icon draws
+  around the window it stands for, and the list of tabs that opens beside a
+  tabbed window's icon. Both were unconditional; both are on by default and now
+  answer to the menu, `write option`, and the settings window. The gate is
+  inside each feature rather than at its call sites, so the mouse and the
+  keyboard focus obey it alike.
+
+### Changed
+- **Hover-to-open answers over the clock only.** With the option on, the whole
+  floater used to be the target, so a hand crossing the system bars on its way
+  somewhere else brought the dashboard up. The clock is a small target in the
+  middle: resting on it is a decision. A **click still counts anywhere on the
+  floater**, clock included.
+- **The taskbox only flashes when a key asked for it.** Three blinks exist to
+  find a window that appeared where the eye was not looking; a click is aimed at
+  the thing it opens, so it does not need them. The global hotkey and `T` keep
+  the flash.
+- **Every setting is in `config.ini`.** The note font size, the two list sort
+  orders and the list window's geometry were in `note/note.ini`; they are in
+  `[note]` with everything else now, and the old file is read once as the
+  default so nothing is lost. What stays beside the notes is what is about a
+  note rather than about the program - archived, created, and each note window's
+  own place.
+
+### Fixed
+- **A key being bound no longer runs while it is being bound.** Pressing `F1` in
+  the settings window recorded `F1` and opened About, because an accelerator is
+  translated before any window sees the key. The message loop stops translating
+  while the settings window is listening.
+- **Any one key can be removed, not just the last.** Each chord is its own row
+  under its function now, so `Del` takes away the one under the cursor and
+  `Enter` replaces it with the next key pressed - and the old chord goes only
+  once the new one is in, so `Esc` halfway through leaves the binding as it was.
+  On the function row itself, `Del` clears every key and `R` restores the
+  default.
+
 ## [v0.14.0] - 2026-08-14
 
 ### Added

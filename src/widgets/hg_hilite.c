@@ -116,6 +116,14 @@ static BOOL hilite_target_rect(HWND target, RECT *out)
 
 void hg_hilite_show(HWND target)
 {
+    /* Switched off means switched off wherever the ask came from - the mouse
+     * in the toolbar, the keyboard focus in the grid - so the gate is here
+     * rather than at each call. */
+    if (!hg_g_window_outline) {
+        hg_hilite_hide();
+        return;
+    }
+
     /* A minimized window has no place on the desktop to point at, and a frame
      * around where it used to be would be a lie. Nothing is drawn, and nothing
      * is moved: the outline simply stays away. */

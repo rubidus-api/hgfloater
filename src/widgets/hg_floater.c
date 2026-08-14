@@ -632,6 +632,42 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
         SelectObject(dc, old_font);
 }
 
+/* The clock's rectangle, in client coordinates.
+ *
+ * Hover-to-open uses it instead of the whole window. The floater is mostly
+ * system bars and a host name, and a pointer crossing any of that had the
+ * dashboard over the desktop before the hand had finished moving; the clock is
+ * a small target in the middle, which is what makes resting on it a decision
+ * rather than an accident. A click still counts anywhere on the floater. */
+static BOOL floater_clock_rect(HWND hwnd, RECT *out)
+{
+    if (!out || !hg_g_floater_time_font || !hg_g_floater_date_font)
+        return FALSE;
+
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    WCHAR time_str[16], date_str[32];
+    hellgates_wsprintf(time_str, 16, L"%02d:%02d", st.wHour, st.wMinute);
+    const WCHAR *months[] = {L"",    L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
+                             L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
+    const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
+    hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
+
+    HDC hdc = GetDC(hwnd);
+    if (!hdc)
+        return FALSE;
+
+    HgFloaterMetrics m;
+    floater_compute_metrics(hdc, time_str, date_str, &m);
+    ReleaseDC(hwnd, hdc);
+
+    out->left = m.column_x;
+    out->right = m.column_x + m.column_w;
+    out->top = m.text_y;
+    out->bottom = m.text_y + m.time_h;
+    return (out->right > out->left && out->bottom > out->top);
+}
+
 void update_floater_layout(HWND hwnd)
 {
     SYSTEMTIME st;
@@ -802,6 +838,15 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
     return 0;
 }
 
+static BOOL floater_pointer_on_clock(HWND hwnd, LPARAM l_param)
+{
+    RECT clock;
+    if (!floater_clock_rect(hwnd, &clock))
+        return FALSE;
+    POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+    return PtInRect(&clock, pt);
+}
+
 /* One place where a bound floater function turns into the thing it does. The
  * name is the identity - the same word the settings file and `bind` use - so a
  * rebound chord arrives here unchanged. */
@@ -812,7 +857,7 @@ static BOOL floater_run_key_action(HWND hwnd, int action)
         return FALSE;
 
     if (wcscmp(info.name, L"open-taskbox") == 0) {
-        PostMessageW(hwnd, WM_HOTKEY, 1, 0);
+        PostMessageW(hwnd, HG_MSG_SHOW_TASKBOX, TRUE, 0);
     } else if (wcscmp(info.name, L"command-box") == 0) {
         show_commandbox_window();
     } else if (wcscmp(info.name, L"notes") == 0) {
@@ -1141,6 +1186,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         return 0;
     }
     case WM_MOUSEMOVE: {
+        /* Declared here so the hover branch below reads as one condition. */
         if (w_param & MK_LBUTTON && GetCapture() == hwnd) {
             POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             if (GetKeyState(VK_CONTROL) < 0) {
@@ -1187,12 +1233,13 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     ensure_window_visible(hwnd, L"floater");
                 }
             }
-        } else if (hg_g_taskbox_open_on_hover) {
+        } else if (hg_g_taskbox_open_on_hover && floater_pointer_on_clock(hwnd, l_param)) {
             /* Off by default: pointer travel across the desktop used to expand
              * the whole dashboard by accident, so opening is something you say
              * with a click. Those who liked reaching it without one switch this
-             * back on - at the cost of the floater being hard to drag or tune,
-             * since it expands as soon as the pointer arrives. */
+             * back on, and it answers only over the clock: the rest of the
+             * floater is bars and a host name that a hand crosses on its way
+             * elsewhere, and it stays draggable and tunable as a result. */
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
                 hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
                 /* Make it appear instantly, refresh without forcing icon reload */
@@ -1228,7 +1275,10 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 if (IsWindowVisible(hg_g_taskbox_wnd)) {
                     hide_taskbox(hg_g_taskbox_wnd);
                 } else {
-                    PostMessageW(hwnd, WM_HOTKEY, 1, 0);   /* expand back to the taskbox */
+                    /* No flash: the pointer is on the floater and the box opens
+                     * where the pointer already is. The three blinks exist to
+                     * find a window that appeared somewhere the eye was not. */
+                    PostMessageW(hwnd, HG_MSG_SHOW_TASKBOX, FALSE, 0);
                 }
             }
         }
@@ -1311,10 +1361,16 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         }
         return 0;
     }
-    case WM_HOTKEY: {
+    case WM_HOTKEY:
         /* Every system chord registers under its own id and they all mean show
          * or hide, so the id is not worth reading past its range. */
-        if (w_param >= 1 && w_param <= HG_KEY_MAX_BINDINGS) {
+        if (w_param >= 1 && w_param <= HG_KEY_MAX_BINDINGS)
+            SendMessageW(hwnd, HG_MSG_SHOW_TASKBOX, TRUE, 0);
+        return 0;
+
+    case HG_MSG_SHOW_TASKBOX: {
+        BOOL flash = (w_param != 0);
+        {
             HWND fg_wnd = GetForegroundWindow();
             if (fg_wnd && fg_wnd != hg_g_taskbox_wnd && fg_wnd != hg_g_floater_wnd &&
                 fg_wnd != hg_g_about_wnd) {
@@ -1326,9 +1382,11 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
 
             SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-            hg_g_floater_highlight_ticks = HG_HIGHLIGHT_TICKS;
-            if (!SetTimer(hwnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
-                hg_g_floater_highlight_ticks = 0;
+            if (flash) {
+                hg_g_floater_highlight_ticks = HG_HIGHLIGHT_TICKS;
+                if (!SetTimer(hwnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
+                    hg_g_floater_highlight_ticks = 0;
+                }
             }
             InvalidateRect(hwnd, NULL, FALSE);
 
@@ -1349,9 +1407,11 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 GetCursorPos(&hg_g_last_mouse_pos);
                 SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
 
-                hg_g_taskbox_highlight_ticks = HG_HIGHLIGHT_TICKS;
-                if (!SetTimer(hg_g_taskbox_wnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
-                    hg_g_taskbox_highlight_ticks = 0;
+                if (flash) {
+                    hg_g_taskbox_highlight_ticks = HG_HIGHLIGHT_TICKS;
+                    if (!SetTimer(hg_g_taskbox_wnd, HG_TIMER_HIGHLIGHT, 100, NULL)) {
+                        hg_g_taskbox_highlight_ticks = 0;
+                    }
                 }
                 InvalidateRect(hg_g_taskbox_wnd, NULL, FALSE);
 

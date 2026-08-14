@@ -177,6 +177,14 @@ static void tabbox_pull(void)
 
 void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc)
 {
+    /* Switched off means switched off wherever the ask came from - the mouse in
+     * the toolbar, the keyboard focus in the grid - so the gate is here rather
+     * than at each call. */
+    if (!hg_g_tabbox_on_hover) {
+        hg_tabbox_close();
+        return;
+    }
+
     if (!target || !IsWindow(target) || !anchor_screen_rc)
         return;
     if (!hg_tabs_enabled() || !hg_tabs_window_may_have_tabs(target))

@@ -9,9 +9,13 @@
 #include "hg_tabs.h"
 #include "hg_caphook.h"
 #include "widgets/hg_floater.h"
+#include "widgets/hg_hilite.h"
+#include "widgets/hg_tabbox.h"
 
 enum {
     HG_OPTION_HOVER_OPEN = 1,
+    HG_OPTION_WINDOW_OUTLINE,
+    HG_OPTION_TAB_BOX,
     HG_OPTION_TABS,
     HG_OPTION_CAPTION_MENU,
     HG_OPTION_STARTUP,
@@ -29,6 +33,10 @@ enum {
 static const HgOptionInfo hg_options[] = {
     {L"hover-open", L"Open the Taskbox on Hover",
      L"the pointer resting on the floater opens the taskbox, as it did before v0.13.0", TRUE, NULL},
+    {L"window-outline", L"Outline the Window Under the Pointer",
+     L"pointing at a task icon draws a frame around the window it stands for", TRUE, NULL},
+    {L"tab-box", L"Show a Window's Tabs on Hover",
+     L"pointing at a tabbed window's icon opens the list of its tabs beside it", TRUE, NULL},
     {L"tabs", L"Show Tabs as Task Icons", L"a tabbed window's tabs each get their own icon", TRUE, NULL},
     {L"caption-menu", L"Menu on Maximize Button", L"right-click any window's maximize button for a menu",
      HG_OPTION_FLAGGED_AVAILABLE, HG_OPTION_FLAGGED_NOTE},
@@ -56,6 +64,10 @@ BOOL hg_option_get(int number)
     switch (number) {
     case HG_OPTION_HOVER_OPEN:
         return hg_g_taskbox_open_on_hover;
+    case HG_OPTION_WINDOW_OUTLINE:
+        return hg_g_window_outline;
+    case HG_OPTION_TAB_BOX:
+        return hg_g_tabbox_on_hover;
     case HG_OPTION_TABS:
         return hg_tabs_enabled();
     case HG_OPTION_CAPTION_MENU:
@@ -90,6 +102,23 @@ BOOL hg_option_set(int number, BOOL value, const WCHAR **out_message)
         if (out_message)
             *out_message = value ? L"Taskbox: opens when the pointer rests on the floater"
                                  : L"Taskbox: opens on a click, not on hover";
+        break;
+    case HG_OPTION_WINDOW_OUTLINE:
+        hg_g_window_outline = value;
+        WritePrivateProfileStringW(L"taskbox", L"window_outline", value ? L"1" : L"0", hg_g_config_path);
+        if (!value)
+            hg_hilite_hide(); /* one already on screen would otherwise stay */
+        if (out_message)
+            *out_message = value ? L"Task icons: outline the window they stand for"
+                                 : L"Task icons: no outline";
+        break;
+    case HG_OPTION_TAB_BOX:
+        hg_g_tabbox_on_hover = value;
+        WritePrivateProfileStringW(L"taskbox", L"tab_box", value ? L"1" : L"0", hg_g_config_path);
+        if (!value)
+            hg_tabbox_close();
+        if (out_message)
+            *out_message = value ? L"Tabs: listed beside the icon on hover" : L"Tabs: no hover list";
         break;
     case HG_OPTION_TABS:
         hg_tabs_set_enabled(value);
@@ -181,4 +210,6 @@ void hg_options_load(void)
 {
     hg_g_taskbox_open_on_hover =
         (GetPrivateProfileIntW(L"taskbox", L"open_on_hover", 0, hg_g_config_path) != 0);
+    hg_g_window_outline = (GetPrivateProfileIntW(L"taskbox", L"window_outline", 1, hg_g_config_path) != 0);
+    hg_g_tabbox_on_hover = (GetPrivateProfileIntW(L"taskbox", L"tab_box", 1, hg_g_config_path) != 0);
 }
