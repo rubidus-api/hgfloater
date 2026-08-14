@@ -24,8 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`Floater Shows System Bars` is now `Stat Bars on the Floater`.** Every other
   row in that menu is a name for what you get rather than a sentence about what
   the program does, and "stat bar" is what a reader of English already calls a
-  small bar standing for a number. The command-line name follows: `write option
-  stat-bars off`. The settings file key is untouched, so nothing anyone had set
+  small bar standing for a number. On the command line it is one word - `write
+  option statbars off`, or `w o stat off`, since a unique leading piece of any
+  name is enough. The settings file key is untouched, so nothing anyone had set
   is lost.
 - **Hover-to-open answers over the clock only.** With the option on, the whole
   floater used to be the target, so a hand crossing the system bars on its way
