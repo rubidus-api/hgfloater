@@ -16,6 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   keyboard focus obey it alike.
 
 ### Changed
+- **Every name on the command line is one word.** `hoveropen`, `windowoutline`,
+  `tabbox`, `captionmenu`, `statbars`; `showtaskbox`, `opentaskbox`,
+  `commandbox`, `fontup`, `fontdown`, `scrollmode`, `historymode`, `focusinput`,
+  `newnote`. Hyphens were a keystroke to remember in the middle of a name, and a
+  unique leading piece of any name is enough anyway - `w o hover on` still
+  works. A `config.ini` written before this reads correctly: the old spelling is
+  looked up when the new one is not in the file, and the next change writes the
+  new one.
 - **The settings window wears the command box's colours and font.** The two are
   the same kind of surface - a fixed-pitch page of rows that have to line up in
   columns - and a settings window in a different face from the console that sets

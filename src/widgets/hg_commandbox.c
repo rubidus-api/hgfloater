@@ -208,8 +208,8 @@ static BOOL commandbox_run_key_action(HWND owner, UINT vk, BOOL refocus)
     if (!hg_key_action_info(hg_key_lookup_now(HG_KEYCTX_COMMANDBOX, vk), &info))
         return FALSE;
 
-    if (wcscmp(info.name, L"scroll-mode") == 0 || wcscmp(info.name, L"history-mode") == 0) {
-        commandbox_set_mode((wcscmp(info.name, L"scroll-mode") == 0) ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
+    if (wcscmp(info.name, L"scrollmode") == 0 || wcscmp(info.name, L"historymode") == 0) {
+        commandbox_set_mode((wcscmp(info.name, L"scrollmode") == 0) ? HG_CB_MODE_SCROLL : HG_CB_MODE_HISTORY);
         if (refocus)
             commandbox_focus_input();
         return TRUE;
@@ -218,7 +218,7 @@ static BOOL commandbox_run_key_action(HWND owner, UINT vk, BOOL refocus)
         PostMessageW(owner, WM_CLOSE, 0, 0);
         return TRUE;
     }
-    if (wcscmp(info.name, L"focus-input") == 0) {
+    if (wcscmp(info.name, L"focusinput") == 0) {
         SetFocus(hg_g_commandbox_in_wnd);
         int len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
         SendMessageW(hg_g_commandbox_in_wnd, EM_SETSEL, (WPARAM)len, (LPARAM)len);

@@ -17,6 +17,7 @@
 typedef struct HgKeyActionRow {
     int context;
     const WCHAR *name;
+    const WCHAR *was;      /* the name before v0.15.0, still read from file */
     const WCHAR *label;
     const WCHAR *about;
     const WCHAR *defaults; /* comma separated; L"" means no key by default */
@@ -27,62 +28,65 @@ typedef struct HgKeyActionRow {
 /* clang-format off */
 static const HgKeyActionRow hg_key_actions[] = {
     /* -- the one Windows itself carries, so it works with any program in front */
-    {HG_KEYCTX_SYSTEM, L"show-taskbox", L"Show or hide the taskbox",
+    {HG_KEYCTX_SYSTEM, L"showtaskbox", L"show-taskbox", L"Show or hide the taskbox",
      L"works from inside any program", L"Win+Alt+Space", 0, FALSE},
 
     /* -- the floater and the taskbox share these, as an accelerator table */
-    {HG_KEYCTX_WIDGET, L"quit", L"Quit hgfloater", L"from any of its windows",
+    {HG_KEYCTX_WIDGET, L"quit", NULL, L"Quit hgfloater", L"from any of its windows",
      L"Ctrl+Q, Alt+F4", HG_IDM_CLOSE_APP, TRUE},
-    {HG_KEYCTX_WIDGET, L"about", L"About", L"the README, in a window", L"F1", HG_IDM_ABOUT, TRUE},
-    {HG_KEYCTX_WIDGET, L"reset", L"Reset position, size and opacity",
+    {HG_KEYCTX_WIDGET, L"about", NULL, L"About", L"the README, in a window", L"F1", HG_IDM_ABOUT, TRUE},
+    {HG_KEYCTX_WIDGET, L"reset", NULL, L"Reset position, size and opacity",
      L"widgets only, so these are safe to press while typing",
      L"Ctrl+R, Ctrl+Shift+R, F5, Ctrl+0", HG_IDM_RESET_ALL, FALSE},
-    {HG_KEYCTX_WIDGET, L"font-up", L"Larger icons and text", L"the widget font, one step up",
+    {HG_KEYCTX_WIDGET, L"fontup", L"font-up", L"Larger icons and text", L"the widget font, one step up",
      L"Ctrl+Plus, Ctrl+NumPlus", HG_IDM_FONT_UP, FALSE},
-    {HG_KEYCTX_WIDGET, L"font-down", L"Smaller icons and text", L"the widget font, one step down",
+    {HG_KEYCTX_WIDGET, L"fontdown", L"font-down", L"Smaller icons and text", L"the widget font, one step down",
      L"Ctrl+Minus, Ctrl+NumMinus", HG_IDM_FONT_DOWN, FALSE},
-    {HG_KEYCTX_WIDGET, L"settings", L"The settings window",
+    {HG_KEYCTX_WIDGET, L"settings", NULL, L"The settings window",
      L"every option, value and key in one list", L"Ctrl+Comma", HG_IDM_SETTINGS, FALSE},
 
     /* -- the floater */
-    {HG_KEYCTX_FLOATER, L"open-taskbox", L"Open the taskbox", L"the same thing a click does",
+    {HG_KEYCTX_FLOATER, L"opentaskbox", L"open-taskbox", L"Open the taskbox", L"the same thing a click does",
      L"T", 0, FALSE},
-    {HG_KEYCTX_FLOATER, L"command-box", L"Command box", L"the console that drives windows by name",
+    {HG_KEYCTX_FLOATER, L"commandbox", L"command-box", L"Command box",
+     L"the console that drives windows by name",
      L"C, Ctrl+E", 0, FALSE},
-    {HG_KEYCTX_FLOATER, L"notes", L"Note list", L"", L"Ctrl+N", 0, FALSE},
-    {HG_KEYCTX_FLOATER, L"clipboard", L"Clipboard history", L"", L"Ctrl+L", 0, FALSE},
-    {HG_KEYCTX_FLOATER, L"menu", L"The floater's menu", L"the same menu the O button opens",
+    {HG_KEYCTX_FLOATER, L"notes", NULL, L"Note list", L"", L"Ctrl+N", 0, FALSE},
+    {HG_KEYCTX_FLOATER, L"clipboard", NULL, L"Clipboard history", L"", L"Ctrl+L", 0, FALSE},
+    {HG_KEYCTX_FLOATER, L"menu", NULL, L"The floater's menu", L"the same menu the O button opens",
      L"F2", 0, FALSE},
 
     /* -- the taskbox */
-    {HG_KEYCTX_TASKBOX, L"command-box", L"Command box", L"", L"C, Ctrl+E", 0, FALSE},
-    {HG_KEYCTX_TASKBOX, L"notes", L"Note list", L"", L"N, Ctrl+N", 0, FALSE},
-    {HG_KEYCTX_TASKBOX, L"clipboard", L"Clipboard history", L"", L"Ctrl+L", 0, FALSE},
-    {HG_KEYCTX_TASKBOX, L"hide", L"Fold back into the floater",
+    {HG_KEYCTX_TASKBOX, L"commandbox", L"command-box", L"Command box", L"", L"C, Ctrl+E", 0, FALSE},
+    {HG_KEYCTX_TASKBOX, L"notes", NULL, L"Note list", L"", L"N, Ctrl+N", 0, FALSE},
+    {HG_KEYCTX_TASKBOX, L"clipboard", NULL, L"Clipboard history", L"", L"Ctrl+L", 0, FALSE},
+    {HG_KEYCTX_TASKBOX, L"hide", NULL, L"Fold back into the floater",
      L"and re-read the shortcuts folder", L"Esc", 0, FALSE},
 
     /* -- the command box */
-    {HG_KEYCTX_COMMANDBOX, L"scroll-mode", L"Scroll mode",
+    {HG_KEYCTX_COMMANDBOX, L"scrollmode", L"scroll-mode", L"Scroll mode",
      L"the arrows walk the transcript instead of the caret", L"Ctrl+S", 0, FALSE},
-    {HG_KEYCTX_COMMANDBOX, L"history-mode", L"History mode", L"the numbered list of what has been run",
+    {HG_KEYCTX_COMMANDBOX, L"historymode", L"history-mode", L"History mode",
+     L"the numbered list of what has been run",
      L"Ctrl+H", 0, FALSE},
-    {HG_KEYCTX_COMMANDBOX, L"focus-input", L"Jump to the input box", L"", L"Ctrl+Space", 0, FALSE},
-    {HG_KEYCTX_COMMANDBOX, L"close", L"Close the command box", L"leaving the taskbox alone", L"Ctrl+W", 0,
+    {HG_KEYCTX_COMMANDBOX, L"focusinput", L"focus-input", L"Jump to the input box", L"", L"Ctrl+Space", 0,
+     FALSE},
+    {HG_KEYCTX_COMMANDBOX, L"close", NULL, L"Close the command box", L"leaving the taskbox alone", L"Ctrl+W", 0,
      FALSE},
 
     /* -- the note list */
-    {HG_KEYCTX_NOTE, L"open", L"Open the selected note", L"on +Add Note, make one", L"Enter", 0, FALSE},
-    {HG_KEYCTX_NOTE, L"new-note", L"New note", L"from any row", L"Insert", 0, FALSE},
-    {HG_KEYCTX_NOTE, L"archive", L"Archive or restore", L"", L"K", 0, FALSE},
-    {HG_KEYCTX_NOTE, L"delete", L"Delete the selected note", L"to the Recycle Bin", L"Delete", 0, FALSE},
-    {HG_KEYCTX_NOTE, L"close", L"Close the list", L"", L"Esc, Ctrl+W", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"open", NULL, L"Open the selected note", L"on +Add Note, make one", L"Enter", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"newnote", L"new-note", L"New note", L"from any row", L"Insert", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"archive", NULL, L"Archive or restore", L"", L"K", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"delete", NULL, L"Delete the selected note", L"to the Recycle Bin", L"Delete", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"close", NULL, L"Close the list", L"", L"Esc, Ctrl+W", 0, FALSE},
 
     /* -- the clipboard history */
-    {HG_KEYCTX_CLIPBOARD, L"take", L"Make that clip the current one", L"the window stays open", L"Enter", 0,
-     FALSE},
-    {HG_KEYCTX_CLIPBOARD, L"delete", L"Delete the selected clip", L"the selection stays put", L"Delete", 0,
-     FALSE},
-    {HG_KEYCTX_CLIPBOARD, L"close", L"Close the history", L"", L"Esc, Ctrl+W", 0, FALSE},
+    {HG_KEYCTX_CLIPBOARD, L"take", NULL, L"Make that clip the current one", L"the window stays open", L"Enter",
+     0, FALSE},
+    {HG_KEYCTX_CLIPBOARD, L"delete", NULL, L"Delete the selected clip", L"the selection stays put", L"Delete",
+     0, FALSE},
+    {HG_KEYCTX_CLIPBOARD, L"close", NULL, L"Close the history", L"", L"Esc, Ctrl+W", 0, FALSE},
 };
 /* clang-format on */
 
@@ -433,17 +437,23 @@ void hg_keys_load(void)
         WCHAR value[256];
         GetPrivateProfileStringW(section, row->name, L"\x1", value, (DWORD)HG_ARRAYSIZE(value),
                                  hg_g_config_path);
+        /* Names lost their hyphens in v0.15.0. A file written before that keeps
+         * working: the old spelling is read when the new one is not there, and
+         * the next change writes the new one. */
+        if (row->was && value[0] == L'\x1' && value[1] == L'\0')
+            GetPrivateProfileStringW(section, row->was, L"\x1", value, (DWORD)HG_ARRAYSIZE(value),
+                                     hg_g_config_path);
         keys_parse_list(action, (value[0] == L'\x1' && value[1] == L'\0') ? row->defaults : value);
     }
 
     /* One migration: the global hotkey used to live in [hotkeys] as a pair of
      * numbers. Anyone who changed it there keeps their chord. */
-    int show = hg_key_action_find(HG_KEYCTX_SYSTEM, L"show-taskbox");
+    int show = hg_key_action_find(HG_KEYCTX_SYSTEM, L"showtaskbox");
     if (show) {
         WCHAR probe[64];
         WCHAR section[32];
         keys_section_name(HG_KEYCTX_SYSTEM, section, HG_ARRAYSIZE(section));
-        GetPrivateProfileStringW(section, L"show-taskbox", L"", probe, (DWORD)HG_ARRAYSIZE(probe),
+        GetPrivateProfileStringW(section, L"showtaskbox", L"", probe, (DWORD)HG_ARRAYSIZE(probe),
                                  hg_g_config_path);
         UINT legacy_key = GetPrivateProfileIntW(L"hotkeys", L"global_focus_key", 0, hg_g_config_path);
         if (!probe[0] && legacy_key != 0 && legacy_key <= 0xFF) {
@@ -744,7 +754,7 @@ void hg_keys_apply(void)
             UnregisterHotKey(hg_g_floater_wnd, id);
         hg_g_hotkey_registered = FALSE;
 
-        int show = hg_key_action_find(HG_KEYCTX_SYSTEM, L"show-taskbox");
+        int show = hg_key_action_find(HG_KEYCTX_SYSTEM, L"showtaskbox");
         if (show) {
             for (int i = 0; i < s_binding_count[show - 1]; ++i) {
                 HgChord chord = s_bindings[show - 1][i];

@@ -1059,7 +1059,7 @@ reach it — up to four, separated by commas:
 
 ```ini
 [keys.floater]
-command-box = C, Ctrl+E
+commandbox = C, Ctrl+E
 notes = Ctrl+N
 clipboard =
 ```

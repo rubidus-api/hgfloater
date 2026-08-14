@@ -1830,7 +1830,7 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         if (hg_key_action_info(hg_key_lookup_now(HG_KEYCTX_NOTE, (UINT)w_param), &action)) {
             if (wcscmp(action.name, L"open") == 0)
                 note_list_open_selected(hwnd);
-            else if (wcscmp(action.name, L"new-note") == 0)
+            else if (wcscmp(action.name, L"newnote") == 0)
                 note_list_create(hwnd);
             else if (wcscmp(action.name, L"delete") == 0)
                 note_list_delete(hwnd, note_list_selected(hwnd));

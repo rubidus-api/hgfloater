@@ -612,7 +612,7 @@ static BOOL taskbox_run_key_action(HWND hwnd, int action)
     if (!action || !hg_key_action_info(action, &info))
         return FALSE;
 
-    if (wcscmp(info.name, L"command-box") == 0) {
+    if (wcscmp(info.name, L"commandbox") == 0) {
         show_commandbox_window();
     } else if (wcscmp(info.name, L"notes") == 0) {
         show_note_list_window();
