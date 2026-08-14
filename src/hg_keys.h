@@ -83,6 +83,13 @@ BOOL hg_key_bindings_text(int action, WCHAR *out, size_t out_cch);
 
 BOOL hg_key_parse_chord(const WCHAR *text, HgChord *out);
 
+/* The four directions, bare: the arrows and WASD. They move a selection in the
+ * taskbox grid, in the settings list and in the tab box - the language of
+ * "where am I" rather than a function - and a window whose navigation had been
+ * bound to something else could not be walked at all. Held with Ctrl or Alt
+ * they are ordinary chords and this answers FALSE. */
+BOOL hg_key_is_navigation(HgChord chord);
+
 /* Adds a chord. Fails when the text is not a chord, when the action already has
  * HG_KEY_MAX_BINDINGS of them, or when another action in the same context holds
  * it - out_conflict then names that action, because "already taken" without

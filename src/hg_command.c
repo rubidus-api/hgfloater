@@ -784,7 +784,9 @@ static const WCHAR *const cmd_help_bind[] = {
     L"",
     L"  A chord is written the way it is read: Ctrl+N, Alt+F4, Ctrl+Shift+R,",
     L"  F2, Esc, Space, Plus, NumMinus. Win+ belongs to the system window",
-    L"  alone - the shell takes it before any other window sees it.",
+    L"  alone - the shell takes it before any other window sees it, and the",
+    L"  bare arrows and WASD belong to no function: they are how a window is",
+    L"  walked. Held with Ctrl or Alt they bind like anything else.",
     L"",
     L"  'unbind <window> <function>' with no chord takes every key away and",
     L"  leaves the function reachable by button and menu. 'bind ... default'",
@@ -1642,6 +1644,7 @@ static void cmd_bind(int argc, WCHAR *argv[], BOOL removing)
         return;
     }
 
+    HgChord chord;
     if (removing) {
         if (!hg_key_remove(action, argv[3])) {
             cmd_printf(L"unbind: %ls is not one of %ls's keys", argv[3], info.name);
@@ -1654,6 +1657,10 @@ static void cmd_bind(int argc, WCHAR *argv[], BOOL removing)
             if (conflict && hg_key_action_info(conflict, &other)) {
                 cmd_printf(L"bind: %ls already runs '%ls' in the %ls - unbind it first", argv[3], other.name,
                            hg_key_context_name(context));
+            } else if (hg_key_parse_chord(argv[3], &chord) && hg_key_is_navigation(chord)) {
+                cmd_printf(L"bind: %ls moves the selection - the arrows and WASD are how a window is walked, "
+                           L"so they take no binding of their own",
+                           argv[3]);
             } else if (hg_key_binding_count(action) >= HG_KEY_MAX_BINDINGS) {
                 cmd_printf(L"bind: %ls already has %d keys, which is the most one function takes", info.name,
                            HG_KEY_MAX_BINDINGS);

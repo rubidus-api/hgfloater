@@ -343,6 +343,20 @@ static void settings_capture_chord(HWND hwnd, UINT vk)
     if (vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT || vk == VK_LWIN || vk == VK_RWIN)
         return;
 
+    /* The keys that move a selection are not available to bind. They are the
+     * same four directions in the taskbox grid, in this list, and in the tab
+     * box - the language of "where am I" rather than functions - and binding
+     * one would make the window it was bound in impossible to walk. Held with
+     * Ctrl or Alt they are chords like any other and pass straight through. */
+    {
+        HgChord pressed = {vk, hg_key_current_mods()};
+        if (hg_key_is_navigation(pressed)) {
+            settings_say(hwnd, L"Arrows and WASD move the selection, so they take no binding of their own.  "
+                               L"Try another key, or hold Ctrl or Alt.");
+            return;
+        }
+    }
+
     if (vk == VK_ESCAPE) {
         s_capture_action = 0;
         s_capture_replaces = FALSE;
@@ -596,6 +610,28 @@ static BOOL settings_adjust_message(HWND wnd, UINT msg, WPARAM w_param, LPARAM l
     return FALSE;
 }
 
+/* WASD is the arrows here, as it is in the taskbox: a hand that has learned to
+ * walk that grid without leaving the home row should not have to move for this
+ * window. Only bare - Ctrl+W closes, and Alt+A is the window moving left. */
+static UINT settings_navigation_key(UINT vk)
+{
+    if ((GetKeyState(VK_CONTROL) < 0) || (GetKeyState(VK_MENU) < 0))
+        return vk;
+
+    switch (vk) {
+    case 'W':
+        return VK_UP;
+    case 'S':
+        return VK_DOWN;
+    case 'A':
+        return VK_LEFT;
+    case 'D':
+        return VK_RIGHT;
+    default:
+        return vk;
+    }
+}
+
 static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
                                                     UINT_PTR subclass_id, DWORD_PTR ref_data)
 {
@@ -603,6 +639,11 @@ static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM 
     (void)ref_data;
 
     HWND parent = GetParent(hwnd);
+
+    /* Not while a chord is being captured: there the raw key is the answer, and
+     * refusing it is settings_capture_chord's job rather than this one's. */
+    if (!s_capture_action && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN))
+        w_param = settings_navigation_key((UINT)w_param);
 
     /* While a chord is being captured this control answers nothing else - not
      * the wheel, not Alt+arrows - because anything it did answer would be a
