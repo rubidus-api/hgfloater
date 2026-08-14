@@ -34,14 +34,14 @@ enum {
 #endif
 
 static const HgOptionInfo hg_options[] = {
-    {L"hover-open", L"Open the Taskbox on Hover",
+    {L"hoveropen", L"Open the Taskbox on Hover",
      L"the pointer resting on the floater opens the taskbox, as it did before v0.13.0", TRUE, NULL},
-    {L"window-outline", L"Outline the Window Under the Pointer",
+    {L"windowoutline", L"Outline the Window Under the Pointer",
      L"pointing at a task icon draws a frame around the window it stands for", TRUE, NULL},
-    {L"tab-box", L"Show a Window's Tabs on Hover",
+    {L"tabbox", L"Show a Window's Tabs on Hover",
      L"pointing at a tabbed window's icon opens the list of its tabs beside it", TRUE, NULL},
     {L"tabs", L"Show Tabs as Task Icons", L"a tabbed window's tabs each get their own icon", TRUE, NULL},
-    {L"caption-menu", L"Menu on Maximize Button", L"right-click any window's maximize button for a menu",
+    {L"captionmenu", L"Menu on Maximize Button", L"right-click any window's maximize button for a menu",
      HG_OPTION_FLAGGED_AVAILABLE, HG_OPTION_FLAGGED_NOTE},
     {L"startup", L"Start with Windows", L"one value under the per-user Run key", HG_OPTION_FLAGGED_AVAILABLE,
      HG_OPTION_FLAGGED_NOTE},

@@ -753,7 +753,7 @@ static const WCHAR *const cmd_help_write[] = {
     L"  running program at once, so nothing waits for a restart.",
     L"",
     L"  s o                 the options and what they are now",
-    L"  w o hover on        open the taskbox on hover again",
+    L"  w o hoveropen on    open the taskbox on hover again",
     L"  w o tabs toggle     turn tabs-as-icons the other way",
 };
 
@@ -797,7 +797,7 @@ static const WCHAR *const cmd_help_bind[] = {
     L"  s k floater         just the floater's",
     L"  bind floater notes Ctrl+Shift+N",
     L"  unbind taskbox clipboard Ctrl+L",
-    L"  bind system show-taskbox Win+Alt+Z",
+    L"  bind system showtaskbox Win+Alt+Z",
     L"  bind floater notes default",
 };
 

@@ -856,9 +856,9 @@ static BOOL floater_run_key_action(HWND hwnd, int action)
     if (!action || !hg_key_action_info(action, &info))
         return FALSE;
 
-    if (wcscmp(info.name, L"open-taskbox") == 0) {
+    if (wcscmp(info.name, L"opentaskbox") == 0) {
         PostMessageW(hwnd, HG_MSG_SHOW_TASKBOX, TRUE, 0);
-    } else if (wcscmp(info.name, L"command-box") == 0) {
+    } else if (wcscmp(info.name, L"commandbox") == 0) {
         show_commandbox_window();
     } else if (wcscmp(info.name, L"notes") == 0) {
         show_note_list_window();

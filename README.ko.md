@@ -934,7 +934,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 
 ```ini
 [keys.floater]
-command-box = C, Ctrl+E
+commandbox = C, Ctrl+E
 notes = Ctrl+N
 clipboard =
 ```
