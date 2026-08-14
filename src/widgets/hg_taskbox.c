@@ -8,6 +8,7 @@
 #include "hg_hilite.h"
 #include "hg_clip.h"
 #include "../hg_tabs.h"
+#include "../hg_keys.h"
 #include "../hg_caphook.h"
 
 void update_size(int delta)
@@ -611,6 +612,27 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     EndPaint(hwnd, &ps);
     return 0;
 }
+/* A bound taskbox function, by the name the settings file and `bind` use. */
+static BOOL taskbox_run_key_action(HWND hwnd, int action)
+{
+    HgKeyActionInfo info;
+    if (!action || !hg_key_action_info(action, &info))
+        return FALSE;
+
+    if (wcscmp(info.name, L"command-box") == 0) {
+        show_commandbox_window();
+    } else if (wcscmp(info.name, L"notes") == 0) {
+        show_note_list_window();
+    } else if (wcscmp(info.name, L"clipboard") == 0) {
+        hg_clip_toggle_window();
+    } else if (wcscmp(info.name, L"hide") == 0) {
+        hide_taskbox(hwnd);
+    } else {
+        return FALSE;
+    }
+    return TRUE;
+}
+
 static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     /* The tab box has no focus of its own - it must not steal the keyboard on
@@ -662,24 +684,6 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
     /* Ctrl + +/-: 텍스트 글꼴 크기 조절, Ctrl + 방향키/wasd: 창 크기/그리드 조절 */
     if (is_ctrl) {
         int icon_size = taskbox_toolbar_icon_size();
-
-        /* Ctrl+E opens the command box, beside the bare C that already did.
-         * E for Execute, which is what the box's own button says, and it is
-         * left-hand reachable while the right hand is on the mouse. The letter
-         * was free of every Ctrl binding and of every toolbar letter; Ctrl+R,
-         * the other candidate, is Reset All. */
-        if (w_param == 'E' && !is_alt) {
-            show_commandbox_window();
-            return 0;
-        }
-
-        /* Ctrl+L calls up the clipboard history - the same letter its toolbar
-         * button carries, so the key and the button say the same thing. It
-         * toggles the way that button does: already in front means hide. */
-        if (w_param == 'L' && !is_alt) {
-            hg_clip_toggle_window();
-            return 0;
-        }
 
         if (w_param == VK_OEM_PLUS || w_param == VK_ADD) {
             update_edit_font_size(1);
@@ -780,29 +784,15 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         }
     }
 
-    if (w_param == 'C' && !is_ctrl && !is_alt) {
-        show_commandbox_window();
-        return 0;
-    }
-
-    /* N opens the note list, the same thing the N toolbar button does. The
-     * button had the mouse's path and nothing had the keyboard's; Shift+N
-     * stays the task badge, handled above.
+    /* The taskbox's named functions - the command box, the notes, the
+     * clipboard, folding back into the floater. Everything above this line is
+     * navigation or a badge, which is the grid's own language rather than a
+     * function anyone would rebind; everything below it is the arrows.
      *
-     * Ctrl+N does the same. It is what a hand reaches for after years of other
-     * programs, it was bound to nothing here, and the list opens on +Add Note
-     * with the arrows already meaning what they should - so the shortcut needs
-     * no second half. */
-    if (w_param == 'N' && !is_alt) {
-        show_note_list_window();
+     * Shift+letter is read first, on purpose: it is how the twenty-seventh icon
+     * is reached, and no chord in the table carries Shift. */
+    if (taskbox_run_key_action(hwnd, hg_key_lookup_now(HG_KEYCTX_TASKBOX, (UINT)w_param)))
         return 0;
-    }
-
-    /* Esc: 창 닫기 */
-    if (w_param == VK_ESCAPE) {
-        hide_taskbox(hwnd);
-        return 0;
-    }
     if (msg == WM_SYSKEYDOWN)
         return DefWindowProcW(hwnd, msg, w_param, l_param);
 

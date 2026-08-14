@@ -16,6 +16,7 @@
 #include "widgets/hg_monitor.h"
 #include "hg_values.h"
 #include "hg_options.h"
+#include "hg_keys.h"
 
 #define HG_CMD_MAX_ARGS 8
 
@@ -565,7 +566,8 @@ static const WCHAR *const cmd_help_show[] = {
     L"  so this is where those commands get their arguments.",
     L"  Kinds: windows (w), resize (r), shortcut (c), note (n),",
     L"         monitor (m), sensors (s), tabs (t), value (v),",
-    L"         option (o), tabsinfo (no shorthand - a diagnostic).",
+    L"         option (o), key (k),",
+    L"         tabsinfo (no shorthand - a diagnostic).",
     L"",
     L"Examples:",
     L"  show                every window, numbered",
@@ -581,6 +583,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"  s t                 every tab of every tabbed window, numbered",
     L"  s v                 the settable values and what they are now",
     L"  s o                 the on/off options and what they are now",
+    L"  s k                 every window, function and key; s k floater for one",
     L"  show tabsinfo       what the tab reader itself is doing, and costing",
     L"",
     L"  'show sensors' is a diagnostic. The floater shows one CPU",
@@ -753,6 +756,35 @@ static const WCHAR *const cmd_help_write[] = {
     L"  w o tabs toggle     turn tabs-as-icons the other way",
 };
 
+static const WCHAR *const cmd_help_bind[] = {
+    L"bind <window> <function> <key|default>",
+    L"unbind <window> <function> [key]",
+    L"",
+    L"  Keys are kept as window, function, and the chords that reach it -",
+    L"  none, one, or up to four. The window comes first because the same",
+    L"  function name lives in several of them: 'notes' is one row in the",
+    L"  floater and another in the taskbox.",
+    L"",
+    L"  Windows: system (works from inside any program), widget (the",
+    L"  floater and the taskbox together), floater, taskbox.",
+    L"",
+    L"  A chord is written the way it is read: Ctrl+N, Alt+F4, Ctrl+Shift+R,",
+    L"  F2, Esc, Space, Plus, NumMinus. Win+ belongs to the system window",
+    L"  alone - the shell takes it before any other window sees it.",
+    L"",
+    L"  'unbind <window> <function>' with no chord takes every key away and",
+    L"  leaves the function reachable by button and menu. 'bind ... default'",
+    L"  puts the built-in keys back.",
+    L"",
+    L"Examples:",
+    L"  show key            every window, function and chord",
+    L"  s k floater         just the floater's",
+    L"  bind floater notes Ctrl+Shift+N",
+    L"  unbind taskbox clipboard Ctrl+L",
+    L"  bind system show-taskbox Win+Alt+Z",
+    L"  bind floater notes default",
+};
+
 static const WCHAR *const cmd_help_clear[] = {
     L"clear               (cls)",
     L"",
@@ -774,6 +806,9 @@ static const HgCommandHelp cmd_help_table[] = {
     {L"write", L"w", L"set a value or an option, as 'show value' and 'show option' list them",
      cmd_help_write, HG_ARRAYSIZE(cmd_help_write)},
     {L"config", L"c", L"open config.ini in Notepad", cmd_help_config, HG_ARRAYSIZE(cmd_help_config)},
+    {L"bind", NULL, L"give a function a key, in one window", cmd_help_bind, HG_ARRAYSIZE(cmd_help_bind)},
+    {L"unbind", NULL, L"take a key away, or every key of one function", cmd_help_bind,
+     HG_ARRAYSIZE(cmd_help_bind)},
     {L"clear", L"cls", L"empty the transcript above", cmd_help_clear, HG_ARRAYSIZE(cmd_help_clear)},
 };
 
@@ -1071,6 +1106,40 @@ static void cmd_show_values(void)
     commandbox_print(L"     set one with 'write value <number|name> <value>'");
 }
 
+/* Window, then function, then the chords - the three levels the settings file
+ * and the settings window use, printed in the same order so the listing and the
+ * file read as one thing. */
+static void cmd_show_keys(const WCHAR *context_word)
+{
+    int only = context_word ? hg_key_context_find(context_word) : 0;
+    if (context_word && !only) {
+        cmd_printf(L"show key: no window called '%ls'", context_word);
+        return;
+    }
+
+    int last_context = 0;
+    for (int action = 1; action <= hg_key_action_count(); ++action) {
+        HgKeyActionInfo info;
+        if (!hg_key_action_info(action, &info))
+            continue;
+        if (only && info.context != only)
+            continue;
+
+        if (info.context != last_context) {
+            last_context = info.context;
+            commandbox_print(L"");
+            cmd_printf(L"[%ls] %ls", hg_key_context_name(info.context), hg_key_context_summary(info.context));
+        }
+
+        WCHAR keys[256];
+        hg_key_bindings_text(action, keys, HG_ARRAYSIZE(keys));
+        cmd_printf(L"%3d  %-14ls %-26ls %ls", action, info.name, keys, info.label);
+    }
+
+    commandbox_print(L"");
+    commandbox_print(L"     bind <window> <function> <key>, unbind to take one away");
+}
+
 static void cmd_show_options(void)
 {
     int count = hg_option_count();
@@ -1110,6 +1179,8 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_show_values();
     } else if (cmd_word_is(argv[1], L"option", L"o") || cmd_word_is(argv[1], L"options", NULL)) {
         cmd_show_options();
+    } else if (cmd_word_is(argv[1], L"key", L"k") || cmd_word_is(argv[1], L"keys", NULL)) {
+        cmd_show_keys((argc >= 3) ? argv[2] : NULL);
     } else if (cmd_word_is(argv[1], L"tabsinfo", NULL)) {
         /* The tab reader's own numbers: per window, whether the scoped read
          * or a full discovery answered and what it cost; in total, what was
@@ -1120,7 +1191,8 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_list_tabs();
     } else {
         cmd_printf(
-            L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value, option)",
+            L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value, "
+            L"option, key)",
                    argv[1]);
     }
 }
@@ -1503,6 +1575,83 @@ static BOOL cmd_note(int argc, WCHAR *argv[])
     return FALSE;
 }
 
+/* bind <window> <function> <chord>, and its opposite. The window comes first
+ * because the same function name lives in several of them - "notes" is a
+ * different row in the floater and in the taskbox, and a command that guessed
+ * between them would rebind the wrong one half the time. */
+static void cmd_bind(int argc, WCHAR *argv[], BOOL removing)
+{
+    const WCHAR *verb = removing ? L"unbind" : L"bind";
+
+    if (argc < 3) {
+        cmd_printf(L"%ls <window> <function> [key] - 'show key' lists them:", verb);
+        cmd_show_keys(NULL);
+        return;
+    }
+
+    int context = hg_key_context_find(argv[1]);
+    if (!context) {
+        cmd_printf(L"%ls: no window called '%ls' (system, widget, floater, taskbox)", verb, argv[1]);
+        return;
+    }
+
+    int action = hg_key_action_find(context, argv[2]);
+    HgKeyActionInfo info;
+    if (!action || !hg_key_action_info(action, &info)) {
+        cmd_printf(L"%ls: the %ls has no function called '%ls' (see 'show key %ls')", verb,
+                   hg_key_context_name(context), argv[2], hg_key_context_name(context));
+        return;
+    }
+
+    WCHAR keys[256];
+
+    /* No chord given: bind says what is bound, unbind takes them all away.
+     * Clearing every key is a thing worth being able to say - a function with
+     * a button and a menu entry does not have to own a chord as well. */
+    if (argc < 4) {
+        if (!removing) {
+            hg_key_bindings_text(action, keys, HG_ARRAYSIZE(keys));
+            cmd_printf(L"%ls %ls  %ls", hg_key_context_name(context), info.name, keys);
+            return;
+        }
+        hg_key_clear(action);
+        cmd_printf(L"%ls %ls  no key", hg_key_context_name(context), info.name);
+        return;
+    }
+
+    if (cmd_word_is(argv[3], L"default", NULL)) {
+        hg_key_reset(action);
+        hg_key_bindings_text(action, keys, HG_ARRAYSIZE(keys));
+        cmd_printf(L"%ls %ls  %ls", hg_key_context_name(context), info.name, keys);
+        return;
+    }
+
+    if (removing) {
+        if (!hg_key_remove(action, argv[3])) {
+            cmd_printf(L"unbind: %ls is not one of %ls's keys", argv[3], info.name);
+            return;
+        }
+    } else {
+        int conflict = 0;
+        if (!hg_key_add(action, argv[3], &conflict)) {
+            HgKeyActionInfo other;
+            if (conflict && hg_key_action_info(conflict, &other)) {
+                cmd_printf(L"bind: %ls already runs '%ls' in the %ls - unbind it first", argv[3], other.name,
+                           hg_key_context_name(context));
+            } else if (hg_key_binding_count(action) >= HG_KEY_MAX_BINDINGS) {
+                cmd_printf(L"bind: %ls already has %d keys, which is the most one function takes", info.name,
+                           HG_KEY_MAX_BINDINGS);
+            } else {
+                cmd_printf(L"bind: '%ls' is not a key - try Ctrl+N, Alt+F4, F2, Esc, Space", argv[3]);
+            }
+            return;
+        }
+    }
+
+    hg_key_bindings_text(action, keys, HG_ARRAYSIZE(keys));
+    cmd_printf(L"%ls %ls  %ls", hg_key_context_name(context), info.name, keys);
+}
+
 BOOL hg_command_execute(const WCHAR *line)
 {
     if (!line)
@@ -1544,6 +1693,10 @@ BOOL hg_command_execute(const WCHAR *line)
         moved_focus = cmd_clipboard(argc, argv);
     } else if (cmd_word_is(argv[0], L"write", L"w")) {
         cmd_write(argc, argv);
+    } else if (cmd_word_is(argv[0], L"bind", NULL)) {
+        cmd_bind(argc, argv, FALSE);
+    } else if (cmd_word_is(argv[0], L"unbind", NULL)) {
+        cmd_bind(argc, argv, TRUE);
     } else if (cmd_word_is(argv[0], L"config", L"c")) {
         cmd_config();
     } else if (cmd_word_is(argv[0], L"clear", L"cls")) {

@@ -5,6 +5,7 @@
 #include "hg_clip.h"
 #include "hg_note.h"
 #include "../hg_options.h"
+#include "../hg_keys.h"
 #include "../hg_caphook.h"
 #include "../hg_config.h"
 
@@ -800,6 +801,31 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
     return 0;
 }
 
+/* One place where a bound floater function turns into the thing it does. The
+ * name is the identity - the same word the settings file and `bind` use - so a
+ * rebound chord arrives here unchanged. */
+static BOOL floater_run_key_action(HWND hwnd, int action)
+{
+    HgKeyActionInfo info;
+    if (!action || !hg_key_action_info(action, &info))
+        return FALSE;
+
+    if (wcscmp(info.name, L"open-taskbox") == 0) {
+        PostMessageW(hwnd, WM_HOTKEY, 1, 0);
+    } else if (wcscmp(info.name, L"command-box") == 0) {
+        show_commandbox_window();
+    } else if (wcscmp(info.name, L"notes") == 0) {
+        show_note_list_window();
+    } else if (wcscmp(info.name, L"clipboard") == 0) {
+        hg_clip_toggle_window();
+    } else if (wcscmp(info.name, L"menu") == 0) {
+        SendMessageW(hwnd, WM_RBUTTONUP, 0, 0);
+    } else {
+        return FALSE;
+    }
+    return TRUE;
+}
+
 static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     int dx = 0, dy = 0;
@@ -839,36 +865,15 @@ static LRESULT floater_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         } else if (w_param == VK_OEM_MINUS || w_param == VK_SUBTRACT) {
             update_floater_font_size(-1);
             return 0;
-        } else if (w_param == 'E' && !is_alt) {
-            /* The same keys the taskbox answers. These two are one surface -
-             * clicking the floater is what opens the taskbox - so a key that
-             * worked in one and not the other would read as a key that
-             * sometimes works. */
-            show_commandbox_window();
-            return 0;
-        } else if (w_param == 'L' && !is_alt) {
-            hg_clip_toggle_window();
-            return 0;
-        } else if (w_param == 'N' && !is_alt) {
-            show_note_list_window();
-            return 0;
         }
     }
 
-    if (w_param == VK_F2) {
-        SendMessageW(hwnd, WM_RBUTTONUP, 0, 0);
+    /* The functions with names, which is what makes them rebindable. The keys
+     * above this point are the ones that are a direction or a size rather than
+     * a function - a step of the same size in the same axis, which a table of
+     * chords has nothing to add to. */
+    if (floater_run_key_action(hwnd, hg_key_lookup_now(HG_KEYCTX_FLOATER, (UINT)w_param)))
         return 0;
-    }
-
-    if (!is_ctrl && !is_alt) {
-        if (w_param == 'C') {
-            show_commandbox_window();
-            return 0;
-        } else if (w_param == 'T') {
-            PostMessageW(hwnd, WM_HOTKEY, 1, 0);
-            return 0;
-        }
-    }
 
 
 
@@ -1303,7 +1308,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         return 0;
     }
     case WM_HOTKEY: {
-        if (w_param == 1) {
+        /* Every system chord registers under its own id and they all mean show
+         * or hide, so the id is not worth reading past its range. */
+        if (w_param >= 1 && w_param <= HG_KEY_MAX_BINDINGS) {
             HWND fg_wnd = GetForegroundWindow();
             if (fg_wnd && fg_wnd != hg_g_taskbox_wnd && fg_wnd != hg_g_floater_wnd &&
                 fg_wnd != hg_g_about_wnd) {

@@ -7,6 +7,7 @@
 #include "hg_tabs.h"
 #include "hg_caphook.h"
 #include "hg_options.h"
+#include "hg_keys.h"
 
 /* =========================================================================
  * 창 클래스 등록 기능 (Window Class Registration)
@@ -342,8 +343,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     HANDLE mutex = NULL;
     HICON icon_large = NULL;
     HICON icon_small = NULL;
-    HACCEL accel_table = NULL;
-    HACCEL accel_doc_table = NULL; /* the subset a note or a command line keeps */
     int exit_code = 0;
 
     (void)prev_instance;
@@ -420,10 +419,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     hg_g_taskbox_alpha = (BYTE)get_alpha_config(L"taskbox", 204);
     hg_g_commandbox_alpha = (BYTE)get_alpha_config(L"commandbox", 204);
     load_font_name_config();
-    load_hotkey_config();
     load_floater_font_config();
     load_floater_stats_config();
     hg_options_load();
+    hg_keys_load();
     load_taskbox_font_config();
 
     hg_g_floater_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_APPWINDOW, HG_CLASS_FLOATER_WIDGET,
@@ -454,31 +453,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     hg_caphook_apply();
     dispatch_pending_command_line();
 
-    /* Quit is Ctrl+Q. Ctrl+X was a second binding for it, and Ctrl+X is Cut
-     * everywhere else in Windows: a note, a command line and a search box all
-     * lost their cut to it. One quit key that collides with nothing is worth
-     * more than two. */
-    ACCEL accel[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP},
-                     {FALT | FVIRTKEY, VK_F4, HG_IDM_CLOSE_APP},
-                     {FVIRTKEY, VK_F1, HG_IDM_ABOUT},
-                     {FCONTROL | FSHIFT | FVIRTKEY, 'R', HG_IDM_RESET_ALL},
-                     {FCONTROL | FVIRTKEY, 'R', HG_IDM_RESET_ALL},
-                     {FVIRTKEY, VK_F5, HG_IDM_RESET_ALL},
-                     {FCONTROL | FVIRTKEY, '0', HG_IDM_RESET_ALL},
-                     {FCONTROL | FVIRTKEY, VK_OEM_PLUS, HG_IDM_FONT_UP},
-                     {FCONTROL | FVIRTKEY, VK_OEM_MINUS, HG_IDM_FONT_DOWN},
-                     {FCONTROL | FVIRTKEY, VK_ADD, HG_IDM_FONT_UP},
-                     {FCONTROL | FVIRTKEY, VK_SUBTRACT, HG_IDM_FONT_DOWN}};
-    accel_table = CreateAcceleratorTableW(accel, HG_ARRAYSIZE(accel));
-
-    /* What a document window keeps of the table above. Quit belongs everywhere:
-     * it is the program's one exit and it collides with no editing command.
-     * The rest do collide - Ctrl+R and F5 would reset every setting mid
-     * sentence, Ctrl+0 and Ctrl+/- would resize the widgets rather than the
-     * text, and Alt+F4 has to close the note it was pressed in, not the
-     * program. */
-    ACCEL accel_doc[] = {{FCONTROL | FVIRTKEY, 'Q', HG_IDM_CLOSE_APP}, {FVIRTKEY, VK_F1, HG_IDM_ABOUT}};
-    accel_doc_table = CreateAcceleratorTableW(accel_doc, HG_ARRAYSIZE(accel_doc));
+    /* Both tables are built from the key table, so rebinding quit or About in
+     * the settings window takes effect without a restart. Which functions a
+     * document window keeps is a column there rather than a second list here:
+     * quit belongs everywhere, while Ctrl+R and F5 would reset every setting
+     * mid sentence and Ctrl+0 and Ctrl+/- would resize the widgets rather than
+     * the text. */
+    hg_keys_apply();
 
     MSG msg_struct;
     BOOL bRet;
@@ -499,7 +480,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
          * note. Which table applies is therefore decided by the window the
          * keystroke was headed for. */
         HWND key_target = GetAncestor(msg_struct.hwnd, GA_ROOT);
-        HACCEL table = hg_is_document_window(key_target) ? accel_doc_table : accel_table;
+        HACCEL table = hg_keys_accel_table(hg_is_document_window(key_target));
 
         BOOL accel_handled = FALSE;
         if (table && hg_g_taskbox_wnd && TranslateAcceleratorW(hg_g_taskbox_wnd, table, &msg_struct)) {
@@ -527,14 +508,7 @@ cleanup_finish:
     hg_notes_shutdown();       /* an edit made a second ago must not be the one lost */
     hg_backlight_shutdown();   /* the cached WMI connection, before COM goes away */
     restore_system_gamma();
-    if (accel_doc_table) {
-        DestroyAcceleratorTable(accel_doc_table);
-        accel_doc_table = NULL;
-    }
-    if (accel_table) {
-        DestroyAcceleratorTable(accel_table);
-        accel_table = NULL;
-    }
+    hg_keys_shutdown();
 
     unregister_global_hotkey(hg_g_floater_wnd);
 

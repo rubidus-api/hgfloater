@@ -1,4 +1,5 @@
 #include "hg_config.h"
+#include "hg_keys.h"
 #include "hg_utils.h"
 
 /* Deferred INI writes.
@@ -461,15 +462,6 @@ static void write_commandbox_font_config(void)
     WritePrivateProfileStringW(L"commandbox", L"font_size", buf, hg_g_config_path);
 }
 
-void save_hotkey_config()
-{
-    WCHAR buf[32];
-    hellgates_wsprintf(buf, 32, L"%u", hg_g_hotkey_modifiers);
-    WritePrivateProfileStringW(L"hotkeys", L"global_focus_modifiers", buf, hg_g_config_path);
-    hellgates_wsprintf(buf, 32, L"%u", hg_g_hotkey_key);
-    WritePrivateProfileStringW(L"hotkeys", L"global_focus_key", buf, hg_g_config_path);
-}
-
 int get_alpha_config(const WCHAR *section, int def_alpha)
 {
     int a = hg_clamp_alpha((int)GetPrivateProfileIntW(section, L"alpha", def_alpha, hg_g_config_path));
@@ -495,44 +487,14 @@ void save_font_name_config()
     WritePrivateProfileStringW(L"etc", L"font_name", hg_g_font_name, hg_g_config_path);
 }
 
-void load_hotkey_config()
-{
-    BOOL needs_save = FALSE;
-
-    hg_g_hotkey_modifiers = GetPrivateProfileIntW(L"hotkeys", L"global_focus_modifiers", 0, hg_g_config_path);
-    UINT valid_modifiers = MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_WIN;
-    UINT normalized_modifiers = hg_g_hotkey_modifiers & valid_modifiers;
-    if (normalized_modifiers != hg_g_hotkey_modifiers) {
-        hg_g_hotkey_modifiers = normalized_modifiers;
-        needs_save = TRUE;
-    }
-    if (hg_g_hotkey_modifiers == 0) {
-        hg_g_hotkey_modifiers = MOD_WIN | MOD_ALT;
-        needs_save = TRUE;
-    }
-
-    hg_g_hotkey_key = GetPrivateProfileIntW(L"hotkeys", L"global_focus_key", 0, hg_g_config_path);
-    if (hg_g_hotkey_key == 0 || hg_g_hotkey_key > 0xFF) {
-        hg_g_hotkey_key = VK_SPACE;
-        needs_save = TRUE;
-    }
-
-    if (needs_save) {
-        save_hotkey_config();
-    }
-}
-
+/* Kept as the name every caller already uses; the chords themselves live in
+ * hg_keys.c, which knows how many there are and re-registers all of them. */
 BOOL register_global_hotkey(HWND hwnd, BOOL warn_on_failure)
 {
     if (!hwnd || !IsWindow(hwnd))
         return FALSE;
 
-    if (hg_g_hotkey_registered) {
-        UnregisterHotKey(hwnd, 1);
-        hg_g_hotkey_registered = FALSE;
-    }
-
-    hg_g_hotkey_registered = RegisterHotKey(hwnd, 1, hg_g_hotkey_modifiers | MOD_NOREPEAT, hg_g_hotkey_key);
+    hg_keys_apply();
     if (!hg_g_hotkey_registered && warn_on_failure) {
         MessageBoxW(NULL, L"Global hotkey registration failed. Another program may be using the assigned hotkey.",
                     L"hgfloater", MB_ICONWARNING);
@@ -543,7 +505,8 @@ BOOL register_global_hotkey(HWND hwnd, BOOL warn_on_failure)
 void unregister_global_hotkey(HWND hwnd)
 {
     if (hg_g_hotkey_registered && hwnd && IsWindow(hwnd)) {
-        UnregisterHotKey(hwnd, 1);
+        for (int id = 1; id <= HG_KEY_MAX_BINDINGS; ++id)
+            UnregisterHotKey(hwnd, id);
         hg_g_hotkey_registered = FALSE;
     }
 }
@@ -593,15 +556,11 @@ void hg_config_reset_all(HWND hwnd)
     hg_g_current_font_size = -target_icon_size;
     hg_g_edit_font_size = -SC(16);
     wcscpy(hg_g_font_name, L"Segoe UI");
-    hg_g_hotkey_modifiers = MOD_WIN | MOD_ALT;
-    hg_g_hotkey_key = VK_SPACE;
-
-    register_global_hotkey(hg_g_floater_wnd, FALSE);
+    hg_key_reset_all(); /* every binding back to its built-in default */
 
     save_alpha_config();
     save_floater_font_config();
     save_taskbox_font_config();
-    save_hotkey_config();
     save_font_name_config();
     save_floater_geometry_config(100, 100, SC(80), SC(55));
     save_taskbox_geometry_config(200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
