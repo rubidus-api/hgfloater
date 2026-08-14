@@ -340,7 +340,7 @@ BOOL hg_is_document_window(HWND hwnd)
 
     return lstrcmpiW(class_name, HG_CLASS_NOTE_EDIT) == 0 || lstrcmpiW(class_name, HG_CLASS_NOTE_LIST) == 0 ||
            lstrcmpiW(class_name, HG_CLASS_CLIP) == 0 || lstrcmpiW(class_name, HG_CLASS_COMMANDBOX) == 0 ||
-           lstrcmpiW(class_name, HG_CLASS_ABOUT) == 0;
+           lstrcmpiW(class_name, HG_CLASS_SETTINGS) == 0 || lstrcmpiW(class_name, HG_CLASS_ABOUT) == 0;
 }
 
 /* What the theme says a page of text should look like, with no inversion. High

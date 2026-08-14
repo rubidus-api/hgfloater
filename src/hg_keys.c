@@ -41,6 +41,8 @@ static const HgKeyActionRow hg_key_actions[] = {
      L"Ctrl+Plus, Ctrl+NumPlus", HG_IDM_FONT_UP, FALSE},
     {HG_KEYCTX_WIDGET, L"font-down", L"Smaller icons and text", L"the widget font, one step down",
      L"Ctrl+Minus, Ctrl+NumMinus", HG_IDM_FONT_DOWN, FALSE},
+    {HG_KEYCTX_WIDGET, L"settings", L"The settings window",
+     L"every option, value and key in one list", L"Ctrl+Comma", HG_IDM_SETTINGS, FALSE},
 
     /* -- the floater */
     {HG_KEYCTX_FLOATER, L"open-taskbox", L"Open the taskbox", L"the same thing a click does",

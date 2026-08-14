@@ -180,6 +180,7 @@
 #define HG_IDM_CLIP_TAKE 221
 #define HG_IDM_CLIP_DELETE 222
 #define HG_IDM_CLIP_CLEAR 223
+#define HG_IDM_SETTINGS 224
 
 #define HG_COPYDATA_COMMAND_LINE 0x4847434CU
 
@@ -484,6 +485,7 @@ static const WCHAR HG_CLASS_NOTE_LIST[] = L"hgnotelist_class";
 static const WCHAR HG_CLASS_NOTE_EDIT[] = L"hgnoteedit_class";
 static const WCHAR HG_CLASS_CLIP[] = L"hgclip_class";
 static const WCHAR HG_CLASS_TABBOX[] = L"hgtabbox_class";
+static const WCHAR HG_CLASS_SETTINGS[] = L"hgsettings_class";
 static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";
 
 #endif /* HG_COMMON_H */

@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.13.0** — built 2026-08-14 17:00 KST
+**v0.14.0** — built 2026-08-14 18:10 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -125,7 +125,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.13.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.14.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -561,21 +561,31 @@ HGFloater empties the history.**
 
 Open it with the `O` toolbar button or by right-clicking the status line.
 
+- **Settings...** — the [settings window](#71-the-settings-window): every
+  option, every value and every key in one list.
 - **Open Shortcuts Folder** — opens the shortcuts directory in Explorer. This is
   how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts).
 - **Edit Configuration** — opens `config.ini` in Notepad.
-- **Menu on Maximize Button** — checked while the maximize button of **every**
-  window answers a right-click with HGFloater's move-and-resize menu. See
-  [4.1](#41-the-maximize-button-menu).
-- **Show Tabs as Task Icons** — checked when a tabbed application's tabs get
-  their own task icons. See [5.1](#51-running-windows-and-shortcuts) for which
-  applications, how to add one, and why it is off by default.
-- **Start with Windows** — checked when HGFloater launches at sign-in. Toggling
-  it writes or removes one value under
-  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, holding the quoted
-  path of the running executable. No installer, no elevation, nothing else
-  touched. Switching it on again after moving `hgfloater.exe` re-registers where
-  the file actually is. **Reset Settings** leaves it alone.
+- **Options** — the switches, all of them, in one submenu. Each is checked while
+  it is on, and one that cannot be used in this build is greyed and says so
+  rather than disappearing:
+  - **Open the Taskbox on Hover** — off by default. On, the pointer resting on
+    the floater opens the dashboard the way it did before v0.13.0; off, opening
+    is a click. See [4](#4-the-floater).
+  - **Show Tabs as Task Icons** — checked when a tabbed application's tabs get
+    their own task icons. See [5.1](#51-running-windows-and-shortcuts) for which
+    applications, how to add one, and why it is off by default.
+  - **Menu on Maximize Button** — checked while the maximize button of **every**
+    window answers a right-click with HGFloater's move-and-resize menu. See
+    [4.1](#41-the-maximize-button-menu).
+  - **Start with Windows** — checked when HGFloater launches at sign-in.
+    Toggling it writes or removes one value under
+    `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, holding the quoted
+    path of the running executable. No installer, no elevation, nothing else
+    touched. Switching it on again after moving `hgfloater.exe` re-registers
+    where the file actually is. **Reset Settings** leaves it alone.
+  - **Floater Shows System Bars** — the battery, CPU and memory line on the
+    floater. It was in `config.ini` and nowhere else until v0.14.0.
 - **About...** — this document, rendered inside the app.
 - **Reset Settings** — restores default geometry, opacity, sizes, and colors.
 - **Select Audio Device** — lists the output devices with the current one
@@ -602,6 +612,29 @@ Open it with the `O` toolbar button or by right-clicking the status line.
   Thunderbolt, which is the only case Windows reports separately.
 - **Lock Screen (Power Off)** — locks the workstation.
 - **Exit** — quits.
+
+### 7.1 The settings window
+
+**Settings...** in the `O` menu, `Ctrl + ,` from the floater or the taskbox, or
+`settings` in the command box. One list, in three parts:
+
+- **Options** — the switches above. `Enter` or `Space` flips the selected one.
+- **Values** — the numbers: opacity, note text size, how many clipboard entries
+  to keep, how many command lines to remember. `Left` and `Right` change the
+  selected one, by five for a percentage and by one otherwise.
+- **Keys** — **window, function, keys**, which is how they are stored. A heading
+  names the window (`system`, `widget`, `floater`, `taskbox`), each row under it
+  is a function, and the right-hand column is the chords that reach it — none,
+  one, or up to four. `Enter` waits for a chord and adds it, `Del` takes the last
+  one away, `Ctrl + Del` takes them all, and `R` restores the built-in default.
+
+Nothing here has an OK button. Every change reaches `config.ini` and the running
+program at the moment it is made, which is what the wheel and the menus have
+always done. The window is a view of the same three tables the command box
+writes through, so it re-reads itself whenever it comes back to the front.
+
+`Ctrl + Wheel` sets its text size, `Alt + Wheel` its opacity, `Alt + arrows`
+move it, and `Esc` or `Ctrl + W` closes it.
 
 ## 8. The Command Box
 
@@ -674,6 +707,12 @@ could come and go between the list you read and the number you typed.
 | `show sensors` | `s s` | Every temperature sensor found, numbered, and which one `TMP` and `GPU` show. |
 | `show sensors 2` | `s s 2` | Just sensor 2, with its unit. |
 | `show value` | `s v` | The settable values, numbered, with what each one is now. |
+| `show option` | `s o` | The on/off options, numbered, with what each one is now. |
+| `show key` | `s k` | Every window, function and key. `s k floater` for one window's. |
+| `write option 1 on` | `w o 1 on` | Set an option by number or name, to `on`, `off` or `toggle`. |
+| `bind floater notes Ctrl+Shift+N` | — | Give a function another key. `bind floater notes default` puts the built-in ones back. |
+| `unbind taskbox clipboard Ctrl+L` | — | Take one key away. Without a chord, takes every key of that function away. |
+| `settings` | `set` | The [settings window](#71-the-settings-window). |
 | `go 1` | — | Focus window 1, restoring it if it is minimised. |
 | `go tab 4` | `g t 4` | Switch to tab 4 of the `show tabs` list, whichever window is holding it. |
 | `resize 1 1` | `r 1 1` | Resize window 1 to preset 1. |
@@ -822,7 +861,14 @@ creation time of day goes there too, since the file name only carries the day.
 
 | Key | Action |
 | :--- | :--- |
-| `Win + Alt + Space` | Show or hide the taskbox (configurable). If a window has drifted off screen, it is pulled back into the nearest monitor's work area. |
+| `Win + Alt + Space` | Show or hide the taskbox. If a window has drifted off screen, it is pulled back into the nearest monitor's work area. |
+| `Ctrl + ,` | The [settings window](#71-the-settings-window) — options, values, and every key on this page. |
+
+Every key in this section and the two below it can be changed: they are kept as
+window, function and chords, and the settings window, `bind`, or `config.ini`
+edits them. Navigation is not on that list — the arrows, `WASD`, the grid keys
+and the `Shift +` letter badges are the taskbox's own language rather than
+functions to rebind.
 
 ### Inside the taskbox
 
@@ -984,12 +1030,37 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
   gradients behind the `A`, `B`, and `V` buttons.
 
-### `[hotkeys]`
+### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`
+
+One section per window, one line per function, and the value is the chords that
+reach it — up to four, separated by commas:
+
+```ini
+[keys.floater]
+command-box = C, Ctrl+E
+notes = Ctrl+N
+clipboard =
+```
+
+A line that is **absent** means the built-in default. A line that is **present
+and empty** means the function has no key at all, which is a supported answer:
+one reachable by button and menu does not have to own a chord as well.
+
+Chords are written the way they are read — `Ctrl+N`, `Alt+F4`, `Ctrl+Shift+R`,
+`F2`, `Esc`, `Space`, `Plus`, `NumMinus` — and `Win+` belongs to `[keys.system]`
+alone, because the shell takes it before any other window sees it. `show key`
+lists every function, and the [settings window](#71-the-settings-window) edits
+them without your having to spell anything.
+
+The older `[hotkeys]` pair of numbers is read once, so a global hotkey chosen
+before v0.14.0 carries over into `[keys.system]`, and is then no longer used.
+
+### `[settings]`
 
 | Key | Meaning |
 | :--- | :--- |
-| `global_focus_modifiers` | Modifier bitmask: `Alt=1`, `Ctrl=2`, `Shift=4`, `Win=8`. Default `9` (Win + Alt) |
-| `global_focus_key` | Virtual key code of the trigger. Default `32` (Space) |
+| `font_size` | Text size of the settings window, in points. Default `15` |
+| `alpha` | Its opacity, `32`–`255`. Default `255` |
 
 ## 14. Files and Directories
 

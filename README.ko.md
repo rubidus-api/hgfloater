@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.13.0** — 빌드 2026-08-14 17:00 KST
+**v0.14.0** — 빌드 2026-08-14 18:10 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -111,7 +111,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.13.0)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.14.0)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -495,19 +495,28 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 
 툴바 `O` 버튼을 누르거나 상태 표시줄을 오른쪽 클릭해 엽니다.
 
-- **Menu on Maximize Button** — **모든** 창의 최대화 버튼이 오른쪽 클릭에 HGFloater 의
-  이동·크기 메뉴로 답할 때 체크됩니다. [4.1](#41-최대화-버튼-메뉴) 을 보세요.
-- **Show Tabs as Task Icons** — 탭이 있는 프로그램의 탭을 각각의 작업 아이콘으로 띄울 때
-  체크됩니다. 어떤 프로그램이 되는지·추가하는 법·기본이 꺼짐인 이유는
-  [5.1](#51-실행-중인-창과-단축-아이콘) 에 있습니다.
+- **Settings...** — [설정 창](#71-설정-창)을 엽니다. 옵션·수치·단축키가 한 목록에
+  들어 있습니다.
 - **Open Shortcuts Folder** — 단축 아이콘 폴더를 탐색기로 엽니다. 단축 아이콘은 이렇게
   등록합니다. [5.1 의 안내 상자](#51-실행-중인-창과-단축-아이콘)를 보세요.
 - **Edit Configuration** — `config.ini`를 메모장으로 엽니다.
-- **Start with Windows** — 로그인할 때 HGFloater가 실행되면 체크가 붙습니다. 켜고 끄면
-  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 아래에 값 하나를 쓰거나
-  지웁니다. 값에는 실행 중인 실행 파일의 경로가 따옴표로 묶여 들어갑니다. 설치 과정도,
-  관리자 권한도, 그 밖에 건드리는 것도 없습니다. `hgfloater.exe`를 옮긴 뒤 다시 켜면 실제
-  위치로 다시 등록됩니다. **Reset Settings**는 이 항목을 건드리지 않습니다.
+- **Options** — 켜고 끄는 항목은 모두 이 하위 메뉴에 모여 있습니다. 켜져 있으면 체크가
+  붙고, 이 빌드에서 쓸 수 없는 항목은 사라지는 대신 회색으로 그 사실을 말합니다.
+  - **Open the Taskbox on Hover** — 기본은 꺼짐입니다. 켜면 v0.13.0 이전처럼 포인터가
+    플로터에 머무는 것만으로 대시보드가 열리고, 꺼져 있으면 클릭으로 엽니다.
+    [4장](#4-플로터)을 보세요.
+  - **Show Tabs as Task Icons** — 탭이 있는 프로그램의 탭을 각각의 작업 아이콘으로 띄울
+    때 체크됩니다. 어떤 프로그램이 되는지·추가하는 법·기본이 꺼짐인 이유는
+    [5.1](#51-실행-중인-창과-단축-아이콘) 에 있습니다.
+  - **Menu on Maximize Button** — **모든** 창의 최대화 버튼이 오른쪽 클릭에 HGFloater 의
+    이동·크기 메뉴로 답할 때 체크됩니다. [4.1](#41-최대화-버튼-메뉴) 을 보세요.
+  - **Start with Windows** — 로그인할 때 HGFloater가 실행되면 체크가 붙습니다. 켜고 끄면
+    `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 아래에 값 하나를 쓰거나
+    지웁니다. 값에는 실행 중인 실행 파일의 경로가 따옴표로 묶여 들어갑니다. 설치 과정도,
+    관리자 권한도, 그 밖에 건드리는 것도 없습니다. `hgfloater.exe`를 옮긴 뒤 다시 켜면
+    실제 위치로 다시 등록됩니다. **Reset Settings**는 이 항목을 건드리지 않습니다.
+  - **Floater Shows System Bars** — 플로터의 배터리·CPU·메모리 줄입니다. v0.14.0
+    이전에는 `config.ini` 에만 있고 어디에서도 켜고 끌 수 없었습니다.
 - **About...** — 이 문서를 앱 안에서 보여 줍니다.
 - **Reset Settings** — 기본 위치·투명도·크기·색으로 되돌립니다.
 - **Select Audio Device** — 출력 장치 목록(현재 장치에 체크)과 **Mute** 토글.
@@ -529,6 +538,27 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
   경우는 그것뿐입니다.
 - **Lock Screen (Power Off)** — 화면을 잠급니다.
 - **Exit** — 종료합니다.
+
+### 7.1 설정 창
+
+`O` 메뉴의 **Settings...**, 플로터나 태스크박스에서 `Ctrl + ,`, 또는 커맨드 박스의
+`settings` 로 엽니다. 한 목록이 세 부분으로 나뉩니다.
+
+- **Options** — 위의 스위치들입니다. `Enter` 나 `Space` 로 선택한 항목을 뒤집습니다.
+- **Values** — 숫자입니다. 투명도, 노트 글자 크기, 클립보드 보관 개수, 명령 기록 개수.
+  `Left`·`Right` 로 바꾸며, 퍼센트는 5씩, 나머지는 1씩 움직입니다.
+- **Keys** — **창 · 기능 · 기능키**, 저장되는 모양 그대로입니다. 제목 줄이 창
+  (`system`, `widget`, `floater`, `taskbox`)이고, 그 아래 각 줄이 기능이며, 오른쪽 칸이
+  그 기능에 닿는 조합키입니다 — 없을 수도, 하나일 수도, 최대 네 개일 수도 있습니다.
+  `Enter` 를 누르면 다음에 누르는 조합키가 추가되고, `Del` 은 마지막 하나를,
+  `Ctrl + Del` 은 전부를 지우며, `R` 은 기본값으로 되돌립니다.
+
+확인 버튼은 없습니다. 바뀌는 즉시 `config.ini` 와 실행 중인 프로그램에 반영됩니다.
+휠과 메뉴가 원래 그렇게 동작해 왔습니다. 이 창은 커맨드 박스가 쓰는 것과 같은 세 표를
+보여 주는 창이므로, 앞으로 나올 때마다 다시 읽습니다.
+
+`Ctrl + 휠` 은 글자 크기, `Alt + 휠` 은 투명도, `Alt + 방향키` 는 창 이동이고, `Esc` 나
+`Ctrl + W` 로 닫습니다.
 
 ## 8. 커맨드 박스
 
@@ -591,6 +621,12 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `show sensors` | `s s` | 찾아낸 온도 센서 전부에 번호를 붙여 표시하고, `TMP`·`GPU`가 무엇인지 |
 | `show sensors 2` | `s s 2` | 2번 센서만, 단위를 붙여서 |
 | `show value` | `s v` | 바꿀 수 있는 값들에 번호를 붙여, 지금 값과 함께 표시 |
+| `show option` | `s o` | 켜고 끄는 옵션들에 번호를 붙여, 지금 상태와 함께 표시 |
+| `show key` | `s k` | 창·기능·기능키 전부. `s k floater` 처럼 창 하나만도 됩니다 |
+| `write option 1 on` | `w o 1 on` | 옵션을 번호나 이름으로 지정해 `on`·`off`·`toggle` |
+| `bind floater notes Ctrl+Shift+N` | — | 기능에 키를 하나 더 줍니다. `bind floater notes default` 는 기본값 복원 |
+| `unbind taskbox clipboard Ctrl+L` | — | 키 하나를 뗍니다. 조합키를 빼고 쓰면 그 기능의 키를 전부 없앱니다 |
+| `settings` | `set` | [설정 창](#71-설정-창) |
 | `go 1` | — | 1번 창으로 이동합니다(최소화되어 있으면 복원합니다) |
 | `go tab 4` | `g t 4` | `show tabs` 목록의 4번 탭으로 전환합니다. 어느 창에 있든 상관없습니다 |
 | `resize 1 1` | `r 1 1` | 1번 창을 1번 프리셋 크기로 조정 |
@@ -730,7 +766,13 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 
 | 키 | 동작 |
 | :--- | :--- |
-| `Win + Alt + Space` | 태스크박스 표시/숨김 (변경 가능). 창이 화면 밖으로 밀려났으면 가장 가까운 모니터의 작업 영역 안으로 복구합니다. |
+| `Win + Alt + Space` | 태스크박스 표시/숨김. 창이 화면 밖으로 밀려났으면 가장 가까운 모니터의 작업 영역 안으로 복구합니다. |
+| `Ctrl + ,` | [설정 창](#71-설정-창) — 옵션·수치, 그리고 이 장의 모든 키 |
+
+이 장과 아래 두 절의 키는 모두 바꿀 수 있습니다. 창·기능·기능키로 저장되며 설정 창,
+`bind`, `config.ini` 중 어디에서든 고칠 수 있습니다. 다만 이동 키는 그 목록에 없습니다 —
+방향키·`WASD`·그리드 조절 키·`Shift +` 글자 배지는 다시 지정할 기능이라기보다 태스크박스
+자체의 언어이기 때문입니다.
 
 ### 태스크박스 안에서
 
@@ -869,12 +911,36 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 - `value_alpha_low`/`value_alpha_high`, `value_brightness_low`/`value_brightness_high`,
   `value_volume_low`/`value_volume_high` — `A`·`B`·`V` 버튼의 그라데이션
 
-### `[hotkeys]`
+### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`
+
+창마다 한 구역, 기능마다 한 줄이고, 값은 그 기능에 닿는 조합키입니다. 쉼표로 구분해 최대
+네 개까지 씁니다.
+
+```ini
+[keys.floater]
+command-box = C, Ctrl+E
+notes = Ctrl+N
+clipboard =
+```
+
+줄이 **없으면** 기본값이라는 뜻이고, 줄이 **있는데 비어 있으면** 그 기능에 키가 하나도
+없다는 뜻입니다. 후자도 정상입니다. 버튼과 메뉴로 닿을 수 있는 기능이 반드시 키까지
+가져야 하는 것은 아니기 때문입니다.
+
+조합키는 읽는 대로 적습니다 — `Ctrl+N`, `Alt+F4`, `Ctrl+Shift+R`, `F2`, `Esc`, `Space`,
+`Plus`, `NumMinus`. `Win+` 은 `[keys.system]` 전용입니다. 셸이 먼저 가져가서 다른 창에는
+도달하지 않기 때문입니다. `show key` 가 전체 목록을 찍고,
+[설정 창](#71-설정-창)에서는 직접 눌러 지정할 수 있습니다.
+
+예전의 `[hotkeys]` 숫자 두 개는 한 번만 읽힙니다. v0.14.0 이전에 바꿔 둔 전역 단축키는
+`[keys.system]` 으로 옮겨 오고, 그 뒤로는 쓰이지 않습니다.
+
+### `[settings]`
 
 | 키 | 의미 |
 | :--- | :--- |
-| `global_focus_modifiers` | 조합 키 비트마스크: `Alt=1`, `Ctrl=2`, `Shift=4`, `Win=8`. 기본 `9` (Win + Alt) |
-| `global_focus_key` | 호출 키의 가상 키 코드. 기본 `32` (Space) |
+| `font_size` | 설정 창의 글자 크기(pt). 기본 `15` |
+| `alpha` | 설정 창의 불투명도, `32`–`255`. 기본 `255` |
 
 ## 14. 파일과 디렉터리
 

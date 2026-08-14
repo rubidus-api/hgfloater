@@ -187,6 +187,7 @@ HMENU taskbox_create_main_popup_menu(void)
     if (!h_menu)
         return NULL;
 
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_SETTINGS, L"Settings...");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
 
