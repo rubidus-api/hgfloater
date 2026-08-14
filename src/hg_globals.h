@@ -60,8 +60,6 @@ extern BYTE hg_g_floater_alpha;
 extern BYTE hg_g_taskbox_alpha;
 extern int hg_g_floater_highlight_ticks;
 extern int hg_g_taskbox_highlight_ticks;
-extern UINT hg_g_hotkey_modifiers;
-extern UINT hg_g_hotkey_key;
 extern BOOL hg_g_hotkey_registered;
 extern WCHAR hg_g_pending_command_line[HG_MAX_PATH];
 extern BOOL hg_g_has_pending_command_line;
