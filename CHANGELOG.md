@@ -31,6 +31,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   already, and a key that works in one of the two surfaces and not the other
   reads as a key that sometimes works.
 
+### Removed
+- **The `F` toolbar button is gone,** and with it floater-adjust mode. It existed
+  because the pointer arriving on the floater expanded it, so tuning or moving
+  the floater needed a state where that did not happen. Opening is a click now,
+  and the mode had nothing left to protect: **the floater can simply be
+  dragged** - a press and release is still a click, a few pixels of travel is a
+  drag - and `Ctrl`/`Alt + Wheel` tune its size and opacity where it stands. The
+  toolbar is twelve buttons instead of thirteen.
+
 ### Changed
 - **Every switch is under `Options` in the `O` menu.** They used to sit loose at
   the top of that menu, three of them, each written out three times - a menu

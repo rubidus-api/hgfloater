@@ -88,7 +88,6 @@ extern BOOL hg_g_floater_show_stats; /* [floater] show_stats: battery/CPU/memory
 extern RECT hg_g_floater_home_rect;   /* floater position before a click/hotkey expand */
 extern RECT hg_g_taskbox_expand_rect; /* taskbox position right after that expand */
 extern BOOL hg_g_floater_home_valid;
-extern BOOL hg_g_floater_adjust_mode; /* F button: floater shown for size/alpha tuning (drag moves it) */
 extern BOOL hg_g_taskbox_pinned;      /* P button: taskbox stays open, no hover auto-collapse */
 extern BOOL hg_g_taskbox_open_on_hover; /* [taskbox] open_on_hover: pointer opens it, not just a click */
 extern ULONGLONG hg_g_edit_msg_tick;  /* tick of the last status-line message */
