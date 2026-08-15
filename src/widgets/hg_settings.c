@@ -721,6 +721,24 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
             return 0;
         break;
 
+    case WM_ERASEBKGND:
+        /* The same background the notes, the clipboard and the command box
+         * paint. Left to the class brush this window came out in the widget
+         * colour - the floater's, inverted from the system theme - which is
+         * why the page and the frame around it did not match. */
+        hg_document_paint_background(hwnd, (HDC)w_param);
+        return 1;
+
+    case WM_SETTINGCHANGE:
+        /* Light and dark can change while the window is open, and every colour
+         * here is read at paint time, so a repaint is the whole of it. */
+        if (should_refresh_theme_on_setting_change(l_param)) {
+            update_theme_colors();
+            hg_apply_dwm_attributes_document(hwnd);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        return 0;
+
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORLISTBOX: {
         /* The same two-tone the command box has: the list is the page, and the
