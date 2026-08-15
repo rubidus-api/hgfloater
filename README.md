@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.15.1** — built 2026-08-15 10:10 KST
+**v0.15.2** — built 2026-08-15 10:40 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -125,7 +125,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.1)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.2)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -229,9 +229,12 @@ of other windows.
 **What you can do to it**
 
 - **Left click** — toggles the taskbox, from anywhere on the floater. It opens
-  in place, and the floater hides itself while the taskbox is up. Merely passing
-  the pointer over the floater does nothing unless **Open the Taskbox on Hover**
-  is on, and then only over the clock.
+  in place, and the floater hides itself while the taskbox is up.
+- **Hover** — nothing, unless **Open the Taskbox on Hover** is switched on in
+  the [Options menu](#7-the-options-menu). With it on, resting the pointer on
+  **the clock's minutes** — the two digits after the colon, and nothing else on
+  the floater — opens the taskbox. The click above keeps working from anywhere
+  either way.
 - **Left drag** — moves the floater anywhere on any monitor. A press and
   release without moving is a click and toggles the taskbox; a few pixels of
   travel makes it a drag instead. `Alt + drag` does the same and is the one to
@@ -566,10 +569,13 @@ Open it with the `O` toolbar button or by right-clicking the status line.
   it is on, and one that cannot be used in this build is greyed and says so
   rather than disappearing:
   - **Open the Taskbox on Hover** — off by default. On, the pointer resting on
-    **the clock** opens the dashboard the way it did before v0.13.0; off,
-    opening is a click. Only the clock answers, because the rest of the floater
-    is what a hand crosses on its way elsewhere — and a click opens it from
-    anywhere on the floater either way. See [4](#4-the-floater).
+    **the clock's minutes** — the two digits after the colon — opens the
+    dashboard the way it did before v0.13.0; off, opening is a click. Only those
+    two digits answer: the rest of the floater is bars, a date and a host name
+    that a hand crosses on its way elsewhere, and the minutes sit at the end of
+    the clock, so the pointer arrives there from outside the widget. A click
+    opens the taskbox from anywhere on the floater either way. See
+    [4](#4-the-floater).
   - **Outline the Window Under the Pointer** — on by default. Pointing at a task
     icon draws a frame around the window it stands for, so "which one is that"
     is answered without switching to it.
