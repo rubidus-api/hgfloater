@@ -2,46 +2,9 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.15.2** — built 2026-08-15 10:40 KST
+**v0.15.3** — built 2026-08-15 11:20 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
-
-> ## v0.8.0 was flagged by some scanners. Builds since then are not.
->
-> Some browsers and antivirus products warned users away from the **v0.8.0**
-> download. **v0.8.1 and later do not reproduce that**, because the two features those
-> scanners were reacting to are **temporarily switched off** in it.
->
-> **Why they were flagged.** Antivirus software cannot judge what a program
-> does with a given Windows facility — it classifies by the facility itself:
-> *"programs that use this kind of API are more often malicious."* A harmless
-> feature lands in that category simply for using the API, and two of
-> HGFloater's did:
->
-> - **Menu on Maximize Button** needed a **global mouse hook** to work on other
->   applications' windows. It read the mouse button and cursor position, to tell
->   whether that point was a maximize button — **there is no keyboard hook
->   anywhere in this program**. But a global input hook is the same family of
->   call a keylogger uses, and static analysis cannot easily separate the two.
-> - **Start with Windows** wrote one value named `hgfloater` under the ordinary
->   per-user `Run` key, and deleted it when switched off. That is also the
->   location malware uses to survive a reboot, so the API alone raises the
->   score.
->
-> Neither feature was doing anything harmful; both were flagged for the company
-> their APIs keep. With an **unsigned binary that few people have downloaded**,
-> there is no reputation to offset that, and warnings follow.
->
-> **Since v0.8.1** both are disabled: this build installs **no hook** and writes
-> **nothing to the registry**. Their menu entries stay in the `O` menu, greyed,
-> reading `(off in this build)`. Everything else — task switching, tabs,
-> notes, clipboard, monitor previews, the command box, per-display brightness
-> and scaling — works exactly as before. They will return once the real fix,
-> code signing, is in place.
->
-> **You can still verify any download**: every release lists the **SHA-256** of
-> both files, ships a **`.zip`** alongside the `.exe`, and the whole source is
-> here under the MIT licence. More in [section 2](#2-install-and-first-run).
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
@@ -125,7 +88,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.2)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.3)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -138,11 +101,10 @@ Design principles worth knowing before you use it:
 Only one instance runs at a time. Launching `hgfloater.exe` again simply
 signals the running copy instead of starting a second one.
 
-### If a browser or antivirus warns you
+### Checking what you downloaded
 
-Unsigned software with few downloads gets warned about. That is the rule
-working as designed, and the honest answer is not "trust me" but "here is what
-you can check yourself":
+The executable is unsigned, so nothing but the file itself vouches for it. Three
+ways to check, none of which require taking anyone's word:
 
 - **Verify the file.** Every release lists the **SHA-256** of both downloads.
   In PowerShell: `Get-FileHash .\hgfloater.exe -Algorithm SHA256`. If it
@@ -152,20 +114,15 @@ you can check yourself":
 - **Read the source.** All of it is in this repository under the MIT licence,
   and the build is reproducible from the included `Makefile` / `build.bat`.
 
-Three Win32 calls are what heuristic scanners usually notice. Each is here for
-one visible feature. **In v0.8.1 the first two are switched off** — see the
-notice at the top of this page — so the shipped build installs no hook and
-writes nothing to the registry at all:
+One thing the binary demonstrably cannot do: **reach the network**. It imports
+no socket, HTTP, or download function of any kind, so it cannot phone home,
+fetch anything, or send anything anywhere.
 
-| What scanners see | What it is actually for |
-| :--- | :--- |
-| A low-level **mouse** hook | The [maximize-button menu](#6-the-toolbar). It reads the mouse button and the cursor position, nothing else — **there is no keyboard hook in this program**. Turn it off with `caption_menu=0` and no hook is installed at all. |
-| A **registry** write | Only the **Start with Windows** toggle, which writes one value named `hgfloater` under the ordinary per-user `Run` key and deletes it when you switch it off. |
-| **`OpenProcess`** | Reading the program name and icon of the windows in the switcher. It asks for `PROCESS_QUERY_LIMITED_INFORMATION` — query-only access — and never touches another process's memory. |
-
-What the binary demonstrably cannot do: **reach the network**. It imports no
-socket, HTTP, or download function of any kind, so it cannot phone home, fetch
-anything, or send anything anywhere.
+Two features are **switched off in the published builds** until the executable
+is code-signed — the [maximize-button menu](#41-the-maximize-button-menu), which
+needs a system-wide mouse hook, and **Start with Windows**, which writes one
+value under the per-user `Run` key. Both stay in the `O` menu, greyed, reading
+`(off in this build)`.
 
 ## 3. The Two Windows
 
@@ -280,10 +237,8 @@ Three cases where the click does what it always did, none of them a failure:
 
 This is the only thing HGFloater does outside its own windows, and it needs a
 system-wide mouse hook to do it. The hook reads the button and the coordinates
-and nothing else; it holds no keyboard hook and never has. Because a global
-mouse hook is also a thing keyloggers do, an antivirus may take an interest —
-which is worth knowing in advance rather than after. The design and its costs
-are in `docs/RFC-2026-07-caption-button-menu.md`.
+and nothing else; it holds no keyboard hook and never has. The design and its
+costs are in `docs/RFC-2026-07-caption-button-menu.md`.
 
 ## 5. The Taskbox
 

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.15.3] - 2026-08-15
+
+### Removed
+- **The false-positive notice is gone from both READMEs.** It was written for
+  the v0.8.0 downloads that browsers and scanners warned about; the builds since
+  then have not reproduced that, and a banner about a warning nobody is getting
+  is itself misleading. Releases from here on carry no such block either. The
+  notes already published are left exactly as they are - they were true when
+  they were written, and rewriting release history to look tidier is not a thing
+  this project does.
+
+### Changed
+- **Section 2 is about checking a download rather than about scanners.** What is
+  worth keeping is what a reader can act on: the SHA-256 of both files, the zip,
+  the source, and the fact that the binary imports nothing that could reach the
+  network. The two features switched off pending code signing are still said
+  plainly, since the `O` menu shows them greyed and a reader deserves the reason.
+
 ## [v0.15.2] - 2026-08-15
 
 ### Changed
