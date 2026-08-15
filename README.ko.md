@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.15.0** — 빌드 2026-08-15 00:10 KST
+**v0.15.1** — 빌드 2026-08-15 10:10 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -111,7 +111,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.0)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.1)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고

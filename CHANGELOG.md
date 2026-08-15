@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.15.1] - 2026-08-15
+
+### Fixed
+- **The settings window paints the page the other document windows paint.** It
+  had no background of its own, so the class brush showed: the widget colour,
+  which is the system theme inverted, standing behind and around a page that was
+  not inverted. It now fills its client area the way the notes, the clipboard
+  and the command box do, and follows a light/dark switch while open.
+
 ## [v0.15.0] - 2026-08-15
 
 ### Added
