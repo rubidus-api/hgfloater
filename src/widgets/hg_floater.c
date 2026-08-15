@@ -632,14 +632,18 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
         SelectObject(dc, old_font);
 }
 
-/* The clock's rectangle, in client coordinates.
+/* The rectangle of the clock's *minutes*, in client coordinates.
  *
  * Hover-to-open uses it instead of the whole window. The floater is mostly
  * system bars and a host name, and a pointer crossing any of that had the
- * dashboard over the desktop before the hand had finished moving; the clock is
- * a small target in the middle, which is what makes resting on it a decision
- * rather than an accident. A click still counts anywhere on the floater. */
-static BOOL floater_clock_rect(HWND hwnd, RECT *out)
+ * dashboard over the desktop before the hand had finished moving. Two digits
+ * are small enough that resting on them is a decision rather than an accident,
+ * and they are the end of the clock, so the pointer arrives there from the
+ * outside rather than through the rest of the widget.
+ *
+ * A click still counts anywhere on the floater, so nothing is unreachable for
+ * being a small target. */
+static BOOL floater_minute_rect(HWND hwnd, RECT *out)
 {
     if (!out || !hg_g_floater_time_font || !hg_g_floater_date_font)
         return FALSE;
@@ -659,10 +663,21 @@ static BOOL floater_clock_rect(HWND hwnd, RECT *out)
 
     HgFloaterMetrics m;
     floater_compute_metrics(hdc, time_str, date_str, &m);
+
+    /* The clock is drawn centred in its column, so the minutes are the last
+     * two glyphs of that centred run: measure the whole string and the tail,
+     * and the difference is where the tail starts. Measuring rather than
+     * halving the string matters because the two halves are not the same width
+     * in every font, and "12" is not "58". */
+    SIZE sz_time = floater_text_extent(hdc, hg_g_floater_time_font, time_str);
+    const WCHAR *minutes = wcschr(time_str, L':');
+    minutes = minutes ? minutes + 1 : time_str;
+    SIZE sz_minutes = floater_text_extent(hdc, hg_g_floater_time_font, minutes);
     ReleaseDC(hwnd, hdc);
 
-    out->left = m.column_x;
-    out->right = m.column_x + m.column_w;
+    int text_left = m.column_x + (m.column_w - sz_time.cx) / 2;
+    out->left = text_left + sz_time.cx - sz_minutes.cx;
+    out->right = text_left + sz_time.cx;
     out->top = m.text_y;
     out->bottom = m.text_y + m.time_h;
     return (out->right > out->left && out->bottom > out->top);
@@ -838,13 +853,13 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
     return 0;
 }
 
-static BOOL floater_pointer_on_clock(HWND hwnd, LPARAM l_param)
+static BOOL floater_pointer_on_minutes(HWND hwnd, LPARAM l_param)
 {
-    RECT clock;
-    if (!floater_clock_rect(hwnd, &clock))
+    RECT minutes;
+    if (!floater_minute_rect(hwnd, &minutes))
         return FALSE;
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
-    return PtInRect(&clock, pt);
+    return PtInRect(&minutes, pt);
 }
 
 /* One place where a bound floater function turns into the thing it does. The
@@ -1233,13 +1248,14 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     ensure_window_visible(hwnd, L"floater");
                 }
             }
-        } else if (hg_g_taskbox_open_on_hover && floater_pointer_on_clock(hwnd, l_param)) {
+        } else if (hg_g_taskbox_open_on_hover && floater_pointer_on_minutes(hwnd, l_param)) {
             /* Off by default: pointer travel across the desktop used to expand
              * the whole dashboard by accident, so opening is something you say
              * with a click. Those who liked reaching it without one switch this
-             * back on, and it answers only over the clock: the rest of the
-             * floater is bars and a host name that a hand crosses on its way
-             * elsewhere, and it stays draggable and tunable as a result. */
+             * back on, and it answers over the clock's minutes alone: the rest
+             * of the floater is bars, a date and a host name that a hand
+             * crosses on its way elsewhere, and it stays draggable and tunable
+             * as a result. */
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
                 hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
                 /* Make it appear instantly, refresh without forcing icon reload */

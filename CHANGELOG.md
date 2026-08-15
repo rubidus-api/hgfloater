@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.15.2] - 2026-08-15
+
+### Changed
+- **Hover-to-open answers over the clock's minutes alone.** The whole clock was
+  the target in v0.15.0, which is still most of the width of a small widget. The
+  two minute digits are a target you have to mean, and they sit at the end of
+  the clock, so the pointer reaches them from outside the widget rather than by
+  crossing it. As before, the behaviour is off by default and lives under
+  **Options → Open the Taskbox on Hover** (`hoveropen` on the command line), and
+  **a click still opens the taskbox from anywhere on the floater**.
+
 ## [v0.15.1] - 2026-08-15
 
 ### Fixed
