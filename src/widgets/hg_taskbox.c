@@ -9,6 +9,7 @@
 #include "hg_clip.h"
 #include "../hg_tabs.h"
 #include "../hg_keys.h"
+#include "hg_floater.h"
 #include "../hg_caphook.h"
 
 void update_size(int delta)
@@ -213,6 +214,10 @@ void hide_taskbox(HWND hwnd)
 
         SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, fx, fy, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
         ShowWindow(hg_g_floater_wnd, SW_SHOW);
+        /* Hidden, moved, shown again - the sequence that leaves a layered
+         * window composited from a surface it no longer matches. Both halves
+         * are set again here, where it happens most. */
+        hg_floater_refresh_surface();
         /* Take foreground only while this process still owns it; the auto-collapse
          * path must not steal focus from the application the user switched to. */
         HWND fg_wnd = GetForegroundWindow();

@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.15.4] - 2026-08-16
+
+### Fixed
+- **The floater no longer goes faint grey.** Two things could leave it looking
+  like a ghost of itself, and both are the same mistake underneath: a layered
+  window that does not paint is not blank on screen, it is whatever the
+  compositor still holds.
+  - **A paint that gave up drew nothing at all.** The whole panel - plate,
+    border, clock, bars - sat inside one `if` that needed a back buffer *and*
+    both fonts. Any of the three failing, which GDI pressure or a font handle
+    dropped by a DPI or theme change can do, meant the window kept the pixels it
+    had. The plate is painted first and separately now, from a cached brush, so
+    the widget always looks like itself; the content draws over it when it can,
+    and a missing back buffer paints straight to the window instead of skipping.
+  - **The opacity was set once and never asserted again.** It is a window
+    attribute the compositor holds rather than something a repaint restores, and
+    the floater is hidden, moved and shown again every time the taskbox opens
+    and closes. It is set again where that happens, on a display or DPI change,
+    and once in the five-second revalidation - so a widget that does come back
+    wrong heals itself within seconds instead of staying that way.
+- **`WM_ERASEBKGND` is answered.** The paint covers the client area completely,
+  so the erase could only ever show the shared widget colour in the gap before
+  it - one more way to catch the floater mid-repaint looking wrong.
+
 ## [v0.15.3] - 2026-08-15
 
 ### Removed
