@@ -719,6 +719,18 @@ void update_floater_layout(HWND hwnd)
     ReleaseDC(hwnd, hdc);
 }
 
+void hg_floater_refresh_surface(void)
+{
+    HWND hwnd = hg_g_floater_wnd;
+    if (!hwnd || !IsWindow(hwnd))
+        return;
+
+    SetLayeredWindowAttributes(hwnd, 0, hg_g_floater_alpha, LWA_ALPHA);
+    InvalidateRect(hwnd, NULL, TRUE);
+    if (IsWindowVisible(hwnd))
+        UpdateWindow(hwnd); /* now, not at the next idle: the ghost is on screen */
+}
+
 static LRESULT floater_controller_on_create(HWND hwnd)
 {
     hg_g_shellhook_msg = RegisterWindowMessageW(L"SHELLHOOK");
@@ -734,6 +746,50 @@ static LRESULT floater_controller_on_create(HWND hwnd)
     return 0;
 }
 
+/* The panel itself: the black surround, the coloured plate, and the border.
+ *
+ * Painted before anything can go wrong and separately from the content,
+ * because a floater that has drawn nothing is not blank on screen - it is a
+ * layered window, so what shows is whatever the compositor still holds, which
+ * reads as a faint grey ghost of the widget. Every pixel of the client area is
+ * covered here, so the window always looks like itself even when the text
+ * cannot be drawn. */
+static void floater_paint_plate(HDC dc, const RECT *rc)
+{
+    COLORREF bg_color = HG_COLOR_BG_DEFAULT;
+    if (hg_g_floater_highlight_ticks > 0 && (hg_g_floater_highlight_ticks % 2 != 0)) {
+        bg_color = HG_COLOR_BG_FLASH;
+    }
+
+    FillRect(dc, rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
+
+    int pen_width = SC(HG_BORDER_THICKNESS);
+    RECT draw_rc = *rc;
+    InflateRect(&draw_rc, -pen_width / 2, -pen_width / 2);
+
+    /* Cached, so the plate cannot be lost to a failed CreateSolidBrush under
+     * GDI pressure - which was one way to end up with a black rectangle where
+     * the widget should be. */
+    HBRUSH bg_brush = hg_cached_solid_brush(bg_color);
+    HPEN border_pen = CreatePen(PS_SOLID, pen_width, HG_COLOR_BG_TOOLBAR);
+
+    if (bg_brush && border_pen) {
+        HBRUSH old_brush = (HBRUSH)SelectObject(dc, bg_brush);
+        HPEN old_pen = (HPEN)SelectObject(dc, border_pen);
+        Rectangle(dc, draw_rc.left, draw_rc.top, draw_rc.right, draw_rc.bottom);
+        if (old_brush)
+            SelectObject(dc, old_brush);
+        if (old_pen)
+            SelectObject(dc, old_pen);
+    } else if (bg_brush) {
+        /* No border rather than no widget. */
+        FillRect(dc, &draw_rc, bg_brush);
+    }
+
+    if (border_pen)
+        DeleteObject(border_pen);
+}
+
 static LRESULT floater_controller_on_paint(HWND hwnd)
 {
     PAINTSTRUCT ps;
@@ -742,9 +798,15 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
     GetClientRect(hwnd, &rc);
 
     if (rc.right > 0 && rc.bottom > 0) {
+        /* Unbuffered is a worse-looking repaint, not a missing one: a window
+         * that skipped its paint because a bitmap could not be allocated stays
+         * on screen as whatever the compositor had. */
         HgPaintBuffer paint_buffer;
-        if (hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer)) {
-            HDC mem_dc = paint_buffer.dc;
+        BOOL buffered = hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer);
+        HDC mem_dc = buffered ? paint_buffer.dc : hdc;
+
+        {
+                floater_paint_plate(mem_dc, &rc);
 
                 if (!hg_g_floater_time_font)
                     hg_g_floater_time_font = CreateFontW(SC(floater_time_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE,
@@ -754,30 +816,6 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                                                          FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
 
                 if (hg_g_floater_time_font && hg_g_floater_date_font) {
-                    COLORREF bg_color = HG_COLOR_BG_DEFAULT;
-                    if (hg_g_floater_highlight_ticks > 0 && (hg_g_floater_highlight_ticks % 2 != 0)) {
-                        bg_color = HG_COLOR_BG_FLASH;
-                    }
-                    HBRUSH bg_brush = CreateSolidBrush(bg_color);
-                    int pen_width = SC(HG_BORDER_THICKNESS);
-
-                    COLORREF border_color = HG_COLOR_BG_TOOLBAR;
-                    HPEN border_pen = CreatePen(PS_SOLID, pen_width, border_color);
-
-                    HBRUSH old_brush = NULL;
-                    HPEN old_pen = NULL;
-                    if (bg_brush)
-                        old_brush = (HBRUSH)SelectObject(mem_dc, bg_brush);
-                    if (border_pen)
-                        old_pen = (HPEN)SelectObject(mem_dc, border_pen);
-
-                    FillRect(mem_dc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
-
-                    RECT draw_rc = rc;
-                    InflateRect(&draw_rc, -pen_width / 2, -pen_width / 2);
-                    if (bg_brush && border_pen) {
-                        Rectangle(mem_dc, draw_rc.left, draw_rc.top, draw_rc.right, draw_rc.bottom);
-                    }
 
                     SYSTEMTIME st;
                     GetLocalTime(&st);
@@ -833,17 +871,10 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
 
                     SelectObject(mem_dc, old_font_in_paint);
-
-                    if (old_brush)
-                        SelectObject(mem_dc, old_brush);
-                    if (old_pen)
-                        SelectObject(mem_dc, old_pen);
-                    if (bg_brush)
-                        DeleteObject(bg_brush);
-                    if (border_pen)
-                        DeleteObject(border_pen);
                 }
+        }
 
+        if (buffered) {
             BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
             hg_paint_buffer_end(&paint_buffer);
         }
@@ -1143,8 +1174,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         ensure_window_visible(hg_g_taskbox_wnd, L"taskbox");
         ensure_window_visible(hg_g_commandbox_wnd, L"commandbox");
         /* Repaint everything after a display change; stale layered content can
-         * otherwise linger looking washed out. */
-        InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+         * otherwise linger looking washed out. The floater also gets its
+         * opacity set again, which a repaint alone does not restore. */
+        hg_floater_refresh_surface();
         if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
             InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
             if (hg_g_toolbar_wnd) {
@@ -1162,7 +1194,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         release_font_handle(&s_floater_label_font, FALSE);
         release_font_handle(&s_floater_host_font, FALSE);
         update_floater_layout(hwnd);
-        InvalidateRect(hwnd, NULL, TRUE);
+        hg_floater_refresh_surface();
         if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
             update_layout(hg_g_taskbox_wnd);
             InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
@@ -1184,6 +1216,11 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     }
     case WM_CREATE:
         return floater_controller_on_create(hwnd);
+    case WM_ERASEBKGND:
+        /* The paint covers the client area completely, so erasing first only
+         * risks showing the class brush - the shared widget colour - in the gap
+         * between the two. */
+        return 1;
     case WM_PAINT:
         return floater_controller_on_paint(hwnd);
     case WM_SYSKEYDOWN:
@@ -1356,6 +1393,10 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             if (++revalidate_ticks >= 5) {
                 revalidate_ticks = 0;
                 if (IsWindowVisible(hwnd)) {
+                    /* The opacity goes with the repaint: a surface that came
+                     * back from sleep or a DWM restart can be stale in either,
+                     * and setting both costs one call each. */
+                    SetLayeredWindowAttributes(hwnd, 0, hg_g_floater_alpha, LWA_ALPHA);
                     InvalidateRect(hwnd, NULL, TRUE);
                 }
                 if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
