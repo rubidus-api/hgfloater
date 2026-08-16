@@ -185,18 +185,23 @@
 
 #define HG_IDM_TASK_MOVETO_0_0 300
 #define HG_IDM_TASK_CLOSE 301
+/* One id per preset, in the table's order, because both menus are built as
+ * base + index and read back the same way. Adding a size therefore adds an id
+ * here and moves the ones after it - which is why nothing but this file is
+ * allowed to know the numbers. */
 #define HG_IDM_TASK_RESIZE_4_3_1 302
 #define HG_IDM_TASK_RESIZE_4_3_2 303
 #define HG_IDM_TASK_RESIZE_4_3_3 304
-#define HG_IDM_TASK_RESIZE_16_9_1 305
-#define HG_IDM_TASK_RESIZE_16_9_2 306
-#define HG_IDM_TASK_RESIZE_16_9_3 307
-#define HG_IDM_TASK_RESIZE_16_9_4 308
-#define HG_IDM_TASK_RESIZE_9_16_1 309
-#define HG_IDM_TASK_RESIZE_9_16_2 310
-#define HG_IDM_TASK_RESIZE_9_16_3 311
-#define HG_IDM_TASK_RESIZE_9_16_4 312
-#define HG_IDM_TASK_RESTORE 313
+#define HG_IDM_TASK_RESIZE_4_3_4 305
+#define HG_IDM_TASK_RESIZE_16_9_1 306
+#define HG_IDM_TASK_RESIZE_16_9_2 307
+#define HG_IDM_TASK_RESIZE_16_9_3 308
+#define HG_IDM_TASK_RESIZE_16_9_4 309
+#define HG_IDM_TASK_RESIZE_9_16_1 310
+#define HG_IDM_TASK_RESIZE_9_16_2 311
+#define HG_IDM_TASK_RESIZE_9_16_3 312
+#define HG_IDM_TASK_RESIZE_9_16_4 313
+#define HG_IDM_TASK_RESTORE 314
 
 #define HG_IDM_VOLUME_PERCENT 400
 #define HG_IDM_VOLUME_SET_0 401

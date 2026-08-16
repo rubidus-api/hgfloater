@@ -747,9 +747,9 @@ typedef struct HgToolbarBuiltinDescriptor {
 } HgToolbarBuiltinDescriptor;
 
 const HgResizePreset hg_resize_presets[HG_RESIZE_PRESET_COUNT] = {
-    {L"640x480", 640, 480},   {L"800x600", 800, 600},   {L"1280x960", 1280, 960}, {L"640x360", 640, 360},
-    {L"800x480", 800, 480},   {L"960x540", 960, 540},   {L"1280x720", 1280, 720}, {L"360x640", 360, 640},
-    {L"480x800", 480, 800},   {L"540x960", 540, 960},   {L"720x1280", 720, 1280},
+    {L"640x480", 640, 480},   {L"800x600", 800, 600},   {L"1024x768", 1024, 768}, {L"1280x960", 1280, 960},
+    {L"640x360", 640, 360},   {L"800x480", 800, 480},   {L"960x540", 960, 540},   {L"1280x720", 1280, 720},
+    {L"360x640", 360, 640},   {L"480x800", 480, 800},   {L"540x960", 540, 960},   {L"720x1280", 720, 1280},
 };
 
 static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {

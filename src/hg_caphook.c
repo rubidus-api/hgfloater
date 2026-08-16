@@ -370,7 +370,7 @@ void hg_caphook_show_menu(HWND owner, HWND target)
     AppendMenuW(menu, MF_STRING, HG_IDM_TASK_MOVETO_0_0, L"Move to (0, 0)");
     AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
     for (int i = 0; i < HG_RESIZE_PRESET_COUNT; ++i) {
-        if (i == 3 || i == 7)
+        if (i == 4 || i == 8)
             AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
         AppendMenuW(menu, MF_STRING, (UINT_PTR)(HG_IDM_TASK_RESIZE_4_3_1 + (UINT)i), hg_resize_presets[i].name);
     }

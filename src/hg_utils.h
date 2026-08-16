@@ -106,7 +106,7 @@ typedef struct HgResizePreset {
     int cx;
     int cy;
 } HgResizePreset;
-#define HG_RESIZE_PRESET_COUNT 11
+#define HG_RESIZE_PRESET_COUNT 12
 extern const HgResizePreset hg_resize_presets[HG_RESIZE_PRESET_COUNT];
 /* Start with Windows: one value under the per-user Run key, holding the quoted
  * path of the running executable. */
