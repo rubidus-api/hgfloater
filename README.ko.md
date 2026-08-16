@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.15.4** — 빌드 2026-08-16 18:20 KST
+**v0.16.0** — 빌드 2026-08-16 19:40 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -78,7 +78,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.4)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.0)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -585,7 +585,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `show` | `s` | 창 목록에 번호를 붙여 표시 |
 | `show windows` | `s w` | 같은 목록 |
 | `show windows class` | `s w class` | 같은 목록에 창 클래스까지. `tab_classes` 가 받는 이름입니다 |
-| `show resize` | `s r` | 리사이즈 프리셋 목록에 번호를 붙여 표시 |
+| `show resize` | `s r` | 리사이즈 프리셋 목록에 번호를 붙여 표시 — 4:3(640x480, 800x600, 1024x768, 1280x960), 16:9, 9:16 순 |
 | `show shortcut` | `s c` | 숏컷 아이콘 목록에 번호를 붙여 표시 |
 | `show note` | `s n` | 모든 노트를, `note` 명령이 받는 번호와 함께 표시 |
 | `show monitor` | `s m` | 모든 모니터를 번호·크기·위치와 함께, 미리보기가 떠 있는지까지 표시 |

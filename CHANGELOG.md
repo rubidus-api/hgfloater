@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.16.0] - 2026-08-16
+
+### Added
+- **1024x768 joins the 4:3 sizes,** above 1280x960, so that group now reads
+  640x480, 800x600, 1024x768, 1280x960. It is in both places the presets appear:
+  the task icon's menu and the maximize-button menu, and `show resize` in the
+  command box.
+
+  Two consequences worth saying out loud. **The preset numbers after the second
+  one shift by one** - `resize <window> 3` is 1024x768 now, and what was 3 is 4 -
+  because the numbers are positions in one shared list rather than names.
+  And **1280x960 keeps its `D` access key**: the new size takes `G` rather than
+  the `D` that would follow `A`, `S`, since a hand that learned `D` for
+  1280x960 should not be re-taught for the sake of an alphabet.
+
 ## [v0.15.4] - 2026-08-16
 
 ### Fixed

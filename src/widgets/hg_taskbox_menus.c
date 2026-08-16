@@ -279,10 +279,13 @@ static HMENU taskbox_create_task_context_menu(BOOL is_tab)
     /* Sizes and their order come from the shared preset table, so this menu and
      * the command box's 'list resize' can never disagree; only the access keys
      * and the group separators live here. */
-    static const WCHAR *const accel_keys[HG_RESIZE_PRESET_COUNT] = {L"A", L"S", L"D", L"Q", L"W", L"E",
-                                                                    L"R", L"1", L"2", L"3", L"4"};
+    /* 1024x768 takes G rather than the D that would follow A, S: D has meant
+     * 1280x960 since there were three of these, and a hand that has learned it
+     * should not be re-taught for the sake of an alphabet. */
+    static const WCHAR *const accel_keys[HG_RESIZE_PRESET_COUNT] = {L"A", L"S", L"G", L"D", L"Q", L"W",
+                                                                    L"E", L"R", L"1", L"2", L"3", L"4"};
     for (int i = 0; i < HG_RESIZE_PRESET_COUNT; ++i) {
-        if (i == 3 || i == 7) {
+        if (i == 4 || i == 8) {
             AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
         }
         WCHAR text[48];

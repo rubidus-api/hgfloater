@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.15.4** — built 2026-08-16 18:20 KST
+**v0.16.0** — built 2026-08-16 19:40 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -88,7 +88,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.15.4)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -672,7 +672,7 @@ could come and go between the list you read and the number you typed.
 | `show` | `s` | Windows, numbered. |
 | `show windows` | `s w` | The same list. |
 | `show windows class` | `s w class` | The same list with each window's class, which is what `tab_classes` takes. |
-| `show resize` | `s r` | The resize presets, numbered. |
+| `show resize` | `s r` | The resize presets, numbered — 4:3 (640x480, 800x600, 1024x768, 1280x960), then 16:9, then 9:16. |
 | `show shortcut` | `s c` | The shortcut icons, numbered. |
 | `show note` | `s n` | Every note, numbered for the `note` command. |
 | `show monitor` | `s m` | Every display, numbered, with its size, its place, and whether its preview is up. |
