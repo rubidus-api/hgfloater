@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.16.1] - 2026-08-17
+
+### Added
+- **`show theme`,** a diagnostic for the floater looking faint. Colour, opacity
+  and a paint that did not happen are indistinguishable from across the room, so
+  it prints all three: the light/dark and high-contrast flags, the scheme
+  actually in use and the two it is chosen from, the opacity the program
+  believes in **and** the one the window reports back, the GDI object count, and
+  whether the clock and date fonts exist. Run it while the widget looks wrong
+  and the answer is read rather than guessed.
+
+### Fixed
+- **A theme change read the colours too early.** Windows announces the change
+  before its own colours have finished changing, and `GetSysColor` answered
+  during that window returns the values on their way out - so the widgets could
+  be left painted from a palette nobody chose, pale against the desktop, until
+  something else forced another refresh. The theme is read once more 400 ms
+  after the broadcast, which is the shape of this bug rather than a guess at it:
+  a light/dark switch is exactly the moment it was reported at.
+
 ## [v0.16.0] - 2026-08-16
 
 ### Added

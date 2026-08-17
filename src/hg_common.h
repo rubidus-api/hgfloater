@@ -231,6 +231,8 @@
 #define HG_TIMER_MONITOR_REFRESH 2
 #define HG_TIMER_HIGHLIGHT 1001
 #define HG_TIMER_HOVER_CHECK 1002
+/* One shot, a moment after a theme broadcast: see hg_theme_settle_later(). */
+#define HG_TIMER_THEME_SETTLE 1003
 #define HG_HIGHLIGHT_TICKS 6
 
 /* Show the taskbox. wParam is TRUE when a key asked for it, which is the

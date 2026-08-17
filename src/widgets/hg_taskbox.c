@@ -1021,6 +1021,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     case WM_SYSCOLORCHANGE:
     case WM_DWMCOLORIZATIONCOLORCHANGED: {
         refresh_theme_surfaces(hwnd);
+        hg_theme_settle_later();
         return 0;
     }
     case WM_GETMINMAXINFO: {
