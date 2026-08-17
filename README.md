@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.16.1** — built 2026-08-17 09:40 KST
+**v0.16.2** — built 2026-08-18 02:30 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -88,7 +88,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.1)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.2)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
