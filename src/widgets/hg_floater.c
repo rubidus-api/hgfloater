@@ -1409,6 +1409,16 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             /* Monitor previews are not invalidated here: each one runs its own
              * refresh timer, and a second invalidation from this tick only
              * doubled a repaint that already happens. */
+        } else if (w_param == HG_TIMER_THEME_SETTLE) {
+            KillTimer(hwnd, HG_TIMER_THEME_SETTLE);
+            update_theme_colors();
+            apply_dwm_attributes(hwnd);
+            hg_floater_refresh_surface();
+            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+                InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+                if (hg_g_toolbar_wnd)
+                    InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
+            }
         } else if (w_param == HG_TIMER_HIGHLIGHT) {
             hg_g_floater_highlight_ticks--;
             if (hg_g_floater_highlight_ticks <= 0) {

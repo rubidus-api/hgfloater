@@ -469,6 +469,12 @@ int hg_measure_edit_height(HWND edit_wnd, HFONT font, double scale)
     return edit_height;
 }
 
+void hg_theme_settle_later(void)
+{
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd))
+        SetTimer(hg_g_floater_wnd, HG_TIMER_THEME_SETTLE, 400, NULL);
+}
+
 void refresh_theme_surfaces(HWND hwnd)
 {
     update_theme_colors();

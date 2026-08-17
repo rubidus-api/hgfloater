@@ -568,7 +568,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"  Kinds: windows (w), resize (r), shortcut (c), note (n),",
     L"         monitor (m), sensors (s), tabs (t), value (v),",
     L"         option (o), key (k),",
-    L"         tabsinfo (no shorthand - a diagnostic).",
+    L"         theme, tabsinfo (no shorthand - both diagnostics).",
     L"",
     L"Examples:",
     L"  show                every window, numbered",
@@ -585,6 +585,8 @@ static const WCHAR *const cmd_help_show[] = {
     L"  s v                 the settable values and what they are now",
     L"  s o                 the on/off options and what they are now",
     L"  s k                 every window, function and key; s k floater for one",
+    L"  show theme          the colours, opacity and handles the floater is",
+    L"                      painted from - run it while it looks wrong",
     L"  show tabsinfo       what the tab reader itself is doing, and costing",
     L"",
     L"  'show sensors' is a diagnostic. The floater shows one CPU",
@@ -1158,6 +1160,61 @@ static void cmd_show_keys(const WCHAR *context_word)
     commandbox_print(L"     bind <window> <function> <key>, unbind to take one away");
 }
 
+/* What the floater is actually painted from, at this instant.
+ *
+ * The widget going faint is a report about colour, opacity, or a paint that
+ * did not happen, and those three look identical from across the room. This
+ * prints all of them so the answer is read rather than guessed: run it while
+ * the floater looks wrong. */
+static void cmd_show_theme(void)
+{
+    cmd_printf(L"theme       dark=%ls  high-contrast=%ls", hg_g_is_dark_mode ? L"yes" : L"no",
+               hg_g_is_high_contrast ? L"yes" : L"no");
+    cmd_printf(L"            the widgets invert the system theme on purpose: a dark system");
+    cmd_printf(L"            paints them from the light scheme, and a light system from the");
+    cmd_printf(L"            custom palette in [colors].");
+
+    const color_scheme_t *s = &hg_g_color_scheme_selected;
+    cmd_printf(L"in use      bg=#%02X%02X%02X  text=#%02X%02X%02X  border=#%02X%02X%02X", GetRValue(s->bg),
+               GetGValue(s->bg), GetBValue(s->bg), GetRValue(s->text), GetGValue(s->text), GetBValue(s->text),
+               GetRValue(s->border), GetGValue(s->border), GetBValue(s->border));
+    cmd_printf(L"light       bg=#%02X%02X%02X   (GetSysColor COLOR_WINDOW)", GetRValue(hg_g_color_scheme_light.bg),
+               GetGValue(hg_g_color_scheme_light.bg), GetBValue(hg_g_color_scheme_light.bg));
+    cmd_printf(L"custom      bg=#%02X%02X%02X   ([colors] in config.ini)", GetRValue(hg_g_color_scheme_dark.bg),
+               GetGValue(hg_g_color_scheme_dark.bg), GetBValue(hg_g_color_scheme_dark.bg));
+
+    /* The opacity the program believes in, and the one the window is actually
+     * wearing - they are different things, and only the second is what the eye
+     * sees. */
+    cmd_printf(L"alpha       floater=%d (%d%%)  taskbox=%d  commandbox=%d", (int)hg_g_floater_alpha,
+               ((int)hg_g_floater_alpha * 100 + 127) / 255, (int)hg_g_taskbox_alpha,
+               (int)hg_g_commandbox_alpha);
+
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        COLORREF key = 0;
+        BYTE actual = 0;
+        DWORD flags = 0;
+        if (GetLayeredWindowAttributes(hg_g_floater_wnd, &key, &actual, &flags)) {
+            cmd_printf(L"            the floater window reports alpha=%d flags=0x%X%ls", (int)actual,
+                       (unsigned)flags,
+                       (actual == hg_g_floater_alpha) ? L"" : L"   <- does not match the setting");
+        } else {
+            cmd_printf(L"            the floater window reports no layered attributes at all");
+        }
+
+        RECT rc = {0, 0, 0, 0};
+        GetWindowRect(hg_g_floater_wnd, &rc);
+        cmd_printf(L"floater     %ldx%ld at %ld,%ld  visible=%ls", rc.right - rc.left, rc.bottom - rc.top,
+                   rc.left, rc.top, IsWindowVisible(hg_g_floater_wnd) ? L"yes" : L"no");
+    }
+
+    /* A paint that quietly gave up is usually a handle it could not get. */
+    cmd_printf(L"gdi         %u objects in this process (the per-process ceiling is 10000)",
+               (unsigned)GetGuiResources(GetCurrentProcess(), GR_GDIOBJECTS));
+    cmd_printf(L"fonts       clock=%ls date=%ls", hg_g_floater_time_font ? L"ok" : L"MISSING",
+               hg_g_floater_date_font ? L"ok" : L"MISSING");
+}
+
 static void cmd_show_options(void)
 {
     int count = hg_option_count();
@@ -1199,6 +1256,8 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_show_options();
     } else if (cmd_word_is(argv[1], L"key", L"k") || cmd_word_is(argv[1], L"keys", NULL)) {
         cmd_show_keys((argc >= 3) ? argv[2] : NULL);
+    } else if (cmd_word_is(argv[1], L"theme", NULL)) {
+        cmd_show_theme();
     } else if (cmd_word_is(argv[1], L"tabsinfo", NULL)) {
         /* The tab reader's own numbers: per window, whether the scoped read
          * or a full discovery answered and what it cost; in total, what was
@@ -1210,7 +1269,7 @@ static void cmd_show(int argc, WCHAR *argv[])
     } else {
         cmd_printf(
             L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value, "
-            L"option, key)",
+            L"option, key, theme)",
                    argv[1]);
     }
 }

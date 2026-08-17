@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.16.0** — 빌드 2026-08-16 19:40 KST
+**v0.16.1** — 빌드 2026-08-17 09:40 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -78,7 +78,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.0)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.1)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -591,6 +591,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 | `show monitor` | `s m` | 모든 모니터를 번호·크기·위치와 함께, 미리보기가 떠 있는지까지 표시 |
 | `show monitor 1` | `s m 1` | 1번 모니터의 [미리보기 창](#9-모니터-썸네일)을 띄웁니다. 다시 하면 닫힙니다 |
 | `show tabs` | `s t` | 탭이 있는 모든 창의 탭을 창을 가로질러 한 번호 체계로 나열합니다. `go tab` 이 받는 번호가 이것입니다 |
+| `show theme` | — | 지금 플로터가 무엇으로 그려지고 있는지: 라이트/다크·고대비 여부, 사용 중인 색 구성, 설정된 투명도와 창이 실제로 보고하는 투명도, GDI 개체 수, 글꼴 존재 여부. "위젯이 흐리다" 를 확인하는 진단이라 단축 명령은 두지 않았습니다 |
 | `show tabsinfo` | — | 탭 읽기 자체의 상태입니다: 창별로 범위 한정 읽기(s)와 전체 발견(f) 중 무엇이 답했는지, 탭 몇 개, 몇 ms 걸렸는지, 그리고 큐잉·실패·느린 ask 합계. 진단용이라 단축 명령은 두지 않았습니다 |
 | `show sensors` | `s s` | 찾아낸 온도 센서 전부에 번호를 붙여 표시하고, `TMP`·`GPU`가 무엇인지 |
 | `show sensors 2` | `s s 2` | 2번 센서만, 단위를 붙여서 |

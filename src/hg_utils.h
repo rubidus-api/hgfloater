@@ -114,6 +114,16 @@ BOOL hg_startup_is_enabled(void);
 BOOL hg_startup_set_enabled(BOOL enabled);
 
 void refresh_theme_surfaces(HWND hwnd);
+
+/* Read the theme again shortly, and repaint.
+ *
+ * The system tells applications the theme changed before its own colours have
+ * finished changing: GetSysColor answered during that window returns the values
+ * on their way out, and a widget painted from them keeps a palette nobody
+ * chose - a pale plate on a light desktop, which is what "the floater went
+ * faint" turns out to look like. Reading once more when the dust settles costs
+ * one timer and fixes it without anyone having to notice. */
+void hg_theme_settle_later(void);
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
 void update_monitor_enum(void);
 HRESULT hellgates_wsprintf(LPWSTR dest, size_t dest_size, LPCWSTR format, ...);

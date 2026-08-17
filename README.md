@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.16.0** — built 2026-08-16 19:40 KST
+**v0.16.1** — built 2026-08-17 09:40 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -88,7 +88,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.1)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -678,6 +678,7 @@ could come and go between the list you read and the number you typed.
 | `show monitor` | `s m` | Every display, numbered, with its size, its place, and whether its preview is up. |
 | `show monitor 1` | `s m 1` | Turn display 1's [preview window](#9-monitor-thumbnails) on; run it again to close it. |
 | `show tabs` | `s t` | Every tab of every tabbed window, numbered across all of them — which is the number `go tab` takes. |
+| `show theme` | — | What the floater is painted from right now: the light/dark and high-contrast flags, the colour scheme in use, the opacity set and the opacity the window reports, the GDI object count, and whether its fonts exist. A diagnostic for "the widget looks faint", so no shorthand. |
 | `show tabsinfo` | — | What the tab reader itself is doing: per window, whether the scoped read or a full discovery answered, how many tabs and how long it took, plus totals for queued, failed, and slow asks. A diagnostic, so no shorthand. |
 | `show sensors` | `s s` | Every temperature sensor found, numbered, and which one `TMP` and `GPU` show. |
 | `show sensors 2` | `s s 2` | Just sensor 2, with its unit. |
