@@ -538,24 +538,35 @@ static int note_compare(const void *a, const void *b)
 /* ------------------------------------------------------------ note text state */
 
 /* The title is whatever stands on the first line; an empty note still needs
- * something to show in the list. */
-static void note_refresh_title(HgNote *note)
+ * something to show in the list.
+ *
+ * Written against a first line rather than against the note, because the title
+ * is wanted in two places that hold different things: the note's own text after
+ * a sync, and the one line the editor can be asked for while someone is typing
+ * in it. One rule, so the list and the caption cannot end up disagreeing about
+ * what a note is called. */
+static void note_title_from_line(const WCHAR *line, WCHAR *out)
 {
-    const WCHAR *text = note->text ? note->text : L"";
+    const WCHAR *text = line ? line : L"";
     size_t i = 0;
     while (text[i] && text[i] != L'\r' && text[i] != L'\n' && i + 1 < HG_NOTE_TITLE_CCH) {
-        note->title[i] = text[i];
+        out[i] = text[i];
         ++i;
     }
-    note->title[i] = L'\0';
+    out[i] = L'\0';
 
     /* Trailing blanks would show as an empty row, which reads as a broken note
      * rather than an untitled one. */
-    while (i > 0 && (note->title[i - 1] == L' ' || note->title[i - 1] == L'\t')) {
-        note->title[--i] = L'\0';
+    while (i > 0 && (out[i - 1] == L' ' || out[i - 1] == L'\t')) {
+        out[--i] = L'\0';
     }
-    if (note->title[0] == L'\0')
-        StringCchCopyW(note->title, HG_NOTE_TITLE_CCH, L"(untitled)");
+    if (out[0] == L'\0')
+        StringCchCopyW(out, HG_NOTE_TITLE_CCH, L"(untitled)");
+}
+
+static void note_refresh_title(HgNote *note)
+{
+    note_title_from_line(note->text ? note->text : L"", note->title);
 }
 
 static void note_set_text(HgNote *note, const WCHAR *text)
@@ -1080,8 +1091,50 @@ static void note_editor_sync(HgNote *note)
     StringCchCopyW(before, HG_ARRAYSIZE(before), note->title);
     note_refresh_title(note);
     /* The caption redraw is non-client work; only a changed title earns it. */
-    if (lstrcmpW(before, note->title) != 0)
+    if (lstrcmpW(before, note->title) != 0) {
         SetWindowTextW(note->editor, note->title);
+        if (s_note_list_wnd && IsWindow(s_note_list_wnd))
+            PostMessageW(s_note_list_wnd, HG_NOTE_MSG_REFILL, 0, 0);
+    }
+}
+
+/* The title, updated from the editor while the typing is still going on.
+ *
+ * Only the first line is read - EM_LINELENGTH and EM_GETLINE, not the whole
+ * document - so this can run on every keystroke without undoing the reason
+ * EN_CHANGE stopped copying the text in the first place. When the title really
+ * changes, the editor's caption and the open note list both hear about it, so
+ * the list stops waiting for the editor to close before it agrees with what is
+ * on screen. */
+static void note_editor_title_changed(HgNote *note)
+{
+    if (!note || !note->editor || !IsWindow(note->editor))
+        return;
+    HWND edit = GetDlgItem(note->editor, HG_NOTE_EDIT_ID);
+    if (!edit)
+        return;
+
+    /* EM_GETLINE takes the buffer size in its first word and writes no
+     * terminator, so the buffer is one longer than the title it can hold. */
+    WCHAR line[HG_NOTE_TITLE_CCH + 1];
+    ZeroMemory(line, sizeof(line));
+    *(WORD *)line = (WORD)HG_NOTE_TITLE_CCH;
+    int copied = (int)SendMessageW(edit, EM_GETLINE, 0, (LPARAM)line);
+    if (copied < 0)
+        copied = 0;
+    if (copied > HG_NOTE_TITLE_CCH)
+        copied = HG_NOTE_TITLE_CCH;
+    line[copied] = L'\0';
+
+    WCHAR title[HG_NOTE_TITLE_CCH];
+    note_title_from_line(line, title);
+    if (lstrcmpW(note->title, title) == 0)
+        return;
+
+    StringCchCopyW(note->title, HG_NOTE_TITLE_CCH, title);
+    SetWindowTextW(note->editor, note->title);
+    if (s_note_list_wnd && IsWindow(s_note_list_wnd))
+        PostMessageW(s_note_list_wnd, HG_NOTE_MSG_REFILL, 0, 0);
 }
 
 /* Archiving a note files it away, and something filed away has stopped being
@@ -1339,6 +1392,9 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
                 note->text_stale = TRUE;
                 note->dirty = TRUE;
                 note->changed_tick = GetTickCount64();
+                /* The first line is cheap to read and is the note's name, so
+                 * the list can follow the typing rather than the closing. */
+                note_editor_title_changed(note);
             }
             return 0;
         }

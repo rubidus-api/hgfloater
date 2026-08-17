@@ -2,7 +2,7 @@
 
 [English](README.md) | **한국어**
 
-**v0.16.2** — 빌드 2026-08-18 02:30 KST
+**v0.16.3** — 빌드 2026-08-18 03:10 KST
 
 **[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -78,7 +78,7 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 
 ## 2. 설치와 첫 실행
 
-1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.2)
+1. **다운로드**: [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.3)
    페이지에서 최신 `hgfloater.exe`를 받습니다.
 2. **실행**: 설치 과정이 없습니다. 첫 실행 시
    `%USERPROFILE%\.HellGates\hgfloater\` 폴더와 `config.ini`, `shortcuts` 폴더를 만들고
@@ -699,8 +699,9 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 두 목록은 서로 독립적으로 정렬됩니다. 작성 중인 것은 최근 수정순으로, 보관한 것은 제목순으로
 둘 수 있고, 각자 자기 정렬 방식을 기억합니다.
 
-**편집 창**은 별개의 창이고 여러 개를 동시에 열어 둘 수 있습니다. 첫 줄을 고치면 제목이
-바로 따라 바뀝니다. `Esc` 또는 `Ctrl + W` 로 닫으시면 되고, 목록 창도 `Ctrl + W` 로
+**편집 창**은 별개의 창이고 여러 개를 동시에 열어 둘 수 있습니다. 첫 줄이 곧 제목이며,
+고치는 즉시 편집 창의 제목 표시줄과 **목록의 그 줄**이 함께 따라 바뀝니다 — 목록은 편집
+창이 닫히기를 기다리지 않습니다. `Esc` 또는 `Ctrl + W` 로 닫으시면 되고, 목록 창도 `Ctrl + W` 로
 같이 닫으실 수 있습니다.
 
 **편집 창 안에서 오른쪽 클릭**하면 글자와 노트 양쪽에 대한 메뉴가 열립니다. **Undo**,
