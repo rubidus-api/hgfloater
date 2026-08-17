@@ -75,7 +75,7 @@ void update_edit_font_size(int delta)
 
     hg_g_main_font =
         CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                    CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                    CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
     if (!hg_g_main_font)
         hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
@@ -510,7 +510,7 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
     /* UI용 일반 폰트 생성 (아이콘 크기와 분리) */
     hg_g_main_font =
         CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                    CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                    CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
     if (!hg_g_main_font)
         hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 

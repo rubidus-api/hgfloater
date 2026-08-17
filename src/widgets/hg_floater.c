@@ -183,11 +183,24 @@ static int floater_date_font_height(void)
     return size;
 }
 
+/* ANTIALIASED_QUALITY, not ClearType, and not the default that becomes
+ * ClearType: these windows are layered, so everything drawn here is blended
+ * with whatever is behind the widget afterwards.
+ *
+ * ClearType colours the sub-pixels of a glyph edge for the background it was
+ * drawn on. Blend that result with a desktop it knows nothing about and the
+ * fringes stop lining up with anything - the text picks up colour casts and the
+ * whole widget reads as smeared and washed out, worse the more transparent it
+ * is. Greyscale antialiasing survives the blend, which is why it is the right
+ * answer for a translucent window even though it is the softer one on an opaque
+ * screen. */
 static HFONT floater_label_font(void)
 {
     if (!s_floater_label_font) {
         s_floater_label_font = CreateFontW(SC(floater_label_font_height()), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                                           DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                                           DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                           ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS,
+                                           hg_g_font_name);
     }
     return s_floater_label_font;
 }
@@ -212,7 +225,9 @@ static HFONT floater_host_font(void)
 {
     if (!s_floater_host_font) {
         s_floater_host_font = CreateFontW(SC(floater_host_font_height()), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE,
-                                          DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                                          DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                           ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS,
+                                           hg_g_font_name);
     }
     return s_floater_host_font;
 }
@@ -696,10 +711,14 @@ void update_floater_layout(HWND hwnd)
 
     if (!hg_g_floater_time_font)
         hg_g_floater_time_font = CreateFontW(SC(floater_time_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                                             DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                                             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                           ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS,
+                                           hg_g_font_name);
     if (!hg_g_floater_date_font)
         hg_g_floater_date_font = CreateFontW(SC(floater_date_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                                             DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                                             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                           ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS,
+                                           hg_g_font_name);
     if (!hg_g_floater_time_font || !hg_g_floater_date_font)
         return;
 
@@ -810,10 +829,14 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
 
                 if (!hg_g_floater_time_font)
                     hg_g_floater_time_font = CreateFontW(SC(floater_time_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE,
-                                                         FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                                                         FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                           ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS,
+                                           hg_g_font_name);
                 if (!hg_g_floater_date_font)
                     hg_g_floater_date_font = CreateFontW(SC(floater_date_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE,
-                                                         FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, hg_g_font_name);
+                                                         FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                           ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS,
+                                           hg_g_font_name);
 
                 if (hg_g_floater_time_font && hg_g_floater_date_font) {
 

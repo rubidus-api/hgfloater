@@ -145,7 +145,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     release_font_handle(&hg_g_toolbar_btn_font, FALSE);
                     hg_g_toolbar_btn_font = CreateFontW(icon_size, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
                                                         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                                                        CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                                                        ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
                     /* The label sits in a box half the icon, so it needs its own
                      * size; built here so it is rebuilt exactly when the icons
                      * are and never once per paint. */
@@ -155,7 +155,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         badge_px = SC(10);
                     hg_g_toolbar_badge_font =
                         CreateFontW(badge_px - SC(2), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
-                                    OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                    OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY,
                                     DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
                     *cached_icon_size = icon_size;
                 }

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.16.2] - 2026-08-18
+
+### Fixed
+- **The widgets stop smearing as they get more transparent.** The floater, the
+  taskbox and the toolbar drew their text with ClearType - two of them by asking
+  for it, the floater by taking the default that becomes it. All three are
+  layered windows, so everything they draw is blended with the desktop
+  afterwards, and ClearType colours the sub-pixels of a glyph edge for the
+  background it was drawn on: blend that with a desktop it knows nothing about
+  and the fringes line up with nothing. The text picks up colour casts, the
+  whole widget reads as washed out, and it gets worse the more transparent the
+  window is - which is exactly the shape this was reported in, and why turning
+  the opacity up made it look right again.
+
+  They ask for greyscale antialiasing now, which survives a blend. On an opaque
+  window ClearType is the sharper of the two; on a translucent one it is the
+  wrong tool, and these three windows are translucent by design.
+
 ## [v0.16.1] - 2026-08-17
 
 ### Added
