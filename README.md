@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.16.2** — built 2026-08-18 02:30 KST
+**v0.16.3** — built 2026-08-18 03:10 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -88,7 +88,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.2)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.3)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -793,8 +793,10 @@ Windows would normally recover it.
 The two halves sort independently: you can keep what you are writing by most
 recently changed and your archive by title. Each half remembers its own order.
 
-**The editors** are separate windows, and several can be open at once. Typing
-updates the title as soon as the first line changes. `Esc` or `Ctrl + W` closes
+**The editors** are separate windows, and several can be open at once. The
+first line is the title, and both the editor's caption **and the note's row in
+the list** follow it as it is typed — the list does not wait for the editor to
+close. `Esc` or `Ctrl + W` closes
 an editor, and `Ctrl + W` closes the list the same way.
 
 **Right-click inside an editor** for the text and for the note itself: **Undo**,

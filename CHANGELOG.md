@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.16.3] - 2026-08-18
+
+### Changed
+- **A note's row in the list follows its first line as it is typed.** The first
+  line is the title, but the list only heard about a new one when the editor
+  closed, so a note could sit there called `(untitled)` while its name was
+  already on screen in the window next to it.
+
+  Only the first line is read - `EM_LINELENGTH` and `EM_GETLINE` rather than the
+  whole document - so this runs on a keystroke without undoing the reason
+  `EN_CHANGE` stopped copying the text at all. The list is told only when the
+  title actually changes, which is rarely, and the rule that turns a first line
+  into a title now lives in one function instead of two, so the caption and the
+  row cannot disagree about what a note is called.
+
 ## [v0.16.2] - 2026-08-18
 
 ### Fixed
