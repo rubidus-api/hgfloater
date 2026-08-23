@@ -126,15 +126,16 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
  * and never per paint. */
 /* A word too long for one line, split into two.
  *
- * Three letters fit a button across; more than that only fits by shrinking the
- * text until nobody can read it, so four to six letters are stacked instead -
- * two short lines at a size that still reads. The break is as near the middle
- * as the word allows, which is what keeps the two lines looking like one word
- * rather than a word and a remainder. */
+ * Up to four letters still fit a button across at a size that reads - "Note"
+ * and "Clip" are words, and cutting a four-letter word in half makes two
+ * syllables of nothing. Five and six are stacked instead: two short lines
+ * rather than one line shrunk past legibility. The break is as near the middle
+ * as the word allows, which keeps the two lines looking like one word rather
+ * than a word and a remainder. */
 static int toolbar_label_lines(const WCHAR *label, WCHAR *out, size_t out_cch)
 {
     int len = label ? lstrlenW(label) : 0;
-    if (len <= 3 || len > 6) {
+    if (len <= 4 || len > 6) {
         StringCchCopyW(out, out_cch, label ? label : L"");
         return 1;
     }

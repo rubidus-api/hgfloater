@@ -46,6 +46,11 @@ with open(exe, "rb") as f:
         sys.exit("package-release: %s does not carry %s - rebuild it" % (exe, version))' "$EXE" "$VERSION" || exit 1
 fi
 
+# The README claims a download size; the download is right here, so measure it
+# rather than trusting a number someone typed once. About renders the README, so
+# a change here reaches it at the next build.
+sh scripts/update-exe-size.sh "$EXE"
+
 ZIP="$DIST/hgfloater-$VERSION.zip"
 rm -f "$ZIP"
 
