@@ -323,6 +323,10 @@ void activate_toolbar_item(int index)
             hg_tabbox_open_dirs(&anchor);
         else
             hg_tabbox_open_controls(&anchor);
+        /* Activating a button is something the keyboard does as much as the
+         * mouse, and a list that opens without taking the arrows leaves the
+         * keyboard pointing at the button it just used. */
+        hg_tabbox_enter();
         break;
     }
     case HG_TOOLBAR_CLICK_RELOCATE_AWAY:

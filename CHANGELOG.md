@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.17.1] - 2026-08-23
+
+### Changed
+- **The `Set` list says whole words.** It is text, and text has room:
+  `Volume (ScrollWheel)`, `Brightness (ScrollWheel)`, `Alpha (ScrollWheel)`,
+  `Pin`, `Options` - each still carrying its reading. A wheel over a row is not
+  something anyone guesses, so the row says so.
+- **Every switch moved from the options menu into the `Set` list.** They are the
+  same kind of thing as the volume and the opacity - something to set, right
+  here - and keeping the list in two places meant knowing which of the two a
+  setting had been filed under. What stayed in the options menu is what is not a
+  setting: the shortcuts folder, the displays, the audio devices, About, Reset,
+  Exit. The settings window still lists them beside the numbers and the keys.
+- **A button's word is fitted to the button in two dimensions.** Up to three
+  letters it stays on one line; four to six are stacked on two, at a size the
+  button can hold. Shrinking a long word until it fits across ends at a size
+  nobody can read.
+- **The box is a keyboard place now.** `Space` on `Dir` or `Set` opens the list
+  *and* hands it the keyboard; `Up`/`Down` walk the rows with the selected one
+  filled and marked, `Enter` takes it, `Esc` leaves. **`Left`/`Right` leave the
+  box and move to the icon beside it** - a list is a column, and sideways is
+  what those keys mean everywhere else in the grid; the icon they land on opens
+  its own box. The same keys in all three lists, because it is the same box.
+
 ## [v0.17.0] - 2026-08-23
 
 ### Added

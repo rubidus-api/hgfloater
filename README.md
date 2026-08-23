@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.17.0** — built 2026-08-23 17:00 KST
+**v0.17.1** — built 2026-08-23 18:20 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -87,7 +87,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.17.0)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.17.1)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -319,16 +319,20 @@ edge, so the icon's whole width falls inside the box's and the two read as one
 piece. Of those four placements it takes the first that fits the display whole,
 which is what keeps it from running off an edge near a corner.
 
+These keys are the box's, and they are **the same in all three lists** — the
+tabs, the `Dir` folders and the `Set` controls:
+
 | Key or click | What it does |
 | :--- | :--- |
-| `1`-`9` | Straight to that tab, whether or not you have stepped into the box. |
-| `0` | The last tab, the same way. |
-| `Tab` | Step into the box — the frame appears, and from here the rest of the keys are the box's. |
-| `Up` / `Down`, `Home` / `End` | Move the selection (inside the box). |
+| `1`-`9` | Straight to that row, whether or not you have stepped into the box. |
+| `0` | The last row, the same way. |
+| `Tab` | Step into the box. On a `Dir` or `Set` button, `Space` does it too: activating the button opens its list **and** hands it the keyboard. |
+| `Up` / `Down`, `Home` / `End` | Move the selection. The row it lands on is filled and marked, so where the arrows are standing is never in doubt. |
+| `Left` / `Right` | Leave the box and move to the icon left or right — a list is a column, and sideways is what the grid means by those keys. The next icon opens its own box if it has one. |
 | `a`-`z`, `A`-`Z` | The labels past the ninth row (inside the box, because those letters move the grid outside it). |
-| `Enter` / `Space`, or a click | Switch to the selected tab. |
-| Right click | Close that tab. The list stays up. |
-| `Esc` | Close the box. The keyboard stays in the taskbox. |
+| `Enter` / `Space`, or a click | Take that row: switch to the tab, open the folder, flip the switch. |
+| Right click | Close that tab. The list stays up. (Tabs only.) |
+| `Esc` | Leave the box. The keyboard stays in the taskbox, where it was. |
 
 Digits work immediately because the grid does not use them; the letters wait
 for `Tab` because `WASD` moves the focus and `C` and `N` open other things.
@@ -405,8 +409,13 @@ A single-line read-only field across the top of the taskbox.
 ## 6. The Toolbar
 
 Nine built-in buttons sit in the same grid as the icons. Their order is fixed.
-Each carries a short word rather than a single capital, sized to the button, and
-two of them open a list instead of doing something outright.
+Each carries a short word rather than a single capital, and two of them open a
+list instead of doing something outright.
+
+The word is **fitted to the button**: up to three letters it stays on one line,
+and four to six letters are stacked on two, at a size the button can hold. The
+alternative — shrinking a long word until it fits across — ends at a size nobody
+can read.
 
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
@@ -437,16 +446,24 @@ to a real directory stays an icon, which is what keeps anything unusual working.
 
 ### 6.2 The Set button
 
-**`Set` gathers the five controls that used to be five buttons.** Point at it and
-the same kind of list opens, one row each:
+**`Set` is everything there is to set.** Point at it and the same kind of list
+opens. The rows are text, so they say their whole name and what turns them:
 
 | Row | What it does |
 | :--- | :--- |
-| **`Vol`** | The system volume, with its reading. **Wheel** over the row changes it in 5% steps; **click** mutes and unmutes. |
-| **`Bri`** | Screen brightness, with its reading. **Wheel** changes it in 5% steps. |
-| **`Alp`** | Taskbox opacity, with its reading. **Wheel** changes it. |
-| **`Pin`** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click** toggles. |
-| **`Opt`** | Opens the [options menu](#7-the-options-menu). |
+| **Volume (ScrollWheel)** | The system volume, with its reading. **Wheel** over the row changes it in 5% steps; **click** mutes and unmutes. |
+| **Brightness (ScrollWheel)** | Screen brightness, with its reading. **Wheel** changes it in 5% steps. |
+| **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** changes it. |
+| **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click** toggles. |
+| **Options** | Opens the [options menu](#7-the-options-menu). |
+| **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click** flips one. |
+
+**The switches used to be a submenu of the options menu.** They are here now,
+beside the volume and the opacity, because they are the same kind of thing to a
+reader — something to set, right here — and keeping the list in two places meant
+knowing which of the two a given setting had been filed under. What stayed in
+the options menu is what is not a setting: the shortcuts folder, the displays,
+the audio devices, About, Reset, Exit.
 
 The wheel works wherever the pointer is over a row, and the reading on that row
 follows it as it moves, so a value can be set without looking anywhere else. The
@@ -557,39 +574,10 @@ right-clicking the status line.
 - **Open Shortcuts Folder** — opens the shortcuts directory in Explorer. This is
   how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts).
 - **Edit Configuration** — opens `config.ini` in Notepad.
-- **Options** — the switches, all of them, in one submenu. Each is checked while
-  it is on, and one that cannot be used in this build is greyed and says so
-  rather than disappearing:
-  - **Open the Taskbox on Hover** — off by default. On, the pointer resting on
-    **the clock's minutes** — the two digits after the colon — opens the
-    dashboard the way it did before v0.13.0; off, opening is a click. Only those
-    two digits answer: the rest of the floater is bars, a date and a host name
-    that a hand crosses on its way elsewhere, and the minutes sit at the end of
-    the clock, so the pointer arrives there from outside the widget. A click
-    opens the taskbox from anywhere on the floater either way. See
-    [4](#4-the-floater).
-  - **Outline the Window Under the Pointer** — on by default. Pointing at a task
-    icon draws a frame around the window it stands for, so "which one is that"
-    is answered without switching to it.
-  - **Show a Window's Tabs on Hover** — on by default. Pointing at a tabbed
-    window's icon opens the list of its tabs beside it. It needs
-    **Show Tabs as Task Icons** to be on as well, since that is what reads the
-    tabs at all.
-  - **Show Tabs as Task Icons** — checked when a tabbed application's tabs get
-    their own task icons. See [5.1](#51-running-windows-and-shortcuts) for which
-    applications, how to add one, and why it is off by default.
-  - **Menu on Maximize Button** — checked while the maximize button of **every**
-    window answers a right-click with HGFloater's move-and-resize menu. See
-    [4.1](#41-the-maximize-button-menu).
-  - **Start with Windows** — checked when HGFloater launches at sign-in.
-    Toggling it writes or removes one value under
-    `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, holding the quoted
-    path of the running executable. No installer, no elevation, nothing else
-    touched. Switching it on again after moving `hgfloater.exe` re-registers
-    where the file actually is. **Reset Settings** leaves it alone.
-  - **Stat Bars on the Floater** — the battery, CPU, memory and temperature
-    bars behind the clock. They were in `config.ini` and nowhere else until
-    v0.14.0.
+- **The switches are not here any more.** Every on/off setting is a row of the
+  [`Set` button's list](#62-the-set-button), where the volume and the opacity
+  are: one place for the things you set. The [settings window](#71-the-settings-window)
+  still lists them all as well, beside the numbers and the keys.
 - **About...** — this document, rendered inside the app.
 - **Reset Settings** — restores default geometry, opacity, sizes, and colors.
 - **Select Audio Device** — lists the output devices with the current one
@@ -900,7 +888,10 @@ a chord.
 | `Arrow keys` / `WASD` | Move focus between icons |
 | `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
-| `Tab` | With a tab box open (see below), step into it |
+| `Tab` | With a box open (tabs, `Dir`, `Set`), step into it |
+| `Up` / `Down` | Inside a box: move the selection |
+| `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
+| `Esc` | Inside a box: leave it |
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
 | `Ctrl + L` | Open the clipboard history |

@@ -43,11 +43,52 @@ static int s_selected = 0;
 static int s_mode = HG_BOX_TABS;
 static BOOL s_open = FALSE;
 
-/* The control rows, in the order the buttons stood in on the row. Volume first
- * because it is the one reached most often and the top row is the shortest
- * distance from the button. */
-static const int s_control_ids[] = {HG_TOOL_ICON_VOLUME, HG_TOOL_ICON_BRIGHTNESS, HG_TOOL_ICON_ALPHA,
-                                    HG_TOOL_ICON_PIN, HG_TOOL_ICON_MENU};
+/* The control list, in one table.
+ *
+ * Two kinds of row: the buttons that left the toolbar, and the switches that
+ * were a submenu of the O menu. They are the same kind of thing to a reader -
+ * something to set, right here - and having them in two places meant knowing
+ * which of the two a given setting had been filed under. A row is a kind and an
+ * id; everything else about it is asked of the table that owns that kind.
+ *
+ * A row's label is the whole name rather than three letters: this list is text,
+ * and text has room. The value rows say what turns them, because a wheel over a
+ * row is not a thing anyone guesses. */
+enum {
+    HG_ROW_BUTTON = 0, /* hg_toolbar_builtin_* by icon id */
+    HG_ROW_OPTION      /* hg_option_* by option number */
+};
+
+typedef struct HgControlRow {
+    int kind;
+    int id;
+    const WCHAR *label; /* NULL: ask the table that owns the id */
+} HgControlRow;
+
+static HgControlRow s_control_rows[4 + 16];
+static int s_control_row_count = 0;
+
+static void tabbox_build_control_rows(void)
+{
+    s_control_row_count = 0;
+
+    /* Volume first: it is the one reached most often, and the top row is the
+     * shortest distance from the button. */
+    const HgControlRow buttons[] = {
+        {HG_ROW_BUTTON, HG_TOOL_ICON_VOLUME, L"Volume (ScrollWheel)"},
+        {HG_ROW_BUTTON, HG_TOOL_ICON_BRIGHTNESS, L"Brightness (ScrollWheel)"},
+        {HG_ROW_BUTTON, HG_TOOL_ICON_ALPHA, L"Alpha (ScrollWheel)"},
+        {HG_ROW_BUTTON, HG_TOOL_ICON_PIN, L"Pin"},
+        {HG_ROW_BUTTON, HG_TOOL_ICON_MENU, L"Options"},
+    };
+    for (size_t i = 0; i < HG_ARRAYSIZE(buttons) && s_control_row_count < (int)HG_ARRAYSIZE(s_control_rows); ++i)
+        s_control_rows[s_control_row_count++] = buttons[i];
+
+    for (int i = 1; i <= hg_option_count() && s_control_row_count < (int)HG_ARRAYSIZE(s_control_rows); ++i) {
+        HgControlRow row = {HG_ROW_OPTION, i, NULL};
+        s_control_rows[s_control_row_count++] = row;
+    }
+}
 
 /* Labels run 1-9, then a-z, then A-Z: sixty-one of them for a cap of
  * twenty-four, so the alphabet never runs out and the digits - the easiest
@@ -197,22 +238,34 @@ static void tabbox_pull(void)
         }
     } else {
         s_count = 0;
-        for (size_t i = 0; i < HG_ARRAYSIZE(s_control_ids) && s_count < HG_BOX_MAX_ROWS; ++i) {
-            int id = s_control_ids[i];
-            const WCHAR *label = hg_toolbar_builtin_label(id);
-            int pct = 0;
+        tabbox_build_control_rows();
+        s_count = 0;
+        for (int i = 0; i < s_control_row_count && s_count < HG_BOX_MAX_ROWS; ++i) {
+            const HgControlRow *row = &s_control_rows[i];
 
-            /* Name once, then the number: the reading is the reason to open the
-             * box, and the row is what the wheel is spinning. The two rows that
-             * are not values say their state in the same shape. */
-            if (hg_toolbar_value_percent(id, &pct)) {
-                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-4ls %3d%%%ls", label, pct,
-                                   (id == HG_TOOL_ICON_VOLUME && get_system_mute()) ? L"  (muted)" : L"");
-            } else if (id == HG_TOOL_ICON_PIN) {
-                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-4ls %ls", label,
+            if (row->kind == HG_ROW_OPTION) {
+                HgOptionInfo info;
+                if (!hg_option_info(row->id, &info))
+                    continue;
+                const WCHAR *state = !info.available
+                                         ? (info.unavailable_note ? info.unavailable_note : L"unavailable")
+                                         : (hg_option_get(row->id) ? L"on" : L"off");
+                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-30ls %ls", info.label, state);
+                ++s_count;
+                continue;
+            }
+
+            /* Name, then the reading: the reading is the reason to open the box
+             * at all, and the row is what the wheel is spinning. */
+            int pct = 0;
+            if (hg_toolbar_value_percent(row->id, &pct)) {
+                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-30ls %3d%%%ls", row->label, pct,
+                                   (row->id == HG_TOOL_ICON_VOLUME && get_system_mute()) ? L"  (muted)" : L"");
+            } else if (row->id == HG_TOOL_ICON_PIN) {
+                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-30ls %ls", row->label,
                                    hg_g_taskbox_pinned ? L"on" : L"off");
             } else {
-                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-4ls %ls", label, L"options menu");
+                StringCchCopyW(s_titles[s_count], HG_MAX_STR, row->label);
             }
             ++s_count;
         }
@@ -306,6 +359,16 @@ void hg_tabbox_open_controls(const RECT *anchor_screen_rc)
     tabbox_open_list(HG_BOX_CONTROLS, anchor_screen_rc);
 }
 
+void hg_tabbox_enter(void)
+{
+    if (!hg_tabbox_is_open())
+        return;
+    s_focused = TRUE;
+    if (s_count > 0 && (s_selected < 0 || s_selected >= s_count))
+        s_selected = 0;
+    InvalidateRect(s_wnd, NULL, TRUE);
+}
+
 int hg_tabbox_mode(void)
 {
     return hg_tabbox_is_open() ? s_mode : HG_BOX_TABS;
@@ -384,21 +447,32 @@ static void tabbox_activate(int index)
         return;
     }
 
-    if (index >= (int)HG_ARRAYSIZE(s_control_ids))
+    if (index >= s_control_row_count)
         return;
-    int id = s_control_ids[index];
+    const HgControlRow *row = &s_control_rows[index];
+
+    if (row->kind == HG_ROW_OPTION) {
+        const WCHAR *message = NULL;
+        hg_option_set(row->id, hg_option_get(row->id) ? FALSE : TRUE, &message);
+        if (message)
+            append_message(message);
+        tabbox_pull();
+        if (s_wnd)
+            InvalidateRect(s_wnd, NULL, TRUE);
+        return;
+    }
 
     /* The same call the buttons made when they were on the row. Mute, the pin
      * and the options menu did not change by moving in here, and writing them
      * out a second time is how two copies of one behaviour start to differ. */
-    if (hg_toolbar_builtin_click_role(id) == HG_TOOLBAR_CLICK_OPEN_MENU) {
+    if (hg_toolbar_builtin_click_role(row->id) == HG_TOOLBAR_CLICK_OPEN_MENU) {
         /* The menu is modal and would sit under a box that cannot lose a focus
          * it never had, so the box goes first. */
         hg_tabbox_close();
-        activate_toolbar_item(id);
+        activate_toolbar_item(row->id);
         return;
     }
-    activate_toolbar_item(id);
+    activate_toolbar_item(row->id);
 
     tabbox_pull();
     if (s_wnd)
@@ -432,10 +506,12 @@ BOOL hg_tabbox_handle_wheel(short delta)
     int pad = SCW(ws, 6);
     int row_h = tabbox_row_height();
     int row = (row_h > 0 && pt.y >= pad) ? (pt.y - pad) / row_h : -1;
-    if (row < 0 || row >= s_count || row >= (int)HG_ARRAYSIZE(s_control_ids))
+    if (row < 0 || row >= s_count || row >= s_control_row_count)
+        return FALSE;
+    if (s_control_rows[row].kind != HG_ROW_BUTTON)
         return FALSE;
 
-    if (!hg_toolbar_value_wheel(s_control_ids[row], delta))
+    if (!hg_toolbar_value_wheel(s_control_rows[row].id, delta))
         return FALSE;
 
     s_selected = row;
@@ -472,10 +548,20 @@ BOOL hg_tabbox_handle_key(WPARAM key)
     case VK_TAB:
         return TRUE; /* already in */
     case VK_ESCAPE:
-        /* Closes the box and nothing else: the keyboard is already the
-         * taskbox's, which is where the reader was. */
+        /* Out of the box, back to what it belongs to. The keyboard is already
+         * the taskbox's, which is where the reader was before entering. */
         hg_tabbox_close();
         return TRUE;
+    case VK_LEFT:
+    case VK_RIGHT:
+        /* Left and right are what they are everywhere else in the taskbox: the
+         * icon to the left, the icon to the right. A list is a column, so it
+         * has nothing of its own to do with them, and answering them here would
+         * strand the reader inside a box they walked into sideways. The box
+         * closes and the key goes on to the grid, which moves the focus - and
+         * the next icon opens its own box if it has one. */
+        hg_tabbox_close();
+        return FALSE;
     case VK_UP:
         if (s_selected > 0)
             --s_selected;
@@ -603,7 +689,11 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
         for (int i = 0; i < s_count; ++i) {
             RECT row = {pad, pad + i * row_h, rc.right - pad, pad + (i + 1) * row_h};
-            if (i == s_selected && s_focused) {
+            BOOL selected = (i == s_selected && s_focused);
+            if (selected) {
+                /* Filled, and the text inverted over it. A row the arrows are
+                 * standing on has to be findable at a glance, or the arrows are
+                 * moving something the reader cannot see. */
                 HBRUSH sel = CreateSolidBrush(hg_g_has_system_accent_color ? hg_g_system_accent_color
                                                                            : GetSysColor(COLOR_HIGHLIGHT));
                 if (sel) {
@@ -611,14 +701,16 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                     DeleteObject(sel);
                 }
             }
-            SetTextColor(dc, hg_g_color_scheme_selected.text);
+            SetTextColor(dc, selected ? GetSysColor(COLOR_HIGHLIGHTTEXT) : hg_g_color_scheme_selected.text);
 
             WCHAR line[HG_MAX_STR + 8];
             WCHAR label = tabbox_label_for(i);
             if (label)
-                hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%lc: %ls", label, s_titles[i]);
+                hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%ls%lc: %ls", selected ? L"\u25b8 " : L"  ", label,
+                                   s_titles[i]);
             else
-                StringCchCopyW(line, HG_ARRAYSIZE(line), s_titles[i]);
+                hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%ls%ls", selected ? L"\u25b8 " : L"  ",
+                                   s_titles[i]);
 
             RECT text_rc = row;
             text_rc.left += SCW(ws, 4);
