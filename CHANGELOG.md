@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.17.2] - 2026-08-23
+
+### Changed
+- **Button words, again:** `R`, `Mv`, `X`, `D`, `C`, `Note`, `Clip`, `Dir`,
+  `Set`. The four-letter ones stack on two lines, which is what the fitting rule
+  says to do with four to six letters.
+- **The `Set` list is grouped by what a row is.** `Options Menu` first - it is
+  the one row that leaves the list for somewhere else - then the three the wheel
+  turns, then the ones that are on or off, and last the ones this build cannot
+  switch, which are listed rather than hidden but kept out of the way of the
+  ones that work.
+- **The options menu opens under the `Set` button** when the list asked for it,
+  rather than at the pointer: the eye is on the button the list hangs off, and
+  the menu replaces the list.
+- **A button with a list opens it on arrival, however you arrived.** Pointing at
+  `Dir` or `Set` already did; landing on them with the arrow keys does now.
+  Arriving at a button is arriving at a button, and a list that needed a click
+  from the keyboard and none from the mouse was two rules where there is one.
+
+### Added
+- **The box takes the width its rows want**, measured rather than assumed, up to
+  a ceiling well past the old fixed width - so most lists are now read whole
+  where they used to be cut.
+- **A row still too long says the rest in a tooltip**, whether the pointer found
+  it or the arrows did. Tracked to the row rather than to the pointer, because
+  the keyboard has no pointer to follow.
+
 ## [v0.17.1] - 2026-08-23
 
 ### Changed

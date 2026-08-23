@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.17.1** — built 2026-08-23 18:20 KST
+**v0.17.2** — built 2026-08-23 21:00 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -87,7 +87,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.17.1)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.17.2)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -335,6 +335,11 @@ tabs, the `Dir` folders and the `Set` controls:
 | Right click | Close that tab. The list stays up. (Tabs only.) |
 | `Esc` | Leave the box. The keyboard stays in the taskbox, where it was. |
 
+**A row too long for the box says the rest in a tooltip** — whether the pointer
+found it or the arrows did. The box is measured against its own rows first and
+takes the width they need, so most lists are read whole; the tooltip is for what
+is longer than any box should be.
+
 Digits work immediately because the grid does not use them; the letters wait
 for `Tab` because `WASD` moves the focus and `C` and `N` open other things.
 
@@ -420,20 +425,20 @@ can read.
 
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
-| **`ReS`** Resize | — | **Drag** resizes the taskbox grid. |
+| **`R`** Resize | — | **Drag** resizes the taskbox grid. |
 | **`Mv`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
-| **`Ext`** Exit | Quits HGFloater. | — |
-| **`Dsk`** Desktop | Minimizes every window; click again to restore. | — |
-| **`Com`** Command | Opens the [Command Box](#8-the-command-box). | — |
-| **`Nt`** Note | Opens the [note list](#10-notes). | — |
-| **`Clp`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
+| **`X`** Exit | Quits HGFloater. | — |
+| **`D`** Desktop | Minimizes every window; click again to restore. | — |
+| **`C`** Command | Opens the [Command Box](#8-the-command-box). | — |
+| **`Note`** Note | Opens the [note list](#10-notes). | — |
+| **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
 | **`Set`** Settings | Opens the [control list](#62-the-set-button): volume, brightness, opacity, the pin, the options menu. | — |
 
 ### 6.1 The Dir button
 
-**Point at `Dir`, or click it, and the folders appear in a list beside the
-button** — above it or below it, whichever fits the screen, never over the
+**Point at `Dir` — or land on it with the arrow keys, or click it — and the
+folders appear in a list beside the button** — above it or below it, whichever fits the screen, never over the
 button itself. Click a row, or press its number, and that folder opens in
 Explorer; the list and the taskbox both get out of the way, because a folder is
 somewhere you are going.
@@ -447,17 +452,21 @@ to a real directory stays an icon, which is what keeps anything unusual working.
 
 ### 6.2 The Set button
 
-**`Set` is everything there is to set.** Point at it and the same kind of list
-opens. The rows are text, so they say their whole name and what turns them:
+**`Set` is everything there is to set.** Point at it — or land on it with the
+arrow keys — and the same kind of list opens. Pointing at a button and arriving
+at it with the keyboard are the same arrival, so neither needs a click first. The rows are text, so they say their whole name and what turns them:
+
+The rows are grouped by what a row **is**, top to bottom:
 
 | Row | What it does |
 | :--- | :--- |
+| **Options Menu** | Opens the [options menu](#7-the-options-menu) — **under the `Set` button**, where the list was, rather than at the pointer. First because it is the one row that leaves this list for somewhere else. |
 | **Volume (ScrollWheel)** | The system volume, with its reading. **Wheel** over the row changes it in 5% steps; **click** mutes and unmutes. |
 | **Brightness (ScrollWheel)** | Screen brightness, with its reading. **Wheel** changes it in 5% steps. |
 | **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** changes it. |
 | **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click** toggles. |
-| **Options** | Opens the [options menu](#7-the-options-menu). |
 | **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click** flips one. |
+| **(off in this build)** | Last: the ones this build cannot switch. Listed rather than hidden, and out of the way of the ones that work. |
 
 **The switches used to be a submenu of the options menu.** They are here now,
 beside the volume and the opacity, because they are the same kind of thing to a
@@ -505,13 +514,13 @@ service, the same one the system slider uses. That moves the lamp, not the
 picture.
 
 **`Pin`** is a row of the `Set` list. While pinned, moving the mouse away no
-longer collapses the taskbox. Explicit closes — `Ext`, `Esc`, the global hotkey,
+longer collapses the taskbox. Explicit closes — `X`, `Esc`, the global hotkey,
 a floater click — still work. Click it again to unpin.
 
 
 ### The clipboard history
 
-The **`Clp`** toolbar button, or **`Ctrl + L`** from the floater or the taskbox,
+The **`Clip`** toolbar button, or **`Ctrl + L`** from the floater or the taskbox,
 opens a window listing what you have copied, newest first. Press it again while
 that window is in front and it closes; if it is minimized or buried, it comes
 back instead.
@@ -765,7 +774,7 @@ display.
 
 ## 10. Notes
 
-Open the note list with the **`Nt`** toolbar button, the `N` or `Ctrl + N` key
+Open the note list with the **`Note`** toolbar button, the `N` or `Ctrl + N` key
 in the taskbox, or the `note` command.
 
 **Note windows stand on their own.** The list and every open editor are
@@ -967,21 +976,21 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Move a window** | Left-drag empty space, the status line, or the `Mv` button |
 | **Move the floater** | Drag the floater, or `Alt + drag` it |
 | **Move the taskbox aside** | Left-click the `Mv` button |
-| **Resize the taskbox grid** | Drag a border, or drag the `ReS` button |
+| **Resize the taskbox grid** | Drag a border, or drag the `R` button |
 | **Font / icon size** | `Ctrl` + wheel |
 | **Opacity** | `Alt` + wheel, or wheel over the `Alp` row of the `Set` list |
 | **Screen brightness** | Wheel over the `Bri` row of the `Set` list |
 | **Volume / mute** | Wheel over the `Vol` row of the `Set` list / click that row |
 | **Pin the taskbox** | Click the `Pin` row of the `Set` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
-| **Open the notes** | Left-click `Nt` |
+| **Open the notes** | Left-click `Note` |
 | **New note** | Left-click `+Add Note` (a single click, unlike a note row) |
 | **Open a note** | Double-click it |
 | **Sort, archive, or delete a note** | Right-click it, or right-click a section heading |
 | **Note text size** | `Ctrl` + wheel over the list or an editor |
 | **Edit a note's text** | Right-click inside an editor |
 | **Command box text size** | `Ctrl` + wheel |
-| **Quit** | Left-click `Ext`, or Exit in the options menu |
+| **Quit** | Left-click `X`, or Exit in the options menu |
 
 ## 13. Configuration File
 

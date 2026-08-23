@@ -254,6 +254,28 @@ static BOOL taskbox_toolbar_button_screen_rect(int index, RECT *out)
     return TRUE;
 }
 
+/* The options menu, opened at a point of someone else's choosing.
+ *
+ * The pointer is the right place when the pointer asked; it is the wrong place
+ * when the Set list did, because the reader's eye is on the button that list
+ * hangs off and the menu that replaces the list should appear where the list
+ * was. TrackPopupMenu keeps it on the display either way. */
+void taskbox_show_main_menu_at(const POINT *screen_pt)
+{
+    HMENU h_menu = taskbox_create_main_popup_menu();
+    if (!h_menu)
+        return;
+
+    POINT pt = {0, 0};
+    if (screen_pt)
+        pt = *screen_pt;
+    else
+        GetCursorPos(&pt);
+
+    int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, hg_g_taskbox_wnd);
+    taskbox_dispatch_main_menu_command((UINT)cmd);
+}
+
 void activate_toolbar_item(int index)
 {
     if (index < 0)
@@ -272,14 +294,9 @@ void activate_toolbar_item(int index)
         break;
     }
     case HG_TOOLBAR_CLICK_OPEN_MENU: {
-        HMENU h_menu = taskbox_create_main_popup_menu();
-        if (!h_menu)
-            break;
-
         POINT pt;
         GetCursorPos(&pt);
-        int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, hg_g_taskbox_wnd);
-        taskbox_dispatch_main_menu_command((UINT)cmd);
+        taskbox_show_main_menu_at(&pt);
         break;
     }
     case HG_TOOLBAR_CLICK_SHOW_COMMANDBOX:
@@ -959,12 +976,30 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             } else {
                 hg_hilite_hide();
             }
+            /* A function button with a list of its own opens it on arrival
+             * too. Pointing at Dir or Set opens it; landing on them with the
+             * arrows is the same arrival, and a list that needed a second key
+             * from the keyboard and none from the mouse would be two rules
+             * where there is one. */
+            int list_button = -1;
+            if (hg_taskbox_focus.area == 1 &&
+                (hg_taskbox_focus.index == HG_TOOL_ICON_DIR || hg_taskbox_focus.index == HG_TOOL_ICON_SETTINGS))
+                list_button = hg_taskbox_focus.index;
+
             if (tab_target) {
                 RECT rc_item;
                 get_toolbar_item_rect(0, hg_taskbox_focus.index, rc_toolbar.right, rc_toolbar.bottom, icon_size,
                                       &rc_item);
                 MapWindowPoints(hg_g_toolbar_wnd, NULL, (POINT *)&rc_item, 2);
                 hg_tabbox_open(tab_target, &rc_item);
+            } else if (list_button >= 0) {
+                RECT anchor;
+                if (taskbox_toolbar_button_screen_rect(list_button, &anchor)) {
+                    if (list_button == HG_TOOL_ICON_DIR)
+                        hg_tabbox_open_dirs(&anchor);
+                    else
+                        hg_tabbox_open_controls(&anchor);
+                }
             } else if (hg_tabbox_is_open()) {
                 hg_tabbox_close();
             }
