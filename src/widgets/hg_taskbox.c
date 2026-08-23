@@ -236,6 +236,24 @@ void hide_taskbox(HWND hwnd)
     InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
 }
 
+/* Where a function button is, on screen. The box anchors to it, and the box is
+ * opened from here as well as from the hover, so the answer is worked out in
+ * one place. */
+static BOOL taskbox_toolbar_button_screen_rect(int index, RECT *out)
+{
+    if (!out || !hg_g_toolbar_wnd || !IsWindow(hg_g_toolbar_wnd))
+        return FALSE;
+    if (index < 0 || index >= HG_NUM_BASIC_ICONS)
+        return FALSE;
+
+    RECT rc;
+    GetClientRect(hg_g_toolbar_wnd, &rc);
+    get_toolbar_item_rect(1, index, rc.right, rc.bottom, taskbox_toolbar_icon_size(), out);
+    InflateRect(out, SC(4), SC(4));
+    MapWindowPoints(hg_g_toolbar_wnd, NULL, (POINT *)out, 2);
+    return TRUE;
+}
+
 void activate_toolbar_item(int index)
 {
     if (index < 0)
@@ -273,14 +291,40 @@ void activate_toolbar_item(int index)
     case HG_TOOLBAR_CLICK_SHOW_CLIPBOARD:
         hg_clip_toggle_window();
         break;
-    case HG_TOOLBAR_CLICK_TOGGLE_MUTE:
+    case HG_TOOLBAR_CLICK_TOGGLE_MUTE: {
         set_system_mute(!get_system_mute());
         update_toolbar_tooltips(hg_g_toolbar_wnd);
-        update_focus_message(1, HG_TOOL_ICON_VOLUME);
+        /* Said outright rather than through the focus line, which can only
+         * speak for something on the row - and Vol is a row of the Se box. */
+        WCHAR value_str[64];
+        if (hg_toolbar_builtin_value_text(HG_TOOL_ICON_VOLUME, HG_TOOLBAR_TEXT_FOCUS, value_str,
+                                          HG_ARRAYSIZE(value_str)))
+            append_message(value_str);
         if (hg_g_toolbar_wnd) {
             InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
         }
         break;
+    }
+    case HG_TOOLBAR_CLICK_OPEN_DIRS:
+    case HG_TOOLBAR_CLICK_OPEN_CONTROLS: {
+        /* A click is the same ask as the hover, so it toggles: pointing at the
+         * button already opened the list, and clicking it again is how anyone
+         * puts a list away. */
+        int mode = (hg_toolbar_builtin_click_role(index) == HG_TOOLBAR_CLICK_OPEN_DIRS) ? HG_BOX_DIRS
+                                                                                       : HG_BOX_CONTROLS;
+        if (hg_tabbox_is_open() && hg_tabbox_mode() == mode) {
+            hg_tabbox_close();
+            break;
+        }
+        RECT anchor;
+        if (!taskbox_toolbar_button_screen_rect(index, &anchor))
+            break;
+        if (mode == HG_BOX_DIRS)
+            hg_tabbox_open_dirs(&anchor);
+        else
+            hg_tabbox_open_controls(&anchor);
+        break;
+    }
     case HG_TOOLBAR_CLICK_RELOCATE_AWAY:
         /* A click on M (no drag) sends the pair to the first free cardinal slot. */
         hg_relocate_taskbox_away(hg_g_taskbox_wnd);

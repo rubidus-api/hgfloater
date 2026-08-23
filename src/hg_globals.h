@@ -71,6 +71,13 @@ extern WCHAR hg_g_font_name[64];
 
 extern ShortcutItem hg_g_shortcuts[HG_MAX_SHORTCUTS];
 extern int hg_g_shortcut_count;
+/* Shortcuts that point at a folder rather than a program. They are not icons in
+ * the grid - a folder is a place to go, not a thing to run, and a dozen of them
+ * crowd out the programs - so they are collected here and reached through the
+ * Dir button instead. Same file, same folder, same .lnk: only the destination
+ * decides which of the two lists a shortcut lands in. */
+extern ShortcutItem hg_g_folders[HG_MAX_SHORTCUTS];
+extern int hg_g_folder_count;
 
 extern AudioDevice hg_g_audio_devices[HG_MAX_AUDIO_DEVICES];
 extern int hg_g_audio_device_count;

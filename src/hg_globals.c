@@ -69,6 +69,8 @@ WCHAR hg_g_font_name[64] = L"Segoe UI";
 
 ShortcutItem hg_g_shortcuts[HG_MAX_SHORTCUTS] = {0};
 int hg_g_shortcut_count = 0;
+ShortcutItem hg_g_folders[HG_MAX_SHORTCUTS];
+int hg_g_folder_count = 0;
 
 AudioDevice hg_g_audio_devices[HG_MAX_AUDIO_DEVICES] = {0};
 int hg_g_audio_device_count = 0;

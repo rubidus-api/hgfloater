@@ -15,9 +15,38 @@
  * happens when the box opens and never otherwise - nobody looking means
  * nothing asked. */
 
+/* The same box now serves three lists, because they are the same thing: a
+ * short list that belongs to the button under the pointer, placed clear of it,
+ * dismissed by leaving. Only what fills the rows and what activating one does
+ * differ - the window, the placement, the keys and the painting are one copy.
+ *
+ *   tabs      a window's tabs, on a task icon
+ *   folders   the shortcuts that point at a directory, on the Dir button
+ *   controls  volume, brightness, opacity, the pin and the options menu, on Se
+ */
+enum {
+    HG_BOX_TABS = 0,
+    HG_BOX_DIRS,
+    HG_BOX_CONTROLS
+};
+
 /* Open (or re-target) the box for a window, anchored to that icon's rect in
  * screen coordinates. Safe to call repeatedly with the same window. */
 void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc);
+
+/* The folder list and the control list, anchored to their toolbar button. */
+void hg_tabbox_open_dirs(const RECT *anchor_screen_rc);
+void hg_tabbox_open_controls(const RECT *anchor_screen_rc);
+
+/* Which list is up, or HG_BOX_TABS when nothing is. */
+int hg_tabbox_mode(void);
+
+/* A wheel notch while the pointer is over the box. Only the control list
+ * answers: it is the one whose rows are values. TRUE when it was used. */
+BOOL hg_tabbox_handle_wheel(short delta);
+
+/* TRUE while the pointer is inside the open box. */
+BOOL hg_tabbox_pointer_over(void);
 
 /* Close it if it is up. */
 void hg_tabbox_close(void);

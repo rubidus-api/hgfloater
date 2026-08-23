@@ -1124,6 +1124,11 @@ void load_shortcuts()
     }
     ZeroMemory(hg_g_shortcuts, sizeof(hg_g_shortcuts));
     hg_g_shortcut_count = 0;
+    for (int i = 0; i < hg_g_folder_count; i++) {
+        release_shortcut_item_icon(&hg_g_folders[i]);
+    }
+    ZeroMemory(hg_g_folders, sizeof(hg_g_folders));
+    hg_g_folder_count = 0;
 
     if (!hg_g_shortcuts_path[0])
         return;
@@ -1188,6 +1193,7 @@ void load_shortcuts()
                         WCHAR target_path[HG_MAX_PATH] = {0};
                         if (SUCCEEDED(psl->lpVtbl->GetPath(psl, target_path, HG_ARRAYSIZE(target_path), NULL, 0)) &&
                             target_path[0] != L'\0') {
+                            StringCchCopyW(item->target, HG_ARRAYSIZE(item->target), target_path);
                             HICON ext_icon = NULL;
                             UINT icon_id = 0;
                             if (PrivateExtractIconsW(target_path, 0, icon_size, icon_size, &ext_icon, &icon_id, 1,
@@ -1210,6 +1216,28 @@ void load_shortcuts()
             }
         }
 
+        /* A shortcut whose target is a directory is a place, and places live
+         * behind the Dir button. Asked of the resolved target rather than of
+         * the .lnk, which is a file whatever it points at. A shortcut that does
+         * not resolve - a virtual folder, a moved target - stays an icon: the
+         * grid is where anything we cannot classify still works. */
+        BOOL to_folder = FALSE;
+        if (item->target[0]) {
+            DWORD attr = GetFileAttributesW(item->target);
+            to_folder = (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
+        }
+
+        if (to_folder) {
+            if (hg_g_folder_count < HG_MAX_SHORTCUTS) {
+                hg_g_folders[hg_g_folder_count] = *item;
+                hg_g_folder_count++;
+            } else {
+                release_shortcut_item_icon(item);
+            }
+            ZeroMemory(item, sizeof(*item));
+            continue;
+        }
+
         hg_g_shortcut_count++;
     } while (FindNextFileW(find_handle, &ffd));
 
@@ -1217,6 +1245,9 @@ void load_shortcuts()
 
     if (hg_g_shortcut_count > 1) {
         qsort(hg_g_shortcuts, (size_t)hg_g_shortcut_count, sizeof(ShortcutItem), compare_shortcuts);
+    }
+    if (hg_g_folder_count > 1) {
+        qsort(hg_g_folders, (size_t)hg_g_folder_count, sizeof(ShortcutItem), compare_shortcuts);
     }
 }
 
