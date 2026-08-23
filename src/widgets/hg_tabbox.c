@@ -528,9 +528,22 @@ BOOL hg_tabbox_handle_key(WPARAM key)
         return FALSE;
 
     if (!s_focused) {
-        /* Open, not entered: the digits and Tab, and nothing else. */
-        if (key == VK_TAB) {
+        /* Open, not entered: the digits, Tab, and the two keys that point at
+         * the box.
+         *
+         * Up and Down step into it rather than to the icon above or below,
+         * because the box *is* what is above or below: it is hanging off this
+         * icon, filling that space, and stepping over it to the next row would
+         * mean walking past the thing the reader just opened. Left and Right
+         * still walk the grid, so nothing is unreachable - and Esc comes back
+         * out to the icon. */
+        if (key == VK_TAB || key == VK_UP || key == VK_DOWN) {
             s_focused = TRUE;
+            if (s_count > 0) {
+                /* Down enters at the top and Up at the bottom: the selection
+                 * lands where the key was already pointing. */
+                s_selected = (key == VK_UP) ? s_count - 1 : 0;
+            }
             InvalidateRect(s_wnd, NULL, TRUE);
             return TRUE;
         }

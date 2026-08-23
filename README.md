@@ -326,8 +326,9 @@ tabs, the `Dir` folders and the `Set` controls:
 | :--- | :--- |
 | `1`-`9` | Straight to that row, whether or not you have stepped into the box. |
 | `0` | The last row, the same way. |
-| `Tab` | Step into the box. On a `Dir` or `Set` button, `Space` does it too: activating the button opens its list **and** hands it the keyboard. |
-| `Up` / `Down`, `Home` / `End` | Move the selection. The row it lands on is filled and marked, so where the arrows are standing is never in doubt. |
+| `Up` / `Down` | **Step into the box**, and from then on move the selection in it. `Down` enters at the top row and `Up` at the bottom, so the selection lands where the key was already pointing. The box is what sits above or below the icon, so those keys reach it rather than stepping over it to the next row of icons. |
+| `Tab` | Step into the box as well. On a `Dir` or `Set` button, `Space` does it too: activating the button opens its list **and** hands it the keyboard. |
+| `Home` / `End` | The first row, the last row. The selected row is filled and marked, so where the arrows are standing is never in doubt. |
 | `Left` / `Right` | Leave the box and move to the icon left or right — a list is a column, and sideways is what the grid means by those keys. The next icon opens its own box if it has one. |
 | `a`-`z`, `A`-`Z` | The labels past the ninth row (inside the box, because those letters move the grid outside it). |
 | `Enter` / `Space`, or a click | Take that row: switch to the tab, open the folder, flip the switch. |
@@ -889,7 +890,7 @@ a chord.
 | `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
 | `Tab` | With a box open (tabs, `Dir`, `Set`), step into it |
-| `Up` / `Down` | Inside a box: move the selection |
+| `Up` / `Down` | On an icon with a box: step into it. Inside one: move the selection |
 | `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
 | `Esc` | Inside a box: leave it |
 | `C`, `Ctrl + E` | Open the Command Box |

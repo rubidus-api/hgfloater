@@ -22,8 +22,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   button can hold. Shrinking a long word until it fits across ends at a size
   nobody can read.
 - **The box is a keyboard place now.** `Space` on `Dir` or `Set` opens the list
-  *and* hands it the keyboard; `Up`/`Down` walk the rows with the selected one
-  filled and marked, `Enter` takes it, `Esc` leaves. **`Left`/`Right` leave the
+  *and* hands it the keyboard; on any icon that has a box, **`Up`/`Down` step
+  into it** - `Down` at the top row, `Up` at the bottom - rather than stepping
+  over it to the next row of icons, since the box is what sits above and below
+  that icon. Inside, `Up`/`Down` walk the rows with the selected one filled and
+  marked, `Enter` takes it, `Esc` leaves. **`Left`/`Right` leave the
   box and move to the icon beside it** - a list is a column, and sideways is
   what those keys mean everywhere else in the grid; the icon they land on opens
   its own box. The same keys in all three lists, because it is the same box.
