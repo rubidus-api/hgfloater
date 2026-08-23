@@ -15,6 +15,8 @@ void update_taskbox_alpha(int delta);
 void set_taskbox_opacity_pct(int pct);
 void hide_taskbox(HWND hwnd);
 void activate_toolbar_item(int index);
+/* The options menu at a given screen point; NULL means the pointer. */
+void taskbox_show_main_menu_at(const POINT *screen_pt);
 void activate_taskbar_item(int index);
 void update_focus_message(int override_type, int override_index);
 void reset_taskbox_focus(void);

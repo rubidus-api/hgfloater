@@ -43,6 +43,13 @@ static int s_selected = 0;
 static int s_mode = HG_BOX_TABS;
 static BOOL s_open = FALSE;
 
+/* Shown for a row whose text does not fit, whether the pointer found it or the
+ * arrows did. The box is already as wide as it is allowed to be by then, so the
+ * choice is between a tooltip and a title nobody can read. Tracked rather than
+ * hovered, because the keyboard has no pointer to hover with. */
+static HWND s_tip = NULL;
+static int s_tip_row = -1;
+
 /* The control list, in one table.
  *
  * Two kinds of row: the buttons that left the toolbar, and the switches that
@@ -68,25 +75,60 @@ typedef struct HgControlRow {
 static HgControlRow s_control_rows[4 + 16];
 static int s_control_row_count = 0;
 
+static void tabbox_add_control_row(HgControlRow row)
+{
+    if (s_control_row_count < (int)HG_ARRAYSIZE(s_control_rows))
+        s_control_rows[s_control_row_count++] = row;
+}
+
+/* The list, in the order a reader works down it: the way out first, then the
+ * things with a number, then the things with a state, and last the ones that
+ * cannot be touched in this build.
+ *
+ * Grouped by what a row *is* rather than by where it used to live. The menu is
+ * at the top because it is the one row that leaves this list for somewhere
+ * else, and what cannot be switched sits at the bottom because a row nobody can
+ * use should not stand between two that can. */
 static void tabbox_build_control_rows(void)
 {
     s_control_row_count = 0;
 
-    /* Volume first: it is the one reached most often, and the top row is the
-     * shortest distance from the button. */
-    const HgControlRow buttons[] = {
+    /* Out of the list, into the menu. */
+    HgControlRow menu = {HG_ROW_BUTTON, HG_TOOL_ICON_MENU, L"Options Menu"};
+    tabbox_add_control_row(menu);
+
+    /* The three the wheel turns. */
+    const HgControlRow values[] = {
         {HG_ROW_BUTTON, HG_TOOL_ICON_VOLUME, L"Volume (ScrollWheel)"},
         {HG_ROW_BUTTON, HG_TOOL_ICON_BRIGHTNESS, L"Brightness (ScrollWheel)"},
         {HG_ROW_BUTTON, HG_TOOL_ICON_ALPHA, L"Alpha (ScrollWheel)"},
-        {HG_ROW_BUTTON, HG_TOOL_ICON_PIN, L"Pin"},
-        {HG_ROW_BUTTON, HG_TOOL_ICON_MENU, L"Options"},
     };
-    for (size_t i = 0; i < HG_ARRAYSIZE(buttons) && s_control_row_count < (int)HG_ARRAYSIZE(s_control_rows); ++i)
-        s_control_rows[s_control_row_count++] = buttons[i];
+    for (size_t i = 0; i < HG_ARRAYSIZE(values); ++i)
+        tabbox_add_control_row(values[i]);
 
-    for (int i = 1; i <= hg_option_count() && s_control_row_count < (int)HG_ARRAYSIZE(s_control_rows); ++i) {
+    /* The ones that are on or off, starting with the pin - it is a button
+     * rather than a setting in the file, but to a reader it is the same
+     * question with the same answer. */
+    HgControlRow pin = {HG_ROW_BUTTON, HG_TOOL_ICON_PIN, L"Pin"};
+    tabbox_add_control_row(pin);
+
+    for (int i = 1; i <= hg_option_count(); ++i) {
+        HgOptionInfo info;
+        if (!hg_option_info(i, &info) || !info.available)
+            continue;
         HgControlRow row = {HG_ROW_OPTION, i, NULL};
-        s_control_rows[s_control_row_count++] = row;
+        tabbox_add_control_row(row);
+    }
+
+    /* And last, the ones this build cannot switch. They are still listed: a
+     * feature that vanishes leaves the reader wondering whether they imagined
+     * it, while a row that says why does not. */
+    for (int i = 1; i <= hg_option_count(); ++i) {
+        HgOptionInfo info;
+        if (!hg_option_info(i, &info) || info.available)
+            continue;
+        HgControlRow row = {HG_ROW_OPTION, i, NULL};
+        tabbox_add_control_row(row);
     }
 }
 
@@ -139,6 +181,52 @@ static int tabbox_row_height(void)
     return size + SC(8);
 }
 
+/* How wide the rows would like to be, measured rather than assumed.
+ *
+ * A fixed width cut titles that had room to spare on a wide screen and left
+ * white space on short ones. The box asks its own rows instead, and takes what
+ * they need up to a ceiling - past that a list stops being a list and becomes a
+ * wall of text, and the rows that are still too long say so through the
+ * tooltip. */
+static int tabbox_wanted_width(double ws)
+{
+    int fallback = SCW(ws, 320);
+    if (!s_wnd || s_count <= 0)
+        return fallback;
+
+    HDC dc = GetDC(s_wnd);
+    if (!dc)
+        return fallback;
+
+    HFONT font = hg_g_main_font ? hg_g_main_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    HFONT old = (HFONT)SelectObject(dc, font);
+
+    int widest = 0;
+    for (int i = 0; i < s_count; ++i) {
+        WCHAR line[HG_MAX_STR + 8];
+        WCHAR label = tabbox_label_for(i);
+        if (label)
+            hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  %lc: %ls", label, s_titles[i]);
+        else
+            hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  %ls", s_titles[i]);
+
+        SIZE sz = {0, 0};
+        if (GetTextExtentPoint32W(dc, line, lstrlenW(line), &sz) && sz.cx > widest)
+            widest = sz.cx;
+    }
+
+    SelectObject(dc, old);
+    ReleaseDC(s_wnd, dc);
+
+    int want = widest + SCW(ws, 24); /* the padding either side, and room for the marker */
+    if (want < fallback)
+        want = fallback;
+    int ceiling = SCW(ws, 760);
+    if (want > ceiling)
+        want = ceiling;
+    return want;
+}
+
 static void tabbox_layout(void)
 {
     if (!s_wnd)
@@ -149,7 +237,7 @@ static void tabbox_layout(void)
     int pad = SCW(ws, 6);
     int rows = (s_count > 0) ? s_count : 1;
     int height = rows * row_h + pad * 2;
-    int width = SCW(ws, 320);
+    int width = tabbox_wanted_width(ws);
 
     /* Above or below the icon, flush against it, never beside it: the icon is
      * what the reader is pointing at and what they will point at next, so the
@@ -275,6 +363,113 @@ static void tabbox_pull(void)
         s_selected = (s_count > 0) ? s_count - 1 : 0;
 }
 
+/* The full text of a row, as it is drawn: the label and the title. */
+static void tabbox_row_text(int index, WCHAR *out, size_t out_cch)
+{
+    if (index < 0 || index >= s_count) {
+        StringCchCopyW(out, out_cch, L"");
+        return;
+    }
+    WCHAR label = tabbox_label_for(index);
+    if (label)
+        hellgates_wsprintf(out, out_cch, L"%lc: %ls", label, s_titles[index]);
+    else
+        StringCchCopyW(out, out_cch, s_titles[index]);
+}
+
+/* TRUE when that row is drawn shorter than it is. */
+static BOOL tabbox_row_is_clipped(int index, WCHAR *text, size_t text_cch)
+{
+    if (!s_wnd || index < 0 || index >= s_count)
+        return FALSE;
+
+    tabbox_row_text(index, text, text_cch);
+
+    HDC dc = GetDC(s_wnd);
+    if (!dc)
+        return FALSE;
+    HFONT font = hg_g_main_font ? hg_g_main_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+    HFONT old = (HFONT)SelectObject(dc, font);
+    SIZE sz = {0, 0};
+    GetTextExtentPoint32W(dc, text, lstrlenW(text), &sz);
+    SelectObject(dc, old);
+    ReleaseDC(s_wnd, dc);
+
+    RECT rc;
+    GetClientRect(s_wnd, &rc);
+    double ws = hg_window_scale(s_wnd);
+    int room = rc.right - SCW(ws, 6) * 2 - SCW(ws, 20); /* the padding, and the marker column */
+    return sz.cx > room;
+}
+
+/* The tooltip that says what a clipped row says. */
+static void tabbox_tip_hide(void)
+{
+    if (!s_tip)
+        return;
+    TOOLINFOW ti;
+    SecureZeroMemory(&ti, sizeof(ti));
+    ti.cbSize = TOOLINFO_V1_SIZE;
+    ti.hwnd = s_wnd;
+    ti.uId = 1;
+    SendMessageW(s_tip, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)&ti);
+    s_tip_row = -1;
+}
+
+static void tabbox_tip_show(int index)
+{
+    if (!s_wnd || index < 0 || index >= s_count) {
+        tabbox_tip_hide();
+        return;
+    }
+
+    WCHAR text[HG_MAX_STR + 8];
+    if (!tabbox_row_is_clipped(index, text, HG_ARRAYSIZE(text))) {
+        /* A row that fits says everything it has to say already. */
+        tabbox_tip_hide();
+        return;
+    }
+
+    if (!s_tip) {
+        s_tip = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+                                0, 0, 0, 0, s_wnd, NULL, GetModuleHandleW(NULL), NULL);
+        if (!s_tip)
+            return;
+
+        TOOLINFOW ti;
+        SecureZeroMemory(&ti, sizeof(ti));
+        ti.cbSize = TOOLINFO_V1_SIZE;
+        ti.uFlags = TTF_TRACK | TTF_ABSOLUTE;
+        ti.hwnd = s_wnd;
+        ti.uId = 1;
+        ti.hinst = GetModuleHandleW(NULL);
+        ti.lpszText = L"";
+        SendMessageW(s_tip, TTM_ADDTOOLW, 0, (LPARAM)&ti);
+        /* Wide enough to wrap rather than run off the display. */
+        SendMessageW(s_tip, TTM_SETMAXTIPWIDTH, 0, (LPARAM)SCW(hg_window_scale(s_wnd), 700));
+    }
+
+    TOOLINFOW ti;
+    SecureZeroMemory(&ti, sizeof(ti));
+    ti.cbSize = TOOLINFO_V1_SIZE;
+    ti.hwnd = s_wnd;
+    ti.uId = 1;
+    ti.lpszText = text;
+    SendMessageW(s_tip, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
+
+    /* Beside the row it belongs to, not under the pointer: the keyboard has no
+     * pointer, and a tip that jumps to the mouse while the arrows are moving
+     * would be pointing at the wrong row. */
+    double ws = hg_window_scale(s_wnd);
+    int pad = SCW(ws, 6);
+    int row_h = tabbox_row_height();
+    POINT pt = {pad + SCW(ws, 12), pad + index * row_h + row_h};
+    ClientToScreen(s_wnd, &pt);
+    SendMessageW(s_tip, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
+    SendMessageW(s_tip, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)&ti);
+    s_tip_row = index;
+}
+
 /* The window, made once and reused by all three lists. */
 static BOOL tabbox_ensure_window(void)
 {
@@ -367,6 +562,7 @@ void hg_tabbox_enter(void)
     if (s_count > 0 && (s_selected < 0 || s_selected >= s_count))
         s_selected = 0;
     InvalidateRect(s_wnd, NULL, TRUE);
+    tabbox_tip_show(s_selected);
 }
 
 int hg_tabbox_mode(void)
@@ -378,6 +574,7 @@ void hg_tabbox_close(void)
 {
     if (!s_wnd)
         return;
+    tabbox_tip_hide();
     ShowWindow(s_wnd, SW_HIDE);
     s_target = NULL;
     s_count = 0;
@@ -467,9 +664,12 @@ static void tabbox_activate(int index)
      * out a second time is how two copies of one behaviour start to differ. */
     if (hg_toolbar_builtin_click_role(row->id) == HG_TOOLBAR_CLICK_OPEN_MENU) {
         /* The menu is modal and would sit under a box that cannot lose a focus
-         * it never had, so the box goes first. */
+         * it never had, so the box goes first - and it opens where the box was,
+         * under the button, rather than wherever the pointer happens to be.
+         * The anchor is read before closing, which clears it. */
+        POINT at = {s_anchor.left, s_anchor.bottom};
         hg_tabbox_close();
-        activate_toolbar_item(row->id);
+        taskbox_show_main_menu_at(&at);
         return;
     }
     activate_toolbar_item(row->id);
@@ -545,6 +745,7 @@ BOOL hg_tabbox_handle_key(WPARAM key)
                 s_selected = (key == VK_UP) ? s_count - 1 : 0;
             }
             InvalidateRect(s_wnd, NULL, TRUE);
+            tabbox_tip_show(s_selected);
             return TRUE;
         }
         if (key >= L'0' && key <= L'9') {
@@ -579,19 +780,23 @@ BOOL hg_tabbox_handle_key(WPARAM key)
         if (s_selected > 0)
             --s_selected;
         InvalidateRect(s_wnd, NULL, TRUE);
+        tabbox_tip_show(s_selected);
         return TRUE;
     case VK_DOWN:
         if (s_selected + 1 < s_count)
             ++s_selected;
         InvalidateRect(s_wnd, NULL, TRUE);
+        tabbox_tip_show(s_selected);
         return TRUE;
     case VK_HOME:
         s_selected = 0;
         InvalidateRect(s_wnd, NULL, TRUE);
+        tabbox_tip_show(s_selected);
         return TRUE;
     case VK_END:
         s_selected = (s_count > 0) ? s_count - 1 : 0;
         InvalidateRect(s_wnd, NULL, TRUE);
+        tabbox_tip_show(s_selected);
         return TRUE;
     case VK_RETURN:
     case VK_SPACE:
@@ -746,8 +951,19 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             s_selected = row;
             InvalidateRect(hwnd, NULL, TRUE);
         }
+        if (row != s_tip_row)
+            tabbox_tip_show(row);
+
+        /* So the tip goes when the pointer does, rather than hanging over a box
+         * the pointer has left. */
+        TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};
+        TrackMouseEvent(&tme);
         return 0;
     }
+
+    case WM_MOUSELEAVE:
+        tabbox_tip_hide();
+        return 0;
 
     case WM_LBUTTONUP: {
         POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
