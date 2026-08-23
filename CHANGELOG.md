@@ -8,8 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Button words, again:** `R`, `Mv`, `X`, `D`, `C`, `Note`, `Clip`, `Dir`,
-  `Set`. The four-letter ones stack on two lines, which is what the fitting rule
-  says to do with four to six letters.
+  `Set`. Four letters stay on one line - `Note` and `Clip` are words, and
+  cutting a four-letter word in half makes two syllables of nothing - so the
+  stacking starts at five.
 - **The `Set` list is grouped by what a row is.** `Options Menu` first - it is
   the one row that leaves the list for somewhere else - then the three the wheel
   turns, then the ones that are on or off, and last the ones this build cannot
@@ -24,6 +25,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   from the keyboard and none from the mouse was two rules where there is one.
 
 ### Added
+- **The README states the executable's real size, measured at every release.**
+  It had said "about 450 KB" since the days when that was true; the download is
+  nearly 600 now. `scripts/update-exe-size.sh` reads the built binary and writes
+  the number into both READMEs, and `package-release.sh` runs it - so the claim
+  is re-measured every time something is published rather than remembered.
+  Rounded to ten kilobytes, because the number is a scale rather than a receipt.
 - **The box takes the width its rows want**, measured rather than assumed, up to
   a ceiling well past the old fixed width - so most lists are now read whole
   where they used to be cut.

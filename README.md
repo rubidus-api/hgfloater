@@ -11,7 +11,7 @@ translucent widget floats on your desktop; clicking it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 450 KB** that needs no installer and no runtime, so
+single **executable of about 600 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -1172,7 +1172,23 @@ build.bat debug
 build.bat test
 ```
 
-### 14.4 What the build does
+### 14.4 The release recipe
+
+Building and packaging happen twice, in this order:
+
+```sh
+sh scripts/build-mingw.sh build-mingw   # a warning-clean build, tests compiled and host tests run
+sh scripts/package-release.sh dist      # stages the exe, measures it into both READMEs, zips, prints checksums
+sh scripts/build-mingw.sh build-mingw   # again: About renders the README, so it picks up the new size
+sh scripts/package-release.sh dist      # again: the checksums must belong to the binary being published
+```
+
+The second pass exists because the About window renders `README.md`, and the
+README now states the executable's measured size — so the first build produces
+the number and the second folds it in. The checksums printed by the last run are
+the ones that belong in the release notes.
+
+### 14.5 What the build does
 
 - The version string is the build date, `vYY.MM.DD`, optionally suffixed.
 - `scripts/gen_about.py` (or `gen_about.ps1` on Windows) regenerates
