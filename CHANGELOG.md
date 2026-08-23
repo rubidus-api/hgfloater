@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [v0.17.2] - 2026-08-23
 
+### Added
+- **A release cannot go out as half of itself.** Every release publishes two
+  downloads - `hgfloater.exe` and `hgfloater-<version>.zip` - because the binary
+  is unsigned and the zip is the second way in for a reader whose browser
+  objects to a bare `.exe`. `scripts/verify-release.sh` now runs at the end of
+  packaging and fails when either is missing, or when the zip does not contain
+  the executable. Both READMEs state the rule in section 14.4. It was already
+  the practice; it is a check now, because a practice is something that can be
+  forgotten once.
+
 ### Changed
 - **Button words, again:** `R`, `Mv`, `X`, `D`, `C`, `Note`, `Clip`, `Dir`,
   `Set`. Four letters stay on one line - `Note` and `Clip` are words, and
