@@ -17,6 +17,7 @@
 #include "../hg_globals.h"
 #include "../hg_tabs.h"
 #include "hg_taskbox.h"
+#include "../hg_options.h"
 
 /* Whether the keyboard is *in* the box.
  *
@@ -32,9 +33,21 @@ static BOOL s_focused = FALSE;
 static HWND s_wnd = NULL;
 static HWND s_target = NULL;
 static RECT s_anchor = {0, 0, 0, 0};
-static WCHAR s_titles[HG_TABS_MAX_PER_WINDOW][HG_MAX_STR];
+
+/* Rows enough for the longest of the three lists: the folders can be as many as
+ * the shortcuts folder holds, which is more than any window has tabs. */
+#define HG_BOX_MAX_ROWS HG_MAX_SHORTCUTS
+static WCHAR s_titles[HG_BOX_MAX_ROWS][HG_MAX_STR];
 static int s_count = 0;
 static int s_selected = 0;
+static int s_mode = HG_BOX_TABS;
+static BOOL s_open = FALSE;
+
+/* The control rows, in the order the buttons stood in on the row. Volume first
+ * because it is the one reached most often and the top row is the shortest
+ * distance from the button. */
+static const int s_control_ids[] = {HG_TOOL_ICON_VOLUME, HG_TOOL_ICON_BRIGHTNESS, HG_TOOL_ICON_ALPHA,
+                                    HG_TOOL_ICON_PIN, HG_TOOL_ICON_MENU};
 
 /* Labels run 1-9, then a-z, then A-Z: sixty-one of them for a cap of
  * twenty-four, so the alphabet never runs out and the digits - the easiest
@@ -162,17 +175,62 @@ static void tabbox_layout(void)
     InvalidateRect(s_wnd, NULL, TRUE);
 }
 
-/* Take whatever the worker has for this window, and ask for more. */
+/* Fill the rows for whichever list is up.
+ *
+ * Three sources, one row model: a string per row, a count, and a selection.
+ * Everything past this function - the placement, the painting, the keys, the
+ * clicking - is written against that and does not know which list it has. */
 static void tabbox_pull(void)
 {
-    if (!s_target)
-        return;
-    HgTabsAnswer answer;
-    int fresh = hg_tabs_take_result(s_target, s_titles, HG_TABS_MAX_PER_WINDOW, &answer);
-    if (fresh >= 0 && !answer.failed)
-        s_count = fresh;
+    if (s_mode == HG_BOX_TABS) {
+        if (!s_target)
+            return;
+        HgTabsAnswer answer;
+        int fresh = hg_tabs_take_result(s_target, s_titles, HG_TABS_MAX_PER_WINDOW, &answer);
+        if (fresh >= 0 && !answer.failed)
+            s_count = fresh;
+    } else if (s_mode == HG_BOX_DIRS) {
+        s_count = 0;
+        for (int i = 0; i < hg_g_folder_count && s_count < HG_BOX_MAX_ROWS; ++i) {
+            StringCchCopyW(s_titles[s_count], HG_MAX_STR, hg_g_folders[i].name);
+            ++s_count;
+        }
+    } else {
+        s_count = 0;
+        for (size_t i = 0; i < HG_ARRAYSIZE(s_control_ids) && s_count < HG_BOX_MAX_ROWS; ++i) {
+            int id = s_control_ids[i];
+            const WCHAR *label = hg_toolbar_builtin_label(id);
+            int pct = 0;
+
+            /* Name once, then the number: the reading is the reason to open the
+             * box, and the row is what the wheel is spinning. The two rows that
+             * are not values say their state in the same shape. */
+            if (hg_toolbar_value_percent(id, &pct)) {
+                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-4ls %3d%%%ls", label, pct,
+                                   (id == HG_TOOL_ICON_VOLUME && get_system_mute()) ? L"  (muted)" : L"");
+            } else if (id == HG_TOOL_ICON_PIN) {
+                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-4ls %ls", label,
+                                   hg_g_taskbox_pinned ? L"on" : L"off");
+            } else {
+                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-4ls %ls", label, L"options menu");
+            }
+            ++s_count;
+        }
+    }
+
     if (s_selected >= s_count)
         s_selected = (s_count > 0) ? s_count - 1 : 0;
+}
+
+/* The window, made once and reused by all three lists. */
+static BOOL tabbox_ensure_window(void)
+{
+    if (s_wnd)
+        return TRUE;
+    s_wnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_TABBOX, L"Tabs",
+                            WS_POPUP | WS_BORDER, 0, 0, 0, 0, hg_g_taskbox_wnd, NULL, GetModuleHandle(NULL),
+                            NULL);
+    return s_wnd != NULL;
 }
 
 void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc)
@@ -190,13 +248,17 @@ void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc)
     if (!hg_tabs_enabled() || !hg_tabs_window_may_have_tabs(target))
         return;
 
-    if (!s_wnd) {
-        s_wnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_TABBOX, L"Tabs",
-                                WS_POPUP | WS_BORDER, 0, 0, 0, 0, hg_g_taskbox_wnd, NULL, GetModuleHandle(NULL),
-                                NULL);
-        if (!s_wnd)
-            return;
+    if (!tabbox_ensure_window())
+        return;
+
+    if (s_mode != HG_BOX_TABS) {
+        s_mode = HG_BOX_TABS;
+        s_target = NULL;
+        s_count = 0;
+        s_selected = 0;
+        s_focused = FALSE;
     }
+    s_open = TRUE;
 
     if (s_target != target) {
         s_target = target;
@@ -213,6 +275,42 @@ void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc)
     tabbox_layout();
 }
 
+/* The two lists that belong to a button rather than to a window. Neither asks
+ * anything of the tab reader, and neither is gated by the tabs option: that
+ * switch is about hovering a task icon, which is not what these are. */
+static void tabbox_open_list(int mode, const RECT *anchor_screen_rc)
+{
+    if (!anchor_screen_rc || !tabbox_ensure_window())
+        return;
+
+    if (s_mode != mode) {
+        s_mode = mode;
+        s_target = NULL;
+        s_count = 0;
+        s_selected = 0;
+        s_focused = FALSE;
+    }
+    s_open = TRUE;
+    s_anchor = *anchor_screen_rc;
+    tabbox_pull();
+    tabbox_layout();
+}
+
+void hg_tabbox_open_dirs(const RECT *anchor_screen_rc)
+{
+    tabbox_open_list(HG_BOX_DIRS, anchor_screen_rc);
+}
+
+void hg_tabbox_open_controls(const RECT *anchor_screen_rc)
+{
+    tabbox_open_list(HG_BOX_CONTROLS, anchor_screen_rc);
+}
+
+int hg_tabbox_mode(void)
+{
+    return hg_tabbox_is_open() ? s_mode : HG_BOX_TABS;
+}
+
 void hg_tabbox_close(void)
 {
     if (!s_wnd)
@@ -222,16 +320,18 @@ void hg_tabbox_close(void)
     s_count = 0;
     s_selected = 0;
     s_focused = FALSE;
+    s_open = FALSE;
+    s_mode = HG_BOX_TABS;
 }
 
 BOOL hg_tabbox_is_open(void)
 {
-    return s_wnd && IsWindow(s_wnd) && IsWindowVisible(s_wnd) && s_target != NULL;
+    return s_wnd && IsWindow(s_wnd) && IsWindowVisible(s_wnd) && s_open;
 }
 
 HWND hg_tabbox_target(void)
 {
-    return hg_tabbox_is_open() ? s_target : NULL;
+    return (hg_tabbox_is_open() && s_mode == HG_BOX_TABS) ? s_target : NULL;
 }
 
 HWND hg_tabbox_window(void)
@@ -241,7 +341,7 @@ HWND hg_tabbox_window(void)
 
 void hg_tabbox_refresh(void)
 {
-    if (!hg_tabbox_is_open())
+    if (!hg_tabbox_is_open() || s_mode != HG_BOX_TABS)
         return;
     int before = s_count;
     tabbox_pull();
@@ -251,16 +351,99 @@ void hg_tabbox_refresh(void)
         InvalidateRect(s_wnd, NULL, TRUE);
 }
 
-/* Switch to the selected tab and put the box away: picking a tab is a
- * destination, and staying open over the window you just went to is clutter. */
+/* What a row does when it is picked.
+ *
+ * A tab and a folder are both destinations, so the box and the taskbox both get
+ * out of the way - staying open over the thing you just went to is clutter. A
+ * control is not a destination: the box stays, because the reason to open it is
+ * usually to move a value and then look at what moved. */
 static void tabbox_activate(int index)
 {
-    HWND target = s_target;
-    if (!target || index < 0 || index >= s_count)
+    if (index < 0 || index >= s_count)
         return;
-    hg_tabbox_close();
-    hide_taskbox(hg_g_taskbox_wnd);
-    hg_tabs_activate(target, index);
+
+    if (s_mode == HG_BOX_TABS) {
+        HWND target = s_target;
+        if (!target)
+            return;
+        hg_tabbox_close();
+        hide_taskbox(hg_g_taskbox_wnd);
+        hg_tabs_activate(target, index);
+        return;
+    }
+
+    if (s_mode == HG_BOX_DIRS) {
+        if (index >= hg_g_folder_count)
+            return;
+        WCHAR path[HG_MAX_PATH];
+        StringCchCopyW(path, HG_ARRAYSIZE(path), hg_g_folders[index].target[0] ? hg_g_folders[index].target
+                                                                              : hg_g_folders[index].path);
+        hg_tabbox_close();
+        hide_taskbox(hg_g_taskbox_wnd);
+        ShellExecuteW(NULL, L"open", path, NULL, NULL, SW_SHOWNORMAL);
+        return;
+    }
+
+    if (index >= (int)HG_ARRAYSIZE(s_control_ids))
+        return;
+    int id = s_control_ids[index];
+
+    /* The same call the buttons made when they were on the row. Mute, the pin
+     * and the options menu did not change by moving in here, and writing them
+     * out a second time is how two copies of one behaviour start to differ. */
+    if (hg_toolbar_builtin_click_role(id) == HG_TOOLBAR_CLICK_OPEN_MENU) {
+        /* The menu is modal and would sit under a box that cannot lose a focus
+         * it never had, so the box goes first. */
+        hg_tabbox_close();
+        activate_toolbar_item(id);
+        return;
+    }
+    activate_toolbar_item(id);
+
+    tabbox_pull();
+    if (s_wnd)
+        InvalidateRect(s_wnd, NULL, TRUE);
+    if (hg_g_toolbar_wnd)
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+}
+
+BOOL hg_tabbox_pointer_over(void)
+{
+    if (!hg_tabbox_is_open())
+        return FALSE;
+    POINT pt;
+    RECT box;
+    if (!GetCursorPos(&pt) || !GetWindowRect(s_wnd, &box))
+        return FALSE;
+    return PtInRect(&box, pt);
+}
+
+BOOL hg_tabbox_handle_wheel(short delta)
+{
+    if (!hg_tabbox_is_open() || s_mode != HG_BOX_CONTROLS || !hg_tabbox_pointer_over())
+        return FALSE;
+
+    POINT pt;
+    if (!GetCursorPos(&pt))
+        return FALSE;
+    ScreenToClient(s_wnd, &pt);
+
+    double ws = hg_window_scale(s_wnd);
+    int pad = SCW(ws, 6);
+    int row_h = tabbox_row_height();
+    int row = (row_h > 0 && pt.y >= pad) ? (pt.y - pad) / row_h : -1;
+    if (row < 0 || row >= s_count || row >= (int)HG_ARRAYSIZE(s_control_ids))
+        return FALSE;
+
+    if (!hg_toolbar_value_wheel(s_control_ids[row], delta))
+        return FALSE;
+
+    s_selected = row;
+    tabbox_pull();
+    InvalidateRect(s_wnd, NULL, TRUE);
+    if (hg_g_toolbar_wnd)
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    return TRUE;
 }
 
 BOOL hg_tabbox_handle_key(WPARAM key)
@@ -395,7 +578,12 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         if (s_count <= 0) {
             SetTextColor(dc, hg_g_color_scheme_selected.text);
             RECT row = {pad, pad, rc.right - pad, pad + row_h};
-            DrawTextW(dc, L"(reading tabs...)", -1, &row, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
+            const WCHAR *empty = (s_mode == HG_BOX_TABS)
+                                     ? L"(reading tabs...)"
+                                     : (s_mode == HG_BOX_DIRS)
+                                           ? L"(no folder shortcuts - put one in the shortcuts folder)"
+                                           : L"(nothing to show)";
+            DrawTextW(dc, empty, -1, &row, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
         }
 
         /* An entered box says so with a frame, because the keys it answers
@@ -469,18 +657,26 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
          * row is the reason anyone right-clicks a tab list. */
         POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         int row = tabbox_row_at(pt);
-        if (row >= 0 && s_target) {
+        if (row >= 0 && s_target && s_mode == HG_BOX_TABS) {
             hg_tabs_close(s_target, row);
             hg_tabs_request(&s_target, 1); /* the list just changed */
         }
         return 0;
     }
 
+    case WM_MOUSEWHEEL:
+        /* Reached when the pointer is over the box and something gave it the
+         * message; the toolbar forwards the ones that arrive there instead. */
+        if (hg_tabbox_handle_wheel((short)HIWORD(w_param)))
+            return 0;
+        break;
+
     case WM_DESTROY:
         if (s_wnd == hwnd) {
             s_wnd = NULL;
             s_target = NULL;
             s_count = 0;
+            s_open = FALSE;
         }
         return 0;
     }

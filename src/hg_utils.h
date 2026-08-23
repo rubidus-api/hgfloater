@@ -211,18 +211,26 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_RELOCATE_AWAY,
     HG_TOOLBAR_CLICK_TOGGLE_PIN,
     HG_TOOLBAR_CLICK_SHOW_NOTES,
-    HG_TOOLBAR_CLICK_SHOW_CLIPBOARD
+    HG_TOOLBAR_CLICK_SHOW_CLIPBOARD,
+    HG_TOOLBAR_CLICK_OPEN_DIRS,     /* the folder list, in the shared box */
+    HG_TOOLBAR_CLICK_OPEN_CONTROLS  /* volume, brightness, opacity, pin, options */
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
     HG_TOOLBAR_DRAG_NONE = 0,
     HG_TOOLBAR_DRAG_RESIZE_TASKBOX,
     HG_TOOLBAR_DRAG_MOVE_TASKBOX
 } HgToolbarDragRole;
-WCHAR hg_toolbar_builtin_label(int index);
+const WCHAR *hg_toolbar_builtin_label(int index);
 const WCHAR *hg_toolbar_builtin_focus_text(int index);
 const WCHAR *hg_toolbar_builtin_tooltip_text(int index);
 BOOL hg_toolbar_builtin_has_value(int index);
 BOOL hg_toolbar_builtin_value_text(int index, HgToolbarTextMode mode, WCHAR *buffer, size_t buffer_cch);
+/* One wheel notch on a value button, wherever the wheel was pointed: the row
+ * in the Se box and the button itself are the same control, so they step the
+ * same way and in the same units. FALSE when that button has no value. */
+BOOL hg_toolbar_value_wheel(int index, short delta);
+/* That button's reading, 0-100. FALSE when it has no value. */
+BOOL hg_toolbar_value_percent(int index, int *out);
 HgToolbarClickRole hg_toolbar_builtin_click_role(int index);
 HgToolbarDragRole hg_toolbar_builtin_drag_role(int index);
 void update_toolbar_tooltips(HWND hwnd);

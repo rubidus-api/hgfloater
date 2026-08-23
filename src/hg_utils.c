@@ -744,7 +744,11 @@ typedef enum HgToolbarBuiltinValueKind {
 
 typedef struct HgToolbarBuiltinDescriptor {
     int index;
-    WCHAR label;
+    /* Three letters where one used to do. A single capital is only legible
+     * when the reader already knows the program; "Vol" and "Dir" are legible
+     * the first time, and the button is wide enough to say them if the text is
+     * fitted to the button rather than the button to the text. */
+    const WCHAR *label;
     const WCHAR *focus_text;
     const WCHAR *tooltip_text;
     HgToolbarBuiltinValueKind value_kind;
@@ -759,35 +763,49 @@ const HgResizePreset hg_resize_presets[HG_RESIZE_PRESET_COUNT] = {
 };
 
 static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
-    {HG_TOOL_ICON_RESIZE, L'R', L"Drag to Resize Window", L"Drag to Resize Window", HG_TOOLBAR_VALUE_NONE,
+    {HG_TOOL_ICON_RESIZE, L"Siz", L"Drag to Resize Window", L"Drag to Resize Window", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_RESIZE_TASKBOX},
-    {HG_TOOL_ICON_MOVE, L'M', L"Click to Move Aside, Drag to Move Window",
+    {HG_TOOL_ICON_MOVE, L"Mov", L"Click to Move Aside, Drag to Move Window",
      L"Click to Move Aside, Drag to Move Window", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_RELOCATE_AWAY,
      HG_TOOLBAR_DRAG_MOVE_TASKBOX},
-    {HG_TOOL_ICON_CLOSE, L'X', L"Exit hgfloater", L"Exit hgfloater", HG_TOOLBAR_VALUE_NONE,
+    {HG_TOOL_ICON_CLOSE, L"Ext", L"Exit hgfloater", L"Exit hgfloater", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_EXIT_APP, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_DESKTOP, L'D', L"Show Desktop", L"Show Desktop", HG_TOOLBAR_VALUE_NONE,
+    {HG_TOOL_ICON_DESKTOP, L"Dsk", L"Show Desktop", L"Show Desktop", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_TOGGLE_DESKTOP, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_MENU, L'O', L"Options", L"Options", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_MENU,
-     HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_COMMAND, L'C', L"Command Box", L"Command Box", HG_TOOLBAR_VALUE_NONE,
+    {HG_TOOL_ICON_COMMAND, L"Cmd", L"Command Box", L"Command Box", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_SHOW_COMMANDBOX, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_ALPHA, L'A', NULL, NULL, HG_TOOLBAR_VALUE_ALPHA, HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_BRIGHTNESS, L'B', NULL, NULL, HG_TOOLBAR_VALUE_BRIGHTNESS, HG_TOOLBAR_CLICK_NONE,
+    {HG_TOOL_ICON_NOTE, L"Not", L"Notes", L"Notes", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_SHOW_NOTES,
      HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_VOLUME, L'V', NULL, NULL, HG_TOOLBAR_VALUE_VOLUME, HG_TOOLBAR_CLICK_TOGGLE_MUTE,
-     HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_PIN, L'P', L"Pin the Taskbox Open", L"Pin the Taskbox Open", HG_TOOLBAR_VALUE_NONE,
-     HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_NOTE, L'N', L"Notes", L"Notes", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_SHOW_NOTES,
-     HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_CLIP, L'L', L"Clipboard History", L"Clipboard History", HG_TOOLBAR_VALUE_NONE,
+    {HG_TOOL_ICON_CLIP, L"Clp", L"Clipboard History", L"Clipboard History", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_SHOW_CLIPBOARD, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",
+     L"Folders (hover or click for the list)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_DIRS,
+     HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_SETTINGS, L"Se", L"Volume, brightness, opacity, pin, options",
+     L"Volume, brightness, opacity, pin, options", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_CONTROLS,
+     HG_TOOLBAR_DRAG_NONE},
+
+    /* Off the row, in the Se box. They keep their descriptors because the box
+     * draws its rows from them: one table still says what every button is
+     * called and what it does. */
+    {HG_TOOL_ICON_ALPHA, L"Alp", L"Taskbox opacity", L"Taskbox opacity", HG_TOOLBAR_VALUE_ALPHA,
+     HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_BRIGHTNESS, L"Bri", L"Screen brightness", L"Screen brightness", HG_TOOLBAR_VALUE_BRIGHTNESS,
+     HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_VOLUME, L"Vol", L"System volume (click to mute)", L"System volume (click to mute)",
+     HG_TOOLBAR_VALUE_VOLUME, HG_TOOLBAR_CLICK_TOGGLE_MUTE, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_PIN, L"Pin", L"Pin the Taskbox Open", L"Pin the Taskbox Open", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_MENU, L"Opt", L"Options", L"Options", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_MENU,
+     HG_TOOLBAR_DRAG_NONE},
 };
 
+/* Nine on the row plus the five the Se box holds. Stated rather than derived,
+ * so adding a descriptor without deciding which of the two it belongs to does
+ * not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
-        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS) ? 1 : 0)
+        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 5) ? 1 : 0)
 };
 
 static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)
@@ -799,10 +817,10 @@ static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index
     return NULL;
 }
 
-WCHAR hg_toolbar_builtin_label(int index)
+const WCHAR *hg_toolbar_builtin_label(int index)
 {
     const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
-    return desc ? desc->label : L'?';
+    return desc ? desc->label : L"?";
 }
 
 const WCHAR *hg_toolbar_builtin_focus_text(int index)

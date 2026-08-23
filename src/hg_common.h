@@ -146,20 +146,29 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 12
+#define HG_NUM_BASIC_ICONS 9
 
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
 #define HG_TOOL_ICON_CLOSE 2
 #define HG_TOOL_ICON_DESKTOP 3
-#define HG_TOOL_ICON_MENU 4
-#define HG_TOOL_ICON_COMMAND 5
-#define HG_TOOL_ICON_ALPHA 6
-#define HG_TOOL_ICON_BRIGHTNESS 7
-#define HG_TOOL_ICON_VOLUME 8
-#define HG_TOOL_ICON_PIN 9
-#define HG_TOOL_ICON_NOTE 10
-#define HG_TOOL_ICON_CLIP 11
+#define HG_TOOL_ICON_COMMAND 4
+#define HG_TOOL_ICON_NOTE 5
+#define HG_TOOL_ICON_CLIP 6
+#define HG_TOOL_ICON_DIR 7
+#define HG_TOOL_ICON_SETTINGS 8
+
+/* Volume, brightness, opacity, the pin and the options menu are still buttons -
+ * they are just not on the row any more. They live in the box the Se button
+ * opens, one row each, and they keep ids of their own because everything that
+ * knows how to read and set a value (hg_toolbar_value_*, the tooltips, the
+ * status line) is written against an id. Numbered past the row so that a loop
+ * over the toolbar cannot reach them by accident. */
+#define HG_TOOL_ICON_ALPHA 100
+#define HG_TOOL_ICON_BRIGHTNESS 101
+#define HG_TOOL_ICON_VOLUME 102
+#define HG_TOOL_ICON_PIN 103
+#define HG_TOOL_ICON_MENU 104
 
 #define HG_IDM_MINIMIZE 201
 #define HG_IDM_CLOSE 202
@@ -338,7 +347,8 @@ typedef struct {
 
 typedef struct {
     WCHAR path[HG_MAX_PATH];
-    WCHAR name[HG_MAX_STR]; /* display name (file name without extension) */
+    WCHAR name[HG_MAX_STR];   /* display name (file name without extension) */
+    WCHAR target[HG_MAX_PATH]; /* what the .lnk resolves to; empty when unknown */
     HICON icon;
 } ShortcutItem;
 

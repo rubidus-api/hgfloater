@@ -567,7 +567,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"  so this is where those commands get their arguments.",
     L"  Kinds: windows (w), resize (r), shortcut (c), note (n),",
     L"         monitor (m), sensors (s), tabs (t), value (v),",
-    L"         option (o), key (k),",
+    L"         option (o), key (k), folder (f),",
     L"         theme, tabsinfo (no shorthand - both diagnostics).",
     L"",
     L"Examples:",
@@ -576,6 +576,7 @@ static const WCHAR *const cmd_help_show[] = {
     L"  s w class           with each window's class, for tab_classes",
     L"  s r                 the resize presets, numbered for 'resize'",
     L"  s c                 the shortcut icons",
+    L"  s f                 the folders behind the Dir button",
     L"  s n                 every note, numbered for the 'note' command",
     L"  s m                 every display, numbered, with its size and place",
     L"  s m 1               turn display 1's preview window on - again to close",
@@ -1166,6 +1167,20 @@ static void cmd_show_keys(const WCHAR *context_word)
  * did not happen, and those three look identical from across the room. This
  * prints all of them so the answer is read rather than guessed: run it while
  * the floater looks wrong. */
+/* The folders behind the Dir button. They are shortcuts, but they are not in
+ * `show shortcut` - that lists what the grid holds, and these left the grid. */
+static void cmd_show_folders(void)
+{
+    if (hg_g_folder_count <= 0) {
+        commandbox_print(L"no folder shortcuts - put one in the shortcuts folder and it appears here");
+        return;
+    }
+    for (int i = 0; i < hg_g_folder_count; ++i) {
+        cmd_printf(L"%3d  %-24ls %ls", i + 1, hg_g_folders[i].name,
+                   hg_g_folders[i].target[0] ? hg_g_folders[i].target : hg_g_folders[i].path);
+    }
+}
+
 static void cmd_show_theme(void)
 {
     cmd_printf(L"theme       dark=%ls  high-contrast=%ls", hg_g_is_dark_mode ? L"yes" : L"no",
@@ -1258,6 +1273,8 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_show_keys((argc >= 3) ? argv[2] : NULL);
     } else if (cmd_word_is(argv[1], L"theme", NULL)) {
         cmd_show_theme();
+    } else if (cmd_word_is(argv[1], L"folder", L"f") || cmd_word_is(argv[1], L"folders", NULL)) {
+        cmd_show_folders();
     } else if (cmd_word_is(argv[1], L"tabsinfo", NULL)) {
         /* The tab reader's own numbers: per window, whether the scoped read
          * or a full discovery answered and what it cost; in total, what was
@@ -1268,8 +1285,8 @@ static void cmd_show(int argc, WCHAR *argv[])
         cmd_list_tabs();
     } else {
         cmd_printf(
-            L"show: unknown kind '%ls' (windows, resize, shortcut, note, monitor, sensors, tabs, value, "
-            L"option, key, theme)",
+            L"show: unknown kind '%ls' (windows, resize, shortcut, folder, note, monitor, sensors, tabs, "
+            L"value, option, key, theme)",
                    argv[1]);
     }
 }

@@ -2,7 +2,7 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.16.3** — built 2026-08-18 03:10 KST
+**v0.17.0** — built 2026-08-23 17:00 KST
 
 **[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
@@ -73,10 +73,9 @@ Design principles worth knowing before you use it:
   between the icons and behind the function buttons and shortcuts; only the
   icons, their labels and the border are drawn. Each lettered function button
   keeps **one white line** around it, because a button needs an edge to be a
-  button. The three value buttons - `A`, `B` and `V` - keep their coloured
-  backgrounds, since for them the colour is the reading rather than decoration.
-  A side effect worth knowing: clicks land on whatever is behind those gaps, so
-  drag the box by its `M` button rather than by the space between icons.
+  button. A side effect worth knowing: clicks land on whatever is behind those
+  gaps, so drag the box by its `Mov` button rather than by the space between
+  icons.
 - **It follows the system theme.** Switching Windows between light and dark mode
   re-colors everything immediately. The **widgets** invert it on purpose - a
   control has to stand out against the desktop behind it - while the **document
@@ -88,7 +87,7 @@ Design principles worth knowing before you use it:
 ## 2. Install and First Run
 
 1. **Download** the latest `hgfloater.exe` from the
-   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.16.3)
+   [Releases](https://github.com/rubidus-api/hgfloater/releases/tag/v0.17.0)
    page.
 2. **Run it.** There is no installer. On first launch it creates
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
@@ -96,6 +95,8 @@ Design principles worth knowing before you use it:
 3. **Add shortcuts.** Drop `.lnk` or `.url` files into
    `%USERPROFILE%\.HellGates\hgfloater\shortcuts`. They appear in the taskbox
    automatically; press `Esc` in the taskbox to re-scan the folder immediately.
+   A shortcut that points at a **folder** goes to the
+   [`Dir` button's list](#61-the-dir-button) rather than the icon grid.
 4. **Summon it from anywhere** with `Win + Alt + Space` (configurable).
 
 Only one instance runs at a time. Launching `hgfloater.exe` again simply
@@ -121,7 +122,7 @@ fetch anything, or send anything anywhere.
 Two features are **switched off in the published builds** until the executable
 is code-signed — the [maximize-button menu](#41-the-maximize-button-menu), which
 needs a system-wide mouse hook, and **Start with Windows**, which writes one
-value under the per-user `Run` key. Both stay in the `O` menu, greyed, reading
+value under the per-user `Run` key. Both stay in the options menu, greyed, reading
 `(off in this build)`.
 
 ## 3. The Two Windows
@@ -222,7 +223,7 @@ hit-tests its own way (a PuTTY-style utility): where the window declines to
 name its buttons, the DWM-computed button bounds say which third the click
 landed on.
 
-Switch it off with **Menu on Maximize Button** in the `O` menu, or
+Switch it off with **Menu on Maximize Button** in the options menu, or
 `caption_menu=0` under `[etc]`. **Close HGFloater and the behaviour is gone** —
 there is nothing installed and nothing to uninstall.
 
@@ -262,7 +263,7 @@ built-in buttons.
 
 > ### 📌 How to add a shortcut icon
 >
-> 1. **Right-click the `O` button** on the toolbar (or right-click the status
+> 1. **Open the options menu** — the `Opt` row of the `Se` button, or right-click the status
 >    line) to open the options menu.
 > 2. Choose **Open Shortcuts Folder**. Explorer opens on
 >    `%USERPROFILE%\.HellGates\hgfloater\shortcuts\`.
@@ -296,7 +297,7 @@ no key. `Shift` is what keeps this clear of the bare-letter grid movement
 (`WASD`) and of the bare `C` that opens the command box.
 
 **Hover a tabbed application's icon and its tabs appear next to it.** Off by
-default; turn it on with **Show Tabs as Task Icons** in the `O` menu, or
+default; turn it on with **Show Tabs as Task Icons** in the options menu, or
 `show_tabs=1` under `[taskbox]` in `config.ini`. The window keeps its single
 icon — orderable like any other — and the hover box lists its tabs by title:
 
@@ -387,7 +388,7 @@ A single-line read-only field across the top of the taskbox.
   predecessor.
 - Ten seconds after the last message it falls back to the **current time**,
   written as `2026. 11. 23.(Tue) 13:24`, and refreshes as the minute changes.
-- **Right click** it to open the options menu (the same one the `O` button
+- **Right click** it to open the options menu (the same one the `Opt` row
   shows).
 - **Left drag** it to move the whole taskbox.
 - **Ctrl + Wheel** over it changes only its own font size.
@@ -403,33 +404,68 @@ A single-line read-only field across the top of the taskbox.
 
 ## 6. The Toolbar
 
-Thirteen built-in buttons sit in the same grid as the icons. Their order is fixed.
+Nine built-in buttons sit in the same grid as the icons. Their order is fixed.
+Each carries a short word rather than a single capital, sized to the button, and
+two of them open a list instead of doing something outright.
 
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
-| **`R`** Resize | — | **Drag** resizes the taskbox grid. |
-| **`M`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
-| **`X`** Exit | Quits HGFloater. | — |
-| **`D`** Desktop | Minimizes every window; click again to restore. | — |
-| **`O`** Options | Opens the [options menu](#7-the-options-menu). | — |
-| **`C`** Command | Opens the [Command Box](#8-the-command-box). | — |
-| **`A`** Alpha | — | **Wheel** changes taskbox opacity. The red background brightens as opacity rises. |
-| **`B`** Brightness | — | **Wheel** changes screen brightness in 5% steps. The green background brightens with it. |
-| **`V`** Volume | Toggles mute. A thick accent border marks the muted state. | **Wheel** changes the volume. The blue background brightens with it. |
-| **`P`** Pin | Pins the taskbox open. | — |
-| **`N`** Note | Opens the [note list](#10-notes). | — |
-| **`L`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
+| **`Siz`** Resize | — | **Drag** resizes the taskbox grid. |
+| **`Mov`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
+| **`Ext`** Exit | Quits HGFloater. | — |
+| **`Dsk`** Desktop | Minimizes every window; click again to restore. | — |
+| **`Cmd`** Command | Opens the [Command Box](#8-the-command-box). | — |
+| **`Not`** Note | Opens the [note list](#10-notes). | — |
+| **`Clp`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
+| **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
+| **`Se`** Settings | Opens the [control list](#62-the-se-button): volume, brightness, opacity, the pin, the options menu. | — |
 
-**`M` — move aside.** Clicking the move handle without dragging nudges the pair
+### 6.1 The Dir button
+
+**Point at `Dir`, or click it, and the folders appear in a list beside the
+button** — above it or below it, whichever fits the screen, never over the
+button itself. Click a row, or press its number, and that folder opens in
+Explorer; the list and the taskbox both get out of the way, because a folder is
+somewhere you are going.
+
+The folders are **the shortcuts you already have**. Any `.lnk` in the shortcuts
+folder whose target is a directory is listed here instead of taking a slot in
+the icon grid — a folder is a place to go rather than a program to run, and a
+dozen of them crowd out the programs. Nothing new to register: drop a folder
+shortcut in, and it moves itself to this list. A shortcut that does not resolve
+to a real directory stays an icon, which is what keeps anything unusual working.
+
+### 6.2 The Se button
+
+**`Se` gathers the five controls that used to be five buttons.** Point at it and
+the same kind of list opens, one row each:
+
+| Row | What it does |
+| :--- | :--- |
+| **`Vol`** | The system volume, with its reading. **Wheel** over the row changes it in 5% steps; **click** mutes and unmutes. |
+| **`Bri`** | Screen brightness, with its reading. **Wheel** changes it in 5% steps. |
+| **`Alp`** | Taskbox opacity, with its reading. **Wheel** changes it. |
+| **`Pin`** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click** toggles. |
+| **`Opt`** | Opens the [options menu](#7-the-options-menu). |
+
+The wheel works wherever the pointer is over a row, and the reading on that row
+follows it as it moves, so a value can be set without looking anywhere else. The
+list stays open while you work: a control is not a destination.
+
+It is the same box the tabs and the folders use — same placement rules, same
+keys, same painting — because it is the same idea: a short list belonging to the
+button under the pointer.
+
+**`Mov` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
 sitting on. Clicks keep their heading, so pressing it repeatedly walks the
 window across the screen; when that heading runs out of room it turns
 counter-clockwise — north, west, south, east, and back to north. If no direction
 has room, nothing moves.
 
-**`B` — brightness.** The wheel moves brightness in **5% steps**, the same as
-opacity and volume. The `O` menu offers quarter steps per display when you want
-a specific level rather than a nudge.
+**`Bri` — brightness.** The wheel moves brightness in **5% steps**, the same as
+opacity and volume. The `Opt` menu offers quarter steps per display when you
+want a specific level rather than a nudge.
 
 HGFloater tries three things per display, in order, and remembers which one
 answered. First the **low-level DDC/CI** path: it reads the monitor's
@@ -450,14 +486,14 @@ by its connector and drives the real backlight through Windows' own brightness
 service, the same one the system slider uses. That moves the lamp, not the
 picture.
 
-**`P` — pin.** While pinned, moving the mouse away no longer collapses the
-taskbox, and the button carries an accent border. Explicit closes — `X`, `Esc`,
-the global hotkey, a floater click — still work. Click again to unpin.
+**`Pin`** is a row of the `Se` list. While pinned, moving the mouse away no
+longer collapses the taskbox. Explicit closes — `Ext`, `Esc`, the global hotkey,
+a floater click — still work. Click it again to unpin.
 
 
 ### The clipboard history
 
-The **`L`** toolbar button, or **`Ctrl + L`** from the floater or the taskbox,
+The **`Clp`** toolbar button, or **`Ctrl + L`** from the floater or the taskbox,
 opens a window listing what you have copied, newest first. Press it again while
 that window is in front and it closes; if it is minimized or buried, it comes
 back instead.
@@ -513,7 +549,8 @@ HGFloater empties the history.**
 
 ## 7. The Options Menu
 
-Open it with the `O` toolbar button or by right-clicking the status line.
+Open it with the `Opt` row of the [`Se` button](#62-the-se-button), or by
+right-clicking the status line.
 
 - **Settings...** — the [settings window](#71-the-settings-window): every
   option, every value and every key in one list.
@@ -582,7 +619,7 @@ Open it with the `O` toolbar button or by right-clicking the status line.
 
 ### 7.1 The settings window
 
-**Settings...** in the `O` menu, `Ctrl + ,` from the floater or the taskbox, or
+**Settings...** in the options menu, `Ctrl + ,` from the floater or the taskbox, or
 `settings` in the command box. One list, in three parts:
 
 - **Options** — the switches above. `Enter` or `Space` flips the selected one.
@@ -739,7 +776,7 @@ display.
 
 ## 10. Notes
 
-Open the note list with the **`N`** toolbar button, the `N` or `Ctrl + N` key
+Open the note list with the **`Not`** toolbar button, the `N` or `Ctrl + N` key
 in the taskbox, or the `note` command.
 
 **Note windows stand on their own.** The list and every open editor are
@@ -933,24 +970,26 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Reorder icons** | Left-drag a task icon |
 | **Item context menu** | Right-click an icon |
 | **Options menu** | Left-click `O`, or right-click the status line |
-| **Move a window** | Left-drag empty space, the status line, or the `M` button |
+| **Open a folder** | Point at `Dir`, then click a row |
+| **Open the control list** | Point at `Se` |
+| **Move a window** | Left-drag empty space, the status line, or the `Mov` button |
 | **Move the floater** | Drag the floater, or `Alt + drag` it |
-| **Move the taskbox aside** | Left-click the `M` button |
-| **Resize the taskbox grid** | Drag a border, or drag the `R` button |
+| **Move the taskbox aside** | Left-click the `Mov` button |
+| **Resize the taskbox grid** | Drag a border, or drag the `Siz` button |
 | **Font / icon size** | `Ctrl` + wheel |
-| **Opacity** | `Alt` + wheel, or wheel over `A` |
-| **Screen brightness** | Wheel over `B` |
-| **Volume / mute** | Wheel over `V` / click `V` |
-| **Pin the taskbox** | Left-click `P` |
+| **Opacity** | `Alt` + wheel, or wheel over the `Alp` row of the `Se` list |
+| **Screen brightness** | Wheel over the `Bri` row of the `Se` list |
+| **Volume / mute** | Wheel over the `Vol` row of the `Se` list / click that row |
+| **Pin the taskbox** | Click the `Pin` row of the `Se` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
-| **Open the notes** | Left-click `N` |
+| **Open the notes** | Left-click `Not` |
 | **New note** | Left-click `+Add Note` (a single click, unlike a note row) |
 | **Open a note** | Double-click it |
 | **Sort, archive, or delete a note** | Right-click it, or right-click a section heading |
 | **Note text size** | `Ctrl` + wheel over the list or an editor |
 | **Edit a note's text** | Right-click inside an editor |
 | **Command box text size** | `Ctrl` + wheel |
-| **Quit** | Left-click `X`, or Exit in the options menu |
+| **Quit** | Left-click `Ext`, or Exit in the options menu |
 
 ## 13. Configuration File
 
@@ -1014,7 +1053,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
-  gradients behind the `A`, `B`, and `V` buttons.
+  gradients behind the `Alp`, `Bri`, and `Vol` rows of the `Se` list.
 
 ### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 

@@ -113,6 +113,67 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
     return 0;
 }
 
+/* A font for a button's word, sized so the word fits the button.
+ *
+ * The buttons used to carry one capital, which fits anything; three letters do
+ * not, and a label clipped to "Vo" is worse than a smaller one that reads. The
+ * text is measured at the button's own height and scaled down until it fits the
+ * width, which keeps the fit right across DPI, icon sizes and font names
+ * without any of them being a special case.
+ *
+ * One font is cached, keyed by the height it was made at: every button on the
+ * row is the same size, so in practice this is created when the icons change
+ * and never per paint. */
+static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h)
+{
+    static HFONT s_font = NULL;
+    static int s_height = 0;
+
+    if (!label || !*label || box_w <= 0 || box_h <= 0)
+        return NULL;
+
+    int len = lstrlenW(label);
+    int height = box_h;
+    if (len > 1) {
+        /* A first guess from the glyph count, so the measuring loop below
+         * usually confirms rather than iterates. */
+        int guess = (box_w * 2) / (len + 1);
+        if (guess < height)
+            height = guess;
+    }
+    if (height < SC(7))
+        height = SC(7);
+
+    for (int attempt = 0; attempt < 4; ++attempt) {
+        if (height != s_height || !s_font) {
+            release_font_handle(&s_font, FALSE);
+            s_font = CreateFontW(height, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                                 OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY,
+                                 DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+            s_height = height;
+        }
+        if (!s_font)
+            return NULL;
+
+        HFONT old = (HFONT)SelectObject(dc, s_font);
+        SIZE sz = {0, 0};
+        GetTextExtentPoint32W(dc, label, len, &sz);
+        SelectObject(dc, old);
+
+        /* A little air on each side: a word touching the frame reads as
+         * clipped even when every glyph is there. */
+        int room = (box_w * 88) / 100;
+        if (sz.cx <= room || height <= SC(7))
+            return s_font;
+
+        int next = (height * room) / (sz.cx > 0 ? sz.cx : 1);
+        if (next >= height)
+            next = height - 1;
+        height = (next > SC(7)) ? next : SC(7);
+    }
+    return s_font;
+}
+
 static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type,
                                            int pressed_index, const HgTaskboxDragState *drag_state,
                                            int *cached_icon_size)
@@ -355,14 +416,21 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                             DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_shortcuts[s_idx].icon, icon_size,
                                        icon_size, 0, NULL, DI_NORMAL);
                         }
-                    } else if (hg_g_toolbar_btn_font) {
-                        SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
-                        SetBkMode(mem_dc, TRANSPARENT);
-                        HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
-                        WCHAR btn_text[2] = {hg_toolbar_builtin_label(i), 0};
-                        draw_outlined_text(mem_dc, btn_text, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
-                                           HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
-                        SelectObject(mem_dc, old_font);
+                    } else {
+                        const WCHAR *btn_text = hg_toolbar_builtin_label(i);
+                        HFONT label_font = toolbar_label_font(mem_dc, btn_text, rc_btn.right - rc_btn.left,
+                                                              rc_item.bottom - rc_item.top);
+                        if (!label_font)
+                            label_font = hg_g_toolbar_btn_font;
+                        if (label_font) {
+                            SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
+                            SetBkMode(mem_dc, TRANSPARENT);
+                            HFONT old_font = (HFONT)SelectObject(mem_dc, label_font);
+                            draw_outlined_text(mem_dc, btn_text, lstrlenW(btn_text), &rc_item,
+                                               DT_CENTER | DT_VCENTER | DT_SINGLELINE, HG_COLOR_TEXT_DEFAULT,
+                                               HG_COLOR_BG_DEFAULT);
+                            SelectObject(mem_dc, old_font);
+                        }
                     }
                 }
 
@@ -508,11 +576,27 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         } else {
             hg_hilite_hide();
         }
+        /* Dir and Se carry lists of their own, opened by pointing at them -
+         * the same gesture, the same box, placed the same way clear of the
+         * button. */
+        int list_button = -1;
+        if (cur_type == 1 && (cur_index == HG_TOOL_ICON_DIR || cur_index == HG_TOOL_ICON_SETTINGS))
+            list_button = cur_index;
+
         if (tab_target) {
             RECT rc_item;
             get_toolbar_item_rect(0, cur_index, rc.right, rc.bottom, icon_size, &rc_item);
             MapWindowPoints(hwnd, NULL, (POINT *)&rc_item, 2);
             hg_tabbox_open(tab_target, &rc_item);
+        } else if (list_button >= 0) {
+            RECT rc_item;
+            get_toolbar_item_rect(1, list_button, rc.right, rc.bottom, icon_size, &rc_item);
+            InflateRect(&rc_item, SC(4), SC(4));
+            MapWindowPoints(hwnd, NULL, (POINT *)&rc_item, 2);
+            if (list_button == HG_TOOL_ICON_DIR)
+                hg_tabbox_open_dirs(&rc_item);
+            else
+                hg_tabbox_open_controls(&rc_item);
         } else if (hg_tabbox_is_open()) {
             hg_tabbox_close();
         }
@@ -822,6 +906,27 @@ static void toolbar_value_apply_percent(int index, int value)
     }
 }
 
+BOOL hg_toolbar_value_percent(int index, int *out)
+{
+    if (!out || !hg_toolbar_builtin_has_value(index))
+        return FALSE;
+    *out = toolbar_value_current_percent(index);
+    return TRUE;
+}
+
+BOOL hg_toolbar_value_wheel(int index, short delta)
+{
+    if (!hg_toolbar_builtin_has_value(index))
+        return FALSE;
+
+    int current = toolbar_value_current_percent(index);
+    int next = toolbar_value_next_percent(index, current, delta);
+    if (next != current)
+        toolbar_value_apply_percent(index, next);
+    update_toolbar_tooltips(hg_g_toolbar_wnd);
+    return TRUE;
+}
+
 static void toolbar_update_value_tooltip(HWND hwnd, int index)
 {
     if (!hg_g_tooltip_wnd)
@@ -842,6 +947,12 @@ static void toolbar_update_value_tooltip(HWND hwnd, int index)
 
 static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
+    /* The box has no focus, so its wheel messages arrive here. A notch spent
+     * over a row belongs to that row: this is how Vol, Bri and Alp are still
+     * spun with the wheel now that they are rows rather than buttons. */
+    if (hg_tabbox_handle_wheel((short)HIWORD(w_param)))
+        return 0;
+
     if (LOWORD(w_param) & MK_CONTROL) {
         short delta = (short)HIWORD(w_param);
         update_size(delta > 0 ? 1 : -1);
