@@ -142,43 +142,6 @@ int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND 
     return cmd;
 }
 
-/* One row per option, checked from its current value. An option that cannot be
- * switched in this build is greyed and says why rather than vanishing: a
- * feature that disappears leaves the reader wondering whether they imagined
- * it, while a greyed line that reads "(off in this build)" leaves them
- * informed, in the one place they would look. */
-static HMENU taskbox_create_options_submenu(void)
-{
-    HMENU menu = CreatePopupMenu();
-    if (!menu)
-        return NULL;
-
-    int count = hg_option_count();
-    for (int i = 1; i <= count; ++i) {
-        HgOptionInfo info;
-        if (!hg_option_info(i, &info))
-            continue;
-
-        WCHAR text[160];
-        if (info.available) {
-            StringCchCopyW(text, HG_ARRAYSIZE(text), info.label);
-        } else {
-            StringCchPrintfW(text, HG_ARRAYSIZE(text), L"%ls  (%ls)", info.label,
-                             info.unavailable_note ? info.unavailable_note : L"unavailable");
-        }
-
-        UINT flags = MF_STRING;
-        if (!info.available)
-            flags |= MF_GRAYED;
-        else if (hg_option_get(i))
-            flags |= MF_CHECKED;
-
-        AppendMenuW(menu, flags, (UINT_PTR)(HG_IDM_OPTION_BASE + (UINT)i), text);
-    }
-
-    return menu;
-}
-
 HMENU taskbox_create_main_popup_menu(void)
 {
     update_audio_device_list();
@@ -191,16 +154,11 @@ HMENU taskbox_create_main_popup_menu(void)
     AppendMenuW(h_menu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
 
-    /* Every switch in one place. They used to sit loose at the top of this
-     * menu, three of them, each with its own command id - and the fourth would
-     * have made four. One submenu built from the options table means a new
-     * toggle appears here by existing. */
-    HMENU options_menu = taskbox_create_options_submenu();
-    if (options_menu) {
-        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)options_menu, L"Options")) {
-            DestroyMenu(options_menu);
-        }
-    }
+    /* The switches are not here any more: they are rows of the Set button's
+     * list, beside the volume and the opacity, which is where a reader looking
+     * for something to set now looks. Two places to keep the same list of
+     * toggles is one place too many, and this menu is the one that also carries
+     * displays, audio devices and Exit - a different kind of thing entirely. */
     AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(h_menu, MF_STRING, HG_IDM_ABOUT, L"About...");
     AppendMenuW(h_menu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");

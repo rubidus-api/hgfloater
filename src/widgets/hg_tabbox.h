@@ -48,6 +48,12 @@ BOOL hg_tabbox_handle_wheel(short delta);
 /* TRUE while the pointer is inside the open box. */
 BOOL hg_tabbox_pointer_over(void);
 
+/* Give the box the keyboard: the rows answer the arrows, Enter picks one, and
+ * the selected row is drawn as selected. Called when a button was activated by
+ * a key rather than pointed at, because "I pressed Space on it" is a statement
+ * about where the keyboard should be. */
+void hg_tabbox_enter(void);
+
 /* Close it if it is up. */
 void hg_tabbox_close(void);
 

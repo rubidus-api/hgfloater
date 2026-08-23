@@ -124,7 +124,30 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
  * One font is cached, keyed by the height it was made at: every button on the
  * row is the same size, so in practice this is created when the icons change
  * and never per paint. */
-static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h)
+/* A word too long for one line, split into two.
+ *
+ * Three letters fit a button across; more than that only fits by shrinking the
+ * text until nobody can read it, so four to six letters are stacked instead -
+ * two short lines at a size that still reads. The break is as near the middle
+ * as the word allows, which is what keeps the two lines looking like one word
+ * rather than a word and a remainder. */
+static int toolbar_label_lines(const WCHAR *label, WCHAR *out, size_t out_cch)
+{
+    int len = label ? lstrlenW(label) : 0;
+    if (len <= 3 || len > 6) {
+        StringCchCopyW(out, out_cch, label ? label : L"");
+        return 1;
+    }
+
+    int split = (len + 1) / 2; /* the longer half goes on top */
+    if (FAILED(StringCchCopyNW(out, out_cch, label, (size_t)split)))
+        return 1;
+    StringCchCatW(out, out_cch, L"\n");
+    StringCchCatW(out, out_cch, label + split);
+    return 2;
+}
+
+static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h, int lines)
 {
     static HFONT s_font = NULL;
     static int s_height = 0;
@@ -132,12 +155,18 @@ static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h
     if (!label || !*label || box_w <= 0 || box_h <= 0)
         return NULL;
 
+    if (lines < 1)
+        lines = 1;
+
     int len = lstrlenW(label);
-    int height = box_h;
-    if (len > 1) {
+    /* Two lines share the button's height, and each line is only half the
+     * glyphs wide, so both bounds change together. */
+    int height = box_h / lines;
+    int per_line = (lines > 1) ? (len + 1) / 2 : len;
+    if (per_line > 1) {
         /* A first guess from the glyph count, so the measuring loop below
          * usually confirms rather than iterates. */
-        int guess = (box_w * 2) / (len + 1);
+        int guess = (box_w * 2) / (per_line + 1);
         if (guess < height)
             height = guess;
     }
@@ -157,7 +186,7 @@ static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h
 
         HFONT old = (HFONT)SelectObject(dc, s_font);
         SIZE sz = {0, 0};
-        GetTextExtentPoint32W(dc, label, len, &sz);
+        GetTextExtentPoint32W(dc, label, (lines > 1) ? per_line : len, &sz);
         SelectObject(dc, old);
 
         /* A little air on each side: a word touching the frame reads as
@@ -418,17 +447,23 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         }
                     } else {
                         const WCHAR *btn_text = hg_toolbar_builtin_label(i);
+                        WCHAR stacked[16];
+                        int lines = toolbar_label_lines(btn_text, stacked, HG_ARRAYSIZE(stacked));
                         HFONT label_font = toolbar_label_font(mem_dc, btn_text, rc_btn.right - rc_btn.left,
-                                                              rc_item.bottom - rc_item.top);
+                                                              rc_item.bottom - rc_item.top, lines);
                         if (!label_font)
                             label_font = hg_g_toolbar_btn_font;
                         if (label_font) {
                             SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
                             SetBkMode(mem_dc, TRANSPARENT);
                             HFONT old_font = (HFONT)SelectObject(mem_dc, label_font);
-                            draw_outlined_text(mem_dc, btn_text, lstrlenW(btn_text), &rc_item,
-                                               DT_CENTER | DT_VCENTER | DT_SINGLELINE, HG_COLOR_TEXT_DEFAULT,
-                                               HG_COLOR_BG_DEFAULT);
+                            /* Two lines centre as a block, which is what makes a
+                             * split word sit on the button rather than above or
+                             * below its middle. */
+                            UINT format = (lines > 1) ? (DT_CENTER | DT_VCENTER | DT_EDITCONTROL | DT_WORDBREAK)
+                                                      : (DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                            draw_outlined_text(mem_dc, stacked, lstrlenW(stacked), &rc_item, format,
+                                               HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
                             SelectObject(mem_dc, old_font);
                         }
                     }
