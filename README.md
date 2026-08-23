@@ -74,7 +74,7 @@ Design principles worth knowing before you use it:
   icons, their labels and the border are drawn. Each lettered function button
   keeps **one white line** around it, because a button needs an edge to be a
   button. A side effect worth knowing: clicks land on whatever is behind those
-  gaps, so drag the box by its `Mov` button rather than by the space between
+  gaps, so drag the box by its `Mv` button rather than by the space between
   icons.
 - **It follows the system theme.** Switching Windows between light and dark mode
   re-colors everything immediately. The **widgets** invert it on purpose - a
@@ -263,7 +263,7 @@ built-in buttons.
 
 > ### 📌 How to add a shortcut icon
 >
-> 1. **Open the options menu** — the `Opt` row of the `Se` button, or right-click the status
+> 1. **Open the options menu** — the `Opt` row of the `Set` button, or right-click the status
 >    line) to open the options menu.
 > 2. Choose **Open Shortcuts Folder**. Explorer opens on
 >    `%USERPROFILE%\.HellGates\hgfloater\shortcuts\`.
@@ -410,15 +410,15 @@ two of them open a list instead of doing something outright.
 
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
-| **`Siz`** Resize | — | **Drag** resizes the taskbox grid. |
-| **`Mov`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
+| **`ReS`** Resize | — | **Drag** resizes the taskbox grid. |
+| **`Mv`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
 | **`Ext`** Exit | Quits HGFloater. | — |
 | **`Dsk`** Desktop | Minimizes every window; click again to restore. | — |
-| **`Cmd`** Command | Opens the [Command Box](#8-the-command-box). | — |
-| **`Not`** Note | Opens the [note list](#10-notes). | — |
+| **`Com`** Command | Opens the [Command Box](#8-the-command-box). | — |
+| **`Nt`** Note | Opens the [note list](#10-notes). | — |
 | **`Clp`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
-| **`Se`** Settings | Opens the [control list](#62-the-se-button): volume, brightness, opacity, the pin, the options menu. | — |
+| **`Set`** Settings | Opens the [control list](#62-the-set-button): volume, brightness, opacity, the pin, the options menu. | — |
 
 ### 6.1 The Dir button
 
@@ -435,9 +435,9 @@ dozen of them crowd out the programs. Nothing new to register: drop a folder
 shortcut in, and it moves itself to this list. A shortcut that does not resolve
 to a real directory stays an icon, which is what keeps anything unusual working.
 
-### 6.2 The Se button
+### 6.2 The Set button
 
-**`Se` gathers the five controls that used to be five buttons.** Point at it and
+**`Set` gathers the five controls that used to be five buttons.** Point at it and
 the same kind of list opens, one row each:
 
 | Row | What it does |
@@ -456,7 +456,7 @@ It is the same box the tabs and the folders use — same placement rules, same
 keys, same painting — because it is the same idea: a short list belonging to the
 button under the pointer.
 
-**`Mov` — move aside.** Clicking the move handle without dragging nudges the pair
+**`Mv` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
 sitting on. Clicks keep their heading, so pressing it repeatedly walks the
 window across the screen; when that heading runs out of room it turns
@@ -486,7 +486,7 @@ by its connector and drives the real backlight through Windows' own brightness
 service, the same one the system slider uses. That moves the lamp, not the
 picture.
 
-**`Pin`** is a row of the `Se` list. While pinned, moving the mouse away no
+**`Pin`** is a row of the `Set` list. While pinned, moving the mouse away no
 longer collapses the taskbox. Explicit closes — `Ext`, `Esc`, the global hotkey,
 a floater click — still work. Click it again to unpin.
 
@@ -549,7 +549,7 @@ HGFloater empties the history.**
 
 ## 7. The Options Menu
 
-Open it with the `Opt` row of the [`Se` button](#62-the-se-button), or by
+Open it with the `Opt` row of the [`Set` button](#62-the-set-button), or by
 right-clicking the status line.
 
 - **Settings...** — the [settings window](#71-the-settings-window): every
@@ -776,7 +776,7 @@ display.
 
 ## 10. Notes
 
-Open the note list with the **`Not`** toolbar button, the `N` or `Ctrl + N` key
+Open the note list with the **`Nt`** toolbar button, the `N` or `Ctrl + N` key
 in the taskbox, or the `note` command.
 
 **Note windows stand on their own.** The list and every open editor are
@@ -971,18 +971,18 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Item context menu** | Right-click an icon |
 | **Options menu** | Left-click `O`, or right-click the status line |
 | **Open a folder** | Point at `Dir`, then click a row |
-| **Open the control list** | Point at `Se` |
-| **Move a window** | Left-drag empty space, the status line, or the `Mov` button |
+| **Open the control list** | Point at `Set` |
+| **Move a window** | Left-drag empty space, the status line, or the `Mv` button |
 | **Move the floater** | Drag the floater, or `Alt + drag` it |
-| **Move the taskbox aside** | Left-click the `Mov` button |
-| **Resize the taskbox grid** | Drag a border, or drag the `Siz` button |
+| **Move the taskbox aside** | Left-click the `Mv` button |
+| **Resize the taskbox grid** | Drag a border, or drag the `ReS` button |
 | **Font / icon size** | `Ctrl` + wheel |
-| **Opacity** | `Alt` + wheel, or wheel over the `Alp` row of the `Se` list |
-| **Screen brightness** | Wheel over the `Bri` row of the `Se` list |
-| **Volume / mute** | Wheel over the `Vol` row of the `Se` list / click that row |
-| **Pin the taskbox** | Click the `Pin` row of the `Se` list |
+| **Opacity** | `Alt` + wheel, or wheel over the `Alp` row of the `Set` list |
+| **Screen brightness** | Wheel over the `Bri` row of the `Set` list |
+| **Volume / mute** | Wheel over the `Vol` row of the `Set` list / click that row |
+| **Pin the taskbox** | Click the `Pin` row of the `Set` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
-| **Open the notes** | Left-click `Not` |
+| **Open the notes** | Left-click `Nt` |
 | **New note** | Left-click `+Add Note` (a single click, unlike a note row) |
 | **Open a note** | Double-click it |
 | **Sort, archive, or delete a note** | Right-click it, or right-click a section heading |
@@ -1053,7 +1053,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
-  gradients behind the `Alp`, `Bri`, and `Vol` rows of the `Se` list.
+  gradients behind the `Alp`, `Bri`, and `Vol` rows of the `Set` list.
 
 ### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 

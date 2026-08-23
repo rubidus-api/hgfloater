@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   and a dozen of them crowd out the programs. `show folder` lists them in the
   command box; a shortcut that does not resolve to a real directory stays an
   icon, which is what keeps anything unusual working.
-- **`Se` gathers the five controls that were five buttons.** Volume, brightness,
+- **`Set` gathers the five controls that were five buttons.** Volume, brightness,
   opacity, the pin and the options menu are rows of a list now: the wheel over a
   row moves that value in the same 5% steps, a click does what clicking the
   button did, and each row carries its own reading so a value can be set without
@@ -27,13 +27,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   are per list. Three lists, one box.
 
 ### Changed
-- **The buttons carry words rather than single capitals:** `Siz`, `Mov`, `Ext`,
-  `Dsk`, `Cmd`, `Not`, `Clp`, `Dir`, `Se`, and `Vol`, `Bri`, `Alp`, `Pin`, `Opt`
-  in the Se list. A capital is legible only to someone who already knows the
+- **The buttons carry words rather than single capitals:** `ReS`, `Mv`, `Ext`,
+  `Dsk`, `Com`, `Nt`, `Clp`, `Dir`, `Set`, and `Vol`, `Bri`, `Alp`, `Pin`, `Opt`
+  in the Set list. A capital is legible only to someone who already knows the
   program. The text is **measured and fitted to the button** rather than the
   button to the text, so the fit holds across DPI, icon sizes and font names.
 - **Nine buttons on the row instead of twelve.** What left the row did not leave
-  the program: the five are in the Se list, and the folder shortcuts are behind
+  the program: the five are in the Set list, and the folder shortcuts are behind
   Dir.
 
 ## [v0.16.3] - 2026-08-18
