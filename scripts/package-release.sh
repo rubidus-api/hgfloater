@@ -74,6 +74,10 @@ else
 fi
 
 echo "package: OK $ZIP"
+
+# Both downloads or it is not a release. Checked rather than remembered.
+sh scripts/verify-release.sh "$DIST"
+
 echo
 echo "--- checksums for the release notes ---"
 printf 'hgfloater.exe            SHA-256  %s\n' "$(sha256sum "$EXE" | cut -d' ' -f1)"

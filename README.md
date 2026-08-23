@@ -1188,6 +1188,13 @@ README now states the executable's measured size — so the first build produces
 the number and the second folds it in. The checksums printed by the last run are
 the ones that belong in the release notes.
 
+**Both files are published, always: `hgfloater.exe` and `hgfloater-<version>.zip`.**
+The zip is not decoration — it is the second way in for a reader whose browser
+objects to a bare unsigned `.exe`, and the release notes carry a checksum for it
+either way. `scripts/verify-release.sh` runs at the end of packaging and fails
+if either is missing or if the zip does not hold the executable, so a release
+cannot quietly go out as half of itself.
+
 ### 14.5 What the build does
 
 - The version string is the build date, `vYY.MM.DD`, optionally suffixed.
