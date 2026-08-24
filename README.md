@@ -107,11 +107,12 @@ signals the running copy instead of starting a second one.
 The executable is unsigned, so nothing but the file itself vouches for it. Three
 ways to check, none of which require taking anyone's word:
 
-- **Verify the file.** Every release lists the **SHA-256** of both downloads.
+- **Verify the file.** Every release lists the **SHA-256** of the download.
   In PowerShell: `Get-FileHash .\hgfloater.exe -Algorithm SHA256`. If it
   matches the release notes, you have the file that was built here.
-- **Try the `.zip`.** Each release carries the same executable inside a zip,
-  which browser download-protection tends to treat less harshly.
+- **Try the `.zip`, when a release carries one.** Some releases also offer the
+  same executable inside a zip, which browser download-protection tends to
+  treat less harshly.
 - **Read the source.** All of it is in this repository under the MIT licence,
   and the build is reproducible from the included `Makefile` / `build.bat`.
 
@@ -1177,23 +1178,31 @@ build.bat test
 Building and packaging happen twice, in this order:
 
 ```sh
+sh scripts/release.sh dist              # the whole thing: build, package, build again, package again
+```
+
+That one command is the release build. It runs, in order:
+
+```sh
 sh scripts/build-mingw.sh build-mingw   # a warning-clean build, tests compiled and host tests run
-sh scripts/package-release.sh dist      # stages the exe, measures it into both READMEs, zips, prints checksums
+sh scripts/package-release.sh dist      # stages the exe into dist/, measures it into both READMEs
 sh scripts/build-mingw.sh build-mingw   # again: About renders the README, so it picks up the new size
-sh scripts/package-release.sh dist      # again: the checksums must belong to the binary being published
+sh scripts/package-release.sh dist      # again: the checksum must belong to the binary being published
 ```
 
 The second pass exists because the About window renders `README.md`, and the
-README now states the executable's measured size — so the first build produces
-the number and the second folds it in. The checksums printed by the last run are
-the ones that belong in the release notes.
+README states the executable's measured size — so the first build produces the
+number and the second folds it in. The checksum printed by the last run is the
+one that belongs in the release notes.
 
-**Both files are published, always: `hgfloater.exe` and `hgfloater-<version>.zip`.**
-The zip is not decoration — it is the second way in for a reader whose browser
-objects to a bare unsigned `.exe`, and the release notes carry a checksum for it
-either way. `scripts/verify-release.sh` runs at the end of packaging and fails
-if either is missing or if the zip does not hold the executable, so a release
-cannot quietly go out as half of itself.
+**The release artifact is the built executable, in `dist/`: `dist/hgfloater.exe`.**
+Plain, the same bytes the compiler produced, nothing wrapped around it — that is
+what a reader downloads and runs. `scripts/verify-release.sh` runs at the end of
+packaging and fails if it is missing, empty, or carrying a version other than
+the one being released, so a release cannot go out without the binary it is a
+release of. A zip of the same exe can be put beside it with `HG_RELEASE_ZIP=1`
+for a browser that objects to a bare unsigned `.exe`; it is an extra, not the
+download.
 
 ### 14.5 What the build does
 
