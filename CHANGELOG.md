@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **The move handle is `M`.** It was `Mv`, which spent two letters saying what
+  one says: no other button starts with M, so the second letter distinguished
+  it from nothing. The tooltip carries the rest.
+
 ## [v0.17.2] - 2026-08-23
 
 ### Added
