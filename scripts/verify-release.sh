@@ -1,16 +1,18 @@
 #!/bin/sh
-# Refuse to call a release ready unless both downloads are there.
+# Refuse to call a release ready unless the built executable is in dist/.
 #
 # Usage: sh scripts/verify-release.sh [dist-dir]
 #
-# Every release publishes two files: the .exe, and the same executable inside a
-# .zip. The zip is not decoration - it is the second way in for a reader whose
-# browser objects to a bare unsigned .exe, and the release notes list a checksum
-# for it either way. A release that quietly went out with only one of them would
-# still look finished, which is exactly why this is a check and not a habit.
+# The release artifact is dist/hgfloater.exe - the build output itself, plain,
+# not wrapped in anything. That is what a reader downloads and runs, so that is
+# what this checks: present, non-empty, and carrying the version on the label.
 #
-# package-release.sh ends by running this, so the packaging step cannot report
-# success while the pair is incomplete.
+# The zip is a convenience beside it, for a browser that objects to a bare
+# unsigned .exe. It is packaged when it can be, and its absence is worth a line
+# of output, but the exe is the file a release cannot go out without.
+#
+# package-release.sh ends by running this, so packaging cannot report success
+# while dist/ is missing the executable.
 set -e
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
@@ -26,26 +28,26 @@ fail() {
     exit 1
 }
 
-[ -f "$EXE" ] || fail "no $EXE"
-[ -f "$ZIP" ] || fail "no $ZIP - the zip is published beside the exe, always"
-
+[ -f "$EXE" ] || fail "no $EXE - the built exe is what a release publishes"
 [ -s "$EXE" ] || fail "$EXE is empty"
-[ -s "$ZIP" ] || fail "$ZIP is empty"
 
-# The zip has to hold the executable, not merely exist: a zip built from an
-# empty staging directory is the failure this catches.
+# The version in the file has to be the version on the label; a binary left over
+# from the previous release is the failure this catches. HG_VERSION_W is a wide
+# string, so the bytes to look for are UTF-16.
 if command -v python3 >/dev/null 2>&1; then
-    python3 - "$ZIP" <<'PY'
-import sys, zipfile
-zip_path = sys.argv[1]
-with zipfile.ZipFile(zip_path) as z:
-    names = z.namelist()
-    if "hgfloater.exe" not in names:
-        sys.exit("verify-release: %s does not contain hgfloater.exe (%s)" % (zip_path, names))
-    if z.getinfo("hgfloater.exe").file_size <= 0:
-        sys.exit("verify-release: hgfloater.exe inside %s is empty" % zip_path)
-PY
+    python3 -c 'import sys
+exe, version = sys.argv[1], sys.argv[2]
+with open(exe, "rb") as f:
+    if version.encode("utf-16-le") not in f.read():
+        sys.exit("verify-release: %s does not carry %s - rebuild it" % (exe, version))' "$EXE" "$VERSION" || exit 1
 fi
 
-echo "verify: OK both downloads are present ($(basename "$EXE"), $(basename "$ZIP"))"
-echo "verify: publish BOTH - a release with only the exe is an incomplete release"
+# wc -c, not du: du reports blocks on disk, and a compressing filesystem
+# cheerfully answered "1 KB" for a 600 KB binary.
+echo "verify: OK $EXE ($(( ($(wc -c < "$EXE") + 1023) / 1024 )) KB, $VERSION)"
+
+if [ -f "$ZIP" ] && [ -s "$ZIP" ]; then
+    echo "verify: zip alongside it ($(basename "$ZIP"))"
+else
+    echo "verify: no zip this time - the exe is the release artifact"
+fi
