@@ -765,7 +765,7 @@ const HgResizePreset hg_resize_presets[HG_RESIZE_PRESET_COUNT] = {
 static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_RESIZE, L"R", L"Drag to Resize Window", L"Drag to Resize Window", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_RESIZE_TASKBOX},
-    {HG_TOOL_ICON_MOVE, L"Mv", L"Click to Move Aside, Drag to Move Window",
+    {HG_TOOL_ICON_MOVE, L"M", L"Click to Move Aside, Drag to Move Window",
      L"Click to Move Aside, Drag to Move Window", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_RELOCATE_AWAY,
      HG_TOOLBAR_DRAG_MOVE_TASKBOX},
     {HG_TOOL_ICON_CLOSE, L"X", L"Exit hgfloater", L"Exit hgfloater", HG_TOOLBAR_VALUE_NONE,

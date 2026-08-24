@@ -74,7 +74,7 @@ Design principles worth knowing before you use it:
   icons, their labels and the border are drawn. Each lettered function button
   keeps **one white line** around it, because a button needs an edge to be a
   button. A side effect worth knowing: clicks land on whatever is behind those
-  gaps, so drag the box by its `Mv` button rather than by the space between
+  gaps, so drag the box by its `M` button rather than by the space between
   icons.
 - **It follows the system theme.** Switching Windows between light and dark mode
   re-colors everything immediately. The **widgets** invert it on purpose - a
@@ -427,7 +427,7 @@ can read.
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
 | **`R`** Resize | — | **Drag** resizes the taskbox grid. |
-| **`Mv`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
+| **`M`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
 | **`X`** Exit | Quits HGFloater. | — |
 | **`D`** Desktop | Minimizes every window; click again to restore. | — |
 | **`C`** Command | Opens the [Command Box](#8-the-command-box). | — |
@@ -484,7 +484,7 @@ It is the same box the tabs and the folders use — same placement rules, same
 keys, same painting — because it is the same idea: a short list belonging to the
 button under the pointer.
 
-**`Mv` — move aside.** Clicking the move handle without dragging nudges the pair
+**`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
 sitting on. Clicks keep their heading, so pressing it repeatedly walks the
 window across the screen; when that heading runs out of room it turns
@@ -974,9 +974,9 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Options menu** | Left-click `O`, or right-click the status line |
 | **Open a folder** | Point at `Dir`, then click a row |
 | **Open the control list** | Point at `Set` |
-| **Move a window** | Left-drag empty space, the status line, or the `Mv` button |
+| **Move a window** | Left-drag empty space, the status line, or the `M` button |
 | **Move the floater** | Drag the floater, or `Alt + drag` it |
-| **Move the taskbox aside** | Left-click the `Mv` button |
+| **Move the taskbox aside** | Left-click the `M` button |
 | **Resize the taskbox grid** | Drag a border, or drag the `R` button |
 | **Font / icon size** | `Ctrl` + wheel |
 | **Opacity** | `Alt` + wheel, or wheel over the `Alp` row of the `Set` list |
