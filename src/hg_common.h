@@ -146,7 +146,7 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 9
+#define HG_NUM_BASIC_ICONS 10
 
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
@@ -157,18 +157,23 @@
 #define HG_TOOL_ICON_CLIP 6
 #define HG_TOOL_ICON_DIR 7
 #define HG_TOOL_ICON_SETTINGS 8
+#define HG_TOOL_ICON_MENU 9
 
-/* Volume, brightness, opacity, the pin and the options menu are still buttons -
- * they are just not on the row any more. They live in the box the Se button
- * opens, one row each, and they keep ids of their own because everything that
- * knows how to read and set a value (hg_toolbar_value_*, the tooltips, the
- * status line) is written against an id. Numbered past the row so that a loop
- * over the toolbar cannot reach them by accident. */
+/* Volume, brightness, opacity and the pin are still buttons - they are just not
+ * on the row any more. They live in the box the Set button opens, one row each,
+ * and they keep ids of their own because everything that knows how to read and
+ * set a value (hg_toolbar_value_*, the tooltips, the status line) is written
+ * against an id. Numbered past the row so that a loop over the toolbar cannot
+ * reach them by accident.
+ *
+ * The options menu is not among them any more: it was a row in that list, one
+ * click deep, when what it opens is a menu of its own. It has its own button
+ * again - Opt, on the row - because a menu that lives inside another list is a
+ * menu nobody finds. */
 #define HG_TOOL_ICON_ALPHA 100
 #define HG_TOOL_ICON_BRIGHTNESS 101
 #define HG_TOOL_ICON_VOLUME 102
 #define HG_TOOL_ICON_PIN 103
-#define HG_TOOL_ICON_MENU 104
 
 #define HG_IDM_MINIMIZE 201
 #define HG_IDM_CLOSE 202

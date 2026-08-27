@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **`Opt` is a button again.** The options menu was a row inside the `Set` list,
+  which meant opening a list and picking its first line to reach a menu - a menu
+  behind a door. It has its own button on the row, and it opens **directly under
+  that button** whether the mouse clicked it or the keyboard chose it.
+- **Left and Right change a value in the `Set` list.** On a row that holds a
+  percentage - volume, brightness, opacity - the sideways arrows are less and
+  more, in the same steps the wheel uses. It is the one place in the box where
+  they are not navigation, and it is worth the exception: a value the wheel can
+  turn but the keyboard cannot is a value only half the readers can reach.
+  Everywhere else they still leave the list for the neighbouring button, and
+  `Space` or `Enter` switches a row that has a state rather than a number.
+- **Every `Set` row says which keys it answers, in a tooltip**, as you arrive on
+  it. The tooltip used to appear only for a row too long to be read whole; it
+  now also carries the one line the row itself cannot say.
+- **`Ctrl + S` and `Ctrl + O` in the taskbox** choose the `Set` list and the
+  options menu, exactly as if the button had been picked: the focus moves to it
+  and the list or menu opens where that button is. Both are ordinary rows in the
+  key table, so both can be rebound or cleared like any other. A chord the table
+  names now beats the letters that merely duplicate an arrow - `Ctrl + WASD` and
+  `Ctrl + Arrows` were two spellings of the same four grid moves, so `Ctrl + S`
+  costs nothing that `Ctrl + Down` does not still do.
+
 ### Changed
 - **The move handle is `M`.** It was `Mv`, which spent two letters saying what
   one says: no other button starts with M, so the second letter distinguished

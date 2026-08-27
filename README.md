@@ -264,8 +264,8 @@ built-in buttons.
 
 > ### 📌 How to add a shortcut icon
 >
-> 1. **Open the options menu** — the `Opt` row of the `Set` button, or right-click the status
->    line) to open the options menu.
+> 1. **Open the options menu** — the `Opt` button, `Ctrl + O`, or a right-click
+>    on the status line.
 > 2. Choose **Open Shortcuts Folder**. Explorer opens on
 >    `%USERPROFILE%\.HellGates\hgfloater\shortcuts\`.
 > 3. **Copy a shortcut into it** — any `.lnk` or `.url`. Drag one out of the
@@ -330,9 +330,10 @@ tabs, the `Dir` folders and the `Set` controls:
 | `Up` / `Down` | **Step into the box**, and from then on move the selection in it. `Down` enters at the top row and `Up` at the bottom, so the selection lands where the key was already pointing. The box is what sits above or below the icon, so those keys reach it rather than stepping over it to the next row of icons. |
 | `Tab` | Step into the box as well. On a `Dir` or `Set` button, `Space` does it too: activating the button opens its list **and** hands it the keyboard. |
 | `Home` / `End` | The first row, the last row. The selected row is filled and marked, so where the arrows are standing is never in doubt. |
-| `Left` / `Right` | Leave the box and move to the icon left or right — a list is a column, and sideways is what the grid means by those keys. The next icon opens its own box if it has one. |
+| `Left` / `Right` | Leave the box and move to the icon left or right — a list is a column, and sideways is what the grid means by those keys. The next icon opens its own box if it has one. **One exception:** on a `Set` row that holds a percentage, Left and Right are less and more. |
 | `a`-`z`, `A`-`Z` | The labels past the ninth row (inside the box, because those letters move the grid outside it). |
 | `Enter` / `Space`, or a click | Take that row: switch to the tab, open the folder, flip the switch. |
+| A tooltip | On every `Set` row, as you arrive: which keys that row answers — the arrows for a number, `Space` or `Enter` for a switch. |
 | Right click | Close that tab. The list stays up. (Tabs only.) |
 | `Esc` | Leave the box. The keyboard stays in the taskbox, where it was. |
 
@@ -399,8 +400,8 @@ A single-line read-only field across the top of the taskbox.
   predecessor.
 - Ten seconds after the last message it falls back to the **current time**,
   written as `2026. 11. 23.(Tue) 13:24`, and refreshes as the minute changes.
-- **Right click** it to open the options menu (the same one the `Opt` row
-  shows).
+- **Right click** it to open the options menu (the same one the `Opt` button
+  opens).
 - **Left drag** it to move the whole taskbox.
 - **Ctrl + Wheel** over it changes only its own font size.
 
@@ -415,9 +416,9 @@ A single-line read-only field across the top of the taskbox.
 
 ## 6. The Toolbar
 
-Nine built-in buttons sit in the same grid as the icons. Their order is fixed.
-Each carries a short word rather than a single capital, and two of them open a
-list instead of doing something outright.
+Ten built-in buttons sit in the same grid as the icons. Their order is fixed.
+Each carries a short word rather than a single capital; two of them open a list
+instead of doing something outright, and one opens a menu.
 
 The word is **fitted to the button**: up to three letters it stays on one line,
 and four to six letters are stacked on two, at a size the button can hold. The
@@ -434,7 +435,8 @@ can read.
 | **`Note`** Note | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
-| **`Set`** Settings | Opens the [control list](#62-the-set-button): volume, brightness, opacity, the pin, the options menu. | — |
+| **`Set`** Settings | Opens the [control list](#62-the-set-button): volume, brightness, opacity, the pin, the switches. | — |
+| **`Opt`** Options | Opens the [options menu](#7-the-options-menu), **directly under the button**. | — |
 
 ### 6.1 The Dir button
 
@@ -454,20 +456,31 @@ to a real directory stays an icon, which is what keeps anything unusual working.
 ### 6.2 The Set button
 
 **`Set` is everything there is to set.** Point at it — or land on it with the
-arrow keys — and the same kind of list opens. Pointing at a button and arriving
-at it with the keyboard are the same arrival, so neither needs a click first. The rows are text, so they say their whole name and what turns them:
+arrow keys, or press `Ctrl + S` — and the same kind of list opens. Pointing at a
+button and arriving at it with the keyboard are the same arrival, so neither
+needs a click first. The rows are text, so they say their whole name and what
+turns them:
 
 The rows are grouped by what a row **is**, top to bottom:
 
 | Row | What it does |
 | :--- | :--- |
-| **Options Menu** | Opens the [options menu](#7-the-options-menu) — **under the `Set` button**, where the list was, rather than at the pointer. First because it is the one row that leaves this list for somewhere else. |
-| **Volume (ScrollWheel)** | The system volume, with its reading. **Wheel** over the row changes it in 5% steps; **click** mutes and unmutes. |
-| **Brightness (ScrollWheel)** | Screen brightness, with its reading. **Wheel** changes it in 5% steps. |
-| **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** changes it. |
-| **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click** toggles. |
-| **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click** flips one. |
+| **Volume (ScrollWheel)** | The system volume, with its reading. **Wheel** over the row, or **Left / Right** once the row is selected, changes it in 5% steps; **click** mutes and unmutes. |
+| **Brightness (ScrollWheel)** | Screen brightness, with its reading. **Wheel** or **Left / Right** changes it in 5% steps. |
+| **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** or **Left / Right** changes it. |
+| **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click**, or **Space / Enter**, toggles. |
+| **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click**, or **Space / Enter**, flips one. |
 | **(off in this build)** | Last: the ones this build cannot switch. Listed rather than hidden, and out of the way of the ones that work. |
+
+**A row with a number is turned; a row with a state is switched.** That is the
+whole keyboard model for this list. On a row that holds a percentage, **Left and
+Right are less and more** — the only place in the box where the sideways arrows
+are not navigation, and worth the exception, because a value the wheel can turn
+but the keyboard cannot is a value only half the readers can reach. On every
+other row Left and Right leave the list for the neighbouring button, as they do
+everywhere else, and **Space or Enter** does the switching. Each row says which
+it is **in a tooltip** as you arrive on it, since nothing about the row itself
+would tell you.
 
 **The switches used to be a submenu of the options menu.** They are here now,
 beside the volume and the opacity, because they are the same kind of thing to a
@@ -483,6 +496,15 @@ list stays open while you work: a control is not a destination.
 It is the same box the tabs and the folders use — same placement rules, same
 keys, same painting — because it is the same idea: a short list belonging to the
 button under the pointer.
+
+### 6.3 The Opt button
+
+**`Opt` opens the options menu**, directly under the button, whether the mouse
+clicked it or `Ctrl + O` chose it. It was a row inside the `Set` list until
+v0.17.3 — a menu reached by opening a list and picking its first line, which is
+a menu behind a door. It has a button of its own again. What the menu holds is
+described in [section 7](#7-the-options-menu): the things that are not settings
+— the shortcuts folder, the displays, the audio devices, About, Reset, Exit.
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -577,8 +599,9 @@ HGFloater empties the history.**
 
 ## 7. The Options Menu
 
-Open it with the `Opt` row of the [`Set` button](#62-the-set-button), or by
-right-clicking the status line.
+Open it with the [`Opt` button](#63-the-opt-button) — it appears directly under
+the button — with `Ctrl + O` in the taskbox, or by right-clicking the status
+line.
 
 - **Settings...** — the [settings window](#71-the-settings-window): every
   option, every value and every key in one list.
@@ -906,6 +929,8 @@ a chord.
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
 | `Ctrl + L` | Open the clipboard history |
+| `Ctrl + S` | The `Set` list, as if the button had been chosen: it opens and the arrows are in it |
+| `Ctrl + O` | The options menu, as if `Opt` had been chosen |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
 ### Inside the note list

@@ -81,23 +81,21 @@ static void tabbox_add_control_row(HgControlRow row)
         s_control_rows[s_control_row_count++] = row;
 }
 
-/* The list, in the order a reader works down it: the way out first, then the
- * things with a number, then the things with a state, and last the ones that
- * cannot be touched in this build.
+/* The list, in the order a reader works down it: the things with a number
+ * first, then the things with a state, and last the ones that cannot be touched
+ * in this build.
  *
- * Grouped by what a row *is* rather than by where it used to live. The menu is
- * at the top because it is the one row that leaves this list for somewhere
- * else, and what cannot be switched sits at the bottom because a row nobody can
- * use should not stand between two that can. */
+ * Grouped by what a row *is* rather than by where it used to live. What cannot
+ * be switched sits at the bottom, because a row nobody can use should not stand
+ * between two that can. The options menu is not here at all any more - it is
+ * the Opt button, on the row, since a menu reached by opening a list and
+ * picking its first line was a menu behind a door. */
 static void tabbox_build_control_rows(void)
 {
     s_control_row_count = 0;
 
-    /* Out of the list, into the menu. */
-    HgControlRow menu = {HG_ROW_BUTTON, HG_TOOL_ICON_MENU, L"Options Menu"};
-    tabbox_add_control_row(menu);
-
-    /* The three the wheel turns. */
+    /* The three the wheel turns - and, once the row is under the arrows, the
+     * left and right keys. */
     const HgControlRow values[] = {
         {HG_ROW_BUTTON, HG_TOOL_ICON_VOLUME, L"Volume (ScrollWheel)"},
         {HG_ROW_BUTTON, HG_TOOL_ICON_BRIGHTNESS, L"Brightness (ScrollWheel)"},
@@ -363,6 +361,66 @@ static void tabbox_pull(void)
         s_selected = (s_count > 0) ? s_count - 1 : 0;
 }
 
+/* What a control row answers to, asked in one place.
+ *
+ * A row with a number is turned; a row with a state is switched. Every key this
+ * box gives a control row follows from that distinction, and so does what the
+ * tooltip tells the reader - which matters, because "the arrows change this
+ * one and not that one" is not a rule anyone guesses from looking. */
+static BOOL tabbox_row_is_value(int index)
+{
+    if (s_mode != HG_BOX_CONTROLS || index < 0 || index >= s_control_row_count)
+        return FALSE;
+    const HgControlRow *row = &s_control_rows[index];
+    if (row->kind != HG_ROW_BUTTON)
+        return FALSE;
+    int pct = 0;
+    return hg_toolbar_value_percent(row->id, &pct);
+}
+
+/* The line the tooltip adds: what this row does when a key arrives. Shown for
+ * every control row, fitting or not, because it is the answer to a question the
+ * row cannot answer by being read. */
+static const WCHAR *tabbox_row_hint(int index)
+{
+    if (s_mode != HG_BOX_CONTROLS || index < 0 || index >= s_control_row_count)
+        return NULL;
+
+    const HgControlRow *row = &s_control_rows[index];
+    if (row->kind == HG_ROW_OPTION) {
+        HgOptionInfo info;
+        if (hg_option_info(row->id, &info) && !info.available)
+            return L"Off in this build - nothing to switch.";
+        return L"Space or Enter: switch it on or off";
+    }
+
+    if (tabbox_row_is_value(index))
+        return L"Left / Right: less / more   (the wheel does the same)";
+    return L"Space or Enter: switch it on or off";
+}
+
+/* Left and right on a row with a number. Same call as the wheel, so one step of
+ * the arrows and one notch of the wheel move a value by the same amount and
+ * there is only one place that decides how big a step is. */
+static void tabbox_tip_show(int index);
+
+static BOOL tabbox_adjust_row(int index, int direction)
+{
+    if (!tabbox_row_is_value(index))
+        return FALSE;
+    if (!hg_toolbar_value_wheel(s_control_rows[index].id, (short)(direction * WHEEL_DELTA)))
+        return FALSE;
+
+    s_selected = index;
+    tabbox_pull();
+    if (s_wnd)
+        InvalidateRect(s_wnd, NULL, TRUE);
+    if (hg_g_toolbar_wnd)
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    tabbox_tip_show(index); /* the reading just changed under it */
+    return TRUE;
+}
+
 /* The full text of a row, as it is drawn: the label and the title. */
 static void tabbox_row_text(int index, WCHAR *out, size_t out_cch)
 {
@@ -423,12 +481,26 @@ static void tabbox_tip_show(int index)
         return;
     }
 
-    WCHAR text[HG_MAX_STR + 8];
-    if (!tabbox_row_is_clipped(index, text, HG_ARRAYSIZE(text))) {
-        /* A row that fits says everything it has to say already. */
+    /* Two reasons for a tip, and they compose: a row too long to be read whole,
+     * and a row whose keys are worth saying out loud. A control row gets the
+     * second whether or not it needs the first. */
+    WCHAR full[HG_MAX_STR + 8];
+    BOOL clipped = tabbox_row_is_clipped(index, full, HG_ARRAYSIZE(full));
+    const WCHAR *hint = tabbox_row_hint(index);
+    if (!clipped && !hint) {
+        /* A row that fits and does nothing surprising says everything it has to
+         * say already. */
         tabbox_tip_hide();
         return;
     }
+
+    WCHAR text[HG_MAX_STR + 128];
+    if (clipped && hint)
+        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%ls\r\n%ls", full, hint);
+    else if (clipped)
+        StringCchCopyW(text, HG_ARRAYSIZE(text), full);
+    else
+        StringCchCopyW(text, HG_ARRAYSIZE(text), hint);
 
     if (!s_tip) {
         s_tip = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -659,19 +731,9 @@ static void tabbox_activate(int index)
         return;
     }
 
-    /* The same call the buttons made when they were on the row. Mute, the pin
-     * and the options menu did not change by moving in here, and writing them
-     * out a second time is how two copies of one behaviour start to differ. */
-    if (hg_toolbar_builtin_click_role(row->id) == HG_TOOLBAR_CLICK_OPEN_MENU) {
-        /* The menu is modal and would sit under a box that cannot lose a focus
-         * it never had, so the box goes first - and it opens where the box was,
-         * under the button, rather than wherever the pointer happens to be.
-         * The anchor is read before closing, which clears it. */
-        POINT at = {s_anchor.left, s_anchor.bottom};
-        hg_tabbox_close();
-        taskbox_show_main_menu_at(&at);
-        return;
-    }
+    /* The same call the buttons made when they were on the row. Mute and the
+     * pin did not change by moving in here, and writing them out a second time
+     * is how two copies of one behaviour start to differ. */
     activate_toolbar_item(row->id);
 
     tabbox_pull();
@@ -768,12 +830,19 @@ BOOL hg_tabbox_handle_key(WPARAM key)
         return TRUE;
     case VK_LEFT:
     case VK_RIGHT:
-        /* Left and right are what they are everywhere else in the taskbox: the
-         * icon to the left, the icon to the right. A list is a column, so it
-         * has nothing of its own to do with them, and answering them here would
-         * strand the reader inside a box they walked into sideways. The box
-         * closes and the key goes on to the grid, which moves the focus - and
-         * the next icon opens its own box if it has one. */
+        /* On a row that holds a number, left and right are less and more. It is
+         * the one place in this box where they are not navigation, and it is
+         * worth the exception: a value the wheel can turn but the keyboard
+         * cannot is a value only half the readers can reach. The tooltip on
+         * such a row says so, because nothing about the row itself would.
+         *
+         * Everywhere else they are what they are in the rest of the taskbox:
+         * the icon to the left, the icon to the right. A list is a column and
+         * has nothing of its own to do with them, so the box closes and the key
+         * goes on to the grid - which moves the focus, and the next icon opens
+         * its own box if it has one. */
+        if (tabbox_adjust_row(s_selected, (key == VK_RIGHT) ? 1 : -1))
+            return TRUE;
         hg_tabbox_close();
         return FALSE;
     case VK_UP:
