@@ -44,3 +44,6 @@ github-personal-access-token
 *.pem
 *api*key*
 cloudflare*.env
+
+# agy-only customization layer (local; see rootsator RFC-0001)
+/.agents/
