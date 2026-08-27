@@ -781,11 +781,13 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",
      L"Folders (hover or click for the list)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_DIRS,
      HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_SETTINGS, L"Set", L"Volume, brightness, opacity, pin, options",
-     L"Volume, brightness, opacity, pin, options", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_CONTROLS,
+    {HG_TOOL_ICON_SETTINGS, L"Set", L"Volume, brightness, opacity, pin, switches",
+     L"Volume, brightness, opacity, pin, switches", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_CONTROLS,
      HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_MENU, L"Opt", L"Options Menu", L"Options Menu", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_OPEN_MENU, HG_TOOLBAR_DRAG_NONE},
 
-    /* Off the row, in the Se box. They keep their descriptors because the box
+    /* Off the row, in the Set box. They keep their descriptors because the box
      * draws its rows from them: one table still says what every button is
      * called and what it does. */
     {HG_TOOL_ICON_ALPHA, L"Alp", L"Taskbox opacity", L"Taskbox opacity", HG_TOOLBAR_VALUE_ALPHA,
@@ -796,8 +798,6 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_VALUE_VOLUME, HG_TOOLBAR_CLICK_TOGGLE_MUTE, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_PIN, L"Pin", L"Pin the Taskbox Open", L"Pin the Taskbox Open", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_MENU, L"Opt", L"Options", L"Options", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_MENU,
-     HG_TOOLBAR_DRAG_NONE},
 };
 
 /* Nine on the row plus the five the Se box holds. Stated rather than derived,
@@ -805,7 +805,7 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
  * not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
-        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 5) ? 1 : 0)
+        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 4) ? 1 : 0)
 };
 
 static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)

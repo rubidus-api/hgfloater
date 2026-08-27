@@ -294,9 +294,20 @@ void activate_toolbar_item(int index)
         break;
     }
     case HG_TOOLBAR_CLICK_OPEN_MENU: {
-        POINT pt;
-        GetCursorPos(&pt);
-        taskbox_show_main_menu_at(&pt);
+        /* Under the button, not under the pointer: the eye is on the button
+         * that was just used, and when the keyboard used it the pointer may be
+         * nowhere near. A list hanging off a neighbouring button goes first -
+         * the menu is modal, and would otherwise open behind it. */
+        RECT anchor;
+        POINT at;
+        if (taskbox_toolbar_button_screen_rect(index, &anchor)) {
+            at.x = anchor.left;
+            at.y = anchor.bottom;
+        } else {
+            GetCursorPos(&at);
+        }
+        hg_tabbox_close();
+        taskbox_show_main_menu_at(&at);
         break;
     }
     case HG_TOOLBAR_CLICK_SHOW_COMMANDBOX:
@@ -676,13 +687,36 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     return 0;
 }
 /* A bound taskbox function, by the name the settings file and `bind` use. */
+/* A key that stands for a button: the focus moves there and the button runs.
+ *
+ * Both halves matter. Running the button without moving the focus would leave
+ * the highlight sitting somewhere else while a list opened elsewhere on screen,
+ * and the reader would have no idea which of the two the arrows now belong to. */
+static void taskbox_choose_toolbar_button(int index)
+{
+    if (index < 0 || index >= HG_NUM_BASIC_ICONS)
+        return;
+
+    hg_taskbox_focus.area = 1;
+    hg_taskbox_focus.index = index;
+    if (hg_g_toolbar_wnd)
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    update_focus_message(-2, -2);
+
+    activate_toolbar_item(index);
+}
+
 static BOOL taskbox_run_key_action(HWND hwnd, int action)
 {
     HgKeyActionInfo info;
     if (!action || !hg_key_action_info(action, &info))
         return FALSE;
 
-    if (wcscmp(info.name, L"commandbox") == 0) {
+    if (wcscmp(info.name, L"settingslist") == 0) {
+        taskbox_choose_toolbar_button(HG_TOOL_ICON_SETTINGS);
+    } else if (wcscmp(info.name, L"optionsmenu") == 0) {
+        taskbox_choose_toolbar_button(HG_TOOL_ICON_MENU);
+    } else if (wcscmp(info.name, L"commandbox") == 0) {
         show_commandbox_window();
     } else if (wcscmp(info.name, L"notes") == 0) {
         show_note_list_window();
@@ -743,6 +777,15 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             return 0;
         }
     }
+
+    /* A chord the key table names beats the letters that merely duplicate an
+     * arrow. Ctrl+WASD and Ctrl+arrows are two spellings of the same four grid
+     * moves, so a function bound to Ctrl+S costs the reader nothing they cannot
+     * still do with Ctrl+Down - while a table row that never fired because a
+     * duplicate spelling ate it would be a key the settings window lists and
+     * the program ignores. The arrows themselves are never in the table. */
+    if (is_ctrl && !is_alt && taskbox_run_key_action(hwnd, hg_key_lookup_now(HG_KEYCTX_TASKBOX, (UINT)w_param)))
+        return 0;
 
     /* Ctrl + +/-: 텍스트 글꼴 크기 조절, Ctrl + 방향키/wasd: 창 크기/그리드 조절 */
     if (is_ctrl) {
