@@ -4,9 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.17.3] - 2026-08-28
 
 ### Added
+- **A button's tooltip names the key that does the same thing.** Hovering `C`
+  now reads `Command Box  (C, Ctrl+E)`, `Opt` reads `Options Menu  (Ctrl+O)`,
+  and a button with no chord reads what it always did. The chords are read from
+  the key table as the tooltip is built, so rebinding a key rewrites the tooltip
+  and there is no second list to keep in step with the first.
 - **`Opt` is a button again.** The options menu was a row inside the `Set` list,
   which meant opening a list and picking its first line to reach a menu - a menu
   behind a door. It has its own button on the row, and it opens **directly under
@@ -21,13 +26,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Every `Set` row says which keys it answers, in a tooltip**, as you arrive on
   it. The tooltip used to appear only for a row too long to be read whole; it
   now also carries the one line the row itself cannot say.
-- **`Ctrl + S` and `Ctrl + O` in the taskbox** choose the `Set` list and the
-  options menu, exactly as if the button had been picked: the focus moves to it
-  and the list or menu opens where that button is. Both are ordinary rows in the
-  key table, so both can be rebound or cleared like any other. A chord the table
-  names now beats the letters that merely duplicate an arrow - `Ctrl + WASD` and
-  `Ctrl + Arrows` were two spellings of the same four grid moves, so `Ctrl + S`
-  costs nothing that `Ctrl + Down` does not still do.
+- **`Ctrl + O` in the taskbox** opens the options menu, exactly as if `Opt` had
+  been picked: the focus moves to the button and the menu opens under it. The
+  `Set` list has a function in the key table too - `settingslist` - but no chord
+  by default, so it can be bound to whatever is free without another build.
+  `Ctrl + S` stays what it was: one column fewer in the grid.
+- **A chord the key table names beats a letter that merely duplicates an arrow.**
+  `Ctrl + WASD` and `Ctrl + Arrows` are two spellings of the same four grid
+  moves, so binding a function to one of those letters costs nothing the arrows
+  do not still do - and a table row that never fired because a duplicate
+  spelling ate it would be a key the settings window lists and the program
+  ignores.
 
 ### Changed
 - **The move handle is `M`.** It was `Mv`, which spent two letters saying what

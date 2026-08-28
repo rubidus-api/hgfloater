@@ -1,4 +1,5 @@
 #include "hg_utils.h"
+#include "hg_keys.h" /* the tooltips say which chord reaches a button */
 #include <knownfolders.h>
 
 static void refresh_system_accent_color(void)
@@ -835,6 +836,59 @@ const WCHAR *hg_toolbar_builtin_tooltip_text(int index)
     return desc ? desc->tooltip_text : NULL;
 }
 
+/* Which function in the key table a button stands for.
+ *
+ * A button and a chord that do the same thing are one function seen twice, and
+ * the tooltip is where a reader finds that out. Only the buttons that have a
+ * key are here; the rest are reached by pointing at them, which is what the
+ * tooltip already says. */
+typedef struct HgToolbarKeyRow {
+    int icon;
+    int context;
+    const WCHAR *action;
+} HgToolbarKeyRow;
+
+static const HgToolbarKeyRow hg_toolbar_key_rows[] = {
+    {HG_TOOL_ICON_CLOSE, HG_KEYCTX_WIDGET, L"quit"},
+    {HG_TOOL_ICON_COMMAND, HG_KEYCTX_TASKBOX, L"commandbox"},
+    {HG_TOOL_ICON_NOTE, HG_KEYCTX_TASKBOX, L"notes"},
+    {HG_TOOL_ICON_CLIP, HG_KEYCTX_TASKBOX, L"clipboard"},
+    {HG_TOOL_ICON_SETTINGS, HG_KEYCTX_TASKBOX, L"settingslist"},
+    {HG_TOOL_ICON_MENU, HG_KEYCTX_TASKBOX, L"optionsmenu"},
+};
+
+BOOL hg_toolbar_builtin_tooltip_with_keys(int index, WCHAR *buffer, size_t buffer_cch)
+{
+    if (!buffer || buffer_cch == 0)
+        return FALSE;
+
+    const WCHAR *tooltip = hg_toolbar_builtin_tooltip_text(index);
+    if (!tooltip)
+        return FALSE;
+
+    for (size_t i = 0; i < HG_ARRAYSIZE(hg_toolbar_key_rows); ++i) {
+        if (hg_toolbar_key_rows[i].icon != index)
+            continue;
+
+        int action = hg_key_action_find(hg_toolbar_key_rows[i].context, hg_toolbar_key_rows[i].action);
+        if (!action)
+            break;
+
+        WCHAR chords[128];
+        if (!hg_key_bindings_text(action, chords, HG_ARRAYSIZE(chords)))
+            break;
+        /* A function with every chord cleared answers "-", which is right for a
+         * listing and wrong in a tooltip: there is nothing to announce. */
+        if (chords[0] == L'-' && chords[1] == L'\0')
+            break;
+
+        hellgates_wsprintf(buffer, buffer_cch, L"%ls  (%ls)", tooltip, chords);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 BOOL hg_toolbar_builtin_has_value(int index)
 {
     const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
@@ -975,8 +1029,15 @@ void update_toolbar_tooltips(HWND hwnd)
         ti_tool.uFlags = TTF_SUBCLASS;
         ti_tool.hwnd = hwnd;
         ti_tool.uId = (UINT_PTR)id_counter++;
+        /* The tooltip control keeps the pointer rather than a copy, so the
+         * text has to outlive this call: one buffer per button, filled fresh
+         * every time the tooltips are rebuilt. */
+        static WCHAR key_tips[HG_NUM_BASIC_ICONS][192];
         const WCHAR *tooltip_text = hg_toolbar_builtin_tooltip_text(i);
-        if (tooltip_text) {
+        if (tooltip_text && i >= 0 && i < HG_NUM_BASIC_ICONS &&
+            hg_toolbar_builtin_tooltip_with_keys(i, key_tips[i], HG_ARRAYSIZE(key_tips[i]))) {
+            ti_tool.lpszText = key_tips[i];
+        } else if (tooltip_text) {
             ti_tool.lpszText = (LPWSTR)tooltip_text;
         } else if (hg_toolbar_builtin_has_value(i)) {
             static WCHAR value_tips[HG_NUM_BASIC_ICONS][64];

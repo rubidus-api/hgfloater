@@ -63,7 +63,9 @@ static const HgKeyActionRow hg_key_actions[] = {
     {HG_KEYCTX_TASKBOX, L"hide", NULL, L"Fold back into the floater",
      L"and re-read the shortcuts folder", L"Esc", 0, FALSE},
     {HG_KEYCTX_TASKBOX, L"settingslist", NULL, L"The Set list",
-     L"as if the Set button had been chosen: the list opens and the arrows are in it", L"Ctrl+S", 0, FALSE},
+     L"as if the Set button had been chosen: the list opens and the arrows are in it. No key by default - "
+     L"Ctrl+S belongs to the grid, which uses it to take a column away",
+     L"", 0, FALSE},
     {HG_KEYCTX_TASKBOX, L"optionsmenu", NULL, L"The options menu",
      L"as if the Opt button had been chosen", L"Ctrl+O", 0, FALSE},
 

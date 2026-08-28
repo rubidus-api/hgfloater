@@ -223,6 +223,12 @@ typedef enum HgToolbarDragRole {
 const WCHAR *hg_toolbar_builtin_label(int index);
 const WCHAR *hg_toolbar_builtin_focus_text(int index);
 const WCHAR *hg_toolbar_builtin_tooltip_text(int index);
+/* That button's tooltip with the chords that reach it - "Command Box  (C,
+ * Ctrl+E)". The chords are read from the key table at the moment of asking, so
+ * a rebound key changes the tooltip and there is no second list to keep in step
+ * with the first. FALSE when the button has no key: the plain tooltip is then
+ * the whole answer. */
+BOOL hg_toolbar_builtin_tooltip_with_keys(int index, WCHAR *buffer, size_t buffer_cch);
 BOOL hg_toolbar_builtin_has_value(int index);
 BOOL hg_toolbar_builtin_value_text(int index, HgToolbarTextMode mode, WCHAR *buffer, size_t buffer_cch);
 /* One wheel notch on a value button, wherever the wheel was pointed: the row

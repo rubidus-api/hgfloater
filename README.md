@@ -425,6 +425,12 @@ and four to six letters are stacked on two, at a size the button can hold. The
 alternative — shrinking a long word until it fits across — ends at a size nobody
 can read.
 
+**A button's tooltip names its key.** Hovering `C` reads
+`Command Box  (C, Ctrl+E)`; a button that no chord reaches says only what it
+does.
+The chords come from the [key table](#13-configuration-file) as the tooltip is
+built, so a key you rebind is the key the tooltip shows.
+
 | Button | Click | Drag / Wheel |
 | :--- | :--- | :--- |
 | **`R`** Resize | — | **Drag** resizes the taskbox grid. |
@@ -456,7 +462,7 @@ to a real directory stays an icon, which is what keeps anything unusual working.
 ### 6.2 The Set button
 
 **`Set` is everything there is to set.** Point at it — or land on it with the
-arrow keys, or press `Ctrl + S` — and the same kind of list opens. Pointing at a
+arrow keys — and the same kind of list opens. Pointing at a
 button and arriving at it with the keyboard are the same arrival, so neither
 needs a click first. The rows are text, so they say their whole name and what
 turns them:
@@ -929,7 +935,6 @@ a chord.
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
 | `Ctrl + L` | Open the clipboard history |
-| `Ctrl + S` | The `Set` list, as if the button had been chosen: it opens and the arrows are in it |
 | `Ctrl + O` | The options menu, as if `Opt` had been chosen |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
