@@ -2,9 +2,9 @@
 
 **English** | [한국어](README.ko.md)
 
-**v0.17.2** — built 2026-08-23 21:00 KST
+**v0.17.4** — built 2026-08-28
 
-**[Download hgfloater.exe (latest release)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.17.4, 610 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
@@ -1223,10 +1223,27 @@ That one command is the release build. It runs, in order:
 
 ```sh
 sh scripts/build-mingw.sh build-mingw   # a warning-clean build, tests compiled and host tests run
-sh scripts/package-release.sh dist      # stages the exe into dist/, measures it into both READMEs
+sh scripts/package-release.sh dist      # stages the exe into dist/, writes the download block from it
 sh scripts/build-mingw.sh build-mingw   # again: About renders the README, so it picks up the new size
 sh scripts/package-release.sh dist      # again: the checksum must belong to the binary being published
 ```
+
+**The first page always offers the newest release.** The four claims at the top
+of both READMEs — the version, the date, the download link and the size — are
+written from the artifact by `scripts/update-readme-download.sh`, which
+packaging runs. The link itself is `/releases/latest/download/hgfloater.exe`, so
+it serves whatever is newest without anyone touching it; what used to go stale
+was the text around it, and a page saying `v0.17.2` above a button handing you
+`v0.17.4` is worse than one that says nothing.
+
+After publishing, the same script asks GitHub instead of the working tree:
+
+```sh
+sh scripts/update-readme-download.sh --latest   # the published release's own version, date and size
+```
+
+Same numbers means the page and the download agree. It is also how the page is
+refreshed without a build.
 
 The second pass exists because the About window renders `README.md`, and the
 README states the executable's measured size — so the first build produces the

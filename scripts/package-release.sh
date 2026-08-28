@@ -37,10 +37,11 @@ fi
 
 [ -f "$EXE" ] || { echo "package-release: no $EXE and no $BUILT - build it first" >&2; exit 1; }
 
-# The README claims a download size; the download is right here, so measure it
-# rather than trusting a number someone typed once. About renders the README, so
-# a change here reaches it at the next build.
-sh scripts/update-exe-size.sh "$EXE"
+# The top of the README offers this download by version, date and size. All
+# three are about the file sitting right here, so they are written from it
+# rather than trusted to whoever last typed them. About renders the README, so
+# what is written now reaches it at the next build.
+sh scripts/update-readme-download.sh "$EXE"
 
 echo "package: OK $EXE"
 

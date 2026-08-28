@@ -2,9 +2,9 @@
 
 [English](README.md) | **한국어**
 
-**v0.17.2** — 빌드 2026-08-23 21:00 KST
+**v0.17.4** — 빌드 2026-08-28
 
-**[hgfloater.exe 내려받기 (최신 릴리스)](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
+**[hgfloater.exe 내려받기 — v0.17.4, 610 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 클릭하면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인
@@ -1082,10 +1082,26 @@ sh scripts/release.sh dist              # 빌드 · 패키징 · 다시 빌드 �
 
 ```sh
 sh scripts/build-mingw.sh build-mingw   # 경고 없는 빌드, 테스트 컴파일과 호스트 테스트 실행
-sh scripts/package-release.sh dist      # 빌드된 exe 를 dist/ 에 두고, 크기를 재서 양쪽 README 에 기록
+sh scripts/package-release.sh dist      # 빌드된 exe 를 dist/ 에 두고, 그 파일로 첫 페이지의 내려받기 블록을 기록
 sh scripts/build-mingw.sh build-mingw   # 다시: About 창이 README 를 렌더링하므로 새 크기를 반영
 sh scripts/package-release.sh dist      # 다시: 체크섬은 실제로 배포되는 바이너리의 것이어야 합니다
 ```
+
+**첫 페이지는 항상 최신 릴리스를 내밉니다.** 양쪽 README 맨 위의 네 가지 — 버전, 날짜,
+내려받기 링크, 파일 크기 — 는 `scripts/update-readme-download.sh` 가 실제 산출물에서 읽어
+적습니다. 패키징이 이 스크립트를 돌립니다. 링크 자체는
+`/releases/latest/download/hgfloater.exe` 라 아무도 손대지 않아도 늘 최신을 가리켰지만,
+그 주변의 글자가 낡아 갔습니다. 버튼은 `v0.17.4` 를 주는데 위에는 `v0.17.2` 라고 적힌
+페이지는 아무 말도 없는 페이지보다 나쁩니다.
+
+배포한 뒤에는 같은 스크립트가 작업 트리 대신 GitHub 에 묻습니다.
+
+```sh
+sh scripts/update-readme-download.sh --latest   # 실제 게시된 릴리스의 버전·날짜·크기
+```
+
+숫자가 같으면 페이지와 내려받기가 일치한다는 뜻입니다. 빌드 없이 페이지만 갱신할 때도
+이 명령을 씁니다.
 
 두 번 도는 이유는 About 창이 `README.md` 를 그대로 보여주고, 그 README 가 실행 파일의
 **실측 크기**를 적기 때문입니다. 첫 빌드가 숫자를 만들고 두 번째 빌드가 그것을 담습니다.
