@@ -11,7 +11,7 @@ translucent widget floats on your desktop; clicking it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 600 KB** that needs no installer and no runtime, so
+single **executable of about 610 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
