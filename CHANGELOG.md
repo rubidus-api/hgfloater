@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **The first page offers the newest release, and says what it weighs.** The
+  download link always pointed at `/releases/latest/download`, so it never went
+  stale - but the version, the date and the size beside it did, and the page
+  spent two releases claiming to hand out v0.17.2.
+  `scripts/update-readme-download.sh` writes all four from the artifact during
+  packaging, and `--latest` rewrites them from the published release instead,
+  which is both how the page is refreshed without a build and how a release is
+  checked afterwards. It replaces `update-exe-size.sh`, which measured the size
+  and left the three claims around it alone.
+
 ## [v0.17.4] - 2026-08-28
 
 ### Changed

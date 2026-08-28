@@ -12,7 +12,8 @@
 # What it does, in order:
 #
 #   1. build   - warning-clean cross build, every test compiled, host tests run
-#   2. package - stage the exe into dist/, measure it into both READMEs, verify
+#   2. package - stage the exe into dist/, write its version, date and size into
+#                the download block at the top of both READMEs, verify
 #   3. build   - again: About renders README.md, so the size measured in 2 has to
 #                be compiled in
 #   4. package - again: the checksum printed must belong to the binary that is
