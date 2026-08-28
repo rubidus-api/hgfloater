@@ -83,6 +83,14 @@ BOOL hg_key_bindings_text(int action, WCHAR *out, size_t out_cch);
 
 BOOL hg_key_parse_chord(const WCHAR *text, HgChord *out);
 
+/* A chord squeezed into the corner of an icon: "Ctrl+N" becomes "CN", "Shift+3"
+ * becomes "S3". The modifiers are their initials in a fixed order - C, A, S, W -
+ * so that two badges are read the same way round, and the key keeps the spelling
+ * the rest of the program uses. FALSE when the key's name is too long for a
+ * badge (Space, Delete, Escape): a box a reader has to squint at says less than
+ * no box at all. */
+BOOL hg_key_chord_badge(HgChord chord, WCHAR *out, size_t out_cch);
+
 /* The four directions, bare: the arrows and WASD. They move a selection in the
  * taskbox grid, in the settings list and in the tab box - the language of
  * "where am I" rather than a function - and a window whose navigation had been

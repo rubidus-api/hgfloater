@@ -889,6 +889,30 @@ BOOL hg_toolbar_builtin_tooltip_with_keys(int index, WCHAR *buffer, size_t buffe
     return FALSE;
 }
 
+/* The first chord, not all of them: a corner has room for one, and the first is
+ * the one the table lists first - the primary spelling. */
+BOOL hg_toolbar_builtin_badge_text(int index, WCHAR *buffer, size_t buffer_cch)
+{
+    if (!buffer || buffer_cch == 0)
+        return FALSE;
+
+    for (size_t i = 0; i < HG_ARRAYSIZE(hg_toolbar_key_rows); ++i) {
+        if (hg_toolbar_key_rows[i].icon != index)
+            continue;
+
+        int action = hg_key_action_find(hg_toolbar_key_rows[i].context, hg_toolbar_key_rows[i].action);
+        if (!action)
+            break;
+
+        HgChord chord;
+        if (!hg_key_binding_chord(action, 0, &chord))
+            break;
+        return hg_key_chord_badge(chord, buffer, buffer_cch);
+    }
+
+    return FALSE;
+}
+
 BOOL hg_toolbar_builtin_has_value(int index)
 {
     const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);

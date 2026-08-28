@@ -112,6 +112,24 @@ WCHAR hg_task_badge_char(int index)
     return 0; /* past the alphabet: no label, and no key for it either */
 }
 
+/* The label as it is drawn: "S0", not "0".
+ *
+ * The key is Shift and the label, and it always was - the bare digit moves the
+ * grid. A badge that showed only the digit was telling half the truth, and the
+ * missing half is the half nobody guesses. */
+BOOL hg_task_badge_text(int index, WCHAR *out, size_t out_cch)
+{
+    if (!out || out_cch < 4)
+        return FALSE;
+    WCHAR ch = hg_task_badge_char(index);
+    if (!ch)
+        return FALSE;
+    out[0] = L'S';
+    out[1] = ch;
+    out[2] = L'\0';
+    return TRUE;
+}
+
 int hg_task_badge_index(WCHAR ch)
 {
     if (ch >= L'0' && ch <= L'9')

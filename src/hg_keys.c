@@ -235,6 +235,46 @@ static BOOL key_vk_to_name(UINT vk, WCHAR *out, size_t out_cch)
     return SUCCEEDED(StringCchPrintfW(out, out_cch, L"0x%02X", vk));
 }
 
+/* Three characters is the whole budget: the badge sits in half an icon. A
+ * letter, a digit or an F-key fits; Space and Delete do not, and are better off
+ * unmarked than marked illegibly. */
+#define HG_KEY_BADGE_MAX_KEY 3
+
+BOOL hg_key_chord_badge(HgChord chord, WCHAR *out, size_t out_cch)
+{
+    if (!out || out_cch < 8)
+        return FALSE;
+
+    WCHAR text[64];
+    if (!hg_key_chord_text(chord, text, HG_ARRAYSIZE(text)))
+        return FALSE;
+
+    /* The key is what follows the last plus: the modifiers were written by the
+     * same function, so there is no second spelling to keep in step. */
+    const WCHAR *key = text;
+    for (const WCHAR *p = text; *p; ++p) {
+        if (*p == L'+')
+            key = p + 1;
+    }
+    if (!*key || lstrlenW(key) > HG_KEY_BADGE_MAX_KEY)
+        return FALSE;
+
+    WCHAR mods[5];
+    int n = 0;
+    if (chord.mods & HG_KMOD_CTRL)
+        mods[n++] = L'C';
+    if (chord.mods & HG_KMOD_ALT)
+        mods[n++] = L'A';
+    if (chord.mods & HG_KMOD_SHIFT)
+        mods[n++] = L'S';
+    if (chord.mods & HG_KMOD_WIN)
+        mods[n++] = L'W';
+    mods[n] = L'\0';
+
+    hellgates_wsprintf(out, out_cch, L"%ls%ls", mods, key);
+    return TRUE;
+}
+
 BOOL hg_key_parse_chord(const WCHAR *text, HgChord *out)
 {
     if (!text || !out)
