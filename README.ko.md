@@ -2,9 +2,9 @@
 
 [English](README.md) | **한국어**
 
-**v0.17.4** — 빌드 2026-08-28
+**v0.17.5** — 빌드 2026-08-28
 
-**[hgfloater.exe 내려받기 — v0.17.4, 610 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
+**[hgfloater.exe 내려받기 — v0.17.5, 610 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 클릭하면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인

@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.17.5] - 2026-08-28
 
 ### Changed
 - **The first page offers the newest release, and says what it weighs.** The
