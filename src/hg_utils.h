@@ -137,6 +137,8 @@ BOOL is_alt_tab_window(HWND hwnd);
  * find; 36 labels in all, after which icons simply have none. */
 #define HG_TASK_BADGE_COUNT 36
 WCHAR hg_task_badge_char(int index);
+/* That label with the modifier it needs - "S0" - for drawing. */
+BOOL hg_task_badge_text(int index, WCHAR *out, size_t out_cch);
 int hg_task_badge_index(WCHAR ch);
 void get_process_name_by_hwnd(HWND hwnd, WCHAR *out_name, size_t out_size, DWORD *out_pid);
 void get_process_path_by_hwnd(HWND hwnd, WCHAR *out_path, size_t out_size, DWORD *out_pid);
@@ -229,6 +231,9 @@ const WCHAR *hg_toolbar_builtin_tooltip_text(int index);
  * with the first. FALSE when the button has no key: the plain tooltip is then
  * the whole answer. */
 BOOL hg_toolbar_builtin_tooltip_with_keys(int index, WCHAR *buffer, size_t buffer_cch);
+/* That button's first chord as a corner badge - "CN" for Ctrl+N - or FALSE when
+ * it has no chord, or none short enough to draw. */
+BOOL hg_toolbar_builtin_badge_text(int index, WCHAR *buffer, size_t buffer_cch);
 BOOL hg_toolbar_builtin_has_value(int index);
 BOOL hg_toolbar_builtin_value_text(int index, HgToolbarTextMode mode, WCHAR *buffer, size_t buffer_cch);
 /* One wheel notch on a value button, wherever the wheel was pointed: the row

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **A badge names the whole key, not half of it.** A task icon's corner used to
+  read `0`, when the key was `Shift+0` and the bare digit did something else
+  entirely; it reads `S0` now. The function buttons wear the same badge for the
+  same reason - `Clip` shows `CL`, `Opt` shows `CO` - with the modifiers as
+  their initials in a fixed order (`C`trl, `A`lt, `S`hift, `W`in), so two badges
+  are read the same way round. One painter draws both, because a task icon and a
+  function button are making the same promise. A key too long for the box is
+  left to the tooltip, which has room to spell it.
+
 ## [v0.17.3] - 2026-08-28
 
 ### Added

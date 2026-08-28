@@ -81,6 +81,51 @@ static void toolbar_draw_state_border(HDC hdc, const RECT *rc)
     }
 }
 
+/* The little box at an icon's top-left corner that names the key.
+ *
+ * One painter for both kinds of icon: a task wears "S0" because Shift and the
+ * label is what reaches it, and a function button wears "CN" because Ctrl+N is.
+ * They are the same promise - press this and that happens - so they are drawn
+ * the same, and two badges that looked different would read as two different
+ * kinds of thing.
+ *
+ * The box grows sideways with the text rather than staying square: a modifier
+ * costs a character, and a square box would either clip it or force a font too
+ * small to read. It stays half an icon tall, which is what keeps it a badge
+ * rather than a second label. */
+static void toolbar_draw_badge(HDC dc, const RECT *rc_item, const WCHAR *text, int icon_size)
+{
+    if (!dc || !rc_item || !text || !*text || !hg_g_toolbar_badge_font)
+        return;
+
+    int badge_h = icon_size / 2;
+    if (badge_h < SC(10))
+        badge_h = SC(10);
+
+    HFONT old_badge = (HFONT)SelectObject(dc, hg_g_toolbar_badge_font);
+
+    SIZE sz = {0, 0};
+    GetTextExtentPoint32W(dc, text, lstrlenW(text), &sz);
+    int badge_w = sz.cx + SC(4);
+    if (badge_w < badge_h)
+        badge_w = badge_h;
+
+    RECT badge_rc = {rc_item->left - SC(2), rc_item->top - SC(2), rc_item->left - SC(2) + badge_w,
+                     rc_item->top - SC(2) + badge_h};
+
+    HBRUSH hbr_badge = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+    if (hbr_badge)
+        FillRect(dc, &badge_rc, hbr_badge);
+    HBRUSH hbr_edge = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
+    if (hbr_edge)
+        FrameRect(dc, &badge_rc, hbr_edge);
+
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
+    DrawTextW(dc, text, -1, &badge_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    SelectObject(dc, old_badge);
+}
+
 int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type, int *out_index)
 {
     for (int i = 0; i < hg_g_window_count; i++) {
@@ -324,30 +369,11 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         SelectObject(mem_dc, old_font);
                     }
 
-                    /* The label, over the icon's top-left corner. Drawn last so
+                    /* The key, over the icon's top-left corner. Drawn last so
                      * it is never the thing hidden by the icon. */
-                    WCHAR badge = hg_task_badge_char(r_idx);
-                    if (badge && hg_g_toolbar_badge_font) {
-                        int badge_size = icon_size / 2;
-                        if (badge_size < SC(10))
-                            badge_size = SC(10);
-                        RECT badge_rc = {rc_item.left - SC(2), rc_item.top - SC(2), rc_item.left - SC(2) + badge_size,
-                                         rc_item.top - SC(2) + badge_size};
-
-                        HBRUSH hbr_badge = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-                        if (hbr_badge)
-                            FillRect(mem_dc, &badge_rc, hbr_badge);
-                        HBRUSH hbr_edge = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
-                        if (hbr_edge)
-                            FrameRect(mem_dc, &badge_rc, hbr_edge);
-
-                        WCHAR badge_text[2] = {badge, 0};
-                        HFONT old_badge = (HFONT)SelectObject(mem_dc, hg_g_toolbar_badge_font);
-                        SetBkMode(mem_dc, TRANSPARENT);
-                        SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
-                        DrawTextW(mem_dc, badge_text, 1, &badge_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-                        SelectObject(mem_dc, old_badge);
-                    }
+                    WCHAR badge[8];
+                    if (hg_task_badge_text(r_idx, badge, HG_ARRAYSIZE(badge)))
+                        toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
 
                     /* Draw active status indicator (elegant pill/dot under the active task's icon) */
                     if (hg_g_window_items[r_idx].hwnd == hg_g_prev_active_hwnd) {
@@ -367,6 +393,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     }
                 }
 
+                /* A function button wears its key the same way a task icon
+                 * wears its label, because they are the same promise: press
+                 * this and that happens. */
                 // Draw hg_g_shortcuts (type 1)
                 int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
                 for (int i = 0; i < total_shortcuts; i++) {
@@ -467,6 +496,12 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                                                HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
                             SelectObject(mem_dc, old_font);
                         }
+
+                        /* And its key in the corner, over the label, for the
+                         * buttons a chord reaches. */
+                        WCHAR badge[8];
+                        if (hg_toolbar_builtin_badge_text(i, badge, HG_ARRAYSIZE(badge)))
+                            toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
                     }
                 }
 

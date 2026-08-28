@@ -290,12 +290,20 @@ built-in buttons.
 > renaming everything after it.
 - **Left click** activates a task or launches a shortcut.
 
-**Every task icon carries a label** in its top-left corner — `0` to `9`, then
-`A` to `Z`. **`Shift` + that character** activates the icon, exactly as clicking
-it would. Digits come first because the first ten windows are the ones you reach
-most, and a digit is one keystroke to find. Past 36 icons there is no label and
-no key. `Shift` is what keeps this clear of the bare-letter grid movement
-(`WASD`) and of the bare `C` that opens the command box.
+**Every task icon carries its key** in a small box at its top-left corner —
+`S0` to `S9`, then `SA` to `SZ`. The badge is the whole chord: the `S` is
+`Shift`, so `S3` means **`Shift + 3`**, which activates that icon exactly as
+clicking it would. Digits come first because the first ten windows are the ones
+you reach most, and a digit is one keystroke to find. Past 36 icons there is no
+badge and no key. `Shift` is what keeps this clear of the bare-letter grid
+movement (`WASD`) and of the bare `C` that opens the command box.
+
+**The function buttons wear the same badge**, for the same reason: `C` shows
+`C`, `Note` shows `N`, `Clip` shows `CL`, `Opt` shows `CO`, `X` shows `CQ`. The
+modifiers are their initials in a fixed order — `C`trl, `A`lt, `S`hift, `W`in —
+so `CN` is `Ctrl + N` and `CSR` is `Ctrl + Shift + R`. A button no chord reaches
+wears nothing, and a key whose name is too long for the box (`Space`, `Delete`)
+is left to the tooltip, which spells it out in full.
 
 **Hover a tabbed application's icon and its tabs appear next to it.** Off by
 default; turn it on with **Show Tabs as Task Icons** in the options menu, or
@@ -978,7 +986,7 @@ a chord.
 | `Enter` | Execute (inside the Command Box) |
 | `Shift + Enter` | New line (inside the Command Box) |
 | `Ctrl + S` / `Ctrl + H` | Scroll mode / history mode (inside the Command Box) |
-| `Shift` + `0`–`9`, `A`–`Z` | Activate the task icon with that label |
+| `Shift` + `0`–`9`, `A`–`Z` | Activate the task icon with that badge (`S0`, `S1`, …) |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
 | `Ctrl + Wheel` | Text size (inside the Command Box) |
 
