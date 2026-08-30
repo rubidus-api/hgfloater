@@ -135,11 +135,17 @@ BOOL is_alt_tab_window(HWND hwnd);
  * Shift with that character activates the icon. Digits first because the first
  * ten windows are the ones reached most often and a digit is one keystroke to
  * find; 36 labels in all, after which icons simply have none. */
-#define HG_TASK_BADGE_COUNT 36
+/* Ten windows, twenty-six shortcuts: the digits and the letters, one kind of
+ * icon each. */
+#define HG_TASK_BADGE_COUNT 10
+#define HG_SHORTCUT_BADGE_COUNT 26
 WCHAR hg_task_badge_char(int index);
-/* That label with the modifier it needs - "S0" - for drawing. */
+WCHAR hg_shortcut_badge_char(int index);
+/* That label with the modifier it needs - "S0", "SA" - for drawing. */
 BOOL hg_task_badge_text(int index, WCHAR *out, size_t out_cch);
+BOOL hg_shortcut_badge_text(int index, WCHAR *out, size_t out_cch);
 int hg_task_badge_index(WCHAR ch);
+int hg_shortcut_badge_index(WCHAR ch);
 void get_process_name_by_hwnd(HWND hwnd, WCHAR *out_name, size_t out_size, DWORD *out_pid);
 void get_process_path_by_hwnd(HWND hwnd, WCHAR *out_path, size_t out_size, DWORD *out_pid);
 HICON get_window_icon(HWND hwnd, int size_px, BOOL *own_icon);

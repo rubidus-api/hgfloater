@@ -101,15 +101,28 @@ static BOOL hg_is_own_reachable_window(HWND hwnd)
            lstrcmpiW(class_name, HG_CLASS_MONITOR) == 0;
 }
 
+/* Windows take the digits, shortcuts take the letters.
+ *
+ * They used to share one run of labels - 0-9 then A-Z, all of it windows - so
+ * which key opened what depended on how many windows happened to be open, and a
+ * shortcut had no key at all. Splitting them makes both halves stable: Shift+3
+ * is the fourth window whatever else is running, and Shift+K is the same
+ * shortcut every time, because the shortcuts folder is a list the reader keeps.
+ *
+ * Ten windows and twenty-six shortcuts is the whole supply. Past that there is
+ * no badge and no key, which is honest: a label nobody can press is furniture. */
 WCHAR hg_task_badge_char(int index)
 {
-    if (index < 0)
+    if (index < 0 || index >= HG_TASK_BADGE_COUNT)
         return 0;
-    if (index < 10)
-        return (WCHAR)(L'0' + index);
-    if (index < HG_TASK_BADGE_COUNT)
-        return (WCHAR)(L'A' + (index - 10));
-    return 0; /* past the alphabet: no label, and no key for it either */
+    return (WCHAR)(L'0' + index);
+}
+
+WCHAR hg_shortcut_badge_char(int index)
+{
+    if (index < 0 || index >= HG_SHORTCUT_BADGE_COUNT)
+        return 0;
+    return (WCHAR)(L'A' + index);
 }
 
 /* The label as it is drawn: "S0", not "0".
@@ -117,12 +130,9 @@ WCHAR hg_task_badge_char(int index)
  * The key is Shift and the label, and it always was - the bare digit moves the
  * grid. A badge that showed only the digit was telling half the truth, and the
  * missing half is the half nobody guesses. */
-BOOL hg_task_badge_text(int index, WCHAR *out, size_t out_cch)
+static BOOL badge_text_from_char(WCHAR ch, WCHAR *out, size_t out_cch)
 {
-    if (!out || out_cch < 4)
-        return FALSE;
-    WCHAR ch = hg_task_badge_char(index);
-    if (!ch)
+    if (!out || out_cch < 4 || !ch)
         return FALSE;
     out[0] = L'S';
     out[1] = ch;
@@ -130,14 +140,29 @@ BOOL hg_task_badge_text(int index, WCHAR *out, size_t out_cch)
     return TRUE;
 }
 
+BOOL hg_task_badge_text(int index, WCHAR *out, size_t out_cch)
+{
+    return badge_text_from_char(hg_task_badge_char(index), out, out_cch);
+}
+
+BOOL hg_shortcut_badge_text(int index, WCHAR *out, size_t out_cch)
+{
+    return badge_text_from_char(hg_shortcut_badge_char(index), out, out_cch);
+}
+
 int hg_task_badge_index(WCHAR ch)
 {
     if (ch >= L'0' && ch <= L'9')
         return ch - L'0';
+    return -1;
+}
+
+int hg_shortcut_badge_index(WCHAR ch)
+{
     if (ch >= L'A' && ch <= L'Z')
-        return 10 + (ch - L'A');
+        return ch - L'A';
     if (ch >= L'a' && ch <= L'z')
-        return 10 + (ch - L'a');
+        return ch - L'a';
     return -1;
 }
 

@@ -18,6 +18,7 @@
 #include "../hg_tabs.h"
 #include "hg_taskbox.h"
 #include "../hg_options.h"
+#include "../hg_keys.h"
 
 /* Whether the keyboard is *in* the box.
  *
@@ -34,9 +35,10 @@ static HWND s_wnd = NULL;
 static HWND s_target = NULL;
 static RECT s_anchor = {0, 0, 0, 0};
 
-/* Rows enough for the longest of the three lists: the folders can be as many as
- * the shortcuts folder holds, which is more than any window has tabs. */
-#define HG_BOX_MAX_ROWS HG_MAX_SHORTCUTS
+/* Rows enough for the longest of the four lists. That used to be the folders,
+ * capped by the shortcuts folder; it is the options menu now, which grows by
+ * about a dozen rows per display once its submenus are flattened out. */
+#define HG_BOX_MAX_ROWS 128
 static WCHAR s_titles[HG_BOX_MAX_ROWS][HG_MAX_STR];
 static int s_count = 0;
 static int s_selected = 0;
@@ -74,6 +76,12 @@ typedef struct HgControlRow {
 
 static HgControlRow s_control_rows[4 + 16];
 static int s_control_row_count = 0;
+
+/* The options menu, as rows. Built from the menu itself every time the list is
+ * pulled, because half of it - the audio devices, the displays, what is ticked -
+ * is a picture of the machine at that moment. */
+static HgMenuRow s_menu_rows[HG_BOX_MAX_ROWS];
+static int s_menu_row_count = 0;
 
 static void tabbox_add_control_row(HgControlRow row)
 {
@@ -322,6 +330,24 @@ static void tabbox_pull(void)
             StringCchCopyW(s_titles[s_count], HG_MAX_STR, hg_g_folders[i].name);
             ++s_count;
         }
+    } else if (s_mode == HG_BOX_MENU) {
+        /* Built fresh: the audio devices, the displays and every tick in the
+         * menu are a picture of the machine right now, and a list assembled
+         * once would be a picture of the machine when the box first opened. */
+        s_count = 0;
+        s_menu_row_count = 0;
+        HMENU menu = taskbox_create_main_popup_menu();
+        if (menu) {
+            s_menu_row_count = hg_menu_flatten(menu, s_menu_rows, HG_BOX_MAX_ROWS);
+            DestroyMenu(menu);
+        }
+        for (int i = 0; i < s_menu_row_count; ++i) {
+            /* The tick keeps its column so the ticked rows line up with the
+             * ones that are not, rather than shifting two characters left. */
+            hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%ls%ls",
+                               s_menu_rows[i].checked ? L"\u2713 " : L"   ", s_menu_rows[i].label);
+            ++s_count;
+        }
     } else {
         s_count = 0;
         tabbox_build_control_rows();
@@ -383,6 +409,14 @@ static BOOL tabbox_row_is_value(int index)
  * row cannot answer by being read. */
 static const WCHAR *tabbox_row_hint(int index)
 {
+    if (s_mode == HG_BOX_MENU) {
+        if (index < 0 || index >= s_menu_row_count)
+            return NULL;
+        if (!s_menu_rows[index].id || !s_menu_rows[index].enabled)
+            return L"This one is not available right now.";
+        return L"Space or Enter: run it";
+    }
+
     if (s_mode != HG_BOX_CONTROLS || index < 0 || index >= s_control_row_count)
         return NULL;
 
@@ -626,6 +660,11 @@ void hg_tabbox_open_controls(const RECT *anchor_screen_rc)
     tabbox_open_list(HG_BOX_CONTROLS, anchor_screen_rc);
 }
 
+void hg_tabbox_open_menu(const RECT *anchor_screen_rc)
+{
+    tabbox_open_list(HG_BOX_MENU, anchor_screen_rc);
+}
+
 void hg_tabbox_enter(void)
 {
     if (!hg_tabbox_is_open())
@@ -713,6 +752,22 @@ static void tabbox_activate(int index)
         hg_tabbox_close();
         hide_taskbox(hg_g_taskbox_wnd);
         ShellExecuteW(NULL, L"open", path, NULL, NULL, SW_SHOWNORMAL);
+        return;
+    }
+
+    if (s_mode == HG_BOX_MENU) {
+        if (index >= s_menu_row_count)
+            return;
+        const HgMenuRow *row = &s_menu_rows[index];
+        /* A row the menu itself greys out stays dead here. Saying so by doing
+         * nothing is what the menu does, and a box that ran a disabled command
+         * would be a different program wearing the same list. */
+        if (!row->id || !row->enabled)
+            return;
+
+        UINT cmd = row->id;
+        hg_tabbox_close();
+        taskbox_dispatch_main_menu_command(cmd);
         return;
     }
 
@@ -955,7 +1010,8 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                                      ? L"(reading tabs...)"
                                      : (s_mode == HG_BOX_DIRS)
                                            ? L"(no folder shortcuts - put one in the shortcuts folder)"
-                                           : L"(nothing to show)";
+                                           : (s_mode == HG_BOX_MENU) ? L"(the menu is empty)"
+                                                                     : L"(nothing to show)";
             DrawTextW(dc, empty, -1, &row, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
         }
 

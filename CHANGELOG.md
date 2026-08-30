@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **The digits are the windows and the letters are the shortcuts.** They used to
+  share one run of labels, all of it windows, so which key opened what depended
+  on how many windows happened to be open - and a shortcut had no key at all.
+  Now windows take `S0`-`S9` and stop there, shortcuts take `SA`-`SZ`, and both
+  hold still: `Shift+3` is the fourth window whatever else is running, and
+  `Shift+K` is the same shortcut every time.
+- **A shortcut icon is framed like every other button here.** With the plate
+  gone it was the one thing in this half of the grid floating loose over the
+  desktop.
+- **The options menu is a list, not a menu.** `Opt` opens it in the same box
+  `Dir` and `Set` use - same placement, same keys, same painting - and **every
+  submenu is flattened into it**, each row carrying the path that led there:
+  `Display 1 > Brightness > 50%`. A submenu that only opens on hover is a thing
+  to discover, and there is nothing here to discover: four displays' worth of
+  brightness steps is a long list, not a deep one. Ticks are kept, greyed rows
+  stay dead and say so in the tooltip, and the list is walked from the menu
+  itself, so a row added to the menu appears in the box with nothing else to
+  edit. Right-clicking the status line still opens the ordinary Windows menu.
+
 ## [v0.17.5] - 2026-08-28
 
 ### Changed

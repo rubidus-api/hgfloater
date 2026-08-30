@@ -451,18 +451,19 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                     }
 
-                    /* One white line around each lettered function button. With
-                     * the plate gone the letters would otherwise float loose
-                     * over the desktop, and a button needs an edge to be a
-                     * button. Drawn after the pressed and hover fills so it
+                    /* One white line around every button in this half of the
+                     * grid - the function buttons and the shortcuts alike. With
+                     * the plate gone they would otherwise float loose over the
+                     * desktop, and a button needs an edge to be a button; a
+                     * shortcut is as much a button as Note is, so it gets the
+                     * same edge rather than being the one thing here without
+                     * one. Drawn after the pressed and hover fills so it
                      * survives them - the yellow still fills the button, and
                      * the line still frames it - and before the state border,
                      * which is a louder mark and should win where both apply. */
-                    if (i < HG_NUM_BASIC_ICONS) {
-                        HBRUSH hbr_edge = hg_cached_solid_brush(RGB(255, 255, 255));
-                        if (hbr_edge)
-                            FrameRect(mem_dc, &rc_btn, hbr_edge);
-                    }
+                    HBRUSH hbr_edge = hg_cached_solid_brush(RGB(255, 255, 255));
+                    if (hbr_edge)
+                        FrameRect(mem_dc, &rc_btn, hbr_edge);
 
                     if ((i == HG_TOOL_ICON_VOLUME && get_system_mute()) ||
                         (i == HG_TOOL_ICON_PIN && hg_g_taskbox_pinned)) {
@@ -475,6 +476,13 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                             DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_shortcuts[s_idx].icon, icon_size,
                                        icon_size, 0, NULL, DI_NORMAL);
                         }
+
+                        /* Shift and a letter reaches this one, and the badge is
+                         * where that is said - the same corner, the same box,
+                         * as a window's Shift and a digit. */
+                        WCHAR badge[8];
+                        if (hg_shortcut_badge_text(s_idx, badge, HG_ARRAYSIZE(badge)))
+                            toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
                     } else {
                         const WCHAR *btn_text = hg_toolbar_builtin_label(i);
                         WCHAR stacked[16];
@@ -647,11 +655,11 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         } else {
             hg_hilite_hide();
         }
-        /* Dir and Se carry lists of their own, opened by pointing at them -
-         * the same gesture, the same box, placed the same way clear of the
-         * button. */
+        /* Dir, Set and Opt carry lists of their own, opened by pointing at
+         * them - the same gesture, the same box, placed the same way clear of
+         * the button. */
         int list_button = -1;
-        if (cur_type == 1 && (cur_index == HG_TOOL_ICON_DIR || cur_index == HG_TOOL_ICON_SETTINGS))
+        if (cur_type == 1 && taskbox_box_mode_for_button(cur_index) >= 0)
             list_button = cur_index;
 
         if (tab_target) {
@@ -664,10 +672,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
             get_toolbar_item_rect(1, list_button, rc.right, rc.bottom, icon_size, &rc_item);
             InflateRect(&rc_item, SC(4), SC(4));
             MapWindowPoints(hwnd, NULL, (POINT *)&rc_item, 2);
-            if (list_button == HG_TOOL_ICON_DIR)
-                hg_tabbox_open_dirs(&rc_item);
-            else
-                hg_tabbox_open_controls(&rc_item);
+            taskbox_open_box_for_button(list_button, &rc_item);
         } else if (hg_tabbox_is_open()) {
             hg_tabbox_close();
         }
