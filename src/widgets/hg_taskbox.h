@@ -15,15 +15,14 @@ void update_taskbox_alpha(int delta);
 void set_taskbox_opacity_pct(int pct);
 void hide_taskbox(HWND hwnd);
 void activate_toolbar_item(int index);
-/* The options menu at a given screen point; NULL means the pointer. This is
- * still a real Win32 menu, and it is what the status line's right-click opens.
- * The Opt button opens the same menu as a list - see hg_menu_flatten. */
-void taskbox_show_main_menu_at(const POINT *screen_pt);
-
 /* Which of the box's lists a toolbar button carries, or -1 for a button that
  * carries none; and opening that list against the button's own rect. */
 int taskbox_box_mode_for_button(int index);
 void taskbox_open_box_for_button(int index, const RECT *anchor);
+/* Whether merely arriving at that button - pointing at it, or landing on it
+ * with the arrows - should open its list. True for the lists that are free to
+ * build, false for the one that is not. */
+BOOL taskbox_button_box_opens_on_arrival(int index);
 
 /* The options menu itself, and running what one of its rows names. Public
  * because the tab box shows this menu as a list and has to build it. */
