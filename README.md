@@ -589,6 +589,15 @@ They used to be a rung each, so one display cost eleven rows and three displays
 cost thirty-three; the reading is on the row now and the ladder is behind it. A
 display that will not report a value shows `--` and still steps.
 
+**Brightness applies as you step; scaling applies when the list closes.** A
+backlight step is a message to the monitor and seeing it is the whole point of
+stepping. Changing a display's scaling is not: Windows relays out every window
+on that display, so walking from 100% to 150% while each rung applied would be
+three reflows of the desktop to reach the one you wanted. The row moves its
+reading as you walk it and the change is sent once — when you press `Esc`, step
+away to another icon, click elsewhere, or the taskbox folds up. The tooltip on
+that row says so.
+
 `About...` and `Exit` are last, in that order — the end of the list in the sense
 that matters — and `About` sits above `Exit` because the two are one keystroke
 apart and only one of them is reversible.

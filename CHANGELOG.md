@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **Display scaling is applied when the list closes, not as you walk it.**
+  Windows relays out every window on a display when its scaling changes, so
+  stepping 100 - 125 - 150 meant three reflows of the desktop to reach the one
+  rung the reader wanted. The row moves its reading as it is walked, by wheel or
+  by arrows, and the change is sent once - on `Esc`, on stepping away to another
+  icon, on a click elsewhere, on the taskbox folding up. Brightness still
+  applies immediately: it is a message to the monitor, and seeing it is the
+  point of stepping.
+- **Folding the taskbox away closes its list.** It did not, and most paths had
+  already closed it themselves, so this was invisible until a list could be
+  holding a change it had not sent yet.
+
 ## [v0.17.8] - 2026-08-30
 
 ### Added
