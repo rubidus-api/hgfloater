@@ -276,6 +276,43 @@ void taskbox_show_main_menu_at(const POINT *screen_pt)
     taskbox_dispatch_main_menu_command((UINT)cmd);
 }
 
+/* Which list a button carries, and how to open it. Three buttons have one -
+ * Dir, Set and Opt - and every path that opens one (a click, a hover, the
+ * keyboard arriving) asks these rather than repeating the mapping, because
+ * three copies of it is how one of them ends up disagreeing. */
+int taskbox_box_mode_for_button(int index)
+{
+    switch (hg_toolbar_builtin_click_role(index)) {
+    case HG_TOOLBAR_CLICK_OPEN_DIRS:
+        return HG_BOX_DIRS;
+    case HG_TOOLBAR_CLICK_OPEN_CONTROLS:
+        return HG_BOX_CONTROLS;
+    case HG_TOOLBAR_CLICK_OPEN_MENU:
+        return HG_BOX_MENU;
+    default:
+        return -1;
+    }
+}
+
+void taskbox_open_box_for_button(int index, const RECT *anchor)
+{
+    if (!anchor)
+        return;
+    switch (taskbox_box_mode_for_button(index)) {
+    case HG_BOX_DIRS:
+        hg_tabbox_open_dirs(anchor);
+        break;
+    case HG_BOX_CONTROLS:
+        hg_tabbox_open_controls(anchor);
+        break;
+    case HG_BOX_MENU:
+        hg_tabbox_open_menu(anchor);
+        break;
+    default:
+        break;
+    }
+}
+
 void activate_toolbar_item(int index)
 {
     if (index < 0)
@@ -293,23 +330,7 @@ void activate_toolbar_item(int index)
         EnumWindows(minimize_restore_enum_proc, (LPARAM)is_desktop_shown);
         break;
     }
-    case HG_TOOLBAR_CLICK_OPEN_MENU: {
-        /* Under the button, not under the pointer: the eye is on the button
-         * that was just used, and when the keyboard used it the pointer may be
-         * nowhere near. A list hanging off a neighbouring button goes first -
-         * the menu is modal, and would otherwise open behind it. */
-        RECT anchor;
-        POINT at;
-        if (taskbox_toolbar_button_screen_rect(index, &anchor)) {
-            at.x = anchor.left;
-            at.y = anchor.bottom;
-        } else {
-            GetCursorPos(&at);
-        }
-        hg_tabbox_close();
-        taskbox_show_main_menu_at(&at);
-        break;
-    }
+    case HG_TOOLBAR_CLICK_OPEN_MENU:
     case HG_TOOLBAR_CLICK_SHOW_COMMANDBOX:
         show_commandbox_window();
         break;
@@ -338,8 +359,7 @@ void activate_toolbar_item(int index)
         /* A click is the same ask as the hover, so it toggles: pointing at the
          * button already opened the list, and clicking it again is how anyone
          * puts a list away. */
-        int mode = (hg_toolbar_builtin_click_role(index) == HG_TOOLBAR_CLICK_OPEN_DIRS) ? HG_BOX_DIRS
-                                                                                       : HG_BOX_CONTROLS;
+        int mode = taskbox_box_mode_for_button(index);
         if (hg_tabbox_is_open() && hg_tabbox_mode() == mode) {
             hg_tabbox_close();
             break;
@@ -347,10 +367,7 @@ void activate_toolbar_item(int index)
         RECT anchor;
         if (!taskbox_toolbar_button_screen_rect(index, &anchor))
             break;
-        if (mode == HG_BOX_DIRS)
-            hg_tabbox_open_dirs(&anchor);
-        else
-            hg_tabbox_open_controls(&anchor);
+        taskbox_open_box_for_button(index, &anchor);
         /* Activating a button is something the keyboard does as much as the
          * mouse, and a list that opens without taking the arrows leaves the
          * keyboard pointing at the button it just used. */
@@ -883,9 +900,17 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
      * (WASD) and of the bare C that opens the command box - the reason a
      * bare-letter scheme was tried and abandoned. Checked before those. */
     if (is_shift && !is_ctrl && !is_alt) {
-        int badge_index = hg_task_badge_index((WCHAR)w_param);
-        if (badge_index >= 0 && badge_index < hg_g_window_count) {
-            activate_taskbar_item(badge_index);
+        int task_index = hg_task_badge_index((WCHAR)w_param);
+        if (task_index >= 0 && task_index < hg_g_window_count) {
+            activate_taskbar_item(task_index);
+            return 0;
+        }
+        /* The letters belong to the shortcuts, and to the same modifier: one
+         * gesture for "go straight to that icon", whichever half of the grid it
+         * lives in. */
+        int shortcut_index = hg_shortcut_badge_index((WCHAR)w_param);
+        if (shortcut_index >= 0 && shortcut_index < hg_g_shortcut_count) {
+            activate_toolbar_item(HG_NUM_BASIC_ICONS + shortcut_index);
             return 0;
         }
     }
@@ -1025,8 +1050,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
              * from the keyboard and none from the mouse would be two rules
              * where there is one. */
             int list_button = -1;
-            if (hg_taskbox_focus.area == 1 &&
-                (hg_taskbox_focus.index == HG_TOOL_ICON_DIR || hg_taskbox_focus.index == HG_TOOL_ICON_SETTINGS))
+            if (hg_taskbox_focus.area == 1 && taskbox_box_mode_for_button(hg_taskbox_focus.index) >= 0)
                 list_button = hg_taskbox_focus.index;
 
             if (tab_target) {
@@ -1037,12 +1061,8 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                 hg_tabbox_open(tab_target, &rc_item);
             } else if (list_button >= 0) {
                 RECT anchor;
-                if (taskbox_toolbar_button_screen_rect(list_button, &anchor)) {
-                    if (list_button == HG_TOOL_ICON_DIR)
-                        hg_tabbox_open_dirs(&anchor);
-                    else
-                        hg_tabbox_open_controls(&anchor);
-                }
+                if (taskbox_toolbar_button_screen_rect(list_button, &anchor))
+                    taskbox_open_box_for_button(list_button, &anchor);
             } else if (hg_tabbox_is_open()) {
                 hg_tabbox_close();
             }

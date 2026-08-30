@@ -22,21 +22,25 @@
  *
  *   tabs      a window's tabs, on a task icon
  *   folders   the shortcuts that point at a directory, on the Dir button
- *   controls  volume, brightness, opacity, the pin and the options menu, on Se
+ *   controls  volume, brightness, opacity and the switches, on Set
+ *   menu      the options menu, flattened to one level, on Opt
  */
 enum {
     HG_BOX_TABS = 0,
     HG_BOX_DIRS,
-    HG_BOX_CONTROLS
+    HG_BOX_CONTROLS,
+    HG_BOX_MENU
 };
 
 /* Open (or re-target) the box for a window, anchored to that icon's rect in
  * screen coordinates. Safe to call repeatedly with the same window. */
 void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc);
 
-/* The folder list and the control list, anchored to their toolbar button. */
+/* The folder list, the control list and the options menu, anchored to their
+ * toolbar button. */
 void hg_tabbox_open_dirs(const RECT *anchor_screen_rc);
 void hg_tabbox_open_controls(const RECT *anchor_screen_rc);
+void hg_tabbox_open_menu(const RECT *anchor_screen_rc);
 
 /* Which list is up, or HG_BOX_TABS when nothing is. */
 int hg_tabbox_mode(void);

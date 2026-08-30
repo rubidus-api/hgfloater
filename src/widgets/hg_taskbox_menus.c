@@ -191,6 +191,61 @@ HMENU taskbox_create_main_popup_menu(void)
     return h_menu;
 }
 
+/* One level of the walk. Depth is bounded because the menu is: main, a display,
+ * its brightness - three, and the guard is there so a future fourth cannot turn
+ * a cycle into a hang. */
+static int menu_flatten_into(HMENU menu, const WCHAR *prefix, int depth, HgMenuRow *rows, int max_rows, int count)
+{
+    if (!menu || depth > 4)
+        return count;
+
+    int items = GetMenuItemCount(menu);
+    for (int i = 0; i < items && count < max_rows; ++i) {
+        WCHAR text[HG_MENU_ROW_MAX];
+        text[0] = L'\0';
+
+        MENUITEMINFOW info;
+        SecureZeroMemory(&info, sizeof(info));
+        info.cbSize = sizeof(info);
+        info.fMask = MIIM_STRING | MIIM_SUBMENU | MIIM_STATE | MIIM_ID | MIIM_FTYPE;
+        info.dwTypeData = text;
+        info.cch = HG_ARRAYSIZE(text);
+        if (!GetMenuItemInfoW(menu, (UINT)i, TRUE, &info))
+            continue;
+        if (info.fType & MFT_SEPARATOR)
+            continue;
+
+        WCHAR path[HG_MENU_ROW_MAX];
+        if (prefix && *prefix)
+            hellgates_wsprintf(path, HG_ARRAYSIZE(path), L"%ls > %ls", prefix, text);
+        else
+            StringCchCopyW(path, HG_ARRAYSIZE(path), text);
+
+        if (info.hSubMenu) {
+            /* The parent is not a row of its own: it runs nothing, and a row
+             * that does nothing between rows that do is a place to lose your
+             * eye. Its name lives on as the prefix of its children. */
+            count = menu_flatten_into(info.hSubMenu, path, depth + 1, rows, max_rows, count);
+            continue;
+        }
+
+        StringCchCopyW(rows[count].label, HG_ARRAYSIZE(rows[count].label), path);
+        rows[count].id = info.wID;
+        rows[count].enabled = (info.fState & (MFS_DISABLED | MFS_GRAYED)) ? FALSE : TRUE;
+        rows[count].checked = (info.fState & MFS_CHECKED) ? TRUE : FALSE;
+        ++count;
+    }
+
+    return count;
+}
+
+int hg_menu_flatten(HMENU menu, HgMenuRow *rows, int max_rows)
+{
+    if (!menu || !rows || max_rows <= 0)
+        return 0;
+    return menu_flatten_into(menu, NULL, 0, rows, max_rows, 0);
+}
+
 void taskbox_dispatch_main_menu_command(UINT cmd)
 {
     if (cmd != 0) {

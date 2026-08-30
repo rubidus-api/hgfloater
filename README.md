@@ -290,13 +290,25 @@ built-in buttons.
 > renaming everything after it.
 - **Left click** activates a task or launches a shortcut.
 
-**Every task icon carries its key** in a small box at its top-left corner —
-`S0` to `S9`, then `SA` to `SZ`. The badge is the whole chord: the `S` is
-`Shift`, so `S3` means **`Shift + 3`**, which activates that icon exactly as
-clicking it would. Digits come first because the first ten windows are the ones
-you reach most, and a digit is one keystroke to find. Past 36 icons there is no
-badge and no key. `Shift` is what keeps this clear of the bare-letter grid
-movement (`WASD`) and of the bare `C` that opens the command box.
+**Every icon carries its key** in a small box at its top-left corner. The badge
+is the whole chord: the `S` is `Shift`, so `S3` means **`Shift + 3`**, which
+activates that icon exactly as clicking it would.
+
+- **Windows take the digits:** `S0` to `S9`, the first ten, and no key past
+  that.
+- **Shortcuts take the letters:** `SA` to `SZ`, in the order they sit in the
+  grid.
+
+They used to share one run of labels, all of it windows, so which key opened
+what depended on how many windows happened to be open — and a shortcut had no
+key at all. Split, both halves hold still: `Shift + 3` is the fourth window
+whatever else is running, and `Shift + K` is the same shortcut every time,
+because the shortcuts folder is a list you keep. Past ten windows or
+twenty-six shortcuts there is no badge and no key, which is honest: a label
+nobody can press is furniture.
+
+`Shift` is what keeps this clear of the bare-letter grid movement (`WASD`) and
+of the bare `C` that opens the command box.
 
 **The function buttons wear the same badge**, for the same reason: `C` shows
 `C`, `Note` shows `N`, `Clip` shows `CL`, `Opt` shows `CO`, `X` shows `CQ`. The
@@ -513,12 +525,37 @@ button under the pointer.
 
 ### 6.3 The Opt button
 
-**`Opt` opens the options menu**, directly under the button, whether the mouse
-clicked it or `Ctrl + O` chose it. It was a row inside the `Set` list until
-v0.17.3 — a menu reached by opening a list and picking its first line, which is
-a menu behind a door. It has a button of its own again. What the menu holds is
-described in [section 7](#7-the-options-menu): the things that are not settings
-— the shortcuts folder, the displays, the audio devices, About, Reset, Exit.
+**`Opt` opens the options menu as a list** — the same box `Dir` and `Set` use,
+in the same place, answering the same keys. Point at it, land on it with the
+arrow keys, click it, or press `Ctrl + O`.
+
+**Every submenu is flattened into that one list**, each row carrying the path
+that led to it:
+
+```
+Settings...
+Open Shortcuts Folder
+Select Audio Device > Speakers (Realtek)
+Select Audio Device > Mute
+Display 1 > Preview Window
+Display 1 > Scale > 125%
+Display 1 > Brightness > 50%
+Lock Screen (Power Off)
+Exit
+```
+
+A submenu that only opens when you hover its parent is a thing to discover, and
+there is nothing here to discover: four displays' worth of brightness steps is a
+long list, not a deep one. A ticked row keeps its `✓`, and a row the menu itself
+greys out stays dead here too — the tooltip says so rather than the row simply
+not answering.
+
+The list is built from the menu itself every time it opens, so what it shows —
+the audio devices, the displays, which row is ticked — is the machine as it is
+right now, and a row added to the menu appears here with nothing else to edit.
+
+Right-clicking the status line still opens the ordinary Windows menu, which is
+what a right-click means everywhere else.
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -613,9 +650,9 @@ HGFloater empties the history.**
 
 ## 7. The Options Menu
 
-Open it with the [`Opt` button](#63-the-opt-button) — it appears directly under
-the button — with `Ctrl + O` in the taskbox, or by right-clicking the status
-line.
+Open it with the [`Opt` button](#63-the-opt-button) — as a list under the
+button, flattened to one level — with `Ctrl + O` in the taskbox, or by
+right-clicking the status line, which opens it as an ordinary Windows menu.
 
 - **Settings...** — the [settings window](#71-the-settings-window): every
   option, every value and every key in one list.
@@ -986,7 +1023,8 @@ a chord.
 | `Enter` | Execute (inside the Command Box) |
 | `Shift + Enter` | New line (inside the Command Box) |
 | `Ctrl + S` / `Ctrl + H` | Scroll mode / history mode (inside the Command Box) |
-| `Shift` + `0`–`9`, `A`–`Z` | Activate the task icon with that badge (`S0`, `S1`, …) |
+| `Shift` + `0`–`9` | Activate the window with that badge (`S0` … `S9`) |
+| `Shift` + `A`–`Z` | Launch the shortcut with that badge (`SA` … `SZ`) |
 | `Ctrl + Space` | Focus the input (inside the Command Box) |
 | `Ctrl + Wheel` | Text size (inside the Command Box) |
 
