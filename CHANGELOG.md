@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.17.7] - 2026-08-30
+
+### Fixed
+- **The `Opt` button opened the command box.** When the options menu became a
+  list, the `case` label that used to open the popup was left behind with no
+  body of its own, one line above the command box's case - so `Opt` ran that
+  instead. A bare case label falling into its neighbour is legal C and draws no
+  warning, which is how it survived a warning-clean build and a release.
+  The buttons that carry a list are now answered before that switch, by the one
+  function that knows which buttons those are, so there is no case label left to
+  drift.
+
 ## [v0.17.6] - 2026-08-30
 
 ### Changed

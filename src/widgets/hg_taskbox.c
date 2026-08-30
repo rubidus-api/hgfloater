@@ -311,6 +311,35 @@ void activate_toolbar_item(int index)
 {
     if (index < 0)
         return;
+
+    /* The buttons that carry a list are answered here rather than as three more
+     * cases below, because that is what this went wrong as: an empty case label
+     * for the menu, left behind when the menu became a list, quietly joined the
+     * case under it and Opt started opening the command box. A bare label
+     * falling into its neighbour is legal C and draws no warning. Asking the
+     * one function that knows which buttons carry a list leaves nothing to
+     * drift.
+     *
+     * A click is the same ask as the hover, so it toggles: pointing at the
+     * button already opened the list, and clicking it again is how anyone puts
+     * a list away. */
+    int box_mode = taskbox_box_mode_for_button(index);
+    if (box_mode >= 0) {
+        if (hg_tabbox_is_open() && hg_tabbox_mode() == box_mode) {
+            hg_tabbox_close();
+            return;
+        }
+        RECT anchor;
+        if (!taskbox_toolbar_button_screen_rect(index, &anchor))
+            return;
+        taskbox_open_box_for_button(index, &anchor);
+        /* Activating a button is something the keyboard does as much as the
+         * mouse, and a list that opens without taking the arrows leaves the
+         * keyboard pointing at the button it just used. */
+        hg_tabbox_enter();
+        return;
+    }
+
     switch (hg_toolbar_builtin_click_role(index)) {
     case HG_TOOLBAR_CLICK_NONE:
         break;
@@ -324,7 +353,6 @@ void activate_toolbar_item(int index)
         EnumWindows(minimize_restore_enum_proc, (LPARAM)is_desktop_shown);
         break;
     }
-    case HG_TOOLBAR_CLICK_OPEN_MENU:
     case HG_TOOLBAR_CLICK_SHOW_COMMANDBOX:
         show_commandbox_window();
         break;
@@ -346,26 +374,6 @@ void activate_toolbar_item(int index)
         if (hg_g_toolbar_wnd) {
             InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
         }
-        break;
-    }
-    case HG_TOOLBAR_CLICK_OPEN_DIRS:
-    case HG_TOOLBAR_CLICK_OPEN_CONTROLS: {
-        /* A click is the same ask as the hover, so it toggles: pointing at the
-         * button already opened the list, and clicking it again is how anyone
-         * puts a list away. */
-        int mode = taskbox_box_mode_for_button(index);
-        if (hg_tabbox_is_open() && hg_tabbox_mode() == mode) {
-            hg_tabbox_close();
-            break;
-        }
-        RECT anchor;
-        if (!taskbox_toolbar_button_screen_rect(index, &anchor))
-            break;
-        taskbox_open_box_for_button(index, &anchor);
-        /* Activating a button is something the keyboard does as much as the
-         * mouse, and a list that opens without taking the arrows leaves the
-         * keyboard pointing at the button it just used. */
-        hg_tabbox_enter();
         break;
     }
     case HG_TOOLBAR_CLICK_RELOCATE_AWAY:
