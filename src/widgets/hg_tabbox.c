@@ -472,8 +472,11 @@ static const WCHAR *tabbox_row_hint(int index)
     if (s_mode == HG_BOX_MENU) {
         if (index < 0 || index >= s_menu_row_count)
             return NULL;
-        if (tabbox_row_is_value(index))
-            return L"Left / Right: less / more   (the wheel does the same)";
+        if (tabbox_row_is_value(index)) {
+            return s_menu_rows[index].defer
+                       ? L"Left / Right: less / more   (applied when this list closes)"
+                       : L"Left / Right: less / more   (the wheel does the same)";
+        }
         if (!s_menu_rows[index].id || !s_menu_rows[index].enabled)
             return L"This one is not available right now.";
         return L"Space or Enter: run it";
@@ -502,6 +505,29 @@ static const WCHAR *tabbox_row_hint(int index)
  * there is only one place that decides how big a step is. */
 static void tabbox_tip_show(int index);
 
+/* Send what the deferred rows owe.
+ *
+ * Called when the list goes away, which is the moment the reader has finished
+ * choosing: they walked to a number, and now they get it. One command per row
+ * that moved, not one per rung walked through - the point of deferring is that
+ * the rungs in between were never asked for. */
+static void tabbox_flush_pending_values(void)
+{
+    if (s_mode != HG_BOX_MENU)
+        return;
+
+    for (int i = 0; i < s_menu_row_count; ++i) {
+        HgMenuRow *row = &s_menu_rows[i];
+        if (row->kind != HG_MENU_ROW_VALUE || !row->defer)
+            continue;
+        if (row->step_index < 0 || row->step_index == row->applied_index)
+            continue;
+
+        taskbox_dispatch_main_menu_command(row->base_id + (UINT)row->step_index);
+        row->applied_index = row->step_index;
+    }
+}
+
 /* One rung along, and the change goes out as the command that rung always was.
  *
  * The row's reading is moved here rather than read back, for two reasons: the
@@ -526,7 +552,10 @@ static BOOL tabbox_adjust_menu_row(int index, int direction)
         return TRUE; /* already at the end of the ladder: answered, nothing moved */
 
     row->step_index = next;
-    taskbox_dispatch_main_menu_command(row->base_id + (UINT)next);
+    if (!row->defer) {
+        taskbox_dispatch_main_menu_command(row->base_id + (UINT)next);
+        row->applied_index = next;
+    }
 
     tabbox_menu_row_text(index, s_titles[index], HG_MAX_STR);
     s_selected = index;
@@ -787,6 +816,10 @@ void hg_tabbox_close(void)
 {
     if (!s_wnd)
         return;
+    /* Before anything is forgotten: Esc, a click elsewhere, the pointer
+     * wandering off and picking another row all end up here, and each of them
+     * is the reader saying they are done choosing. */
+    tabbox_flush_pending_values();
     tabbox_tip_hide();
     s_pointer_on_row = FALSE;
     ShowWindow(s_wnd, SW_HIDE);
@@ -1254,6 +1287,7 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
     case WM_DESTROY:
         if (s_wnd == hwnd) {
+            tabbox_flush_pending_values();
             s_wnd = NULL;
             s_target = NULL;
             s_count = 0;

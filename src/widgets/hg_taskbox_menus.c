@@ -53,7 +53,8 @@ static int menu_add_row(HgMenuRow *rows, int max_rows, int count, const WCHAR *l
  * display reports; the nearest rung at or below it is where the row starts, so
  * a monitor sitting at 60% shows the 50% rung rather than nothing. */
 static int menu_add_value_row(HgMenuRow *rows, int max_rows, int count, const WCHAR *label, UINT base_id,
-                              const int *steps, int step_count, int current, int min_percent, int max_percent)
+                              const int *steps, int step_count, int current, int min_percent, int max_percent,
+                              BOOL defer)
 {
     if (count >= max_rows)
         return count;
@@ -68,6 +69,7 @@ static int menu_add_value_row(HgMenuRow *rows, int max_rows, int count, const WC
     rows[count].step_index = -1;
     rows[count].step_min = 0;
     rows[count].step_max = step_count - 1;
+    rows[count].defer = defer;
 
     for (int i = 0; i < step_count; ++i) {
         if (steps[i] < min_percent)
@@ -79,6 +81,9 @@ static int menu_add_value_row(HgMenuRow *rows, int max_rows, int count, const WC
     }
     if (rows[count].step_min > rows[count].step_max) /* nothing this display allows */
         rows[count].step_min = rows[count].step_max;
+
+    /* Nothing is owed yet: the row is showing what the display is on. */
+    rows[count].applied_index = rows[count].step_index;
 
     return count + 1;
 }
@@ -98,10 +103,12 @@ static int menu_add_display_rows(HgMenuRow *rows, int max_rows, int count, int m
     HgDisplayScale scale;
     if (hg_query_display_scale(hg_g_monitors[monitor_index].hMonitor, &scale) && scale.valid) {
         hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Scale", display);
+        /* Deferred: every rung of this ladder relays out every window on the
+         * display, so it is sent once the reader has stopped walking it. */
         count = menu_add_value_row(rows, max_rows, count, label,
                                    (UINT)HG_IDM_SCALE_BASE + (UINT)monitor_index * HG_SCALE_OPTION_COUNT,
                                    hg_display_scale_options, HG_SCALE_OPTION_COUNT, scale.current_percent,
-                                   scale.min_percent, scale.max_percent);
+                                   scale.min_percent, scale.max_percent, TRUE);
     } else {
         /* Kept visible but dead: a missing entry reads as a bug, a dead one
          * says the driver would not answer. */
@@ -111,11 +118,13 @@ static int menu_add_display_rows(HgMenuRow *rows, int max_rows, int count, int m
 
     if (!hg_monitor_brightness_unavailable(hg_g_monitors[monitor_index].hMonitor)) {
         hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Brightness", display);
+        /* Immediate: a backlight step is a message to the monitor and seeing it
+         * is the whole point of stepping. */
         count = menu_add_value_row(rows, max_rows, count, label,
                                    (UINT)HG_IDM_BRIGHTNESS_BASE +
                                        (UINT)monitor_index * HG_BRIGHTNESS_OPTION_COUNT,
                                    hg_brightness_options, HG_BRIGHTNESS_OPTION_COUNT,
-                                   hg_g_monitors[monitor_index].brightness, 0, 100);
+                                   hg_g_monitors[monitor_index].brightness, 0, 100, FALSE);
     } else {
         hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Brightness (unavailable)", display);
         count = menu_add_row(rows, max_rows, count, label, 0, FALSE, FALSE);

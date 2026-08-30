@@ -98,9 +98,24 @@ typedef struct HgMenuRow {
     UINT base_id;
     const int *steps; /* the percentages, in order */
     int step_count;
-    int step_index; /* where it is now; -1 when the display would not say */
+    int step_index; /* the rung the row is showing */
     int step_min;   /* the rungs this display actually allows */
     int step_max;
+
+    /* Some rungs are cheap to try and some are not.
+     *
+     * Brightness is a message to the monitor: stepping through it is how anyone
+     * finds the level they want, and each step is invisible work. Display
+     * scaling is not - Windows relays out every window on that display, twice
+     * over if you pass through a rung on the way - so walking 100 to 150 while
+     * it applies each rung is three reflows of the whole desktop to reach one
+     * the reader wanted. A deferred row moves its reading as you walk it and
+     * sends the change once, when the list closes.
+     *
+     * applied_index is the rung the display is actually on. When it differs
+     * from step_index there is something owed. */
+    BOOL defer;
+    int applied_index;
 } HgMenuRow;
 
 /* Fills rows and answers how many. Building this enumerates the audio endpoints

@@ -245,6 +245,9 @@ void hide_taskbox(HWND hwnd)
 {
     if (hwnd == NULL)
         return;
+    /* The list belongs to a button on this window, so it goes when the window
+     * does - and closing it is what sends anything it was holding back. */
+    hg_tabbox_close();
     /* The hover-check timer must die on every hide path, not only its own collapse. */
     KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
     s_hover_outside_ticks = 0;
