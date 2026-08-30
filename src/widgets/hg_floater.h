@@ -17,6 +17,8 @@ void update_floater_layout(HWND hwnd);
  * it because the content was never the problem. This sets both again. */
 void hg_floater_refresh_surface(void);
 void update_floater_font_size(int delta);
+/* That size outright, for anything that knows what it wants. */
+void hg_set_floater_font_size(int size);
 void update_floater_alpha(int delta);
 
 #endif /* HG_FLOATER_H */

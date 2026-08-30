@@ -55,22 +55,16 @@ void update_size(int delta)
     refresh_window_list(TRUE);
 }
 
-void update_edit_font_size(int delta)
+/* Rebuild the interface font from what the globals now say, and hand it to
+ * everything drawn in it.
+ *
+ * Split out of update_edit_font_size because the size is not the only thing
+ * that can change: choosing a different family has to do all of the same work,
+ * and a second copy of "and also tell the tooltip, and the About window, and
+ * every monitor preview" is a list that would be missing an entry within a
+ * release or two. */
+void hg_apply_ui_font(void)
 {
-    int old_size = ABS(hg_g_edit_font_size);
-    if (old_size < SC(12))
-        old_size = SC(12);
-
-    int new_size = old_size + (delta > 0 ? SC(2) : -SC(2));
-    if (new_size < SC(12))
-        new_size = SC(12);
-    if (new_size > SC(128))
-        new_size = SC(128);
-    if (new_size == old_size)
-        return;
-    hg_g_edit_font_size = -new_size;
-    save_taskbox_font_config();
-
     release_font_handle(&hg_g_main_font, TRUE);
 
     hg_g_main_font =
@@ -114,6 +108,86 @@ void update_edit_font_size(int delta)
             }
         }
     }
+}
+
+int hg_taskbox_icon_point_size(void)
+{
+    double ws = (hg_g_scale_factor > 0) ? hg_g_scale_factor : 1.0;
+    int px = ABS(hg_g_current_font_size);
+    if (px <= 0)
+        px = SC(24);
+    return (int)(px / ws + 0.5);
+}
+
+void hg_set_taskbox_icon_point_size(int points)
+{
+    int px = SC(points);
+    if (px < SC(16))
+        px = SC(16);
+    if (px > SC(128))
+        px = SC(128);
+    if (px == ABS(hg_g_current_font_size))
+        return;
+
+    hg_g_current_font_size = -px;
+    save_taskbox_font_config();
+
+    if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+        update_layout(hg_g_taskbox_wnd);
+        InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+    }
+    if (hg_g_toolbar_wnd && IsWindow(hg_g_toolbar_wnd)) {
+        update_toolbar_tooltips(hg_g_toolbar_wnd);
+        InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
+    }
+}
+
+void update_edit_font_size(int delta)
+{
+    int old_size = ABS(hg_g_edit_font_size);
+    if (old_size < SC(12))
+        old_size = SC(12);
+
+    int new_size = old_size + (delta > 0 ? SC(2) : -SC(2));
+    if (new_size < SC(12))
+        new_size = SC(12);
+    if (new_size > SC(128))
+        new_size = SC(128);
+    if (new_size == old_size)
+        return;
+
+    hg_g_edit_font_size = -new_size;
+    save_taskbox_font_config();
+    hg_apply_ui_font();
+}
+
+/* The interface text size in points, and setting it outright - what the font
+ * chooser hands back, as against the two-point steps Ctrl+Plus walks. */
+int hg_ui_font_point_size(void)
+{
+    double ws = (hg_g_scale_factor > 0) ? hg_g_scale_factor : 1.0;
+    int px = ABS(hg_g_edit_font_size);
+    if (px <= 0)
+        px = SC(16);
+    return (int)(px / ws + 0.5);
+}
+
+void hg_set_ui_font_point_size(int points)
+{
+    if (points < 6)
+        points = 6;
+    if (points > 96)
+        points = 96;
+
+    int px = SC(points);
+    if (px < SC(12))
+        px = SC(12);
+    if (px > SC(128))
+        px = SC(128);
+
+    hg_g_edit_font_size = -px;
+    save_taskbox_font_config();
+    hg_apply_ui_font();
 }
 
 void update_taskbox_alpha(int delta)

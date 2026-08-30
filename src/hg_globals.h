@@ -68,6 +68,11 @@ extern WCHAR hg_g_base_path[HG_MAX_PATH];
 extern WCHAR hg_g_shortcuts_path[HG_MAX_PATH];
 extern WCHAR hg_g_config_path[HG_MAX_PATH];
 extern WCHAR hg_g_font_name[64];
+/* Notes and clipboard entries are text a reader writes and reads at length,
+ * which is a different job from labelling a button, so they get a family of
+ * their own rather than borrowing the UI's. Empty means "whatever the UI uses",
+ * which is what it was before this existed. */
+extern WCHAR hg_g_doc_font_name[64];
 
 extern ShortcutItem hg_g_shortcuts[HG_MAX_SHORTCUTS];
 extern int hg_g_shortcut_count;

@@ -66,6 +66,7 @@ WCHAR hg_g_base_path[HG_MAX_PATH] = {0};
 WCHAR hg_g_shortcuts_path[HG_MAX_PATH] = {0};
 WCHAR hg_g_config_path[HG_MAX_PATH] = {0};
 WCHAR hg_g_font_name[64] = L"Segoe UI";
+WCHAR hg_g_doc_font_name[64] = L"Segoe UI";
 
 ShortcutItem hg_g_shortcuts[HG_MAX_SHORTCUTS] = {0};
 int hg_g_shortcut_count = 0;

@@ -37,6 +37,27 @@ void update_floater_font_size(int delta)
     }
 }
 
+/* The same rebuild, told a size rather than a direction. The settings window
+ * and `write value` hand over a number; only the keyboard steps. */
+void hg_set_floater_font_size(int size)
+{
+    if (size < HG_FLOATER_MIN_FONT_SIZE)
+        size = HG_FLOATER_MIN_FONT_SIZE;
+    if (size > HG_FLOATER_MAX_FONT_SIZE)
+        size = HG_FLOATER_MAX_FONT_SIZE;
+    if (hg_g_floater_font_size == size)
+        return;
+
+    hg_g_floater_font_size = size;
+    release_font_handle(&hg_g_floater_time_font, FALSE);
+    release_font_handle(&hg_g_floater_date_font, FALSE);
+    release_font_handle(&s_floater_label_font, FALSE);
+    release_font_handle(&s_floater_host_font, FALSE);
+    update_floater_layout(hg_g_floater_wnd);
+    InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+    save_floater_font_config();
+}
+
 void update_floater_alpha(int delta)
 {
     if (!hg_step_alpha_value(&hg_g_floater_alpha, delta))

@@ -20,6 +20,10 @@
 #include "../hg_values.h"
 #include "../hg_keys.h"
 #include "hg_commandbox.h"
+#include "hg_taskbox.h"
+#include "hg_note.h"
+#include "hg_clip.h"
+#include <commdlg.h>
 
 #define HG_SETTINGS_LIST_ID 100
 #define HG_SETTINGS_STATUS_ID 101
@@ -28,8 +32,29 @@ enum {
     HG_ROW_HEADING = 1,
     HG_ROW_OPTION,
     HG_ROW_VALUE,
+    HG_ROW_FONT, /* one of the three families */
     HG_ROW_KEY,  /* a function */
     HG_ROW_CHORD /* one of that function's chords */
+};
+
+/* The three families, and what each is for.
+ *
+ * Three rather than one because the three jobs disagree about what a good font
+ * is. Labels on buttons want the system's interface face. A command line wants
+ * fixed pitch, so that what is typed lines up with what was printed - and the
+ * settings list is written in it too, for the same reason: these rows are
+ * columns. Notes and clipboard entries are prose a reader writes at length,
+ * which is neither of those.
+ *
+ * Nothing here insists on a monospaced font for the middle one. It is offered
+ * as the one that should be, and the chooser is the whole of Windows' font
+ * list, because someone who wants their notes in a fixed-pitch face or their
+ * console in a serif has a reason and it is not this program's business. */
+enum {
+    HG_FONT_UI = 1,
+    HG_FONT_MONO,
+    HG_FONT_DOC,
+    HG_FONT_COUNT_PLUS_ONE
 };
 
 typedef struct HgSettingsRow {
@@ -59,6 +84,7 @@ static BOOL s_capture_replaces = FALSE;
 static HgChord s_capture_replaced = {0, 0};
 
 static void settings_fill(HWND hwnd);
+static void settings_layout_current(HWND hwnd);
 
 BOOL hg_settings_capturing(void)
 {
@@ -94,11 +120,53 @@ static void settings_load_view(void)
  * settings reads as a different program. Sharing the size means Ctrl+Wheel in
  * either one moves both, which is what "the same font" has to mean to be worth
  * saying. */
+/* Bold and underlined: the same font as everything else, wearing the mark that
+ * says "this one does something".
+ *
+ * A settings list is half headings and half things to press, and nothing about
+ * the plain text said which was which - a reader had to walk the arrows over a
+ * row to find out whether it answered. Underline is the oldest mark in the
+ * interface for "actionable", bold survives being read at a glance, and both
+ * survive a colour scheme this program does not control. Built beside the
+ * ordinary font and thrown away with it. */
+static HFONT s_row_font = NULL;
+
+/* The row the pointer is on, or -1. Drawn inverted, because a row about to be
+ * clicked should look different from the row the arrows are parked on: they are
+ * different claims - "this is where you are" and "this is what you would get". */
+static int s_hover_row = -1;
+
+static void settings_release_row_font(void)
+{
+    if (s_row_font) {
+        DeleteObject(s_row_font);
+        s_row_font = NULL;
+    }
+}
+
+/* The actionable kinds. A heading is a label and a chord line is a chord you
+ * can delete or replace, which is as actionable as it gets. */
+static BOOL settings_row_is_actionable(int kind)
+{
+    return kind == HG_ROW_OPTION || kind == HG_ROW_VALUE || kind == HG_ROW_FONT || kind == HG_ROW_KEY ||
+           kind == HG_ROW_CHORD;
+}
+
 static void settings_apply_font(HWND hwnd)
 {
     load_commandbox_font();
     if (!hg_g_commandbox_font)
         return;
+
+    /* The same face and size, marked. Read from the handle in use rather than
+     * rebuilt from the globals, so the two can never be a size apart. */
+    settings_release_row_font();
+    LOGFONTW lf;
+    if (GetObjectW(hg_g_commandbox_font, sizeof(lf), &lf) == sizeof(lf)) {
+        lf.lfWeight = FW_BOLD;
+        lf.lfUnderline = TRUE;
+        s_row_font = CreateFontIndirectW(&lf);
+    }
 
     const int ids[] = {HG_SETTINGS_LIST_ID, HG_SETTINGS_STATUS_ID};
     for (int i = 0; i < (int)HG_ARRAYSIZE(ids); ++i) {
@@ -141,6 +209,101 @@ static void settings_say(HWND hwnd, const WCHAR *text)
     HWND status = GetDlgItem(hwnd, HG_SETTINGS_STATUS_ID);
     if (status)
         SetWindowTextW(status, text ? text : L"");
+}
+
+/* ------------------------------------------------------------------ fonts */
+
+/* What a font row says: its name, the family it is set to, and the size that
+ * goes with it. NULL for a number nothing answers to. */
+static const WCHAR *settings_font_row(int which, WCHAR *family, size_t family_cch, int *out_points)
+{
+    switch (which) {
+    case HG_FONT_UI:
+        StringCchCopyW(family, family_cch, hg_g_font_name);
+        *out_points = hg_ui_font_point_size();
+        return L"Interface (buttons, lists, floater)";
+    case HG_FONT_MONO:
+        StringCchCopyW(family, family_cch, hg_g_commandbox_font_name);
+        *out_points = hg_commandbox_font_point_size();
+        return L"Command box and this window";
+    case HG_FONT_DOC:
+        StringCchCopyW(family, family_cch, hg_g_doc_font_name);
+        *out_points = hg_note_font_size();
+        return L"Notes and clipboard";
+    default:
+        return NULL;
+    }
+}
+
+/* Windows' own font chooser, seeded with the family that row is set to.
+ *
+ * Its own, rather than a list of families of our making: the system dialog
+ * knows what is installed, previews it, and is the box every other program on
+ * the machine shows for this. A home-made list would be a worse copy of it that
+ * also had to be maintained. */
+static BOOL settings_choose_font(HWND hwnd, int which)
+{
+    WCHAR family[LF_FACESIZE];
+    int points = 0;
+    if (!settings_font_row(which, family, HG_ARRAYSIZE(family), &points))
+        return FALSE;
+
+    LOGFONTW lf;
+    SecureZeroMemory(&lf, sizeof(lf));
+    StringCchCopyW(lf.lfFaceName, HG_ARRAYSIZE(lf.lfFaceName), family);
+    lf.lfCharSet = DEFAULT_CHARSET;
+    /* Points to the logical units the dialog speaks, through the screen's own
+     * resolution - the same conversion the dialog will undo on the way out. */
+    HDC dc = GetDC(hwnd);
+    if (dc) {
+        lf.lfHeight = -MulDiv(points, GetDeviceCaps(dc, LOGPIXELSY), 72);
+        ReleaseDC(hwnd, dc);
+    } else {
+        lf.lfHeight = -points;
+    }
+
+    CHOOSEFONTW cf;
+    SecureZeroMemory(&cf, sizeof(cf));
+    cf.lStructSize = sizeof(cf);
+    cf.hwndOwner = hwnd;
+    cf.lpLogFont = &lf;
+    cf.Flags = CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_NOVERTFONTS;
+    if (which == HG_FONT_MONO) {
+        /* Offered, not enforced: the list still holds everything, this only
+         * decides which half of it the reader is looking at first. */
+        cf.Flags |= CF_FIXEDPITCHONLY;
+    }
+
+    if (!ChooseFontW(&cf))
+        return FALSE; /* cancelled, or the dialog would not open */
+
+    int chosen_points = cf.iPointSize / 10; /* the dialog answers in tenths */
+    if (chosen_points <= 0)
+        chosen_points = points;
+
+    switch (which) {
+    case HG_FONT_UI:
+        StringCchCopyW(hg_g_font_name, HG_ARRAYSIZE(hg_g_font_name), lf.lfFaceName);
+        save_font_name_config();
+        hg_set_ui_font_point_size(chosen_points); /* saves, rebuilds, redraws */
+        break;
+    case HG_FONT_MONO:
+        StringCchCopyW(hg_g_commandbox_font_name, LF_FACESIZE, lf.lfFaceName);
+        hg_commandbox_set_font_point_size(chosen_points); /* saves and reloads the font */
+        settings_apply_font(hwnd);
+        settings_layout_current(hwnd);
+        break;
+    case HG_FONT_DOC:
+        StringCchCopyW(hg_g_doc_font_name, HG_ARRAYSIZE(hg_g_doc_font_name), lf.lfFaceName);
+        save_font_name_config();
+        hg_note_set_font_size(chosen_points);
+        hg_clip_set_font_size(chosen_points);
+        break;
+    default:
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /* ------------------------------------------------------------------ rows */
@@ -186,6 +349,18 @@ static void settings_fill(HWND hwnd)
                                  : (hg_option_get(i) ? L"on" : L"off");
         StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", info.label, state);
         settings_add_row(list, HG_ROW_OPTION, i, line);
+    }
+
+    settings_add_row(list, HG_ROW_HEADING, 0, L"");
+    settings_add_row(list, HG_ROW_HEADING, 0, L"FONTS");
+    for (int i = 1; i < HG_FONT_COUNT_PLUS_ONE; ++i) {
+        WCHAR family[LF_FACESIZE];
+        int points = 0;
+        const WCHAR *label = settings_font_row(i, family, HG_ARRAYSIZE(family), &points);
+        if (!label)
+            continue;
+        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls %dpt", label, family, points);
+        settings_add_row(list, HG_ROW_FONT, i, line);
     }
 
     settings_add_row(list, HG_ROW_HEADING, 0, L"");
@@ -264,6 +439,16 @@ static BOOL settings_selected_row(HWND hwnd, HgSettingsRow *out)
 /* The line under the list says what the row under the cursor answers to. A
  * window whose keys differ per row has to say which ones, where the eye already
  * is, or they are keys nobody finds. */
+/* The layout, re-run for the window as it is. Choosing a different fixed-pitch
+ * size changes the height of the status line, and the list has to give up the
+ * space for it. */
+static void settings_layout_current(HWND hwnd)
+{
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+    settings_layout(hwnd, rc.right, rc.bottom);
+}
+
 static void settings_describe(HWND hwnd)
 {
     HgSettingsRow row;
@@ -518,6 +703,15 @@ static BOOL settings_list_key(HWND parent, UINT vk)
             return TRUE;
         }
         break;
+    case HG_ROW_FONT:
+        if (vk == VK_RETURN || vk == VK_SPACE) {
+            if (settings_choose_font(parent, row.number)) {
+                settings_fill(parent);
+                settings_describe(parent);
+            }
+            return TRUE;
+        }
+        break;
     case HG_ROW_VALUE:
         if (vk == VK_LEFT || vk == VK_RIGHT) {
             settings_step_value(parent, row.number, (vk == VK_RIGHT) ? 1 : -1);
@@ -632,6 +826,24 @@ static UINT settings_navigation_key(UINT vk)
     }
 }
 
+/* Which row the pointer is over, kept current so the drawing can invert it. */
+static void settings_track_hover(HWND list, LPARAM l_param)
+{
+    POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+    DWORD hit = (DWORD)SendMessageW(list, LB_ITEMFROMPOINT, 0, MAKELPARAM(pt.x, pt.y));
+    int row = HIWORD(hit) ? -1 : (int)LOWORD(hit); /* the high word is set when the point is outside */
+    if (row >= s_row_count)
+        row = -1;
+
+    if (row != s_hover_row) {
+        s_hover_row = row;
+        InvalidateRect(list, NULL, FALSE);
+    }
+
+    TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, list, 0};
+    TrackMouseEvent(&tme);
+}
+
 static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
                                                     UINT_PTR subclass_id, DWORD_PTR ref_data)
 {
@@ -662,6 +874,40 @@ static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM 
     if (msg == WM_CHAR)
         return 0;
 
+    if (msg == WM_MOUSEMOVE)
+        settings_track_hover(hwnd, l_param);
+    if (msg == WM_MOUSELEAVE && s_hover_row != -1) {
+        s_hover_row = -1;
+        InvalidateRect(hwnd, NULL, FALSE);
+    }
+
+    /* A double click is what a mouse says instead of Enter: the same row, the
+     * same act. Without it the font rows could only be reached from the
+     * keyboard, which would make the chooser a keyboard feature by accident. */
+    if (msg == WM_LBUTTONDBLCLK) {
+        HgSettingsRow row;
+        if (settings_selected_row(parent, &row)) {
+            if (row.kind == HG_ROW_FONT) {
+                if (settings_choose_font(parent, row.number)) {
+                    settings_fill(parent);
+                    settings_describe(parent);
+                }
+                return 0;
+            }
+            if (row.kind == HG_ROW_OPTION) {
+                settings_toggle_option(parent, row.number);
+                return 0;
+            }
+            if (row.kind == HG_ROW_KEY || row.kind == HG_ROW_CHORD) {
+                if (row.kind == HG_ROW_KEY)
+                    settings_key_row_command(parent, row.number, VK_RETURN);
+                else
+                    settings_chord_row_command(parent, row.number, row.index, VK_RETURN);
+                return 0;
+            }
+        }
+    }
+
     LRESULT result = DefSubclassProc(hwnd, msg, w_param, l_param);
     if (msg == WM_KEYDOWN || msg == WM_LBUTTONUP)
         settings_describe(parent);
@@ -676,8 +922,9 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         HINSTANCE instance = GetModuleHandleW(NULL);
 
         CreateWindowExW(0, L"LISTBOX", NULL,
-                        WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_HASSTRINGS, 0, 0, 0,
-                        0, hwnd, (HMENU)HG_SETTINGS_LIST_ID, instance, NULL);
+                        WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_HASSTRINGS |
+                            LBS_OWNERDRAWFIXED,
+                        0, 0, 0, 0, hwnd, (HMENU)HG_SETTINGS_LIST_ID, instance, NULL);
         CreateWindowExW(0, L"STATIC", NULL, WS_CHILD | WS_VISIBLE | SS_LEFTNOWORDWRAP, 0, 0, 0, 0, hwnd,
                         (HMENU)HG_SETTINGS_STATUS_ID, instance, NULL);
 
@@ -696,6 +943,65 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
     case WM_SIZE:
         settings_layout(hwnd, LOWORD(l_param), HIWORD(l_param));
         return 0;
+
+    case WM_MEASUREITEM: {
+        MEASUREITEMSTRUCT *mis = (MEASUREITEMSTRUCT *)l_param;
+        if (mis && mis->CtlID == HG_SETTINGS_LIST_ID) {
+            double ws = hg_window_scale(hwnd);
+            mis->itemHeight = (UINT)(settings_line_height() + SCW(ws, 4));
+        }
+        return TRUE;
+    }
+
+    case WM_DRAWITEM: {
+        const DRAWITEMSTRUCT *dis = (const DRAWITEMSTRUCT *)l_param;
+        if (!dis || dis->CtlID != HG_SETTINGS_LIST_ID || (int)dis->itemID < 0)
+            break;
+
+        int index = (int)dis->itemID;
+        int kind = (index < s_row_count) ? s_rows[index].kind : HG_ROW_HEADING;
+        BOOL actionable = settings_row_is_actionable(kind);
+        BOOL focused = (dis->itemState & ODS_SELECTED) ? TRUE : FALSE;
+        BOOL hovered = (index == s_hover_row) && actionable;
+
+        /* Three states, two of them loud. The arrows leave a selection; the
+         * pointer inverts what it is over; a row that is both reads as the
+         * pointer's, because that is the one about to happen. */
+        COLORREF bg = hg_g_color_scheme_selected.bg;
+        COLORREF fg = hg_g_color_scheme_selected.text;
+        if (hovered) {
+            bg = hg_g_color_scheme_selected.text;
+            fg = hg_g_color_scheme_selected.bg;
+        } else if (focused) {
+            bg = hg_g_has_system_accent_color ? hg_g_system_accent_color : GetSysColor(COLOR_HIGHLIGHT);
+            fg = GetSysColor(COLOR_HIGHLIGHTTEXT);
+        }
+
+        HBRUSH brush = CreateSolidBrush(bg);
+        if (brush) {
+            FillRect(dis->hDC, &dis->rcItem, brush);
+            DeleteObject(brush);
+        }
+
+        WCHAR text[512];
+        text[0] = L'\0';
+        int len = (int)SendMessageW(dis->hwndItem, LB_GETTEXTLEN, (WPARAM)index, 0);
+        if (len > 0 && len < (int)HG_ARRAYSIZE(text))
+            SendMessageW(dis->hwndItem, LB_GETTEXT, (WPARAM)index, (LPARAM)text);
+
+        HFONT font = (actionable && s_row_font) ? s_row_font : hg_g_commandbox_font;
+        HFONT old_font = font ? (HFONT)SelectObject(dis->hDC, font) : NULL;
+        SetBkMode(dis->hDC, TRANSPARENT);
+        SetTextColor(dis->hDC, fg);
+
+        RECT text_rc = dis->rcItem;
+        text_rc.left += 2;
+        DrawTextW(dis->hDC, text, -1, &text_rc, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
+
+        if (old_font)
+            SelectObject(dis->hDC, old_font);
+        return TRUE;
+    }
 
     case WM_SETFOCUS: {
         HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
@@ -763,6 +1069,8 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         s_capture_action = 0;
         s_capture_replaces = FALSE;
         s_settings_wnd = NULL;
+        settings_release_row_font();
+        s_hover_row = -1;
         return 0;
 
     default:

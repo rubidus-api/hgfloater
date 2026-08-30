@@ -479,12 +479,23 @@ void load_font_name_config()
     if (wcslen(hg_g_font_name) == 0) {
         wcscpy(hg_g_font_name, L"Segoe UI");
     }
+
+    /* The documents' family defaults to the interface's, which is what notes
+     * and clipboard entries used before they had one of their own - so an
+     * existing config keeps looking exactly as it did until someone chooses
+     * otherwise. */
+    GetPrivateProfileStringW(L"etc", L"doc_font_name", hg_g_font_name, hg_g_doc_font_name, 64, hg_g_config_path);
+    if (wcslen(hg_g_doc_font_name) == 0) {
+        wcscpy(hg_g_doc_font_name, hg_g_font_name);
+    }
+
     save_font_name_config();
 }
 
 void save_font_name_config()
 {
     WritePrivateProfileStringW(L"etc", L"font_name", hg_g_font_name, hg_g_config_path);
+    WritePrivateProfileStringW(L"etc", L"doc_font_name", hg_g_doc_font_name, hg_g_config_path);
 }
 
 /* Kept as the name every caller already uses; the chords themselves live in

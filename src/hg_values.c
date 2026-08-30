@@ -13,6 +13,7 @@
 #include "widgets/hg_taskbox.h"
 #include "widgets/hg_note.h"
 #include "widgets/hg_clip.h"
+#include "widgets/hg_floater.h"
 
 /* Opacity is stored as a byte because that is what SetLayeredWindowAttributes
  * takes; it is shown as percent because that is what the wheel and the menu
@@ -39,6 +40,10 @@ enum {
     HG_VALUE_TASKBOX_ALPHA,
     HG_VALUE_COMMANDBOX_ALPHA,
     HG_VALUE_NOTE_FONT,
+    HG_VALUE_CLIP_FONT,
+    HG_VALUE_UI_FONT,
+    HG_VALUE_ICON_SIZE,
+    HG_VALUE_FLOATER_FONT,
     HG_VALUE_CLIP_MAX,
     HG_VALUE_HISTORY_MAX,
     HG_VALUE_COUNT_PLUS_ONE
@@ -51,6 +56,10 @@ static const HgValueInfo hg_values[] = {
     {L"taskbox-alpha", L"%", 30, 100, L"taskbox opacity"},
     {L"commandbox-alpha", L"%", 30, 100, L"command box opacity"},
     {L"note-font", L"pt", 8, 72, L"note text size, shared by the list and every editor"},
+    {L"clip-font", L"pt", 8, 72, L"clipboard text size"},
+    {L"ui-font", L"pt", 8, 72, L"interface text size - buttons, lists, the status line"},
+    {L"icon-size", L"pt", 12, 96, L"how big a task icon is drawn"},
+    {L"floater-font", L"pt", 8, 200, L"the floater's clock"},
     {L"clip-max", L"", 1, 64, L"how many clipboard entries to keep"},
     {L"history-max", L"", 1, 256, L"how many command lines to remember"},
 };
@@ -90,6 +99,18 @@ BOOL hg_value_get(int number, int *out)
         return TRUE;
     case HG_VALUE_NOTE_FONT:
         *out = hg_note_font_size();
+        return TRUE;
+    case HG_VALUE_CLIP_FONT:
+        *out = hg_clip_font_size();
+        return TRUE;
+    case HG_VALUE_UI_FONT:
+        *out = hg_ui_font_point_size();
+        return TRUE;
+    case HG_VALUE_ICON_SIZE:
+        *out = hg_taskbox_icon_point_size();
+        return TRUE;
+    case HG_VALUE_FLOATER_FONT:
+        *out = hg_g_floater_font_size;
         return TRUE;
     case HG_VALUE_CLIP_MAX:
         *out = hg_clip_max();
@@ -141,6 +162,18 @@ BOOL hg_value_set(int number, int value, BOOL *out_persisted)
         break;
     case HG_VALUE_NOTE_FONT:
         hg_note_set_font_size(value); /* note.ini */
+        break;
+    case HG_VALUE_CLIP_FONT:
+        hg_clip_set_font_size(value); /* config.ini */
+        break;
+    case HG_VALUE_UI_FONT:
+        hg_set_ui_font_point_size(value); /* config.ini, and every window redrawn */
+        break;
+    case HG_VALUE_ICON_SIZE:
+        hg_set_taskbox_icon_point_size(value); /* config.ini */
+        break;
+    case HG_VALUE_FLOATER_FONT:
+        hg_set_floater_font_size(value); /* config.ini */
         break;
     case HG_VALUE_CLIP_MAX:
         hg_clip_set_max(value); /* config.ini */

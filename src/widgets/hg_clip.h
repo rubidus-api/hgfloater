@@ -28,6 +28,9 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
 #define HG_CLIP_ROW_CCH_PUBLIC 160
 int hg_clip_count(void);
 int hg_clip_max(void);
+/* The history's text size, in points. */
+int hg_clip_font_size(void);
+void hg_clip_set_font_size(int points);
 void hg_clip_set_max(int value);
 /* One row of display text for entry `number`; FALSE when there is no such entry. */
 BOOL hg_clip_row(int number, WCHAR *out, size_t out_cch);

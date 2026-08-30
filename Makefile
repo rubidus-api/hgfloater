@@ -44,7 +44,8 @@ DEBUG_FLAGS   := -g -O0 -DDEBUG
 
 WIN_FLAGS := -mwindows -municode -static
 LIBS := -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -lshell32 -lole32 -loleaut32 \
-        -luuid -lpsapi -lpdh -luuid -loleaut32 -lpathcch -lshlwapi -lshcore -lpropsys -limm32
+        -luuid -lpsapi -lpdh -luuid -loleaut32 -lpathcch -lshlwapi -lshcore -lpropsys -limm32 \
+        -lcomdlg32
 
 SRC := \
 	src/hgfloater.c \

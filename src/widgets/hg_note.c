@@ -390,7 +390,7 @@ static HFONT note_make_font(HWND wnd)
     double ws = hg_window_scale(wnd);
     return CreateFontW(-SCW(ws, s_font_size), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
                        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS,
-                       hg_g_font_name);
+                       hg_g_doc_font_name);
 }
 
 /* The new font is handed to the control before the old one is destroyed, so the

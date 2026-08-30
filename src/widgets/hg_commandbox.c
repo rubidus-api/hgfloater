@@ -295,6 +295,39 @@ LRESULT CALLBACK commandbox_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_par
 }
 
 
+/* Points in, points out: the globals keep scaled pixels because that is what
+ * CreateFontW takes, and every caller outside this file thinks in points. */
+int hg_commandbox_font_point_size(void)
+{
+    double ws = (hg_g_scale_factor > 0) ? hg_g_scale_factor : 1.0;
+    int px = ABS(hg_g_commandbox_font_size);
+    if (px <= 0)
+        px = SC(16);
+    return (int)(px / ws + 0.5);
+}
+
+void hg_commandbox_set_font_point_size(int points)
+{
+    if (points < 8)
+        points = 8;
+    if (points > 72)
+        points = 72;
+
+    hg_g_commandbox_font_size = -SC(points);
+    save_commandbox_font_config();
+    load_commandbox_font();
+
+    /* Everything drawn in it takes the new handle: the window that owns the
+     * font would otherwise be the only one still holding the old one. */
+    if (hg_g_commandbox_wnd && IsWindow(hg_g_commandbox_wnd)) {
+        RECT rc;
+        GetClientRect(hg_g_commandbox_wnd, &rc);
+        SendMessageW(hg_g_commandbox_wnd, WM_SETTINGCHANGE, 0, 0);
+        SendMessageW(hg_g_commandbox_wnd, WM_SIZE, 0, MAKELPARAM(rc.right, rc.bottom));
+        InvalidateRect(hg_g_commandbox_wnd, NULL, TRUE);
+    }
+}
+
 void load_commandbox_font()
 {
     load_commandbox_font_config();

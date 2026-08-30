@@ -9,5 +9,13 @@ void commandbox_focus_input(void);
 void commandbox_clear(void);
 void show_commandbox_window(void);
 void load_commandbox_font(void);
+/* The fixed-pitch size in points, and setting it outright. The globals hold
+ * scaled pixels, which is not what a font dialog hands back. */
+int hg_commandbox_font_point_size(void);
+void hg_commandbox_set_font_point_size(int points);
+/* The fixed-pitch size in points, and setting it outright. The globals hold
+ * scaled pixels, which is not what a font dialog hands back. */
+int hg_commandbox_font_point_size(void);
+void hg_commandbox_set_font_point_size(int points);
 
 #endif /* HG_COMMANDBOX_H */
