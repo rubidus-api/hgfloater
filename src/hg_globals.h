@@ -90,6 +90,9 @@ extern BOOL hg_g_in_sizemove;
 
 /* Pointer/menu interaction states */
 extern POINT hg_g_last_mouse_pos;
+/* TRUE while the taskbox is being driven by the keyboard. See
+ * hg_keyboard_mode_begin in hg_taskbox.h for what it changes and why. */
+extern BOOL hg_g_keyboard_mode;
 extern BOOL hg_g_hover_check_armed;
 extern BOOL hg_g_floater_show_stats; /* [floater] show_stats: battery/CPU/memory line */
 extern RECT hg_g_floater_home_rect;   /* floater position before a click/hotkey expand */

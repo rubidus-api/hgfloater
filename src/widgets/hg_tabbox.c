@@ -52,6 +52,14 @@ static BOOL s_open = FALSE;
 static HWND s_tip = NULL;
 static int s_tip_row = -1;
 
+/* Whether the pointer is resting on a row of the box.
+ *
+ * The selection bar used to be drawn only for a box the keyboard had entered,
+ * so a list opened by hovering an icon showed nothing under the pointer even
+ * though the row under it was the one a click would take. The row a reader is
+ * about to pick should look picked, whichever hand is doing the pointing. */
+static BOOL s_pointer_on_row = FALSE;
+
 /* The control list, in one table.
  *
  * Two kinds of row: the buttons that left the toolbar, and the switches that
@@ -65,7 +73,8 @@ static int s_tip_row = -1;
  * row is not a thing anyone guesses. */
 enum {
     HG_ROW_BUTTON = 0, /* hg_toolbar_builtin_* by icon id */
-    HG_ROW_OPTION      /* hg_option_* by option number */
+    HG_ROW_OPTION,     /* hg_option_* by option number */
+    HG_ROW_COMMAND     /* a WM_COMMAND, run and done */
 };
 
 typedef struct HgControlRow {
@@ -74,7 +83,10 @@ typedef struct HgControlRow {
     const WCHAR *label; /* NULL: ask the table that owns the id */
 } HgControlRow;
 
-static HgControlRow s_control_rows[4 + 16];
+/* The three values, the pin, the three doors, and every option this build
+ * knows - available or not. Sized for all of them at once so the list cannot
+ * quietly lose its tail. */
+static HgControlRow s_control_rows[8 + 16];
 static int s_control_row_count = 0;
 
 /* The options menu, as rows. Built from the menu itself every time the list is
@@ -82,6 +94,10 @@ static int s_control_row_count = 0;
  * is a picture of the machine at that moment. */
 static HgMenuRow s_menu_rows[HG_BOX_MAX_ROWS];
 static int s_menu_row_count = 0;
+
+/* Defined with the other row-drawing code; declared here because the pull that
+ * fills the list runs above it. */
+static void tabbox_menu_row_text(int index, WCHAR *out, size_t out_cch);
 
 static void tabbox_add_control_row(HgControlRow row)
 {
@@ -125,6 +141,19 @@ static void tabbox_build_control_rows(void)
         HgControlRow row = {HG_ROW_OPTION, i, NULL};
         tabbox_add_control_row(row);
     }
+
+    /* Then the three doors out of this list, which came here from the options
+     * menu: everything that is about changing settings belongs with the
+     * settings. They are below the switches because a door is a bigger step
+     * than a toggle, and Reset is last of the three because it is the one that
+     * throws work away. */
+    const HgControlRow commands[] = {
+        {HG_ROW_COMMAND, HG_IDM_SETTINGS, L"Settings Window..."},
+        {HG_ROW_COMMAND, HG_IDM_EDIT_CONFIG, L"Edit Configuration"},
+        {HG_ROW_COMMAND, HG_IDM_RESET_ALL, L"Reset Settings"},
+    };
+    for (size_t i = 0; i < HG_ARRAYSIZE(commands); ++i)
+        tabbox_add_control_row(commands[i]);
 
     /* And last, the ones this build cannot switch. They are still listed: a
      * feature that vanishes leaves the reader wondering whether they imagined
@@ -337,10 +366,7 @@ static void tabbox_pull(void)
         s_count = 0;
         s_menu_row_count = hg_menu_build_rows(s_menu_rows, HG_BOX_MAX_ROWS);
         for (int i = 0; i < s_menu_row_count; ++i) {
-            /* The tick keeps its column so the ticked rows line up with the
-             * ones that are not, rather than shifting two characters left. */
-            hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%ls%ls",
-                               s_menu_rows[i].checked ? L"\u2713 " : L"   ", s_menu_rows[i].label);
+            tabbox_menu_row_text(i, s_titles[s_count], HG_MAX_STR);
             ++s_count;
         }
     } else {
@@ -349,6 +375,12 @@ static void tabbox_pull(void)
         s_count = 0;
         for (int i = 0; i < s_control_row_count && s_count < HG_BOX_MAX_ROWS; ++i) {
             const HgControlRow *row = &s_control_rows[i];
+
+            if (row->kind == HG_ROW_COMMAND) {
+                StringCchCopyW(s_titles[s_count], HG_MAX_STR, row->label);
+                ++s_count;
+                continue;
+            }
 
             if (row->kind == HG_ROW_OPTION) {
                 HgOptionInfo info;
@@ -382,6 +414,34 @@ static void tabbox_pull(void)
         s_selected = (s_count > 0) ? s_count - 1 : 0;
 }
 
+/* A menu row as it is drawn.
+ *
+ * Written here rather than at build time because a value row is rewritten every
+ * time the wheel moves it, and a row whose text is composed in two places is a
+ * row that will eventually disagree with itself. The tick keeps its column so
+ * ticked rows line up with the ones that are not, rather than shifting two
+ * characters left. */
+static void tabbox_menu_row_text(int index, WCHAR *out, size_t out_cch)
+{
+    if (index < 0 || index >= s_menu_row_count) {
+        StringCchCopyW(out, out_cch, L"");
+        return;
+    }
+
+    const HgMenuRow *row = &s_menu_rows[index];
+    if (row->kind == HG_MENU_ROW_VALUE) {
+        if (row->step_index >= 0 && row->step_index < row->step_count)
+            hellgates_wsprintf(out, out_cch, L"   %-30ls %3d%%", row->label, row->steps[row->step_index]);
+        else
+            /* The display would not say what it is set to. The row still works -
+             * a step from here lands on a rung and the reading appears. */
+            hellgates_wsprintf(out, out_cch, L"   %-30ls   --", row->label);
+        return;
+    }
+
+    hellgates_wsprintf(out, out_cch, L"%ls%ls", row->checked ? L"\u2713 " : L"   ", row->label);
+}
+
 /* What a control row answers to, asked in one place.
  *
  * A row with a number is turned; a row with a state is switched. Every key this
@@ -390,6 +450,11 @@ static void tabbox_pull(void)
  * one and not that one" is not a rule anyone guesses from looking. */
 static BOOL tabbox_row_is_value(int index)
 {
+    if (s_mode == HG_BOX_MENU) {
+        return index >= 0 && index < s_menu_row_count && s_menu_rows[index].kind == HG_MENU_ROW_VALUE &&
+               s_menu_rows[index].step_count > 0;
+    }
+
     if (s_mode != HG_BOX_CONTROLS || index < 0 || index >= s_control_row_count)
         return FALSE;
     const HgControlRow *row = &s_control_rows[index];
@@ -407,6 +472,8 @@ static const WCHAR *tabbox_row_hint(int index)
     if (s_mode == HG_BOX_MENU) {
         if (index < 0 || index >= s_menu_row_count)
             return NULL;
+        if (tabbox_row_is_value(index))
+            return L"Left / Right: less / more   (the wheel does the same)";
         if (!s_menu_rows[index].id || !s_menu_rows[index].enabled)
             return L"This one is not available right now.";
         return L"Space or Enter: run it";
@@ -416,6 +483,8 @@ static const WCHAR *tabbox_row_hint(int index)
         return NULL;
 
     const HgControlRow *row = &s_control_rows[index];
+    if (row->kind == HG_ROW_COMMAND)
+        return L"Space or Enter: go there";
     if (row->kind == HG_ROW_OPTION) {
         HgOptionInfo info;
         if (hg_option_info(row->id, &info) && !info.available)
@@ -433,10 +502,48 @@ static const WCHAR *tabbox_row_hint(int index)
  * there is only one place that decides how big a step is. */
 static void tabbox_tip_show(int index);
 
+/* One rung along, and the change goes out as the command that rung always was.
+ *
+ * The row's reading is moved here rather than read back, for two reasons: the
+ * command is posted, so the display has not been told yet when this returns,
+ * and re-reading would mean rebuilding the whole list - which enumerates the
+ * audio endpoints. A wheel notch must not cost that. */
+static BOOL tabbox_adjust_menu_row(int index, int direction)
+{
+    HgMenuRow *row = &s_menu_rows[index];
+
+    int next = row->step_index;
+    if (next < 0)
+        next = (direction > 0) ? row->step_min : row->step_max; /* unknown: start at the near end */
+    else
+        next += direction;
+
+    if (next < row->step_min)
+        next = row->step_min;
+    if (next > row->step_max)
+        next = row->step_max;
+    if (next == row->step_index)
+        return TRUE; /* already at the end of the ladder: answered, nothing moved */
+
+    row->step_index = next;
+    taskbox_dispatch_main_menu_command(row->base_id + (UINT)next);
+
+    tabbox_menu_row_text(index, s_titles[index], HG_MAX_STR);
+    s_selected = index;
+    if (s_wnd)
+        InvalidateRect(s_wnd, NULL, TRUE);
+    tabbox_tip_show(index);
+    return TRUE;
+}
+
 static BOOL tabbox_adjust_row(int index, int direction)
 {
     if (!tabbox_row_is_value(index))
         return FALSE;
+
+    if (s_mode == HG_BOX_MENU)
+        return tabbox_adjust_menu_row(index, direction);
+
     if (!hg_toolbar_value_wheel(s_control_rows[index].id, (short)(direction * WHEEL_DELTA)))
         return FALSE;
 
@@ -681,6 +788,7 @@ void hg_tabbox_close(void)
     if (!s_wnd)
         return;
     tabbox_tip_hide();
+    s_pointer_on_row = FALSE;
     ShowWindow(s_wnd, SW_HIDE);
     s_target = NULL;
     s_count = 0;
@@ -753,6 +861,11 @@ static void tabbox_activate(int index)
     if (s_mode == HG_BOX_MENU) {
         if (index >= s_menu_row_count)
             return;
+        /* A row that holds a number is turned, not run - the same bargain the
+         * Set list makes. Enter on it would have to mean "apply what is already
+         * applied". */
+        if (tabbox_row_is_value(index))
+            return;
         const HgMenuRow *row = &s_menu_rows[index];
         /* A row the menu itself greys out stays dead here. Saying so by doing
          * nothing is what the menu does, and a box that ran a disabled command
@@ -769,6 +882,15 @@ static void tabbox_activate(int index)
     if (index >= s_control_row_count)
         return;
     const HgControlRow *row = &s_control_rows[index];
+
+    if (row->kind == HG_ROW_COMMAND) {
+        /* A door: it leads somewhere, so the list gets out of the way, the same
+         * as a folder or a tab does. */
+        UINT cmd = (UINT)row->id;
+        hg_tabbox_close();
+        taskbox_dispatch_main_menu_command(cmd);
+        return;
+    }
 
     if (row->kind == HG_ROW_OPTION) {
         const WCHAR *message = NULL;
@@ -806,7 +928,9 @@ BOOL hg_tabbox_pointer_over(void)
 
 BOOL hg_tabbox_handle_wheel(short delta)
 {
-    if (!hg_tabbox_is_open() || s_mode != HG_BOX_CONTROLS || !hg_tabbox_pointer_over())
+    if (!hg_tabbox_is_open() || !hg_tabbox_pointer_over())
+        return FALSE;
+    if (s_mode != HG_BOX_CONTROLS && s_mode != HG_BOX_MENU)
         return FALSE;
 
     POINT pt;
@@ -818,9 +942,13 @@ BOOL hg_tabbox_handle_wheel(short delta)
     int pad = SCW(ws, 6);
     int row_h = tabbox_row_height();
     int row = (row_h > 0 && pt.y >= pad) ? (pt.y - pad) / row_h : -1;
-    if (row < 0 || row >= s_count || row >= s_control_row_count)
+    if (row < 0 || row >= s_count)
         return FALSE;
-    if (s_control_rows[row].kind != HG_ROW_BUTTON)
+
+    if (s_mode == HG_BOX_MENU)
+        return tabbox_row_is_value(row) && tabbox_adjust_menu_row(row, (delta > 0) ? 1 : -1);
+
+    if (row >= s_control_row_count || s_control_rows[row].kind != HG_ROW_BUTTON)
         return FALSE;
 
     if (!hg_toolbar_value_wheel(s_control_rows[row].id, delta))
@@ -938,6 +1066,11 @@ void hg_tabbox_pointer_moved(void)
 {
     if (!hg_tabbox_is_open())
         return;
+    /* A list the keyboard opened stays open. The pointer is not where the
+     * reader is working, and closing on account of it would make Space on an
+     * icon behave differently depending on where the mouse was left. */
+    if (hg_g_keyboard_mode)
+        return;
 
     POINT pt;
     if (!GetCursorPos(&pt))
@@ -1027,7 +1160,7 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
         for (int i = 0; i < s_count; ++i) {
             RECT row = {pad, pad + i * row_h, rc.right - pad, pad + (i + 1) * row_h};
-            BOOL selected = (i == s_selected && s_focused);
+            BOOL selected = (i == s_selected) && (s_focused || s_pointer_on_row);
             if (selected) {
                 /* Filled, and the text inverted over it. A row the arrows are
                  * standing on has to be findable at a glance, or the arrows are
@@ -1067,8 +1200,11 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     case WM_MOUSEMOVE: {
         POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         int row = tabbox_row_at(pt);
-        if (row >= 0 && row != s_selected) {
-            s_selected = row;
+        BOOL on_row = (row >= 0);
+        if ((row >= 0 && row != s_selected) || on_row != s_pointer_on_row) {
+            if (row >= 0)
+                s_selected = row;
+            s_pointer_on_row = on_row;
             InvalidateRect(hwnd, NULL, TRUE);
         }
         if (row != s_tip_row)
@@ -1083,6 +1219,10 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
     case WM_MOUSELEAVE:
         tabbox_tip_hide();
+        if (s_pointer_on_row) {
+            s_pointer_on_row = FALSE;
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
         return 0;
 
     case WM_LBUTTONUP: {

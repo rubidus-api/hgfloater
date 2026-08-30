@@ -60,6 +60,70 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
     return toolbar_invert_color(base_color);
 }
 
+/* The line round a function button or a shortcut.
+ *
+ * It was one white pixel, which is invisible against a light desktop and barely
+ * there against a busy one - and this window is transparent, so "the
+ * background" is whatever the reader happens to have behind it. Two things fix
+ * that: the accent colour Windows is already using, so the frame belongs to the
+ * desktop it sits on rather than fighting it, and enough thickness to survive a
+ * photograph as a wallpaper.
+ *
+ * The accent is pulled toward the middle of the range first. A very light
+ * accent vanishes on white and a very dark one vanishes on black, and this
+ * frame has to hold on both: the taskbox is see-through and its buttons have no
+ * plate of their own. Mid-tones are the only colours that do. */
+static COLORREF toolbar_button_outline_color(void)
+{
+    COLORREF base = hg_g_has_system_accent_color ? hg_g_system_accent_color : RGB(0, 120, 215);
+
+    int r = GetRValue(base);
+    int g = GetGValue(base);
+    int b = GetBValue(base);
+
+    /* Rec. 601 luma: near enough for "is this going to disappear". */
+    int luma = (r * 299 + g * 587 + b * 114) / 1000;
+
+    if (luma > 190) {
+        /* Too pale for a white desktop: darken toward the colour's own hue. */
+        r = r * 190 / (luma ? luma : 1);
+        g = g * 190 / (luma ? luma : 1);
+        b = b * 190 / (luma ? luma : 1);
+    } else if (luma < 70) {
+        /* Too dark for a black desktop: lift it the same way. */
+        r = r + (255 - r) * (70 - luma) / 255;
+        g = g + (255 - g) * (70 - luma) / 255;
+        b = b + (255 - b) * (70 - luma) / 255;
+    }
+
+    if (r > 255)
+        r = 255;
+    if (g > 255)
+        g = 255;
+    if (b > 255)
+        b = 255;
+    return RGB(r, g, b);
+}
+
+static void toolbar_draw_button_outline(HDC hdc, const RECT *rc)
+{
+    HBRUSH brush = hg_cached_solid_brush(toolbar_button_outline_color());
+    if (!brush)
+        return;
+
+    int thickness = SC(2);
+    if (thickness < 2)
+        thickness = 2;
+
+    RECT edge = *rc;
+    for (int i = 0; i < thickness; ++i) {
+        FrameRect(hdc, &edge, brush);
+        InflateRect(&edge, -1, -1);
+        if (edge.left >= edge.right || edge.top >= edge.bottom)
+            break;
+    }
+}
+
 static void toolbar_draw_state_border(HDC hdc, const RECT *rc)
 {
     if (!hdc || !rc)
@@ -451,9 +515,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                     }
 
-                    /* One white line around every button in this half of the
-                     * grid - the function buttons and the shortcuts alike. With
-                     * the plate gone they would otherwise float loose over the
+                    /* One line around every button in this half of the grid -
+                     * the function buttons and the shortcuts alike. With the
+                     * plate gone they would otherwise float loose over the
                      * desktop, and a button needs an edge to be a button; a
                      * shortcut is as much a button as Note is, so it gets the
                      * same edge rather than being the one thing here without
@@ -461,9 +525,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                      * survives them - the yellow still fills the button, and
                      * the line still frames it - and before the state border,
                      * which is a louder mark and should win where both apply. */
-                    HBRUSH hbr_edge = hg_cached_solid_brush(RGB(255, 255, 255));
-                    if (hbr_edge)
-                        FrameRect(mem_dc, &rc_btn, hbr_edge);
+                    toolbar_draw_button_outline(mem_dc, &rc_btn);
 
                     if ((i == HG_TOOL_ICON_VOLUME && get_system_mute()) ||
                         (i == HG_TOOL_ICON_PIN && hg_g_taskbox_pinned)) {
@@ -540,6 +602,11 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
 static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerState *state,
                                                 HgTaskboxDragState *drag_state, LPARAM l_param)
 {
+    /* A message is not a movement: WM_MOUSEMOVE also arrives when a window
+     * slides under a pointer that has not stirred, and treating that as the
+     * reader reaching for the mouse would undo the keyboard mid-keystroke. */
+    hg_keyboard_mode_check_pointer();
+
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     RECT rc;
     GetClientRect(hwnd, &rc);
@@ -629,7 +696,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
             drag_state->target_index = -1;
         }
         InvalidateRect(hwnd, NULL, FALSE);
-    } else if (cur_type != state->hovered_type || cur_index != state->hovered_index) {
+    } else if (!hg_g_keyboard_mode && (cur_type != state->hovered_type || cur_index != state->hovered_index)) {
         state->hovered_type = cur_type;
         state->hovered_index = cur_index;
         if (cur_type != -1 && cur_index != -1) {

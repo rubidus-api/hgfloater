@@ -40,10 +40,46 @@ static int menu_add_row(HgMenuRow *rows, int max_rows, int count, const WCHAR *l
 {
     if (count >= max_rows)
         return count;
+    SecureZeroMemory(&rows[count], sizeof(rows[count]));
     StringCchCopyW(rows[count].label, HG_MENU_ROW_MAX, label);
     rows[count].id = id;
     rows[count].enabled = enabled;
     rows[count].checked = checked;
+    rows[count].kind = HG_MENU_ROW_COMMAND;
+    return count + 1;
+}
+
+/* A row that holds a reading and steps along a ladder. current is the value the
+ * display reports; the nearest rung at or below it is where the row starts, so
+ * a monitor sitting at 60% shows the 50% rung rather than nothing. */
+static int menu_add_value_row(HgMenuRow *rows, int max_rows, int count, const WCHAR *label, UINT base_id,
+                              const int *steps, int step_count, int current, int min_percent, int max_percent)
+{
+    if (count >= max_rows)
+        return count;
+
+    SecureZeroMemory(&rows[count], sizeof(rows[count]));
+    StringCchCopyW(rows[count].label, HG_MENU_ROW_MAX, label);
+    rows[count].kind = HG_MENU_ROW_VALUE;
+    rows[count].enabled = TRUE;
+    rows[count].base_id = base_id;
+    rows[count].steps = steps;
+    rows[count].step_count = step_count;
+    rows[count].step_index = -1;
+    rows[count].step_min = 0;
+    rows[count].step_max = step_count - 1;
+
+    for (int i = 0; i < step_count; ++i) {
+        if (steps[i] < min_percent)
+            rows[count].step_min = i + 1;
+        if (steps[i] <= max_percent)
+            rows[count].step_max = i;
+        if (current >= 0 && steps[i] <= current)
+            rows[count].step_index = i;
+    }
+    if (rows[count].step_min > rows[count].step_max) /* nothing this display allows */
+        rows[count].step_min = rows[count].step_max;
+
     return count + 1;
 }
 
@@ -61,14 +97,11 @@ static int menu_add_display_rows(HgMenuRow *rows, int max_rows, int count, int m
 
     HgDisplayScale scale;
     if (hg_query_display_scale(hg_g_monitors[monitor_index].hMonitor, &scale) && scale.valid) {
-        UINT base = (UINT)HG_IDM_SCALE_BASE + (UINT)monitor_index * HG_SCALE_OPTION_COUNT;
-        for (int i = 0; i < HG_SCALE_OPTION_COUNT; ++i) {
-            int percent = hg_display_scale_options[i];
-            hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Scale > %d%%", display, percent);
-            count = menu_add_row(rows, max_rows, count, label, base + (UINT)i,
-                                 (percent >= scale.min_percent && percent <= scale.max_percent),
-                                 percent == scale.current_percent);
-        }
+        hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Scale", display);
+        count = menu_add_value_row(rows, max_rows, count, label,
+                                   (UINT)HG_IDM_SCALE_BASE + (UINT)monitor_index * HG_SCALE_OPTION_COUNT,
+                                   hg_display_scale_options, HG_SCALE_OPTION_COUNT, scale.current_percent,
+                                   scale.min_percent, scale.max_percent);
     } else {
         /* Kept visible but dead: a missing entry reads as a bug, a dead one
          * says the driver would not answer. */
@@ -77,17 +110,12 @@ static int menu_add_display_rows(HgMenuRow *rows, int max_rows, int count, int m
     }
 
     if (!hg_monitor_brightness_unavailable(hg_g_monitors[monitor_index].hMonitor)) {
-        /* The tick follows the cached DDC/CI reading rounded to the nearest
-         * step, so a monitor sitting at 60% shows 50% ticked rather than
-         * nothing at all; an unread monitor shows no tick. */
-        int current = hg_g_monitors[monitor_index].brightness;
-        int nearest = (current >= 0) ? ((current + 12) / 25) * 25 : -1;
-        UINT base = (UINT)HG_IDM_BRIGHTNESS_BASE + (UINT)monitor_index * HG_BRIGHTNESS_OPTION_COUNT;
-        for (int i = 0; i < HG_BRIGHTNESS_OPTION_COUNT; ++i) {
-            int percent = hg_brightness_options[i];
-            hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Brightness > %d%%", display, percent);
-            count = menu_add_row(rows, max_rows, count, label, base + (UINT)i, TRUE, percent == nearest);
-        }
+        hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Brightness", display);
+        count = menu_add_value_row(rows, max_rows, count, label,
+                                   (UINT)HG_IDM_BRIGHTNESS_BASE +
+                                       (UINT)monitor_index * HG_BRIGHTNESS_OPTION_COUNT,
+                                   hg_brightness_options, HG_BRIGHTNESS_OPTION_COUNT,
+                                   hg_g_monitors[monitor_index].brightness, 0, 100);
     } else {
         hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Brightness (unavailable)", display);
         count = menu_add_row(rows, max_rows, count, label, 0, FALSE, FALSE);
@@ -105,17 +133,20 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
      * device, the same as opening the menu was. */
     update_audio_device_list();
 
+    /* What this list holds, and what it does not.
+     *
+     * Nothing here is a setting. The switches went to the Set button's list,
+     * and so did the three doors that lead to settings - the settings window,
+     * the config file, the reset - because a reader looking for what to change
+     * should find one list, not two. What is left is the machine: the folder,
+     * the audio devices, the displays, and the two ways to stop.
+     *
+     * About and Exit are last, in that order. They are the end of the list in
+     * the sense that matters - you are leaving - and About sits above Exit
+     * because the two are one keystroke apart and only one of them is
+     * reversible. */
     int count = 0;
-    count = menu_add_row(rows, max_rows, count, L"Settings...", HG_IDM_SETTINGS, TRUE, FALSE);
     count = menu_add_row(rows, max_rows, count, L"Open Shortcuts Folder", HG_IDM_OPEN_SHORTCUTS, TRUE, FALSE);
-    count = menu_add_row(rows, max_rows, count, L"Edit Configuration", HG_IDM_EDIT_CONFIG, TRUE, FALSE);
-
-    /* The switches are not here: they are rows of the Set button's list, beside
-     * the volume and the opacity, which is where a reader looking for something
-     * to set now looks. This list carries what is not a setting - the displays,
-     * the audio devices, About, Exit. */
-    count = menu_add_row(rows, max_rows, count, L"About...", HG_IDM_ABOUT, TRUE, FALSE);
-    count = menu_add_row(rows, max_rows, count, L"Reset Settings", HG_IDM_RESET_ALL, TRUE, FALSE);
 
     WCHAR label[HG_MENU_ROW_MAX];
     for (int i = 0; i < hg_g_audio_device_count; ++i) {
@@ -132,6 +163,7 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
         count = menu_add_display_rows(rows, max_rows, count, i);
 
     count = menu_add_row(rows, max_rows, count, L"Lock Screen (Power Off)", HG_IDM_POWER_OFF, TRUE, FALSE);
+    count = menu_add_row(rows, max_rows, count, L"About...", HG_IDM_ABOUT, TRUE, FALSE);
     count = menu_add_row(rows, max_rows, count, L"Exit", HG_IDM_CLOSE_APP, TRUE, FALSE);
     return count;
 }

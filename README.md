@@ -310,6 +310,14 @@ nobody can press is furniture.
 `Shift` is what keeps this clear of the bare-letter grid movement (`WASD`) and
 of the bare `C` that opens the command box.
 
+**Every button in that half of the grid is framed** — the function buttons and
+the shortcuts alike — in **your Windows accent colour**, two pixels thick. The
+taskbox is see-through, so "the background" is whatever you have on your
+desktop; a one-pixel white line vanished against a light wallpaper and was hard
+to find against a busy one. The accent is nudged toward the middle of its range
+first, because a very pale accent disappears on white and a very dark one
+disappears on black, and this line has to hold on both.
+
 **The function buttons wear the same badge**, for the same reason: `C` shows
 `C`, `Note` shows `N`, `Clip` shows `CL`, `Opt` shows `CO`, `X` shows `CQ`. The
 modifiers are their initials in a fixed order — `C`trl, `A`lt, `S`hift, `W`in —
@@ -356,6 +364,18 @@ tabs, the `Dir` folders and the `Set` controls:
 | A tooltip | On every `Set` row, as you arrive: which keys that row answers — the arrows for a number, `Space` or `Enter` for a switch. |
 | Right click | Close that tab. The list stays up. (Tabs only.) |
 | `Esc` | Leave the box. The keyboard stays in the taskbox, where it was. |
+
+**While you are using the keyboard, the pointer is ignored.** The taskbox
+answers the mouse continuously — a pointer resting on an icon opens that icon's
+list, a pointer that has wandered off closes the box and eventually collapses
+the taskbox — and all of that is wrong the moment you reach for the arrow keys,
+because the pointer is then sitting wherever it was left. So the first key press
+hands control to the keyboard, and it stays there until the mouse **actually
+moves**: `Space` on a function icon opens that icon's list no matter where the
+mouse is, and nothing the pointer is resting on will close it.
+
+**A pointed-at row is drawn selected**, the same filled bar the arrows leave, so
+the row a click would take always looks like the row a click would take.
 
 **A row too long for the box says the rest in a tooltip** — whether the pointer
 found it or the arrows did. The box is measured against its own rows first and
@@ -496,7 +516,16 @@ The rows are grouped by what a row **is**, top to bottom:
 | **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** or **Left / Right** changes it. |
 | **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click**, or **Space / Enter**, toggles. |
 | **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click**, or **Space / Enter**, flips one. |
+| **Settings Window...** | The [settings window](#71-the-settings-window): every option, value and key in one list. |
+| **Edit Configuration** | Opens the config file in your editor. |
+| **Reset Settings** | Position, size and opacity back to their defaults. |
 | **(off in this build)** | Last: the ones this build cannot switch. Listed rather than hidden, and out of the way of the ones that work. |
+
+The last three came from the options menu. Everything about changing settings
+belongs with the settings, so a reader looking for what to change finds one
+list rather than two. They sit below the switches because a door is a bigger
+step than a toggle, and `Reset Settings` is last of the three because it is the
+one that throws work away.
 
 **A row with a number is turned; a row with a state is switched.** That is the
 whole keyboard model for this list. On a row that holds a percentage, **Left and
@@ -541,16 +570,28 @@ chosen.
 that led to it:
 
 ```
-Settings...
 Open Shortcuts Folder
 Select Audio Device > Speakers (Realtek)
 Select Audio Device > Mute
 Display 1 > Preview Window
-Display 1 > Scale > 125%
-Display 1 > Brightness > 50%
+Display 1 > Scale                 125%
+Display 1 > Brightness             50%
 Lock Screen (Power Off)
+About...
 Exit
 ```
+
+**Scale and brightness are rows you turn**, like `Volume` in the `Set` list: the
+**wheel** over the row, or **Left / Right** once it is selected, walks the
+display through the values it accepts — the same 100/125/150/175/200% ladder
+Windows offers and the same quarter steps for the backlight, one rung per notch.
+They used to be a rung each, so one display cost eleven rows and three displays
+cost thirty-three; the reading is on the row now and the ladder is behind it. A
+display that will not report a value shows `--` and still steps.
+
+`About...` and `Exit` are last, in that order — the end of the list in the sense
+that matters — and `About` sits above `Exit` because the two are one keystroke
+apart and only one of them is reversible.
 
 A submenu that only opens when you hover its parent is a thing to discover, and
 there is nothing here to discover: four displays' worth of brightness steps is a

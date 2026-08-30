@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **Scale and brightness are rows you turn.** A display's scaling was six rows
+  and its backlight five, so three monitors put thirty-three rungs of ladder in
+  the options list. Each is one row now, holding the reading, and the wheel over
+  it - or Left/Right once it is selected - walks the same ladder one rung at a
+  time. The rungs are still exactly the values Windows and the monitor accept;
+  this moves along that list rather than inventing values between them.
+- **The options list ends with About and Exit**, in that order, and
+  `Settings...`, `Edit Configuration` and `Reset Settings` moved to the `Set`
+  list. Everything about changing settings now lives with the settings, and what
+  is left in the options list is the machine: the folder, the audio devices, the
+  displays, and the two ways to stop.
+- **The keyboard wins while it is being used.** The taskbox answers the pointer
+  continuously, and all of that is wrong the moment the reader reaches for the
+  arrows - the pointer is then wherever it was left, and it kept closing the
+  list the keyboard had just opened. A key press hands control to the keyboard
+  until the mouse actually moves; a WM_MOUSEMOVE that arrives because a window
+  slid under a still pointer does not count. `Space` on a function icon opens
+  its list no matter where the mouse is.
+- **A pointed-at row in the box is drawn selected**, the same filled bar the
+  arrows leave. The row a click would take now looks like the row a click would
+  take, whichever hand is pointing.
+- **The button frames are the Windows accent colour, two pixels thick.** One
+  white pixel vanished against a light wallpaper - the taskbox is see-through,
+  so the background is whatever the reader has on their desktop. The accent is
+  nudged toward the middle of its range first: a very pale one disappears on
+  white and a very dark one on black, and this line has to hold on both.
+
 ## [v0.17.7] - 2026-08-30
 
 ### Fixed
