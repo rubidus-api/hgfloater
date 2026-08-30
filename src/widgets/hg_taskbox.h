@@ -10,7 +10,16 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
 void refresh_window_list(BOOL force);
 void update_layout(HWND hwnd);
 void update_size(int delta);
+/* The icon size in points, and setting it outright. */
+int hg_taskbox_icon_point_size(void);
+void hg_set_taskbox_icon_point_size(int points);
 void update_edit_font_size(int delta);
+/* Rebuild the interface font from hg_g_font_name and hg_g_edit_font_size and
+ * hand it to everything drawn in it. Called when either of those changes. */
+void hg_apply_ui_font(void);
+/* That size in points, and setting it outright. */
+int hg_ui_font_point_size(void);
+void hg_set_ui_font_point_size(int points);
 void update_taskbox_alpha(int delta);
 void set_taskbox_opacity_pct(int pct);
 void hide_taskbox(HWND hwnd);

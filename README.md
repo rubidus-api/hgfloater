@@ -741,13 +741,27 @@ right-clicking the status line, which opens the same list at the pointer.
 
 ### 7.1 The settings window
 
-**Settings...** in the options menu, `Ctrl + ,` from the floater or the taskbox, or
-`settings` in the command box. One list, in three parts:
+**Settings Window...** in the `Set` list, `Ctrl + ,` from the floater or the
+taskbox, or `settings` in the command box. One list, in four parts:
 
 - **Options** — the switches above. `Enter` or `Space` flips the selected one.
-- **Values** — the numbers: opacity, note text size, how many clipboard entries
-  to keep, how many command lines to remember. `Left` and `Right` change the
-  selected one, by five for a percentage and by one otherwise.
+- **Fonts** — three families, each opened with `Enter`, `Space` or a double
+  click into **Windows' own font dialog**:
+  - **Interface** — buttons, lists, the floater.
+  - **Command box and this window** — fixed-pitch is offered first, because both
+    are columns of text and columns want a fixed pitch. The rest of the font
+    list is still there: someone who wants their console in a serif has a reason
+    and it is not this program's business.
+  - **Notes and clipboard** — prose you write at length, which is neither of the
+    other two jobs. It was the interface family until v0.17.8 and now has its
+    own, `[etc] doc_font_name`, defaulting to what it used before.
+
+  The size you pick in the dialog is applied too: the interface size, the
+  command box size, or the note and clipboard size, whichever family you were
+  choosing.
+- **Values** — the numbers: opacity, text sizes, icon size, how many clipboard
+  entries to keep, how many command lines to remember. `Left` and `Right` change
+  the selected one, by five for a percentage and by one otherwise.
 - **Keys** — **window, function, keys**, which is how they are stored. A heading
   names the window, each row under it is a function, and **each chord is its own
   row** beneath the function it runs. On a function row, `Enter` waits for a
@@ -758,6 +772,12 @@ right-clicking the status line, which opens the same list at the pointer.
 
   While the window is waiting for a chord, nothing else in the program answers
   the keyboard: `F1` records `F1` instead of opening About.
+
+**A row that does something looks like it does something**: the actionable rows
+are drawn bold and underlined, and the row under the pointer is inverted. The
+arrows leave a selection and the pointer inverts what it is over — two different
+claims, "this is where you are" and "this is what you would get" — so a click
+lands where you expect it to.
 
 Nothing here has an OK button. Every change reaches `config.ini` and the running
 program at the moment it is made, which is what the wheel and the menus have

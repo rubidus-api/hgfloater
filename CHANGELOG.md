@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Fonts are chosen in the settings window**, three of them, each through
+  Windows' own font dialog rather than a list of our making:
+  - **Interface** - buttons, lists, the floater.
+  - **Command box and the settings window** - offered fixed-pitch first, since
+    both are columns of text, but the whole font list is there for anyone who
+    wants otherwise.
+  - **Notes and clipboard** - prose a reader writes at length, which is neither
+    of the other two jobs. These borrowed the interface family until now; they
+    have `[etc] doc_font_name` of their own, defaulting to what they used
+    before, so an existing config looks exactly as it did.
+- **A row that does something looks like it does something.** The settings list
+  draws its actionable rows bold and underlined and inverts whichever row the
+  pointer is on, so what a click would take is visible before the click. Nothing
+  in the plain text said which rows answered and which were labels.
+- **Four numbers the settings window could not reach** are in it now:
+  `clip-font`, `ui-font`, `icon-size` and `floater-font`. They were adjustable
+  only by the keys that step them, so the window - which claims to list every
+  setting - was quietly missing four.
+
 ### Changed
 - **Scale and brightness are rows you turn.** A display's scaling was six rows
   and its backlight five, so three monitors put thirty-three rungs of ladder in

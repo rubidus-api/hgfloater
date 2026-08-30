@@ -510,13 +510,16 @@ void hg_clip_shutdown(void)
 
 /* ------------------------------------------------------------- the window */
 
+int hg_clip_font_size(void);
+void hg_clip_set_font_size(int points);
+
 static void clip_apply_font(HWND hwnd)
 {
     clip_load_view();
     double ws = hg_window_scale(hwnd);
     HFONT font = CreateFontW(SCW(ws, s_clip_font_pt), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
                              DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                             DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+                             DEFAULT_PITCH | FF_SWISS, hg_g_doc_font_name);
     if (!font)
         return;
 
@@ -984,4 +987,30 @@ void hg_clip_toggle_window(void)
     HWND search = GetDlgItem(s_clip_wnd, HG_CLIP_SEARCH_ID);
     if (search)
         SetFocus(search);
+}
+
+int hg_clip_font_size(void)
+{
+    clip_load_view();
+    return s_clip_font_pt;
+}
+
+void hg_clip_set_font_size(int points)
+{
+    clip_load_view();
+    if (points < HG_CLIP_FONT_MIN)
+        points = HG_CLIP_FONT_MIN;
+    if (points > HG_CLIP_FONT_MAX)
+        points = HG_CLIP_FONT_MAX;
+    if (points == s_clip_font_pt)
+        return;
+
+    s_clip_font_pt = points;
+
+    WCHAR buf[32];
+    hellgates_wsprintf(buf, HG_ARRAYSIZE(buf), L"%d", points);
+    WritePrivateProfileStringW(L"clipboard", L"font_size", buf, hg_g_config_path);
+
+    if (s_clip_wnd && IsWindow(s_clip_wnd))
+        clip_apply_font(s_clip_wnd);
 }
