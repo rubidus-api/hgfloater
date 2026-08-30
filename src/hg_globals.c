@@ -83,6 +83,7 @@ BOOL hg_g_in_sizemove = FALSE;
 
 /* Pointer/menu interaction states */
 POINT hg_g_last_mouse_pos = {-1, -1};
+BOOL hg_g_keyboard_mode = FALSE;
 BOOL hg_g_hover_check_armed = TRUE;
 BOOL hg_g_floater_show_stats = TRUE;
 RECT hg_g_floater_home_rect = {0, 0, 0, 0};

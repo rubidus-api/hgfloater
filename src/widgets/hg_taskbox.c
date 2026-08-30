@@ -254,6 +254,35 @@ static BOOL taskbox_toolbar_button_screen_rect(int index, RECT *out)
     return TRUE;
 }
 
+/* Where the pointer was when the keyboard took over. Movement away from here is
+ * what hands control back; a couple of pixels is not movement, it is a desk. */
+static POINT s_keyboard_mode_pos = {0, 0};
+
+void hg_keyboard_mode_begin(void)
+{
+    hg_g_keyboard_mode = TRUE;
+    GetCursorPos(&s_keyboard_mode_pos);
+}
+
+void hg_keyboard_mode_check_pointer(void)
+{
+    if (!hg_g_keyboard_mode)
+        return;
+
+    POINT pt;
+    if (!GetCursorPos(&pt))
+        return;
+
+    long dx = (long)pt.x - (long)s_keyboard_mode_pos.x;
+    long dy = (long)pt.y - (long)s_keyboard_mode_pos.y;
+    if (dx < 0)
+        dx = -dx;
+    if (dy < 0)
+        dy = -dy;
+    if (dx > 3 || dy > 3)
+        hg_g_keyboard_mode = FALSE;
+}
+
 /* Which list a button carries, and how to open it. Three buttons have one -
  * Dir, Set and Opt - and every path that opens one (a click, a hover, the
  * keyboard arriving) asks these rather than repeating the mapping, because
@@ -753,6 +782,12 @@ static BOOL taskbox_run_key_action(HWND hwnd, int action)
 
 static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
+    /* From here until the mouse actually moves, the pointer is not consulted:
+     * it is sitting wherever it was left, and everything it would otherwise
+     * say - open that icon's list, close this one, collapse the taskbox - would
+     * be about a place the reader is no longer looking. */
+    hg_keyboard_mode_begin();
+
     /* The tab box has no focus of its own - it must not steal the keyboard on
      * a hover - so its keys are offered here first, before anything else can
      * claim them. Esc closes it and stops there, which is why the taskbox's
@@ -1287,7 +1322,11 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             }
             InvalidateRect(hwnd, NULL, FALSE);
         } else if (w_param == HG_TIMER_HOVER_CHECK) {
-            if (IsWindowVisible(hwnd) && !hg_g_menu_active && GetCapture() == NULL && !hg_g_in_sizemove) {
+            /* The one place that watches the pointer on a clock, so the one
+             * place that can notice it has started moving again. */
+            hg_keyboard_mode_check_pointer();
+            if (IsWindowVisible(hwnd) && !hg_g_menu_active && GetCapture() == NULL && !hg_g_in_sizemove &&
+                !hg_g_keyboard_mode) {
                 POINT pt;
                 GetCursorPos(&pt);
                 RECT rc;
