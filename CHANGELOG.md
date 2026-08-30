@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.17.9] - 2026-08-30
 
 ### Changed
 - **Display scaling is applied when the list closes, not as you walk it.**
