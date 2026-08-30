@@ -254,32 +254,26 @@ static BOOL taskbox_toolbar_button_screen_rect(int index, RECT *out)
     return TRUE;
 }
 
-/* The options menu, opened at a point of someone else's choosing.
- *
- * The pointer is the right place when the pointer asked; it is the wrong place
- * when the Set list did, because the reader's eye is on the button that list
- * hangs off and the menu that replaces the list should appear where the list
- * was. TrackPopupMenu keeps it on the display either way. */
-void taskbox_show_main_menu_at(const POINT *screen_pt)
-{
-    HMENU h_menu = taskbox_create_main_popup_menu();
-    if (!h_menu)
-        return;
-
-    POINT pt = {0, 0};
-    if (screen_pt)
-        pt = *screen_pt;
-    else
-        GetCursorPos(&pt);
-
-    int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, hg_g_taskbox_wnd);
-    taskbox_dispatch_main_menu_command((UINT)cmd);
-}
-
 /* Which list a button carries, and how to open it. Three buttons have one -
  * Dir, Set and Opt - and every path that opens one (a click, a hover, the
  * keyboard arriving) asks these rather than repeating the mapping, because
  * three copies of it is how one of them ends up disagreeing. */
+
+/* ...but only two of them are free to build.
+ *
+ * Dir reads a list already in memory and Set reads values already cached, so
+ * opening either on a passing pointer costs nothing. The options list is not
+ * like that: assembling it enumerates the audio endpoints through COM and asks
+ * every display for its scaling, which is real work with real latency. Sweeping
+ * the pointer across the toolbar - or walking the grid with the arrows - must
+ * not set that off. So Opt opens when it is chosen, the way its menu always
+ * did, and Dir and Set keep opening on arrival. */
+BOOL taskbox_button_box_opens_on_arrival(int index)
+{
+    return taskbox_box_mode_for_button(index) >= 0 &&
+           hg_toolbar_builtin_click_role(index) != HG_TOOLBAR_CLICK_OPEN_MENU;
+}
+
 int taskbox_box_mode_for_button(int index)
 {
     switch (hg_toolbar_builtin_click_role(index)) {
@@ -1050,7 +1044,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
              * from the keyboard and none from the mouse would be two rules
              * where there is one. */
             int list_button = -1;
-            if (hg_taskbox_focus.area == 1 && taskbox_box_mode_for_button(hg_taskbox_focus.index) >= 0)
+            if (hg_taskbox_focus.area == 1 && taskbox_button_box_opens_on_arrival(hg_taskbox_focus.index))
                 list_button = hg_taskbox_focus.index;
 
             if (tab_target) {

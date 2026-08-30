@@ -659,7 +659,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
          * them - the same gesture, the same box, placed the same way clear of
          * the button. */
         int list_button = -1;
-        if (cur_type == 1 && taskbox_box_mode_for_button(cur_index) >= 0)
+        if (cur_type == 1 && taskbox_button_box_opens_on_arrival(cur_index))
             list_button = cur_index;
 
         if (tab_target) {
