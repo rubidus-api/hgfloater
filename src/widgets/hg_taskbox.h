@@ -24,22 +24,22 @@ void taskbox_open_box_for_button(int index, const RECT *anchor);
  * build, false for the one that is not. */
 BOOL taskbox_button_box_opens_on_arrival(int index);
 
-/* The options menu itself, and running what one of its rows names. Public
- * because the tab box shows this menu as a list and has to build it. */
-HMENU taskbox_create_main_popup_menu(void);
+/* Running what one of the options rows names. */
 void taskbox_dispatch_main_menu_command(UINT cmd);
 
-/* A menu tree as one flat list of rows.
+/* The options list: one flat row per thing this program can be told to do.
  *
- * The Opt button shows its menu in the same box the tabs, the folders and the
- * Set controls use, and a box is a list rather than a tree: a submenu that only
- * opens when you hover its parent is a thing to discover, and there is nothing
- * to discover here - four displays' worth of brightness steps is a long list,
- * not a deep one. So the tree is walked and every leaf becomes a row, carrying
- * the path that led to it: "Display 1 > Brightness > 50%".
+ * There is no Win32 menu behind it. There was - the options were a menu with
+ * submenus, and for one version the menu was still built, walked back into
+ * rows, and thrown away every time the box opened. The box is the only reader,
+ * so the rows are what gets built, and the tree that existed to be flattened is
+ * gone with it.
  *
- * Walked from the menu itself rather than listed a second time by hand, so a
- * row added to the menu appears in the box with nothing else to edit. */
+ * A submenu that only opens when you hover its parent is a thing to discover,
+ * and there is nothing to discover here: four displays' worth of brightness
+ * steps is a long list, not a deep one. So each row carries the path it would
+ * have had - "Display 1 > Brightness > 50%" - and the reader sees all of it at
+ * once. */
 #define HG_MENU_ROW_MAX 160
 
 typedef struct HgMenuRow {
@@ -49,10 +49,10 @@ typedef struct HgMenuRow {
     BOOL checked;
 } HgMenuRow;
 
-/* Fills rows and answers how many. Separators are dropped - a rule that only
- * says "these two are different" needs a gap, and this list already has one in
- * the path column. */
-int hg_menu_flatten(HMENU menu, HgMenuRow *rows, int max_rows);
+/* Fills rows and answers how many. Building this enumerates the audio endpoints
+ * and asks every display for its scaling, so it belongs to a deliberate act -
+ * see taskbox_button_box_opens_on_arrival. */
+int hg_menu_build_rows(HgMenuRow *rows, int max_rows);
 void activate_taskbar_item(int index);
 void update_focus_message(int override_type, int override_index);
 void reset_taskbox_focus(void);

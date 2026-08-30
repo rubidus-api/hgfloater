@@ -852,11 +852,7 @@ static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param)
     if (cur_type == 0 && cur_index != -1) {
         toolbar_controller_show_task_context_menu(hwnd, cur_index, icon_size, l_param);
     } else if (cur_type == 1 && cur_index != -1) {
-        if (cur_index == HG_TOOL_ICON_VOLUME) {
-            toolbar_controller_show_audio_context_menu(hwnd, icon_size, l_param);
-        } else {
-            toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
-        }
+        toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
     }
 
     return 0;

@@ -335,12 +335,7 @@ static void tabbox_pull(void)
          * menu are a picture of the machine right now, and a list assembled
          * once would be a picture of the machine when the box first opened. */
         s_count = 0;
-        s_menu_row_count = 0;
-        HMENU menu = taskbox_create_main_popup_menu();
-        if (menu) {
-            s_menu_row_count = hg_menu_flatten(menu, s_menu_rows, HG_BOX_MAX_ROWS);
-            DestroyMenu(menu);
-        }
+        s_menu_row_count = hg_menu_build_rows(s_menu_rows, HG_BOX_MAX_ROWS);
         for (int i = 0; i < s_menu_row_count; ++i) {
             /* The tick keeps its column so the ticked rows line up with the
              * ones that are not, rather than shifting two characters left. */

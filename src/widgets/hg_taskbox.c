@@ -510,12 +510,9 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
     }
     case WM_CONTEXTMENU: {
         /* The status line holds a single message, so a copy-only menu earned its
-         * space poorly; right-clicking it opens the main options menu instead -
-         * the same one the O toolbar button shows. */
-        HMENU h_menu = taskbox_create_main_popup_menu();
-        if (!h_menu)
-            return 0;
-
+         * space poorly; right-clicking it opens the options instead - the same
+         * list the Opt button opens, in the same box, because two ways of
+         * showing one list is one way too many. */
         POINT pt;
         if (l_param == (LPARAM)-1) { /* Keyboard shortcut */
             RECT rc;
@@ -527,10 +524,15 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
             pt.y = GET_Y_LPARAM(l_param);
         }
 
-        int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y,
-                                                 hg_g_taskbox_wnd);
-        taskbox_dispatch_main_menu_command((UINT)cmd);
-
+        /* An anchor with some width to it: the box sits clear of its anchor and
+         * closes when the pointer is on neither, so a zero-size one at the
+         * pointer would shut on the first twitch of the mouse. */
+        RECT anchor = {pt.x, pt.y, pt.x, pt.y};
+        InflateRect(&anchor, SC(12), SC(12));
+        hg_tabbox_open_menu(&anchor);
+        /* Right-clicking is a deliberate act, so the keyboard goes in with it -
+         * and the keyboard is the only way in when the menu key asked. */
+        hg_tabbox_enter();
         return 0;
     }
     }
