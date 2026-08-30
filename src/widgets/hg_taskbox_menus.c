@@ -7,128 +7,6 @@
 #include "../hg_caphook.h"
 #include "../hg_options.h"
 
-static HMENU taskbox_create_audio_submenu(void)
-{
-    HMENU audio_menu = CreatePopupMenu();
-    if (!audio_menu)
-        return NULL;
-
-    for (int i = 0; i < hg_g_audio_device_count; i++) {
-        UINT flags = MF_STRING;
-        if (hg_g_audio_devices[i].is_default)
-            flags |= MF_CHECKED;
-        AppendMenuW(audio_menu, flags, (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i), hg_g_audio_devices[i].name);
-    }
-    if (hg_g_audio_device_count > 0) {
-        AppendMenuW(audio_menu, MF_SEPARATOR, 0, NULL);
-    }
-
-    UINT mute_flags = MF_STRING;
-    if (get_system_mute()) {
-        mute_flags |= MF_CHECKED;
-    }
-    AppendMenuW(audio_menu, mute_flags, HG_IDM_MUTE, L"Mute");
-    return audio_menu;
-}
-
-/* Windows scaling percentages for one display, with the current value checked
- * and anything outside the range that monitor allows greyed out. */
-static HMENU taskbox_create_scale_submenu(int monitor_index)
-{
-    HgDisplayScale info;
-    if (!hg_query_display_scale(hg_g_monitors[monitor_index].hMonitor, &info) || !info.valid)
-        return NULL;
-
-    HMENU scale_menu = CreatePopupMenu();
-    if (!scale_menu)
-        return NULL;
-
-    UINT base = (UINT)HG_IDM_SCALE_BASE + (UINT)monitor_index * HG_SCALE_OPTION_COUNT;
-    for (int i = 0; i < HG_SCALE_OPTION_COUNT; ++i) {
-        int percent = hg_display_scale_options[i];
-        UINT flags = MF_STRING;
-        if (percent == info.current_percent)
-            flags |= MF_CHECKED;
-        if (percent < info.min_percent || percent > info.max_percent)
-            flags |= MF_GRAYED;
-
-        WCHAR text[16];
-        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d%%", percent);
-        AppendMenuW(scale_menu, flags, (UINT_PTR)(base + (UINT)i), text);
-    }
-    return scale_menu;
-}
-
-/* Backlight in quarter steps. The tick follows the cached DDC/CI reading rounded
- * to the nearest step, so a monitor sitting at 60% shows 50% ticked rather than
- * nothing at all; an unread monitor shows no tick. */
-static HMENU taskbox_create_brightness_submenu(int monitor_index)
-{
-    /* Only once the display has actually been probed and refused everything;
-     * one not yet asked is offered normally. */
-    if (hg_monitor_brightness_unavailable(hg_g_monitors[monitor_index].hMonitor))
-        return NULL;
-
-    HMENU brightness_menu = CreatePopupMenu();
-    if (!brightness_menu)
-        return NULL;
-
-    int current = hg_g_monitors[monitor_index].brightness;
-    int nearest = (current >= 0) ? ((current + 12) / 25) * 25 : -1;
-    UINT base = (UINT)HG_IDM_BRIGHTNESS_BASE + (UINT)monitor_index * HG_BRIGHTNESS_OPTION_COUNT;
-
-    for (int i = 0; i < HG_BRIGHTNESS_OPTION_COUNT; ++i) {
-        int percent = hg_brightness_options[i];
-        UINT flags = MF_STRING;
-        if (percent == nearest)
-            flags |= MF_CHECKED;
-
-        WCHAR text[16];
-        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d%%", percent);
-        AppendMenuW(brightness_menu, flags, (UINT_PTR)(base + (UINT)i), text);
-    }
-    return brightness_menu;
-}
-
-/* Everything this app can do to one display, gathered under that display's own
- * name: its preview window, its scaling, and its backlight. */
-static HMENU taskbox_create_display_submenu(int monitor_index)
-{
-    HMENU display_menu = CreatePopupMenu();
-    if (!display_menu)
-        return NULL;
-
-    UINT preview_flags = MF_STRING;
-    if (hg_g_monitors[monitor_index].active)
-        preview_flags |= MF_CHECKED;
-    AppendMenuW(display_menu, preview_flags, (UINT_PTR)(HG_IDM_MONITOR_BASE + (UINT)monitor_index),
-                L"Preview Window");
-    AppendMenuW(display_menu, MF_SEPARATOR, 0, NULL);
-
-    HMENU scale_menu = taskbox_create_scale_submenu(monitor_index);
-    if (scale_menu) {
-        if (!AppendMenuW(display_menu, MF_POPUP, (UINT_PTR)scale_menu, L"Scale")) {
-            DestroyMenu(scale_menu);
-        }
-    } else {
-        /* Kept visible but dead: a missing entry reads as a bug, a greyed one
-         * says the driver would not answer. */
-        AppendMenuW(display_menu, MF_STRING | MF_GRAYED, 0, L"Scale (unavailable)");
-    }
-
-    HMENU brightness_menu = taskbox_create_brightness_submenu(monitor_index);
-    if (brightness_menu) {
-        if (!AppendMenuW(display_menu, MF_POPUP, (UINT_PTR)brightness_menu, L"Brightness")) {
-            DestroyMenu(brightness_menu);
-        }
-    } else {
-        /* Same bargain as Scale: kept visible but dead, because a missing entry
-         * reads as a bug and a greyed one says the display would not answer. */
-        AppendMenuW(display_menu, MF_STRING | MF_GRAYED, 0, L"Brightness (unavailable)");
-    }
-    return display_menu;
-}
-
 int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND owner)
 {
     int cmd = 0;
@@ -142,108 +20,120 @@ int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND 
     return cmd;
 }
 
-HMENU taskbox_create_main_popup_menu(void)
+/* The options list, written straight out as rows.
+ *
+ * There is no Win32 menu behind this any more. There used to be: the options
+ * were a menu with submenus, and when the Opt button started showing them in
+ * the box the menu was still built, walked back into rows, and thrown away -
+ * a tree assembled only to be flattened. The box is the only reader now, so the
+ * rows are the thing that gets built.
+ *
+ * Every row carries the whole path it would have had - "Display 1 > Scale >
+ * 125%" - because a list is not a tree and a row has to say where it belongs
+ * without a parent above it to lean on.
+ *
+ * Assembling this costs something real: the audio endpoints are enumerated
+ * through COM and every display is asked for its scaling. That is why nothing
+ * builds it on a hover - see taskbox_button_box_opens_on_arrival. */
+static int menu_add_row(HgMenuRow *rows, int max_rows, int count, const WCHAR *label, UINT id, BOOL enabled,
+                        BOOL checked)
 {
-    update_audio_device_list();
-
-    HMENU h_menu = CreatePopupMenu();
-    if (!h_menu)
-        return NULL;
-
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_SETTINGS, L"Settings...");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_EDIT_CONFIG, L"Edit Configuration");
-
-    /* The switches are not here any more: they are rows of the Set button's
-     * list, beside the volume and the opacity, which is where a reader looking
-     * for something to set now looks. Two places to keep the same list of
-     * toggles is one place too many, and this menu is the one that also carries
-     * displays, audio devices and Exit - a different kind of thing entirely. */
-    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_ABOUT, L"About...");
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_RESET_ALL, L"Reset Settings");
-    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-
-    HMENU audio_menu = taskbox_create_audio_submenu();
-    if (audio_menu) {
-        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)audio_menu, L"Select Audio Device")) {
-            DestroyMenu(audio_menu);
-        }
-    }
-
-    /* One entry per display, named the way its owner would name it, off the
-     * enumeration WM_DISPLAYCHANGE keeps current. */
-    for (int i = 0; i < hg_g_monitor_count; ++i) {
-        HMENU display_menu = taskbox_create_display_submenu(i);
-        if (!display_menu)
-            continue;
-
-        const WCHAR *label = hg_g_monitors[i].label[0] ? hg_g_monitors[i].label : hg_g_monitors[i].name;
-        if (!AppendMenuW(h_menu, MF_POPUP, (UINT_PTR)display_menu, label)) {
-            DestroyMenu(display_menu);
-        }
-    }
-
-    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_POWER_OFF, L"Lock Screen (Power Off)");
-    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(h_menu, MF_STRING, HG_IDM_CLOSE_APP, L"Exit");
-    return h_menu;
+    if (count >= max_rows)
+        return count;
+    StringCchCopyW(rows[count].label, HG_MENU_ROW_MAX, label);
+    rows[count].id = id;
+    rows[count].enabled = enabled;
+    rows[count].checked = checked;
+    return count + 1;
 }
 
-/* One level of the walk. Depth is bounded because the menu is: main, a display,
- * its brightness - three, and the guard is there so a future fourth cannot turn
- * a cycle into a hang. */
-static int menu_flatten_into(HMENU menu, const WCHAR *prefix, int depth, HgMenuRow *rows, int max_rows, int count)
+/* One display's rows: its preview window, its scaling ladder and its backlight,
+ * each under that display's own name. */
+static int menu_add_display_rows(HgMenuRow *rows, int max_rows, int count, int monitor_index)
 {
-    if (!menu || depth > 4)
-        return count;
+    const WCHAR *display = hg_g_monitors[monitor_index].label[0] ? hg_g_monitors[monitor_index].label
+                                                                 : hg_g_monitors[monitor_index].name;
+    WCHAR label[HG_MENU_ROW_MAX];
 
-    int items = GetMenuItemCount(menu);
-    for (int i = 0; i < items && count < max_rows; ++i) {
-        WCHAR text[HG_MENU_ROW_MAX];
-        text[0] = L'\0';
+    hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Preview Window", display);
+    count = menu_add_row(rows, max_rows, count, label, (UINT)(HG_IDM_MONITOR_BASE + (UINT)monitor_index), TRUE,
+                         hg_g_monitors[monitor_index].active);
 
-        MENUITEMINFOW info;
-        SecureZeroMemory(&info, sizeof(info));
-        info.cbSize = sizeof(info);
-        info.fMask = MIIM_STRING | MIIM_SUBMENU | MIIM_STATE | MIIM_ID | MIIM_FTYPE;
-        info.dwTypeData = text;
-        info.cch = HG_ARRAYSIZE(text);
-        if (!GetMenuItemInfoW(menu, (UINT)i, TRUE, &info))
-            continue;
-        if (info.fType & MFT_SEPARATOR)
-            continue;
-
-        WCHAR path[HG_MENU_ROW_MAX];
-        if (prefix && *prefix)
-            hellgates_wsprintf(path, HG_ARRAYSIZE(path), L"%ls > %ls", prefix, text);
-        else
-            StringCchCopyW(path, HG_ARRAYSIZE(path), text);
-
-        if (info.hSubMenu) {
-            /* The parent is not a row of its own: it runs nothing, and a row
-             * that does nothing between rows that do is a place to lose your
-             * eye. Its name lives on as the prefix of its children. */
-            count = menu_flatten_into(info.hSubMenu, path, depth + 1, rows, max_rows, count);
-            continue;
+    HgDisplayScale scale;
+    if (hg_query_display_scale(hg_g_monitors[monitor_index].hMonitor, &scale) && scale.valid) {
+        UINT base = (UINT)HG_IDM_SCALE_BASE + (UINT)monitor_index * HG_SCALE_OPTION_COUNT;
+        for (int i = 0; i < HG_SCALE_OPTION_COUNT; ++i) {
+            int percent = hg_display_scale_options[i];
+            hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Scale > %d%%", display, percent);
+            count = menu_add_row(rows, max_rows, count, label, base + (UINT)i,
+                                 (percent >= scale.min_percent && percent <= scale.max_percent),
+                                 percent == scale.current_percent);
         }
+    } else {
+        /* Kept visible but dead: a missing entry reads as a bug, a dead one
+         * says the driver would not answer. */
+        hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Scale (unavailable)", display);
+        count = menu_add_row(rows, max_rows, count, label, 0, FALSE, FALSE);
+    }
 
-        StringCchCopyW(rows[count].label, HG_ARRAYSIZE(rows[count].label), path);
-        rows[count].id = info.wID;
-        rows[count].enabled = (info.fState & (MFS_DISABLED | MFS_GRAYED)) ? FALSE : TRUE;
-        rows[count].checked = (info.fState & MFS_CHECKED) ? TRUE : FALSE;
-        ++count;
+    if (!hg_monitor_brightness_unavailable(hg_g_monitors[monitor_index].hMonitor)) {
+        /* The tick follows the cached DDC/CI reading rounded to the nearest
+         * step, so a monitor sitting at 60% shows 50% ticked rather than
+         * nothing at all; an unread monitor shows no tick. */
+        int current = hg_g_monitors[monitor_index].brightness;
+        int nearest = (current >= 0) ? ((current + 12) / 25) * 25 : -1;
+        UINT base = (UINT)HG_IDM_BRIGHTNESS_BASE + (UINT)monitor_index * HG_BRIGHTNESS_OPTION_COUNT;
+        for (int i = 0; i < HG_BRIGHTNESS_OPTION_COUNT; ++i) {
+            int percent = hg_brightness_options[i];
+            hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Brightness > %d%%", display, percent);
+            count = menu_add_row(rows, max_rows, count, label, base + (UINT)i, TRUE, percent == nearest);
+        }
+    } else {
+        hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"%ls > Brightness (unavailable)", display);
+        count = menu_add_row(rows, max_rows, count, label, 0, FALSE, FALSE);
     }
 
     return count;
 }
 
-int hg_menu_flatten(HMENU menu, HgMenuRow *rows, int max_rows)
+int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
 {
-    if (!menu || !rows || max_rows <= 0)
+    if (!rows || max_rows <= 0)
         return 0;
-    return menu_flatten_into(menu, NULL, 0, rows, max_rows, 0);
+
+    /* Opening the list is the natural refresh point for a changed default
+     * device, the same as opening the menu was. */
+    update_audio_device_list();
+
+    int count = 0;
+    count = menu_add_row(rows, max_rows, count, L"Settings...", HG_IDM_SETTINGS, TRUE, FALSE);
+    count = menu_add_row(rows, max_rows, count, L"Open Shortcuts Folder", HG_IDM_OPEN_SHORTCUTS, TRUE, FALSE);
+    count = menu_add_row(rows, max_rows, count, L"Edit Configuration", HG_IDM_EDIT_CONFIG, TRUE, FALSE);
+
+    /* The switches are not here: they are rows of the Set button's list, beside
+     * the volume and the opacity, which is where a reader looking for something
+     * to set now looks. This list carries what is not a setting - the displays,
+     * the audio devices, About, Exit. */
+    count = menu_add_row(rows, max_rows, count, L"About...", HG_IDM_ABOUT, TRUE, FALSE);
+    count = menu_add_row(rows, max_rows, count, L"Reset Settings", HG_IDM_RESET_ALL, TRUE, FALSE);
+
+    WCHAR label[HG_MENU_ROW_MAX];
+    for (int i = 0; i < hg_g_audio_device_count; ++i) {
+        hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"Select Audio Device > %ls", hg_g_audio_devices[i].name);
+        count = menu_add_row(rows, max_rows, count, label, (UINT)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i), TRUE,
+                             hg_g_audio_devices[i].is_default);
+    }
+    count = menu_add_row(rows, max_rows, count, L"Select Audio Device > Mute", HG_IDM_MUTE, TRUE,
+                         get_system_mute());
+
+    /* One group per display, named the way its owner would name it, off the
+     * enumeration WM_DISPLAYCHANGE keeps current. */
+    for (int i = 0; i < hg_g_monitor_count; ++i)
+        count = menu_add_display_rows(rows, max_rows, count, i);
+
+    count = menu_add_row(rows, max_rows, count, L"Lock Screen (Power Off)", HG_IDM_POWER_OFF, TRUE, FALSE);
+    count = menu_add_row(rows, max_rows, count, L"Exit", HG_IDM_CLOSE_APP, TRUE, FALSE);
+    return count;
 }
 
 void taskbox_dispatch_main_menu_command(UINT cmd)
@@ -461,25 +351,3 @@ BOOL taskbox_handle_audio_menu_command(UINT cmd)
 
     return FALSE;
 }
-
-void toolbar_controller_show_audio_context_menu(HWND hwnd, int icon_size, LPARAM l_param)
-{
-    update_audio_device_list();
-
-    HMENU h_menu = taskbox_create_audio_submenu();
-    if (!h_menu)
-        return;
-
-    POINT screen_pt;
-    if (!toolbar_controller_get_context_menu_point(hwnd, 1, HG_TOOL_ICON_VOLUME, icon_size, l_param, &screen_pt)) {
-        DestroyMenu(h_menu);
-        return;
-    }
-
-    SetForegroundWindow(hwnd);
-    int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, screen_pt.x, screen_pt.y, hwnd);
-    if (cmd != 0) {
-        taskbox_handle_audio_menu_command((UINT)cmd);
-    }
-}
-

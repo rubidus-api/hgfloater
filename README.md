@@ -420,7 +420,7 @@ A single-line read-only field across the top of the taskbox.
   predecessor.
 - Ten seconds after the last message it falls back to the **current time**,
   written as `2026. 11. 23.(Tue) 13:24`, and refreshes as the minute changes.
-- **Right click** it to open the options menu (the same one the `Opt` button
+- **Right click** it to open the options list (the same one the `Opt` button
   opens).
 - **Left drag** it to move the whole taskbox.
 - **Ctrl + Wheel** over it changes only its own font size.
@@ -437,8 +437,8 @@ A single-line read-only field across the top of the taskbox.
 ## 6. The Toolbar
 
 Ten built-in buttons sit in the same grid as the icons. Their order is fixed.
-Each carries a short word rather than a single capital; two of them open a list
-instead of doing something outright, and one opens a menu.
+Each carries a short word rather than a single capital, and three of them open a
+list instead of doing something outright.
 
 The word is **fitted to the button**: up to three letters it stays on one line,
 and four to six letters are stacked on two, at a size the button can hold. The
@@ -525,9 +525,17 @@ button under the pointer.
 
 ### 6.3 The Opt button
 
-**`Opt` opens the options menu as a list** — the same box `Dir` and `Set` use,
-in the same place, answering the same keys. Point at it, land on it with the
-arrow keys, click it, or press `Ctrl + O`.
+**`Opt` opens the options as a list** — the same box `Dir` and `Set` use, in the
+same place, answering the same keys. Click it, press `Space` on it, or press
+`Ctrl + O`. Right-clicking the status line opens the same list.
+
+**Unlike `Dir` and `Set`, it does not open on hover**, and that is deliberate.
+Those two read a list already in memory and values already cached, so opening
+either on a passing pointer costs nothing. This one is assembled by enumerating
+the audio endpoints through COM and asking every display for its scaling — real
+work with real latency — and a pointer sweeping across the toolbar, or the
+arrows walking past the button, should not set that off. It opens when it is
+chosen.
 
 **Every submenu is flattened into that one list**, each row carrying the path
 that led to it:
@@ -546,16 +554,16 @@ Exit
 
 A submenu that only opens when you hover its parent is a thing to discover, and
 there is nothing here to discover: four displays' worth of brightness steps is a
-long list, not a deep one. A ticked row keeps its `✓`, and a row the menu itself
-greys out stays dead here too — the tooltip says so rather than the row simply
-not answering.
+long list, not a deep one. A ticked row keeps its `✓`, and a row that cannot be
+used right now — a display whose driver will not report its scaling — stays in
+place but dead, and says why in its tooltip.
 
-The list is built from the menu itself every time it opens, so what it shows —
-the audio devices, the displays, which row is ticked — is the machine as it is
-right now, and a row added to the menu appears here with nothing else to edit.
-
-Right-clicking the status line still opens the ordinary Windows menu, which is
-what a right-click means everywhere else.
+**There is no Windows menu behind this.** There was: the options were a real
+menu with submenus, and for one version that menu was still being built, walked
+back into rows, and thrown away every time the list opened — a tree assembled
+only to be flattened. The rows are what gets built now, and they are built fresh
+each time the list opens, so what it shows — the audio devices, the displays,
+which row is ticked — is the machine as it is at that moment.
 
 **`M` — move aside.** Clicking the move handle without dragging nudges the pair
 out of the way on its own, just far enough to stop covering the spot it was
@@ -652,7 +660,7 @@ HGFloater empties the history.**
 
 Open it with the [`Opt` button](#63-the-opt-button) — as a list under the
 button, flattened to one level — with `Ctrl + O` in the taskbox, or by
-right-clicking the status line, which opens it as an ordinary Windows menu.
+right-clicking the status line, which opens the same list at the pointer.
 
 - **Settings...** — the [settings window](#71-the-settings-window): every
   option, every value and every key in one list.

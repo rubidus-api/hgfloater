@@ -23,8 +23,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   to discover, and there is nothing here to discover: four displays' worth of
   brightness steps is a long list, not a deep one. Ticks are kept, greyed rows
   stay dead and say so in the tooltip, and the list is walked from the menu
-  itself, so a row added to the menu appears in the box with nothing else to
-  edit. Right-clicking the status line still opens the ordinary Windows menu.
+  data, and **there is no Windows menu behind them any more**. For one version
+  there was: the menu was built, walked back into rows and thrown away every
+  time the list opened - a tree assembled only to be flattened. The tree is
+  gone, and with it the audio and per-display submenu builders, the walker, and
+  two paths that had quietly stopped being reachable (`taskbox_show_main_menu_at`
+  after the list replaced the popup, and the volume button's right-click menu,
+  unreachable since that button left the toolbar row in v0.17.0).
+  Right-clicking the status line opens the same list at the pointer.
+- **The options list opens when chosen, not on hover** - unlike `Dir` and `Set`,
+  which read a list already in memory and values already cached. This one is
+  assembled by enumerating the audio endpoints through COM and asking every
+  display for its scaling, and a pointer sweeping the toolbar should not set
+  that off.
 
 ## [v0.17.5] - 2026-08-28
 
