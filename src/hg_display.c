@@ -1087,3 +1087,75 @@ void update_monitor_enum()
     }
 }
 
+/* --------------------------------------------------------- how many screens */
+
+/* The four arrangements, in the order Win+P lists them, each with the flag that
+ * asks for it. SetDisplayConfig with a topology flag and nothing else is the
+ * documented way to say "put the displays like this and work out the rest";
+ * handing it paths and modes would be this program deciding resolutions, which
+ * is not what was asked for. */
+typedef struct HgTopologyRow {
+    UINT32 set_flag;                 /* SDC_TOPOLOGY_* */
+    DISPLAYCONFIG_TOPOLOGY_ID query; /* what QueryDisplayConfig answers with */
+    const WCHAR *label;
+} HgTopologyRow;
+
+static const HgTopologyRow hg_topologies[HG_TOPOLOGY_COUNT] = {
+    {SDC_TOPOLOGY_INTERNAL, DISPLAYCONFIG_TOPOLOGY_INTERNAL, L"PC screen only"},
+    {SDC_TOPOLOGY_CLONE, DISPLAYCONFIG_TOPOLOGY_CLONE, L"Duplicate"},
+    {SDC_TOPOLOGY_EXTEND, DISPLAYCONFIG_TOPOLOGY_EXTEND, L"Extend"},
+    {SDC_TOPOLOGY_EXTERNAL, DISPLAYCONFIG_TOPOLOGY_EXTERNAL, L"Second screen only"},
+};
+
+const WCHAR *hg_display_topology_label(int which)
+{
+    if (which < 0 || which >= HG_TOPOLOGY_COUNT)
+        return L"";
+    return hg_topologies[which].label;
+}
+
+int hg_display_topology_current(void)
+{
+    UINT32 paths = 0, modes = 0;
+    if (GetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT, &paths, &modes) != ERROR_SUCCESS)
+        return -1;
+
+    DISPLAYCONFIG_PATH_INFO *path_array = NULL;
+    DISPLAYCONFIG_MODE_INFO *mode_array = NULL;
+    if (paths)
+        path_array = (DISPLAYCONFIG_PATH_INFO *)calloc(paths, sizeof(*path_array));
+    if (modes)
+        mode_array = (DISPLAYCONFIG_MODE_INFO *)calloc(modes, sizeof(*mode_array));
+    if ((paths && !path_array) || (modes && !mode_array)) {
+        free(path_array);
+        free(mode_array);
+        return -1;
+    }
+
+    /* The topology id is the whole reason for asking; the paths and modes are
+     * required arguments we have no use for. */
+    DISPLAYCONFIG_TOPOLOGY_ID topology = (DISPLAYCONFIG_TOPOLOGY_ID)0;
+    LONG rc = QueryDisplayConfig(QDC_DATABASE_CURRENT, &paths, path_array, &modes, mode_array, &topology);
+    free(path_array);
+    free(mode_array);
+    if (rc != ERROR_SUCCESS)
+        return -1;
+
+    for (int i = 0; i < HG_TOPOLOGY_COUNT; ++i) {
+        if (hg_topologies[i].query == topology)
+            return i;
+    }
+    return -1;
+}
+
+BOOL hg_display_topology_set(int which)
+{
+    if (which < 0 || which >= HG_TOPOLOGY_COUNT)
+        return FALSE;
+
+    /* SDC_APPLY with a topology flag and no paths: Windows looks the
+     * arrangement up in its own database, which is where the resolutions and
+     * positions the reader has already chosen for that arrangement live. */
+    LONG rc = SetDisplayConfig(0, NULL, 0, NULL, SDC_APPLY | hg_topologies[which].set_flag);
+    return rc == ERROR_SUCCESS;
+}

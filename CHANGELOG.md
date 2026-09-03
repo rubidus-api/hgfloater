@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **The four screen arrangements are rows in the `Opt` list** - `PC screen
+  only`, `Duplicate`, `Extend`, `Second screen only` - which is `Win + P`
+  without the overlay, by the same `SetDisplayConfig` call. The one in force is
+  ticked. They sit above the per-display rows because they decide which displays
+  there are to set, and all four are listed even with one screen attached:
+  hiding them would be a one-way door, since `PC screen only` leaves a single
+  display and the rows that bring the other one back would be the ones that had
+  just vanished. An arrangement Windows refuses is said out loud in the status
+  line rather than looking like a row that did nothing.
+
+  Named as Windows names them rather than "display 1" and "display 2": the call
+  is not numbered - it speaks of the internal panel and the external one - so a
+  row promising a particular monitor would be promising what it cannot do.
+
 ## [v0.17.9] - 2026-08-30
 
 ### Changed

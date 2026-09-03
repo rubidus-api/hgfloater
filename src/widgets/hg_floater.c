@@ -1076,6 +1076,32 @@ static BOOL floater_dispatch_brightness_command(UINT cmd)
     return TRUE;
 }
 
+static BOOL floater_dispatch_topology_command(UINT cmd)
+{
+    if (cmd < HG_IDM_TOPOLOGY_BASE || cmd >= HG_IDM_TOPOLOGY_BASE + HG_TOPOLOGY_COUNT)
+        return FALSE;
+
+    int which = (int)(cmd - HG_IDM_TOPOLOGY_BASE);
+    if (!hg_display_topology_set(which)) {
+        /* Windows refuses when the arrangement is impossible - asking for the
+         * second screen when there is one screen - and saying so is better than
+         * a row that appears to do nothing. */
+        WCHAR message[128];
+        hellgates_wsprintf(message, HG_ARRAYSIZE(message), L"Screens: %ls is not available",
+                           hg_display_topology_label(which));
+        append_message(message);
+        return TRUE;
+    }
+
+    /* The displays have moved under everything: the enumeration this program
+     * keeps, the monitor previews and the floater's own position all answer to
+     * a layout that has just changed. WM_DISPLAYCHANGE does the rest. */
+    WCHAR message[128];
+    hellgates_wsprintf(message, HG_ARRAYSIZE(message), L"Screens: %ls", hg_display_topology_label(which));
+    append_message(message);
+    return TRUE;
+}
+
 static BOOL floater_dispatch_audio_device_command(UINT cmd)
 {
     if (cmd < HG_IDM_AUDIO_DEVICE_BASE || cmd >= HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES)
@@ -1150,7 +1176,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
     UINT cmd = LOWORD(w_param);
 
     BOOL handled = floater_dispatch_monitor_command(cmd) || floater_dispatch_scale_command(cmd) ||
-                   floater_dispatch_brightness_command(cmd) || floater_dispatch_audio_device_command(cmd) ||
+                   floater_dispatch_brightness_command(cmd) || floater_dispatch_topology_command(cmd) ||
+                   floater_dispatch_audio_device_command(cmd) ||
                    floater_dispatch_volume_command(cmd) || floater_dispatch_option_command(cmd);
     if (!handled) {
         if (cmd == HG_IDM_CLOSE_APP) {

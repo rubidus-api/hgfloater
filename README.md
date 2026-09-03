@@ -573,6 +573,10 @@ that led to it:
 Open Shortcuts Folder
 Select Audio Device > Speakers (Realtek)
 Select Audio Device > Mute
+Screens > PC screen only
+Screens > Duplicate
+Screens > Extend
+Screens > Second screen only
 Display 1 > Preview Window
 Display 1 > Scale                 125%
 Display 1 > Brightness             50%
@@ -580,6 +584,23 @@ Lock Screen (Power Off)
 About...
 Exit
 ```
+
+**`Screens >` is `Win + P` without the overlay** — the four arrangements Windows
+has, by the same call: one screen, the same picture on both, one desk across
+both, the other screen. The one in force is ticked. They come before the
+per-display rows because they decide which displays there are to set.
+
+They are **named the way Windows names them**, not "display 1" and "display 2":
+the call is not numbered — it speaks of the internal panel and the external one,
+which are 1 and 2 on a laptop, and on a desktop are Windows' choice. A row
+promising a particular monitor would be promising something this cannot do.
+
+All four are always listed, even when one screen is attached. Hiding them would
+be a one-way door: **PC screen only** leaves a single display, and the rows that
+bring the other one back would be the rows that had just vanished. Windows
+refuses an arrangement it cannot make — asking for the second screen when there
+is no second screen — and the status line says so rather than the row appearing
+to do nothing.
 
 **Scale and brightness are rows you turn**, like `Volume` in the `Set` list: the
 **wheel** over the row, or **Left / Right** once it is selected, walks the

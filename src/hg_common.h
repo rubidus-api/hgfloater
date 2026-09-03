@@ -232,6 +232,8 @@
 #define HG_IDM_BRIGHTNESS_BASE 6200  /* 10 displays x 5 percentages -> 6200..6249 */
 #define HG_IDM_OPTION_BASE 6300      /* one id per row of the hg_options table */
 #define HG_IDM_OPTION_LIMIT 6400
+#define HG_IDM_TOPOLOGY_BASE 6400    /* the four ways displays can be arranged */
+#define HG_IDM_TOPOLOGY_LIMIT 6410
 
 #define HG_MAX_MONITORS 10
 
