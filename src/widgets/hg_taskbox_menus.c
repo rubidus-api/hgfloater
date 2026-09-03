@@ -166,6 +166,20 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
     count = menu_add_row(rows, max_rows, count, L"Select Audio Device > Mute", HG_IDM_MUTE, TRUE,
                          get_system_mute());
 
+    /* How the screens are arranged comes before what any one of them is set
+     * to - it decides which of them there are to set.
+     *
+     * Always listed, even with one display attached. Hiding these rows when
+     * only one screen is in use would be a one-way door: "PC screen only"
+     * leaves exactly one display, and the rows that could bring the other one
+     * back would be the rows that had just disappeared. */
+    int current_topology = hg_display_topology_current();
+    for (int i = 0; i < HG_TOPOLOGY_COUNT; ++i) {
+        hellgates_wsprintf(label, HG_ARRAYSIZE(label), L"Screens > %ls", hg_display_topology_label(i));
+        count = menu_add_row(rows, max_rows, count, label, (UINT)(HG_IDM_TOPOLOGY_BASE + (UINT)i), TRUE,
+                             i == current_topology);
+    }
+
     /* One group per display, named the way its owner would name it, off the
      * enumeration WM_DISPLAYCHANGE keeps current. */
     for (int i = 0; i < hg_g_monitor_count; ++i)

@@ -50,6 +50,31 @@ extern const int hg_display_scale_options[HG_SCALE_OPTION_COUNT];
 BOOL hg_query_display_scale(HMONITOR monitor, HgDisplayScale *out);
 BOOL hg_set_display_scale(HMONITOR monitor, int percent);
 
+/* How the displays are arranged - the four states Win+P offers, which are the
+ * only four Windows has: one screen, the same picture on both, one desk across
+ * both, the other screen.
+ *
+ * Named the way Windows names them rather than "display 1" and "display 2",
+ * because the call is not numbered: it speaks of the internal panel and the
+ * external one. On a laptop those are 1 and 2; on a desktop Windows decides
+ * which is which. A row promising to pick a particular monitor would be
+ * promising something this cannot do. */
+enum {
+    HG_TOPOLOGY_INTERNAL = 0, /* PC screen only */
+    HG_TOPOLOGY_CLONE,        /* Duplicate: the same picture on both */
+    HG_TOPOLOGY_EXTEND,       /* Extend: one desk across both */
+    HG_TOPOLOGY_EXTERNAL,     /* Second screen only */
+    HG_TOPOLOGY_COUNT
+};
+
+const WCHAR *hg_display_topology_label(int which);
+/* Which one is in force, or -1 when Windows will not say - it answers with one
+ * of these four only when the current arrangement came from its own database,
+ * and a layout built by hand has no name among them. */
+int hg_display_topology_current(void);
+/* Switch to one of them: the same call Win+P makes. */
+BOOL hg_display_topology_set(int which);
+
 /* Per-monitor backlight. DDC/CI drives the real backlight where the display
  * answers; the rest fall back to a gamma ramp on that display's own DC, so
  * dimming one monitor no longer dims the whole desktop. */
