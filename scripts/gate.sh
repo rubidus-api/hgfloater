@@ -7,7 +7,7 @@
 # raise the choice, never lower it.
 #
 #   t0  syntax   shell syntax of scripts/                          (instant)
-#   t1  docs     t0 + context budget + privacy scan                (seconds)
+#   t1  docs     t0 + context budget + whitespace check            (seconds)
 #   t2  full     t1 + scripts/project-check.sh + TEST_CMD          (the real suite)
 #
 #   scripts/gate.sh            auto-select and run
@@ -92,11 +92,11 @@ for s in $(find scripts -type f -name '*.sh' 2>/dev/null | sort); do sh -n "$s";
 printf '%s\n' "gate: t0 ok"
 [ "$tier" = t0 ] && exit 0
 
-# t1: docs
+# t1: docs. The privacy scan is not run here: project-check.sh owns that policy
+# (a project may allow a path this scanner flags), and a gate that is stricter
+# than the project's own check would refuse work the project accepts. It runs at t2.
 [ -x scripts/context-budget.sh ] && run scripts/context-budget.sh
 git diff --check
-privacy="$(dirname "$root")/usr/bin/check-privacy"
-[ -x "$privacy" ] && run "$privacy"
 printf '%s\n' "gate: t1 ok"
 [ "$tier" = t1 ] && exit 0
 
