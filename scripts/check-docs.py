@@ -27,14 +27,14 @@ REQUIRED_TEXT = {
         "`REQUIREMENTS.md` as current accepted requirements",
         "`docs/tests/test-index.md` as the compact process/TDD catalog",
         "`BACKLOGS.md` as the compact active queue",
-        "`HANDOFF.md` as the current resume packet",
+        "interrupted state in `CONTEXT.md`",
     ],
     "docs/operations/README.md": [
         "Update `SPEC.md` for accepted behavior, UI, keybinding",
         "Update `REQUIREMENTS.md` for accepted requirement",
         "Update `docs/tests/test-index.md` when a process/TDD check",
         "`BACKLOGS.md` for the compact current queue",
-        "`HANDOFF.md` for the current resume packet",
+        "`## Resume Packet` of `CONTEXT.md` for interrupted work",
     ],
     "docs/tests/test-index.md": [
         "docs/tests/cases/T001-project-operations.md",

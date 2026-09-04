@@ -3,12 +3,12 @@
 Project workflow and automation notes for `hgfloater`.
 
 This directory captures repeatable working procedures. It does not replace
-`SPEC.md`, `REQUIREMENTS.md`, `TESTS.md`, `CHANGELOG.md`, or the C source files.
+`SPEC.md`, `REQUIREMENTS.md`, `CHANGELOG.md`, or the C source files.
 
 ## Standard Flow
 
-1. Read `AGENTS.md`, `CONTEXT.md`, `SPEC.md`, `REQUIREMENTS.md`, and `docs/tests/test-index.md` as needed.
-   For task selection or resume work, also read `BACKLOGS.md` and `HANDOFF.md`.
+1. Read `AGENTS.md` and `CONTEXT.md`; read `SPEC.md`, `REQUIREMENTS.md`, and
+   `docs/tests/test-index.md` only when the task triggers them. Use `BACKLOGS.md` to choose work.
 2. Identify the smallest C source, header, resource, documentation, and test scope.
 3. Define the TDD or verification path before behavior changes.
 4. Run the narrowest relevant build or smoke test first.
@@ -29,8 +29,9 @@ This directory captures repeatable working procedures. It does not replace
 - Update `SPEC.md` for accepted behavior, UI, keybinding, toolbar, configuration, or workflow-contract changes.
 - Update `REQUIREMENTS.md` for accepted requirement, constraint, or success-criterion changes.
 - Update `docs/tests/test-index.md` when a process/TDD check, detail file, command, or status changes.
-- Update `TESTS.md` for active local verification notes and manual/runtime plans.
-- Keep local handoff and working state in ignored files. Use `BACKLOGS.md` for the compact current queue, `HANDOFF.md` for the current resume packet, and `TODO.md` only as legacy detailed backlog input.
+- Keep local working state in ignored files. Use `BACKLOGS.md` for the compact current queue
+  and the `## Resume Packet` of `CONTEXT.md` for interrupted work. `HANDOFF.md`, `TODO.md`,
+  `TESTS.md`, and `CHECKLIST.md` are cold history only.
 
 ## Changelog Rules
 
@@ -42,8 +43,8 @@ This directory captures repeatable working procedures. It does not replace
 ## Local-Only Inputs
 
 - Several files required by `scripts/check-docs.py` are intentionally gitignored
-  (for example `SPEC.md`, `REQUIREMENTS.md`, `TESTS.md`, `BACKLOGS.md`,
-  `HANDOFF.md`): they are local current-truth working documents.
+  (for example `SPEC.md`, `REQUIREMENTS.md`, `BACKLOGS.md`, and `CONTEXT.md`): they are
+  local current-truth working documents.
 - `scripts/project-check.sh` therefore validates the full local workspace, not a
   fresh clone. A fresh clone fails the required-file check by design until the
   local working documents are restored from the maintainer's workspace.
