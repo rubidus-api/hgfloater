@@ -60,6 +60,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   standing on. Keys of their own instead: `Q` and `E` sit either side of the `W`
   the grid already uses, and `PageUp` / `PageDown` are what a value answers to
   elsewhere. Only the buttons that hold a reading claim them.
+- **The `Set` and `Opt` lists turn a value with `PageUp` / `PageDown` too**, and
+  `Left` / `Right` there are navigation again, on every row without exception.
+  The lists had the same defect the buttons did, one step smaller: on a row
+  holding a number the sideways arrows were less and more, so leaving a row
+  sideways depended on which row you were standing on. One rule now - the arrows
+  never turn a value, anywhere in the taskbox.
+
+  `Q` and `E` are **not** taken up in the lists, and that is deliberate: from the
+  tenth row down every row wears a letter that jumps straight to it, so both
+  letters are already spoken for in there. They stay an extra pair on `Vol` and
+  `Mon`, where no such alphabet exists.
 
 ## [v0.17.10] - 2026-09-03
 
