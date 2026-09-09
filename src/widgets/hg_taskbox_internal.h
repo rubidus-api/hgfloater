@@ -32,5 +32,10 @@ int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND 
 BOOL taskbox_handle_audio_menu_command(UINT cmd);
 void toolbar_controller_show_task_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
 void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
+/* The menus Vol and Mon open. Same signature as the two above, so the one
+ * right-click handler can pick between them without a special case for shape. */
+void toolbar_controller_show_audio_device_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
+void toolbar_controller_show_topology_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
+void toolbar_controller_show_scale_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
 
 #endif /* HG_TASKBOX_INTERNAL_H */

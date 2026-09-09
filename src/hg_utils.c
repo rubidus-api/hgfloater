@@ -782,31 +782,43 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",
      L"Folders (hover or click for the list)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_DIRS,
      HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_SETTINGS, L"Set", L"Volume, brightness, opacity, pin, switches",
-     L"Volume, brightness, opacity, pin, switches", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_CONTROLS,
+    {HG_TOOL_ICON_SETTINGS, L"Set", L"Opacity, pin, switches, settings",
+     L"Opacity, pin, switches, settings", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_CONTROLS,
      HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_MENU, L"Opt", L"Options Menu", L"Options Menu", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_OPEN_MENU, HG_TOOLBAR_DRAG_NONE},
+
+    /* The two that carry a reading. Their colour is the value - that is the
+     * whole reason they are on the row rather than in a list - and each of the
+     * three gestures a button has answers with a different depth: the wheel
+     * changes the reading, the click does the one thing you would want without
+     * choosing, and the right button opens the choice.
+     *
+     * Vol: wheel = volume, click = mute, right = which output device.
+     * Mon: wheel = brightness, click = this screen's scaling, right = how the
+     * screens are arranged. */
+    {HG_TOOL_ICON_VOLUME, L"Vol", L"System volume - wheel to set, click to mute, right-click for the device",
+     L"System volume - wheel to set, click to mute, right-click for the device", HG_TOOLBAR_VALUE_VOLUME,
+     HG_TOOLBAR_CLICK_TOGGLE_MUTE, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_MONITOR, L"Mon", L"Screen brightness - wheel to set, click for scaling, right-click for the arrangement",
+     L"Screen brightness - wheel to set, click for scaling, right-click for the arrangement",
+     HG_TOOLBAR_VALUE_BRIGHTNESS, HG_TOOLBAR_CLICK_OPEN_SCALE_MENU, HG_TOOLBAR_DRAG_NONE},
 
     /* Off the row, in the Set box. They keep their descriptors because the box
      * draws its rows from them: one table still says what every button is
      * called and what it does. */
     {HG_TOOL_ICON_ALPHA, L"Alp", L"Taskbox opacity", L"Taskbox opacity", HG_TOOLBAR_VALUE_ALPHA,
      HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_BRIGHTNESS, L"Bri", L"Screen brightness", L"Screen brightness", HG_TOOLBAR_VALUE_BRIGHTNESS,
-     HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_VOLUME, L"Vol", L"System volume (click to mute)", L"System volume (click to mute)",
-     HG_TOOLBAR_VALUE_VOLUME, HG_TOOLBAR_CLICK_TOGGLE_MUTE, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_PIN, L"Pin", L"Pin the Taskbox Open", L"Pin the Taskbox Open", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
-/* Nine on the row plus the five the Se box holds. Stated rather than derived,
+/* Twelve on the row plus the two the Set box holds. Stated rather than derived,
  * so adding a descriptor without deciding which of the two it belongs to does
  * not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
-        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 4) ? 1 : 0)
+        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 2) ? 1 : 0)
 };
 
 static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)
@@ -910,6 +922,40 @@ BOOL hg_toolbar_builtin_badge_text(int index, WCHAR *buffer, size_t buffer_cch)
         return hg_key_chord_badge(chord, buffer, buffer_cch);
     }
 
+    return FALSE;
+}
+
+BOOL hg_toolbar_builtin_tooltip_full(int index, WCHAR *buffer, size_t buffer_cch)
+{
+    /* The whole tooltip for one button: the reading first, then what the three
+     * gestures do.
+     *
+     * Both halves had a caller and neither had both. A button whose colour is
+     * the reading still owes the reader the number - the colour says "loud",
+     * not "70%" - and a button with three different gestures owes them the
+     * list, because nothing on the face of it says the right button does
+     * anything at all. Composing them here is what stops the two call sites
+     * from each picking a different half. */
+    if (!buffer || buffer_cch == 0)
+        return FALSE;
+
+    WCHAR value[64];
+    BOOL has_value = hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_TOOLTIP, value, HG_ARRAYSIZE(value));
+
+    WCHAR hint[192];
+    BOOL has_hint = hg_toolbar_builtin_tooltip_with_keys(index, hint, HG_ARRAYSIZE(hint));
+    if (!has_hint) {
+        const WCHAR *plain = hg_toolbar_builtin_tooltip_text(index);
+        if (plain && SUCCEEDED(StringCchCopyW(hint, HG_ARRAYSIZE(hint), plain)))
+            has_hint = TRUE;
+    }
+
+    if (has_value && has_hint)
+        return SUCCEEDED(hellgates_wsprintf(buffer, buffer_cch, L"%ls\n%ls", value, hint));
+    if (has_value)
+        return SUCCEEDED(StringCchCopyW(buffer, buffer_cch, value));
+    if (has_hint)
+        return SUCCEEDED(StringCchCopyW(buffer, buffer_cch, hint));
     return FALSE;
 }
 
@@ -1056,19 +1102,14 @@ void update_toolbar_tooltips(HWND hwnd)
         /* The tooltip control keeps the pointer rather than a copy, so the
          * text has to outlive this call: one buffer per button, filled fresh
          * every time the tooltips are rebuilt. */
-        static WCHAR key_tips[HG_NUM_BASIC_ICONS][192];
-        const WCHAR *tooltip_text = hg_toolbar_builtin_tooltip_text(i);
-        if (tooltip_text && i >= 0 && i < HG_NUM_BASIC_ICONS &&
-            hg_toolbar_builtin_tooltip_with_keys(i, key_tips[i], HG_ARRAYSIZE(key_tips[i]))) {
+        static WCHAR key_tips[HG_NUM_BASIC_ICONS][256];
+        if (i >= 0 && i < HG_NUM_BASIC_ICONS &&
+            hg_toolbar_builtin_tooltip_full(i, key_tips[i], HG_ARRAYSIZE(key_tips[i]))) {
             ti_tool.lpszText = key_tips[i];
-        } else if (tooltip_text) {
-            ti_tool.lpszText = (LPWSTR)tooltip_text;
-        } else if (hg_toolbar_builtin_has_value(i)) {
-            static WCHAR value_tips[HG_NUM_BASIC_ICONS][64];
-            if (hg_toolbar_builtin_value_text(i, HG_TOOLBAR_TEXT_TOOLTIP, value_tips[i],
-                                              HG_ARRAYSIZE(value_tips[i]))) {
-                ti_tool.lpszText = value_tips[i];
-            }
+        } else if (i < HG_NUM_BASIC_ICONS) {
+            const WCHAR *tooltip_text = hg_toolbar_builtin_tooltip_text(i);
+            if (tooltip_text)
+                ti_tool.lpszText = (LPWSTR)tooltip_text;
         } else {
             ti_tool.lpszText = hg_g_shortcuts[i - HG_NUM_BASIC_ICONS].name;
         }

@@ -4,6 +4,59 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.17.11] - 2026-09-09
+
+### Added
+- **`Vol` and `Mon` are buttons on the toolbar row again**, and their colour is
+  the reading: the plate behind `Vol` deepens with the volume, the one behind
+  `Mon` with the brightness of the screen. They had been rows of the `Set` list
+  since v0.17.0, which was the wrong place for them. A control whose whole point
+  is that you can see its value without asking cannot live one click deep - the
+  list you have to open first hides exactly what the control was drawn to show.
+
+  Each button answers its three gestures at a different depth, and both follow
+  the same shape:
+
+  - **Wheel** - the value. Volume, or the brightness of the screen, 5% a notch.
+  - **Click** - the one thing you would want without being asked to choose.
+    `Vol` mutes and unmutes. `Mon` opens the scaling ladder for this screen.
+  - **Right-click** - the choice behind the reading. `Vol` lists the output
+    devices with the current one ticked and `Mute` below them. `Mon` lists the
+    four screen arrangements - `PC screen only`, `Duplicate`, `Extend`,
+    `Second screen only` - with the one in force ticked.
+
+  None of this is new behaviour. Every one of these was already reachable in the
+  `Opt` list, and each of these menus sends the very same command id, so the
+  floater carries the pick out with the code that was already written for it. A
+  button that opened its own path to the same setting would be a second place
+  for that setting to be wrong. What is new is that it takes one gesture on a
+  button already in front of you.
+
+  **"This screen" is the screen the taskbox is on**, not the screen under the
+  pointer. When the menu opens the pointer is over the button, so the two are
+  almost always the same one - and naming the taskbox's screen is the only one
+  of the two that can still be said when the keyboard opened the menu.
+
+  `Mon` is the old `Bri` renamed. It carries brightness as it did, and the new
+  name is what it now answers for: the screen, not one property of it.
+
+### Changed
+- **The tooltip on a value button says both halves** - the reading on one line,
+  what the three gestures do on the next. Each half had a caller and neither had
+  both: a button whose colour is the value still owes the reader the number,
+  since a colour can say "loud" but not "70%", and a button with three different
+  gestures owes them the list, because nothing on the face of it says the right
+  button does anything at all. One function composes them now, so the two places
+  that show a tooltip cannot pick different halves.
+- **The `Set` list is shorter by two rows.** Volume and brightness left it for
+  the row; opacity, the pin, the switches and the doors to the settings stay.
+  One control, one home.
+- **`Left` and `Right` step a value button rather than moving off it.** The
+  `Set` list had made that exception for a row holding a percentage, and moving
+  these two onto the row would otherwise have taken away the keyboard's only way
+  to turn them. `A` and `D` are still navigation, so the arrows cannot strand a
+  reader on a button.
+
 ## [v0.17.10] - 2026-09-03
 
 ### Added

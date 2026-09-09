@@ -471,8 +471,9 @@ void activate_toolbar_item(int index)
     case HG_TOOLBAR_CLICK_TOGGLE_MUTE: {
         set_system_mute(!get_system_mute());
         update_toolbar_tooltips(hg_g_toolbar_wnd);
-        /* Said outright rather than through the focus line, which can only
-         * speak for something on the row - and Vol is a row of the Se box. */
+        /* Said outright as well as through the focus line: mute is the one
+         * change to this button that the colour cannot show, since a muted
+         * machine still holds the volume it was at. */
         WCHAR value_str[64];
         if (hg_toolbar_builtin_value_text(HG_TOOL_ICON_VOLUME, HG_TOOLBAR_TEXT_FOCUS, value_str,
                                           HG_ARRAYSIZE(value_str)))
@@ -482,6 +483,12 @@ void activate_toolbar_item(int index)
         }
         break;
     }
+    case HG_TOOLBAR_CLICK_OPEN_SCALE_MENU:
+        /* Anchored at the button rather than at the pointer (l_param 0), so the
+         * keyboard reaches this the same way the mouse does. */
+        if (hg_g_toolbar_wnd)
+            toolbar_controller_show_scale_menu(hg_g_toolbar_wnd, index, taskbox_toolbar_icon_size(), 0);
+        break;
     case HG_TOOLBAR_CLICK_RELOCATE_AWAY:
         /* A click on M (no drag) sends the pair to the first free cardinal slot. */
         hg_relocate_taskbox_away(hg_g_taskbox_wnd);
@@ -1078,6 +1085,21 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         int r = current_cell / cols;
         int c = current_cell % cols;
         BOOL changed = FALSE;
+
+        /* On a button that holds a reading, the sideways arrows are less and
+         * more rather than navigation - the same exception the Set list makes
+         * for its rows that hold a percentage, and it has to hold here too or
+         * moving Vol and Mon onto the row would have taken the keyboard's only
+         * way to turn them. A and D stay navigation, so the reader is never
+         * stuck on a button the arrows will not leave. */
+        if ((w_param == VK_LEFT || w_param == VK_RIGHT) && hg_taskbox_focus.area == 1 &&
+            hg_toolbar_builtin_has_value(hg_taskbox_focus.index)) {
+            hg_toolbar_value_wheel(hg_taskbox_focus.index, (w_param == VK_RIGHT) ? (short)1 : (short)-1);
+            update_focus_message(-2, -2);
+            if (hg_g_toolbar_wnd)
+                InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+            return 0;
+        }
 
         if (w_param == VK_LEFT || w_param == 'A') {
             c--;

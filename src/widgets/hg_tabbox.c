@@ -118,11 +118,11 @@ static void tabbox_build_control_rows(void)
 {
     s_control_row_count = 0;
 
-    /* The three the wheel turns - and, once the row is under the arrows, the
+    /* What the wheel turns here - and, once the row is under the arrows, the
      * left and right keys. */
     const HgControlRow values[] = {
-        {HG_ROW_BUTTON, HG_TOOL_ICON_VOLUME, L"Volume (ScrollWheel)"},
-        {HG_ROW_BUTTON, HG_TOOL_ICON_BRIGHTNESS, L"Brightness (ScrollWheel)"},
+        /* Volume and brightness are not here any more: they are Vol and Mon on
+         * the row, where their colour can be read without opening anything. */
         {HG_ROW_BUTTON, HG_TOOL_ICON_ALPHA, L"Alpha (ScrollWheel)"},
     };
     for (size_t i = 0; i < HG_ARRAYSIZE(values); ++i)
