@@ -118,8 +118,8 @@ static void tabbox_build_control_rows(void)
 {
     s_control_row_count = 0;
 
-    /* What the wheel turns here - and, once the row is under the arrows, the
-     * left and right keys. */
+    /* What the wheel turns here - and, once the row is selected, PageUp and
+     * PageDown. */
     const HgControlRow values[] = {
         /* Volume and brightness are not here any more: they are Vol and Mon on
          * the row, where their colour can be read without opening anything. */
@@ -474,8 +474,8 @@ static const WCHAR *tabbox_row_hint(int index)
             return NULL;
         if (tabbox_row_is_value(index)) {
             return s_menu_rows[index].defer
-                       ? L"Left / Right: less / more   (applied when this list closes)"
-                       : L"Left / Right: less / more   (the wheel does the same)";
+                       ? L"PageUp / PageDown: more / less   (applied when this list closes)"
+                       : L"PageUp / PageDown: more / less   (the wheel does the same)";
         }
         if (!s_menu_rows[index].id || !s_menu_rows[index].enabled)
             return L"This one is not available right now.";
@@ -496,13 +496,13 @@ static const WCHAR *tabbox_row_hint(int index)
     }
 
     if (tabbox_row_is_value(index))
-        return L"Left / Right: less / more   (the wheel does the same)";
+        return L"PageUp / PageDown: more / less   (the wheel does the same)";
     return L"Space or Enter: switch it on or off";
 }
 
-/* Left and right on a row with a number. Same call as the wheel, so one step of
- * the arrows and one notch of the wheel move a value by the same amount and
- * there is only one place that decides how big a step is. */
+/* PageUp and PageDown on a row with a number. Same call as the wheel, so one
+ * press and one notch of the wheel move a value by the same amount and there is
+ * only one place that decides how big a step is. */
 static void tabbox_tip_show(int index);
 
 /* Send what the deferred rows owe.
@@ -1039,21 +1039,29 @@ BOOL hg_tabbox_handle_key(WPARAM key)
          * the taskbox's, which is where the reader was before entering. */
         hg_tabbox_close();
         return TRUE;
+    case VK_PRIOR:
+    case VK_NEXT:
+        /* On a row that holds a number, these are more and less - the same two
+         * keys the Vol and Mon buttons answer, so a value is turned the same
+         * way wherever it is met. On any other row they do nothing rather than
+         * something surprising.
+         *
+         * Not Q and E, which is what those buttons also take: from the tenth
+         * row down every row wears a letter that jumps straight to it, so in
+         * here Q and E are already spoken for. */
+        if (tabbox_adjust_row(s_selected, (key == VK_PRIOR) ? 1 : -1))
+            return TRUE;
+        return FALSE;
     case VK_LEFT:
     case VK_RIGHT:
-        /* On a row that holds a number, left and right are less and more. It is
-         * the one place in this box where they are not navigation, and it is
-         * worth the exception: a value the wheel can turn but the keyboard
-         * cannot is a value only half the readers can reach. The tooltip on
-         * such a row says so, because nothing about the row itself would.
+        /* Navigation, on every row without exception. They used to be less and
+         * more on a row holding a number, which made leaving a row sideways
+         * depend on which row you were standing on - the same trade that was
+         * wrong on the buttons, and wrong here for the same reason.
          *
-         * Everywhere else they are what they are in the rest of the taskbox:
-         * the icon to the left, the icon to the right. A list is a column and
-         * has nothing of its own to do with them, so the box closes and the key
-         * goes on to the grid - which moves the focus, and the next icon opens
-         * its own box if it has one. */
-        if (tabbox_adjust_row(s_selected, (key == VK_RIGHT) ? 1 : -1))
-            return TRUE;
+         * A list is a column and has nothing of its own to do with them, so the
+         * box closes and the key goes on to the grid, which moves the focus -
+         * and the next icon opens its own box if it has one. */
         hg_tabbox_close();
         return FALSE;
     case VK_UP:
