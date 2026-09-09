@@ -51,11 +51,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **The `Set` list is shorter by two rows.** Volume and brightness left it for
   the row; opacity, the pin, the switches and the doors to the settings stay.
   One control, one home.
-- **`Left` and `Right` step a value button rather than moving off it.** The
-  `Set` list had made that exception for a row holding a percentage, and moving
-  these two onto the row would otherwise have taken away the keyboard's only way
-  to turn them. `A` and `D` are still navigation, so the arrows cannot strand a
-  reader on a button.
+- **A value button steps with `PageUp` / `PageDown` or `Q` / `E`.** Moving these
+  two onto the row would otherwise have taken away the keyboard's only way to
+  turn them - in the `Set` list they were rows, and a row that holds a
+  percentage answers `Left` and `Right`. On the row those arrows are how you get
+  from one button to the next, so giving them a second job on two buttons out of
+  twelve would make the way out of a button depend on which button you were
+  standing on. Keys of their own instead: `Q` and `E` sit either side of the `W`
+  the grid already uses, and `PageUp` / `PageDown` are what a value answers to
+  elsewhere. Only the buttons that hold a reading claim them.
 
 ## [v0.17.10] - 2026-09-03
 

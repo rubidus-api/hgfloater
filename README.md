@@ -771,9 +771,14 @@ face of a button says that its right button does anything at all.
 
 **The keyboard reaches all of it.** Arrow to the button, then `Space` is the
 click and `Enter` is the right-click — the same two keys every icon on the row
-answers. `Left` and `Right` step the value instead of moving, which is the
-exception the `Set` list already makes for a row that holds a percentage; `A`
-and `D` still move, so the arrows can never strand you on a button.
+answers. The value steps with **`PageUp` / `PageDown`**, or with **`Q` and
+`E`**, which sit either side of the `W` your hand is already on.
+
+The arrows are deliberately not the value here. On the row they are how you get
+from one button to the next, and taking them away on the two buttons that hold
+a reading would make the way out of a button depend on which button you were
+standing on. In the `Set` list the rows are a column and `Left` / `Right` have
+nothing else to do, which is why that list still uses them.
 
 **The four screen arrangements are listed even with one screen attached.**
 Hiding them would be a one-way door: `PC screen only` leaves exactly one
@@ -1129,6 +1134,7 @@ a chord.
 | `Tab` | With a box open (tabs, `Dir`, `Set`), step into it |
 | `Up` / `Down` | On an icon with a box: step into it. Inside one: move the selection |
 | `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
+| `PageUp` / `PageDown`, `Q` / `E` | On `Vol` or `Mon`: more and less. Nothing on any other button |
 | `Esc` | Inside a box: leave it |
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
