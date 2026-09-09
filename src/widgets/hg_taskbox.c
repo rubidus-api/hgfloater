@@ -1086,19 +1086,29 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         int c = current_cell % cols;
         BOOL changed = FALSE;
 
-        /* On a button that holds a reading, the sideways arrows are less and
-         * more rather than navigation - the same exception the Set list makes
-         * for its rows that hold a percentage, and it has to hold here too or
-         * moving Vol and Mon onto the row would have taken the keyboard's only
-         * way to turn them. A and D stay navigation, so the reader is never
-         * stuck on a button the arrows will not leave. */
-        if ((w_param == VK_LEFT || w_param == VK_RIGHT) && hg_taskbox_focus.area == 1 &&
-            hg_toolbar_builtin_has_value(hg_taskbox_focus.index)) {
-            hg_toolbar_value_wheel(hg_taskbox_focus.index, (w_param == VK_RIGHT) ? (short)1 : (short)-1);
-            update_focus_message(-2, -2);
-            if (hg_g_toolbar_wnd)
-                InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-            return 0;
+        /* On a button that holds a reading, PageUp/PageDown and Q/E are less and
+         * more. Keys of their own rather than the sideways arrows: on the row
+         * the arrows are how you get from one button to the next, and taking
+         * them away on the two buttons that hold a value would mean the way out
+         * of a button depended on which button you were standing on. Q and E
+         * sit either side of W in the same hand position the grid already uses,
+         * and PageUp/PageDown are what a value answers to everywhere else.
+         *
+         * Only these two buttons claim the keys, so nothing else on the row
+         * loses anything. */
+        if (hg_taskbox_focus.area == 1 && hg_toolbar_builtin_has_value(hg_taskbox_focus.index)) {
+            short step = 0;
+            if (w_param == VK_PRIOR || w_param == 'E')
+                step = 1;
+            else if (w_param == VK_NEXT || w_param == 'Q')
+                step = -1;
+            if (step != 0) {
+                hg_toolbar_value_wheel(hg_taskbox_focus.index, step);
+                update_focus_message(-2, -2);
+                if (hg_g_toolbar_wnd)
+                    InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+                return 0;
+            }
         }
 
         if (w_param == VK_LEFT || w_param == 'A') {
