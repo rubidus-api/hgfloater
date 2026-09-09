@@ -22,7 +22,7 @@
  *
  *   tabs      a window's tabs, on a task icon
  *   folders   the shortcuts that point at a directory, on the Dir button
- *   controls  volume, brightness, opacity and the switches, on Set
+ *   controls  opacity, the pin, the switches and the settings doors, on Set
  *   menu      the options menu, flattened to one level, on Opt
  */
 enum {

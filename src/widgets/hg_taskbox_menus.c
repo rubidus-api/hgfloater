@@ -360,6 +360,148 @@ static void taskbox_dispatch_shortcut_menu_command(UINT cmd, int cur_index)
     }
 }
 
+/* The three menus the two reading buttons open.
+ *
+ * Every item here carries the id the Opt list already uses for the same thing,
+ * so the floater answers a pick from this menu with the code that was already
+ * written for that pick. A button that opened its own private path to the same
+ * setting would be a second place for that setting to be wrong.
+ *
+ * Which screen "this screen" is: the one the taskbox is sitting on. The pointer
+ * is over the button when the menu opens, so under-the-pointer would say the
+ * same thing while being harder to explain, and the keyboard can open these
+ * without a pointer at all. */
+static int taskbox_monitor_index_for_taskbox(void)
+{
+    HWND host = hg_g_taskbox_wnd ? hg_g_taskbox_wnd : hg_g_floater_wnd;
+    if (host) {
+        HMONITOR mon = MonitorFromWindow(host, MONITOR_DEFAULTTONEAREST);
+        for (int i = 0; i < hg_g_monitor_count; ++i) {
+            if (hg_g_monitors[i].hMonitor == mon)
+                return i;
+        }
+    }
+    /* The enumeration is refreshed on WM_DISPLAYCHANGE, so a miss means the
+     * arrangement changed a moment ago. The first display is a real screen and
+     * a menu is better than nothing happening. */
+    return hg_g_monitor_count > 0 ? 0 : -1;
+}
+
+static HMENU taskbox_create_audio_device_menu(void)
+{
+    /* Opening the menu is the refresh point for a device that was plugged in or
+     * made default elsewhere, the same as opening the Opt list. */
+    update_audio_device_list();
+
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu)
+        return NULL;
+
+    for (int i = 0; i < hg_g_audio_device_count; ++i) {
+        AppendMenuW(h_menu, MF_STRING | (hg_g_audio_devices[i].is_default ? MF_CHECKED : 0),
+                    (UINT_PTR)(HG_IDM_AUDIO_DEVICE_BASE + (UINT)i), hg_g_audio_devices[i].name);
+    }
+    if (hg_g_audio_device_count == 0) {
+        /* Dead rather than absent: an empty menu reads as a bug, a greyed line
+         * says the machine reported no outputs. */
+        AppendMenuW(h_menu, MF_STRING | MF_GRAYED, 0, L"No output devices");
+    }
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(h_menu, MF_STRING | (get_system_mute() ? MF_CHECKED : 0), HG_IDM_MUTE, L"Mute (&M)");
+    return h_menu;
+}
+
+static HMENU taskbox_create_topology_menu(void)
+{
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu)
+        return NULL;
+
+    /* All four, always - even with one screen attached. Hiding them when only
+     * one display is in use would be a one-way door: "PC screen only" leaves
+     * exactly one display, and the entries that bring the other one back would
+     * be the ones that had just disappeared. */
+    int current = hg_display_topology_current();
+    for (int i = 0; i < HG_TOPOLOGY_COUNT; ++i) {
+        AppendMenuW(h_menu, MF_STRING | (i == current ? MF_CHECKED : 0),
+                    (UINT_PTR)(HG_IDM_TOPOLOGY_BASE + (UINT)i), hg_display_topology_label(i));
+    }
+    return h_menu;
+}
+
+static HMENU taskbox_create_scale_menu(int monitor_index)
+{
+    if (monitor_index < 0 || monitor_index >= hg_g_monitor_count)
+        return NULL;
+
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu)
+        return NULL;
+
+    const WCHAR *display = hg_g_monitors[monitor_index].label[0] ? hg_g_monitors[monitor_index].label
+                                                                 : hg_g_monitors[monitor_index].name;
+    AppendMenuW(h_menu, MF_STRING | MF_GRAYED, 0, display);
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+
+    HgDisplayScale scale;
+    if (!hg_query_display_scale(hg_g_monitors[monitor_index].hMonitor, &scale) || !scale.valid) {
+        AppendMenuW(h_menu, MF_STRING | MF_GRAYED, 0, L"Scale (unavailable)");
+        return h_menu;
+    }
+
+    for (int i = 0; i < HG_SCALE_OPTION_COUNT; ++i) {
+        int percent = hg_display_scale_options[i];
+        /* A percentage this display will not take is shown and refused rather
+         * than left out, so the ladder is the same ladder on every screen. */
+        UINT flags = MF_STRING;
+        if (percent < scale.min_percent || percent > scale.max_percent)
+            flags |= MF_GRAYED;
+        if (percent == scale.current_percent)
+            flags |= MF_CHECKED;
+
+        WCHAR text[32];
+        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d%%", percent);
+        AppendMenuW(h_menu, flags,
+                    (UINT_PTR)((UINT)HG_IDM_SCALE_BASE + (UINT)monitor_index * HG_SCALE_OPTION_COUNT + (UINT)i),
+                    text);
+    }
+    return h_menu;
+}
+
+/* Opens one of the three at the button, and hands the pick to the floater - the
+ * one place that knows how to carry any of these out. */
+static void toolbar_controller_track_builtin_menu(HWND hwnd, HMENU h_menu, int cur_index, int icon_size,
+                                                  LPARAM l_param)
+{
+    if (!h_menu)
+        return;
+
+    POINT screen_pt;
+    if (!toolbar_controller_get_context_menu_point(hwnd, 1, cur_index, icon_size, l_param, &screen_pt)) {
+        DestroyMenu(h_menu);
+        return;
+    }
+
+    int cmd = taskbox_track_owned_popup_menu(h_menu, TPM_RETURNCMD, screen_pt.x, screen_pt.y, hwnd);
+    taskbox_dispatch_main_menu_command((UINT)cmd);
+}
+
+void toolbar_controller_show_audio_device_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
+    toolbar_controller_track_builtin_menu(hwnd, taskbox_create_audio_device_menu(), cur_index, icon_size, l_param);
+}
+
+void toolbar_controller_show_topology_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
+    toolbar_controller_track_builtin_menu(hwnd, taskbox_create_topology_menu(), cur_index, icon_size, l_param);
+}
+
+void toolbar_controller_show_scale_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
+    toolbar_controller_track_builtin_menu(hwnd, taskbox_create_scale_menu(taskbox_monitor_index_for_taskbox()),
+                                          cur_index, icon_size, l_param);
+}
+
 void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
 {
     HMENU h_menu = taskbox_create_shortcut_context_menu(cur_index);

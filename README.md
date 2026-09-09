@@ -456,9 +456,10 @@ A single-line read-only field across the top of the taskbox.
 
 ## 6. The Toolbar
 
-Ten built-in buttons sit in the same grid as the icons. Their order is fixed.
-Each carries a short word rather than a single capital, and three of them open a
-list instead of doing something outright.
+Twelve built-in buttons sit in the same grid as the icons. Their order is fixed.
+Each carries a short word rather than a single capital, three of them open a
+list instead of doing something outright, and the last two carry a reading:
+their colour is the value they hold.
 
 The word is **fitted to the button**: up to three letters it stays on one line,
 and four to six letters are stacked on two, at a size the button can hold. The
@@ -481,8 +482,10 @@ built, so a key you rebind is the key the tooltip shows.
 | **`Note`** Note | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
-| **`Set`** Settings | Opens the [control list](#62-the-set-button): volume, brightness, opacity, the pin, the switches. | — |
+| **`Set`** Settings | Opens the [control list](#62-the-set-button): opacity, the pin, the switches, and the doors to the settings. | — |
 | **`Opt`** Options | Opens the [options menu](#7-the-options-menu), **directly under the button**. | — |
+| **`Vol`** Volume | **Click** mutes and unmutes. **Right-click** picks the [output device](#64-vol-and-mon). | **Wheel** sets the volume in 5% steps. |
+| **`Mon`** Monitor | **Click** opens this screen's [scaling](#64-vol-and-mon). **Right-click** opens the screen arrangement. | **Wheel** sets the brightness in 5% steps. |
 
 ### 6.1 The Dir button
 
@@ -726,6 +729,57 @@ program that owns that file. The cost is stated rather than hidden — **restart
 HGFloater empties the history.**
 
 ---
+
+### 6.4 `Vol` and `Mon`
+
+**These two are read without being opened.** The colour behind the word is the
+value: a loud machine gives `Vol` a deep plate, a dim screen gives `Mon` a pale
+one, and neither costs a click to find out. That is the whole reason they sit on
+the row instead of in a list — a control whose point is that you can see it
+cannot live one click deep, because the list you have to open first hides
+exactly what it was drawn to show. They were rows of the `Set` list until now,
+and that is the mistake being undone.
+
+**Each of the three gestures answers at a different depth**, and the same shape
+holds for both buttons:
+
+| Gesture | `Vol` | `Mon` |
+| :--- | :--- | :--- |
+| **Wheel** | System volume, 5% a notch. | Brightness of the screen, 5% a notch. |
+| **Click** | Mute and unmute. | The scaling for this screen — 100% to 225%, the same ladder Windows offers. |
+| **Right-click** | Which output device plays, with the current one ticked, and `Mute` below the list. | How the screens are arranged: `PC screen only`, `Duplicate`, `Extend`, `Second screen only`, with the one in force ticked. |
+
+The wheel changes the value, the click does the one thing you would want without
+being asked to choose, and the right button opens the choice. Nothing here is
+new behaviour — every one of these was already in the [options
+list](#7-the-options-menu), and picking from these menus sends the very same
+instruction. What is new is that it takes one gesture on a button you were
+already looking at.
+
+**"This screen" means the screen the taskbox is on.** Not the screen the pointer
+is on: the pointer is over the button when the menu opens, so the two are almost
+always the same, and naming the taskbox's screen is the one that can also be
+said when the keyboard opened the menu with no pointer involved.
+
+**Mute is the one thing the colour cannot say.** A muted machine still holds the
+volume it was at, so the plate stays as deep as it was; the status line says
+`Muted` outright, and the tooltip says it too.
+
+**The tooltip carries both halves** — the reading on one line, what the three
+gestures do on the next. The colour says "loud", not "70%", and nothing on the
+face of a button says that its right button does anything at all.
+
+**The keyboard reaches all of it.** Arrow to the button, then `Space` is the
+click and `Enter` is the right-click — the same two keys every icon on the row
+answers. `Left` and `Right` step the value instead of moving, which is the
+exception the `Set` list already makes for a row that holds a percentage; `A`
+and `D` still move, so the arrows can never strand you on a button.
+
+**The four screen arrangements are listed even with one screen attached.**
+Hiding them would be a one-way door: `PC screen only` leaves exactly one
+display, and the entries that bring the other one back would be the ones that
+had just disappeared. A percentage a display will not accept is shown greyed
+rather than left out, so the ladder is the same ladder on every screen.
 
 ## 7. The Options Menu
 
@@ -1146,7 +1200,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Activate an item** | Left-click an icon |
 | **Reorder icons** | Left-drag a task icon |
 | **Item context menu** | Right-click an icon |
-| **Options menu** | Left-click `O`, or right-click the status line |
+| **Options menu** | Left-click `Opt`, or right-click the status line |
 | **Open a folder** | Point at `Dir`, then click a row |
 | **Open the control list** | Point at `Set` |
 | **Move a window** | Left-drag empty space, the status line, or the `M` button |
@@ -1155,8 +1209,11 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Resize the taskbox grid** | Drag a border, or drag the `R` button |
 | **Font / icon size** | `Ctrl` + wheel |
 | **Opacity** | `Alt` + wheel, or wheel over the `Alp` row of the `Set` list |
-| **Screen brightness** | Wheel over the `Bri` row of the `Set` list |
-| **Volume / mute** | Wheel over the `Vol` row of the `Set` list / click that row |
+| **Screen brightness** | Wheel over the `Mon` button |
+| **Volume / mute** | Wheel over the `Vol` button / left-click it |
+| **Output device** | Right-click the `Vol` button |
+| **Display scaling** | Left-click the `Mon` button |
+| **Screen arrangement** | Right-click the `Mon` button |
 | **Pin the taskbox** | Click the `Pin` row of the `Set` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
 | **Open the notes** | Left-click `Note` |

@@ -246,7 +246,8 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_SHOW_NOTES,
     HG_TOOLBAR_CLICK_SHOW_CLIPBOARD,
     HG_TOOLBAR_CLICK_OPEN_DIRS,     /* the folder list, in the shared box */
-    HG_TOOLBAR_CLICK_OPEN_CONTROLS  /* volume, brightness, opacity, pin, options */
+    HG_TOOLBAR_CLICK_OPEN_CONTROLS, /* opacity, pin, and the doors to the settings */
+    HG_TOOLBAR_CLICK_OPEN_SCALE_MENU /* the scaling ladder for the screen this window is on */
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
     HG_TOOLBAR_DRAG_NONE = 0,
@@ -262,6 +263,8 @@ const WCHAR *hg_toolbar_builtin_tooltip_text(int index);
  * with the first. FALSE when the button has no key: the plain tooltip is then
  * the whole answer. */
 BOOL hg_toolbar_builtin_tooltip_with_keys(int index, WCHAR *buffer, size_t buffer_cch);
+/* The tooltip a button actually shows: the reading, then the gestures. */
+BOOL hg_toolbar_builtin_tooltip_full(int index, WCHAR *buffer, size_t buffer_cch);
 /* That button's first chord as a corner badge - "CN" for Ctrl+N - or FALSE when
  * it has no chord, or none short enough to draw. */
 BOOL hg_toolbar_builtin_badge_text(int index, WCHAR *buffer, size_t buffer_cch);

@@ -51,7 +51,7 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
         return toolbar_value_blend(hg_g_color_value_alpha_lo, hg_g_color_value_alpha_hi,
                                    toolbar_taskbox_alpha_percent());
     }
-    if (index == HG_TOOL_ICON_BRIGHTNESS) {
+    if (index == HG_TOOL_ICON_MONITOR) {
         return toolbar_value_blend(hg_g_color_value_bright_lo, hg_g_color_value_bright_hi, get_system_brightness());
     }
     if (index == HG_TOOL_ICON_VOLUME) {
@@ -470,14 +470,15 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
 
                     COLORREF button_bg = (i < HG_NUM_BASIC_ICONS) ? toolbar_basic_icon_bg_color(i, bg_color)
                                                                   : toolbar_invert_color(bg_color);
-                    BOOL keep_value_bg = (i == HG_TOOL_ICON_ALPHA || i == HG_TOOL_ICON_BRIGHTNESS ||
-                                          i == HG_TOOL_ICON_VOLUME);
+                    BOOL keep_value_bg = (i == HG_TOOL_ICON_MONITOR || i == HG_TOOL_ICON_VOLUME);
                     /* No plate behind a function button or a shortcut: the
                      * desktop shows through, the same as everywhere else in
-                     * this window now. The three value buttons keep theirs,
+                     * this window now. The two reading buttons keep theirs,
                      * because for them the background is not decoration - it is
-                     * the reading, and A, B and V say the current opacity,
-                     * brightness and volume by how bright they are.
+                     * the reading: Vol and Mon say the current volume and
+                     * brightness by how deep their colour is. Alp is not among
+                     * them any more - it is a row of the Set box, and a row
+                     * paints itself.
                      *
                      * This also undoes an accident of making the toolbar
                      * transparent: these plates were painted as the inverse of
@@ -919,7 +920,16 @@ static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param)
     if (cur_type == 0 && cur_index != -1) {
         toolbar_controller_show_task_context_menu(hwnd, cur_index, icon_size, l_param);
     } else if (cur_type == 1 && cur_index != -1) {
-        toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
+        /* The two reading buttons answer the right button with the choice
+         * behind the reading; everything else on the row keeps the shortcut
+         * menu it had. */
+        if (cur_index == HG_TOOL_ICON_VOLUME) {
+            toolbar_controller_show_audio_device_menu(hwnd, cur_index, icon_size, l_param);
+        } else if (cur_index == HG_TOOL_ICON_MONITOR) {
+            toolbar_controller_show_topology_menu(hwnd, cur_index, icon_size, l_param);
+        } else {
+            toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
+        }
     }
 
     return 0;
@@ -984,7 +994,7 @@ static int toolbar_value_current_percent(int index)
 {
     if (index == HG_TOOL_ICON_ALPHA)
         return toolbar_taskbox_alpha_percent();
-    if (index == HG_TOOL_ICON_BRIGHTNESS)
+    if (index == HG_TOOL_ICON_MONITOR)
         return get_system_brightness();
     if (index == HG_TOOL_ICON_VOLUME)
         return get_system_volume();
@@ -1038,7 +1048,7 @@ static void toolbar_value_apply_percent(int index, int value)
 {
     if (index == HG_TOOL_ICON_ALPHA) {
         set_taskbox_opacity_pct(value);
-    } else if (index == HG_TOOL_ICON_BRIGHTNESS) {
+    } else if (index == HG_TOOL_ICON_MONITOR) {
         set_system_brightness(value);
     } else if (index == HG_TOOL_ICON_VOLUME) {
         set_system_volume(value);
@@ -1075,10 +1085,11 @@ static void toolbar_update_value_tooltip(HWND hwnd, int index)
     ti.cbSize = TOOLINFO_V1_SIZE;
     ti.hwnd = hwnd;
     ti.uId = (UINT_PTR)(hg_g_window_count + index);
-    static WCHAR value_tips[HG_NUM_BASIC_ICONS][64];
+    /* The same composer the registration uses, or spinning the wheel would
+     * trade the gesture list away for the number it just changed. */
+    static WCHAR value_tips[HG_NUM_BASIC_ICONS][256];
     if (index >= 0 && index < HG_NUM_BASIC_ICONS &&
-        hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_TOOLTIP, value_tips[index],
-                                      HG_ARRAYSIZE(value_tips[index]))) {
+        hg_toolbar_builtin_tooltip_full(index, value_tips[index], HG_ARRAYSIZE(value_tips[index]))) {
         ti.lpszText = value_tips[index];
         SendMessageW(hg_g_tooltip_wnd, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
     }
@@ -1087,8 +1098,9 @@ static void toolbar_update_value_tooltip(HWND hwnd, int index)
 static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
     /* The box has no focus, so its wheel messages arrive here. A notch spent
-     * over a row belongs to that row: this is how Vol, Bri and Alp are still
-     * spun with the wheel now that they are rows rather than buttons. */
+     * over a row belongs to that row: this is how Alp is still spun with the
+     * wheel now that it is a row rather than a button. Vol and Mon are back on
+     * the row of buttons and are answered further down, by rect. */
     if (hg_tabbox_handle_wheel((short)HIWORD(w_param)))
         return 0;
 
