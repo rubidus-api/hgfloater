@@ -55,7 +55,14 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
         return toolbar_value_blend(hg_g_color_value_bright_lo, hg_g_color_value_bright_hi, get_system_brightness());
     }
     if (index == HG_TOOL_ICON_VOLUME) {
-        return toolbar_value_blend(hg_g_color_value_vol_lo, hg_g_color_value_vol_hi, get_system_volume());
+        /* Muted reads as the bottom of the ramp, because that is what the
+         * machine is putting out. The level itself is untouched and comes back
+         * on unmute; showing it while nothing can be heard would make the plate
+         * say "loud" about a silent machine - and would leave the click, whose
+         * whole job is mute, with nothing to show for itself but a thin
+         * border. */
+        int pct = get_system_mute() ? 0 : get_system_volume();
+        return toolbar_value_blend(hg_g_color_value_vol_lo, hg_g_color_value_vol_hi, pct);
     }
     return toolbar_invert_color(base_color);
 }
@@ -1051,6 +1058,14 @@ static void toolbar_value_apply_percent(int index, int value)
     } else if (index == HG_TOOL_ICON_MONITOR) {
         set_system_brightness(value);
     } else if (index == HG_TOOL_ICON_VOLUME) {
+        /* Turning this at all means the reader wants to hear the result, so a
+         * muted machine is unmuted first - in either direction. Setting the
+         * level already lifted mute on the way up (that is what the audio
+         * endpoint does for a non-zero level), which left the wheel behaving
+         * one way up and another way down: down from a muted machine changed a
+         * number nobody could hear. One rule now, and it is the audible one. */
+        if (get_system_mute())
+            set_system_mute(FALSE);
         set_system_volume(value);
     }
 }

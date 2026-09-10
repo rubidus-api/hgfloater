@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.17.12] - 2026-09-11
+
+### Fixed
+- **`Left` and `Right` turn a value row again in the `Set` and `Opt` lists.**
+  v0.17.11 took them away and left only `PageUp` / `PageDown`, so a setting with
+  several steps - a display's scaling, its brightness, the taskbox opacity -
+  could be arrived at but not changed with the key a reader reaches for first.
+  The arrows moved to the next icon instead.
+
+  The rule the lists follow is not the rule the row of buttons follows, and that
+  is deliberate. On the row the arrows are how you get from one button to the
+  next, so `Vol` and `Mon` must not take them. Inside a list Up and Down walk the
+  column and sideways has nothing else to do. Both pairs work on a value row now,
+  and the row's tooltip names them.
+- **A wheel over `Vol` unmutes in either direction.** Turning it up already did,
+  because setting a non-zero level lifts mute at the audio endpoint; turning it
+  down did not, so a muted machine answered a wheel-down by changing a number
+  nobody could hear. Reaching for this control at all means wanting to hear the
+  result.
+
+### Changed
+- **A muted `Vol` reads as the bottom of its colour ramp.** The plate is the
+  reading, and what a muted machine is putting out is nothing; showing the level
+  it will return to made the plate say "loud" about a silent machine, and left
+  the click - whose whole job is mute - with only a thin border to show for
+  itself. The level is untouched and comes back on unmute.
+
 ## [v0.17.11] - 2026-09-09
 
 ### Added
