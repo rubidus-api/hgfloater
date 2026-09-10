@@ -358,7 +358,7 @@ tabs, the `Dir` folders and the `Set` controls:
 | `Up` / `Down` | **Step into the box**, and from then on move the selection in it. `Down` enters at the top row and `Up` at the bottom, so the selection lands where the key was already pointing. The box is what sits above or below the icon, so those keys reach it rather than stepping over it to the next row of icons. |
 | `Tab` | Step into the box as well. On a `Dir` or `Set` button, `Space` does it too: activating the button opens its list **and** hands it the keyboard. |
 | `Home` / `End` | The first row, the last row. The selected row is filled and marked, so where the arrows are standing is never in doubt. |
-| `Left` / `Right` | Leave the box and move to the icon left or right — a list is a column, and sideways is what the grid means by those keys. The next icon opens its own box if it has one. No exceptions: a row holding a number is turned with `PageUp` / `PageDown`. |
+| `Left` / `Right` | Leave the box and move to the icon left or right — a list is a column, and sideways is what the grid means by those keys. The next icon opens its own box if it has one. **One exception:** on a row that holds a number they are less and more, the same as `PageUp` / `PageDown`. |
 | `a`-`z`, `A`-`Z` | The labels past the ninth row (inside the box, because those letters move the grid outside it). |
 | `Enter` / `Space`, or a click | Take that row: switch to the tab, open the folder, flip the switch. |
 | A tooltip | On every `Set` row, as you arrive: which keys that row answers — the arrows for a number, `Space` or `Enter` for a switch. |
@@ -514,7 +514,7 @@ The rows are grouped by what a row **is**, top to bottom:
 
 | Row | What it does |
 | :--- | :--- |
-| **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** over the row, or **PageUp / PageDown** once the row is selected, changes it. |
+| **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** over the row, or **Left / Right** (or **PageUp / PageDown**) once the row is selected, changes it. |
 | **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click**, or **Space / Enter**, toggles. |
 | **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click**, or **Space / Enter**, flips one. |
 | **Settings Window...** | The [settings window](#71-the-settings-window): every option, value and key in one list. |
@@ -529,17 +529,19 @@ step than a toggle, and `Reset Settings` is last of the three because it is the
 one that throws work away.
 
 **A row with a number is turned; a row with a state is switched.** That is the
-whole keyboard model for this list. On a row that holds a percentage, **PageUp
-and PageDown are more and less** — the same two keys the `Vol` and `Mon` buttons
-answer, so a value is turned the same way wherever you meet one. On every row,
-including those, **Left and Right leave the list for the neighbouring button**,
-as they do everywhere else, and **Space or Enter** does the switching. Each row
-says which it is **in a tooltip** as you arrive on it, since nothing about the
-row itself would tell you.
+whole keyboard model for this list. On a row that holds a percentage, **Left and
+Right are less and more**, and so are **PageUp and PageDown** — the second pair
+because that is what the `Vol` and `Mon` buttons answer, so a value can always be
+turned the same way wherever you meet one. On every other row Left and Right
+leave the list for the neighbouring button, as they do everywhere else, and
+**Space or Enter** does the switching. Each row says which it is **in a tooltip**
+as you arrive on it, since nothing about the row itself would tell you.
 
-The arrows used to be less and more on a row holding a number. That made leaving
-a row sideways depend on which row you were standing on, which is the one thing
-navigation must never do.
+The arrows behave differently here than on the row of buttons, and that is the
+point. Out there they are how you get from one button to the next, so a button
+that took them would change how you leave it. In here the list is a column: Up
+and Down walk it, sideways has nothing else to do, and a reader who has arrived
+on a value reaches sideways first.
 
 **The switches used to be a submenu of the options menu.** They are here now,
 beside the opacity, because they are the same kind of thing to a
@@ -607,7 +609,8 @@ is no second screen — and the status line says so rather than the row appearin
 to do nothing.
 
 **Scale and brightness are rows you turn**, like `Alpha` in the `Set` list: the
-**wheel** over the row, or **PageUp / PageDown** once it is selected, walks the
+**wheel** over the row, or **Left / Right** (or **PageUp / PageDown**) once it is
+selected, walks the
 display through the values it accepts — the same 100/125/150/175/200% ladder
 Windows offers and the same quarter steps for the backlight, one rung per notch.
 They used to be a rung each, so one display cost eleven rows and three displays
@@ -1142,6 +1145,7 @@ a chord.
 | `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
 | `PageUp` / `PageDown` | Turn a value: on `Vol` or `Mon`, and on any row of a list that holds a number |
 | `Q` / `E` | The same, on `Vol` and `Mon` only — inside a list both letters already jump to a row |
+| `Left` / `Right` | On a list row that holds a number: less and more. Everywhere else: move between icons |
 | `Esc` | Inside a box: leave it |
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |

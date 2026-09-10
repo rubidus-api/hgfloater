@@ -474,8 +474,8 @@ static const WCHAR *tabbox_row_hint(int index)
             return NULL;
         if (tabbox_row_is_value(index)) {
             return s_menu_rows[index].defer
-                       ? L"PageUp / PageDown: more / less   (applied when this list closes)"
-                       : L"PageUp / PageDown: more / less   (the wheel does the same)";
+                       ? L"Left / Right or PageUp / PageDown: less / more   (applied when this list closes)"
+                       : L"Left / Right or PageUp / PageDown: less / more   (the wheel does the same)";
         }
         if (!s_menu_rows[index].id || !s_menu_rows[index].enabled)
             return L"This one is not available right now.";
@@ -496,7 +496,7 @@ static const WCHAR *tabbox_row_hint(int index)
     }
 
     if (tabbox_row_is_value(index))
-        return L"PageUp / PageDown: more / less   (the wheel does the same)";
+        return L"Left / Right or PageUp / PageDown: less / more   (the wheel does the same)";
     return L"Space or Enter: switch it on or off";
 }
 
@@ -1054,14 +1054,21 @@ BOOL hg_tabbox_handle_key(WPARAM key)
         return FALSE;
     case VK_LEFT:
     case VK_RIGHT:
-        /* Navigation, on every row without exception. They used to be less and
-         * more on a row holding a number, which made leaving a row sideways
-         * depend on which row you were standing on - the same trade that was
-         * wrong on the buttons, and wrong here for the same reason.
+        /* On a row that holds a number these are less and more, the same as
+         * PageDown and PageUp.
          *
-         * A list is a column and has nothing of its own to do with them, so the
-         * box closes and the key goes on to the grid, which moves the focus -
-         * and the next icon opens its own box if it has one. */
+         * This is not the rule the row of buttons follows, and the difference
+         * is the point. Out there the arrows are how you get from one button to
+         * the next, so a button that ate them would change how you leave it. In
+         * here the list is a column: Up and Down walk it, and sideways has
+         * nothing else to do. A reader who has arrived on a value and reaches
+         * for a key to change it reaches sideways first.
+         *
+         * On any other row they are what they are everywhere else - the box
+         * closes and the key goes on to the grid, which moves the focus, and
+         * the next icon opens its own box if it has one. */
+        if (tabbox_adjust_row(s_selected, (key == VK_RIGHT) ? 1 : -1))
+            return TRUE;
         hg_tabbox_close();
         return FALSE;
     case VK_UP:
