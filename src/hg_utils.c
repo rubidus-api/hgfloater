@@ -1124,7 +1124,9 @@ void update_toolbar_tooltips(HWND hwnd)
         SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti_tool);
     }
 
-    SendMessageW(hg_g_tooltip_wnd, TTM_ACTIVATE, TRUE, 0);
+    /* Not while a box is open - see hg_g_toolbar_tips_suppressed. This runs on
+     * every wheel notch, so re-activating unconditionally would undo that. */
+    SendMessageW(hg_g_tooltip_wnd, TTM_ACTIVATE, hg_g_toolbar_tips_suppressed ? FALSE : TRUE, 0);
     last_total_count = id_counter;
 }
 

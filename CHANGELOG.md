@@ -28,6 +28,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `PageUp` / `PageDown` and `Q` / `E` do nothing on the row any more - no
   button there holds a reading.
 
+### Fixed
+- **A button's tooltip no longer sits over the box it opened.** Resting on
+  `Ico` (or `Dir`, `Set`, a task icon) popped that button's tooltip half a
+  second later, right under the pointer - which is where the box had just
+  opened. A tooltip is a window, so it took whatever it covered: measured on a
+  Windows 11 machine, a wheel notch given within about a third of a second of
+  moving from `Ico` onto `Mon` went to the tooltip and was lost every time
+  (5 of 5). The row's tooltips now stay off while a box is open; the box is
+  the button's explanation, and its own tips say what each entry does.
+
 ## [v0.17.12] - 2026-09-11
 
 ### Fixed

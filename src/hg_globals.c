@@ -27,6 +27,7 @@ double hg_g_scale_factor = 1.0;
 HWND hg_g_toolbar_wnd = NULL;
 HWND hg_g_edit_msg_wnd = NULL;
 HWND hg_g_tooltip_wnd = NULL;
+BOOL hg_g_toolbar_tips_suppressed = FALSE;
 HWND hg_g_taskbox_wnd = NULL;
 HWND hg_g_commandbox_wnd = NULL;
 HWND hg_g_commandbox_out_wnd = NULL;
