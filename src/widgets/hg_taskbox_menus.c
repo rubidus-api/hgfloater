@@ -6,6 +6,7 @@
 #include "../hg_tabs.h"
 #include "../hg_caphook.h"
 #include "../hg_options.h"
+#include "hg_tabbox.h"
 
 int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND owner)
 {
@@ -205,6 +206,16 @@ static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, i
         return FALSE;
 
     if (l_param == 0) {
+        /* A button drawn in the box is where the box drew it. Asked first,
+         * because the row has no cell for Vol and Mon any more, and a menu
+         * placed by the row's arithmetic would open somewhere unrelated. */
+        RECT in_box;
+        if (cur_type == 1 && hg_tabbox_item_screen_rect(cur_index, &in_box)) {
+            screen_pt->x = in_box.left;
+            screen_pt->y = in_box.top;
+            return TRUE;
+        }
+
         RECT rc;
         RECT rc_item;
         GetClientRect(hwnd, &rc);
@@ -527,22 +538,15 @@ BOOL taskbox_handle_audio_menu_command(UINT cmd)
             if (set_default_audio_device(hg_g_audio_devices[idx].id)) {
                 update_audio_device_list();
             }
-            update_toolbar_tooltips(hg_g_toolbar_wnd);
-            update_focus_message(1, HG_TOOL_ICON_VOLUME);
-            if (hg_g_toolbar_wnd) {
-                InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-            }
+            /* A new device has a volume of its own, so the reading changes. */
+            hg_toolbar_value_announce(HG_TOOL_ICON_VOLUME);
         }
         return TRUE;
     }
 
     if (cmd == HG_IDM_MUTE) {
         set_system_mute(!get_system_mute());
-        update_toolbar_tooltips(hg_g_toolbar_wnd);
-        update_focus_message(1, HG_TOOL_ICON_VOLUME);
-        if (hg_g_toolbar_wnd) {
-            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-        }
+        hg_toolbar_value_announce(HG_TOOL_ICON_VOLUME);
         return TRUE;
     }
 

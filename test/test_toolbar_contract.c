@@ -14,8 +14,8 @@ int main(void)
 {
     int failed = 0;
 
-    /* The row: twelve buttons, in the order they are drawn. */
-    failed |= expect_int("HG_NUM_BASIC_ICONS", HG_NUM_BASIC_ICONS, 12);
+    /* The row: eleven buttons, in the order they are drawn. */
+    failed |= expect_int("HG_NUM_BASIC_ICONS", HG_NUM_BASIC_ICONS, 11);
     failed |= expect_int("HG_TOOL_ICON_RESIZE", HG_TOOL_ICON_RESIZE, 0);
     failed |= expect_int("HG_TOOL_ICON_MOVE", HG_TOOL_ICON_MOVE, 1);
     failed |= expect_int("HG_TOOL_ICON_CLOSE", HG_TOOL_ICON_CLOSE, 2);
@@ -26,14 +26,13 @@ int main(void)
     failed |= expect_int("HG_TOOL_ICON_DIR", HG_TOOL_ICON_DIR, 7);
     failed |= expect_int("HG_TOOL_ICON_SETTINGS", HG_TOOL_ICON_SETTINGS, 8);
     failed |= expect_int("HG_TOOL_ICON_MENU", HG_TOOL_ICON_MENU, 9);
-    failed |= expect_int("HG_TOOL_ICON_VOLUME", HG_TOOL_ICON_VOLUME, 10);
-    failed |= expect_int("HG_TOOL_ICON_MONITOR", HG_TOOL_ICON_MONITOR, 11);
+    failed |= expect_int("HG_TOOL_ICON_ICONS", HG_TOOL_ICON_ICONS, 10);
 
     int seen[HG_NUM_BASIC_ICONS] = {0};
     const int icons[] = {HG_TOOL_ICON_RESIZE,  HG_TOOL_ICON_MOVE,     HG_TOOL_ICON_CLOSE,
                          HG_TOOL_ICON_DESKTOP, HG_TOOL_ICON_COMMAND,  HG_TOOL_ICON_NOTE,
                          HG_TOOL_ICON_CLIP,    HG_TOOL_ICON_DIR,      HG_TOOL_ICON_SETTINGS,
-                         HG_TOOL_ICON_MENU,    HG_TOOL_ICON_VOLUME,   HG_TOOL_ICON_MONITOR};
+                         HG_TOOL_ICON_MENU,    HG_TOOL_ICON_ICONS};
     for (size_t i = 0; i < HG_ARRAYSIZE(icons); ++i) {
         if (icons[i] < 0 || icons[i] >= HG_NUM_BASIC_ICONS) {
             printf("toolbar icon index out of range: %d\n", icons[i]);
@@ -53,12 +52,12 @@ int main(void)
         }
     }
 
-    /* The two that live in the Set box keep ids, and those ids must stay clear
-     * of the row - a loop over the toolbar must not reach them - and clear of
-     * each other. */
-    const int in_box[] = {HG_TOOL_ICON_ALPHA, HG_TOOL_ICON_PIN};
+    /* The ones that live in a box keep ids, and those ids must stay clear of the
+     * row and of every shortcut after it - a loop over the toolbar must not
+     * reach them - and clear of each other. */
+    const int in_box[] = {HG_TOOL_ICON_ALPHA, HG_TOOL_ICON_VOLUME, HG_TOOL_ICON_MONITOR, HG_TOOL_ICON_PIN};
     for (size_t i = 0; i < HG_ARRAYSIZE(in_box); ++i) {
-        if (in_box[i] < HG_NUM_BASIC_ICONS) {
+        if (in_box[i] < HG_NUM_BASIC_ICONS + HG_MAX_SHORTCUTS) {
             printf("box-only button %d overlaps the row\n", in_box[i]);
             failed = 1;
         }

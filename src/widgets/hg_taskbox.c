@@ -367,8 +367,9 @@ void hg_keyboard_mode_check_pointer(void)
 
 /* ...but only two of them are free to build.
  *
- * Dir reads a list already in memory and Set reads values already cached, so
- * opening either on a passing pointer costs nothing. The options list is not
+ * Dir reads a list already in memory, Set reads values already cached, and Ico
+ * reads the three readings the row used to paint on every frame, so opening
+ * any of them on a passing pointer costs nothing. The options list is not
  * like that: assembling it enumerates the audio endpoints through COM and asks
  * every display for its scaling, which is real work with real latency. Sweeping
  * the pointer across the toolbar - or walking the grid with the arrows - must
@@ -389,6 +390,8 @@ int taskbox_box_mode_for_button(int index)
         return HG_BOX_CONTROLS;
     case HG_TOOLBAR_CLICK_OPEN_MENU:
         return HG_BOX_MENU;
+    case HG_TOOLBAR_CLICK_OPEN_ICONS:
+        return HG_BOX_ICONS;
     default:
         return -1;
     }
@@ -407,6 +410,9 @@ void taskbox_open_box_for_button(int index, const RECT *anchor)
         break;
     case HG_BOX_MENU:
         hg_tabbox_open_menu(anchor);
+        break;
+    case HG_BOX_ICONS:
+        hg_tabbox_open_icons(anchor);
         break;
     default:
         break;
@@ -468,21 +474,13 @@ void activate_toolbar_item(int index)
     case HG_TOOLBAR_CLICK_SHOW_CLIPBOARD:
         hg_clip_toggle_window();
         break;
-    case HG_TOOLBAR_CLICK_TOGGLE_MUTE: {
+    case HG_TOOLBAR_CLICK_TOGGLE_MUTE:
         set_system_mute(!get_system_mute());
-        update_toolbar_tooltips(hg_g_toolbar_wnd);
-        /* Said outright as well as through the focus line: mute is the one
-         * change to this button that the colour cannot show, since a muted
-         * machine still holds the volume it was at. */
-        WCHAR value_str[64];
-        if (hg_toolbar_builtin_value_text(HG_TOOL_ICON_VOLUME, HG_TOOLBAR_TEXT_FOCUS, value_str,
-                                          HG_ARRAYSIZE(value_str)))
-            append_message(value_str);
-        if (hg_g_toolbar_wnd) {
-            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-        }
+        /* Said outright on the status line as well: the plate drops to the
+         * bottom of its ramp, but only the words say it is mute rather than a
+         * volume of nothing. */
+        hg_toolbar_value_announce(HG_TOOL_ICON_VOLUME);
         break;
-    }
     case HG_TOOLBAR_CLICK_OPEN_SCALE_MENU:
         /* Anchored at the button rather than at the pointer (l_param 0), so the
          * keyboard reaches this the same way the mouse does. */
@@ -1086,31 +1084,9 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         int c = current_cell % cols;
         BOOL changed = FALSE;
 
-        /* On a button that holds a reading, PageUp/PageDown and Q/E are less and
-         * more. Keys of their own rather than the sideways arrows: on the row
-         * the arrows are how you get from one button to the next, and taking
-         * them away on the two buttons that hold a value would mean the way out
-         * of a button depended on which button you were standing on. Q and E
-         * sit either side of W in the same hand position the grid already uses,
-         * and PageUp/PageDown are what a value answers to everywhere else.
-         *
-         * Only these two buttons claim the keys, so nothing else on the row
-         * loses anything. */
-        if (hg_taskbox_focus.area == 1 && hg_toolbar_builtin_has_value(hg_taskbox_focus.index)) {
-            short step = 0;
-            if (w_param == VK_PRIOR || w_param == 'E')
-                step = 1;
-            else if (w_param == VK_NEXT || w_param == 'Q')
-                step = -1;
-            if (step != 0) {
-                hg_toolbar_value_wheel(hg_taskbox_focus.index, step);
-                update_focus_message(-2, -2);
-                if (hg_g_toolbar_wnd)
-                    InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
-                return 0;
-            }
-        }
-
+        /* No button on the row holds a reading any more, so none of them takes
+         * PageUp/PageDown or Q/E. Those keys turn Vol, Mon and Alp inside the
+         * Ico box, where the three now live - see hg_tabbox_handle_key. */
         if (w_param == VK_LEFT || w_param == 'A') {
             c--;
             changed = TRUE;
