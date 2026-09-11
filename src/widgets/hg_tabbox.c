@@ -143,6 +143,22 @@ static void tabbox_icon_box_size(int *out_w, int *out_h)
     *out_h = SC(10) * 2 + rows * icon + (rows - 1) * SC(10) + border;
 }
 
+/* The row's tooltip, off while a box is up.
+ *
+ * The button that opens a box is the one the pointer is resting on, so its
+ * tooltip pops half a second later - directly under the pointer, which is
+ * where the box has just opened. A tooltip is a window: whatever it covers
+ * cannot be wheeled or clicked. Measured on the Ico box, a wheel notch given
+ * within about a third of a second of moving onto Mon went to the tooltip and
+ * was lost every time. The box is the button's explanation anyway, and the
+ * box's own tips say what each entry does. */
+static void tabbox_toolbar_tips(BOOL box_open)
+{
+    hg_g_toolbar_tips_suppressed = box_open;
+    if (hg_g_tooltip_wnd)
+        SendMessageW(hg_g_tooltip_wnd, TTM_ACTIVATE, box_open ? FALSE : TRUE, 0);
+}
+
 static void tabbox_add_control_row(HgControlRow row)
 {
     if (s_control_row_count < (int)HG_ARRAYSIZE(s_control_rows))
@@ -818,6 +834,7 @@ void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc)
         s_focused = FALSE;
     }
     s_open = TRUE;
+    tabbox_toolbar_tips(TRUE);
 
     if (s_target != target) {
         s_target = target;
@@ -850,6 +867,7 @@ static void tabbox_open_list(int mode, const RECT *anchor_screen_rc)
         s_focused = FALSE;
     }
     s_open = TRUE;
+    tabbox_toolbar_tips(TRUE);
     s_anchor = *anchor_screen_rc;
     tabbox_pull();
     tabbox_layout();
@@ -943,6 +961,7 @@ void hg_tabbox_close(void)
     s_focused = FALSE;
     s_open = FALSE;
     s_mode = HG_BOX_TABS;
+    tabbox_toolbar_tips(FALSE);
 }
 
 BOOL hg_tabbox_is_open(void)
