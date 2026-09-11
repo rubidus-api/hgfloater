@@ -788,37 +788,42 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_MENU, L"Opt", L"Options Menu", L"Options Menu", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_OPEN_MENU, HG_TOOLBAR_DRAG_NONE},
 
-    /* The two that carry a reading. Their colour is the value - that is the
-     * whole reason they are on the row rather than in a list - and each of the
-     * three gestures a button has answers with a different depth: the wheel
-     * changes the reading, the click does the one thing you would want without
-     * choosing, and the right button opens the choice.
+    {HG_TOOL_ICON_ICONS, L"Ico", L"Volume, brightness, opacity (hover or click for the icons)",
+     L"Volume, brightness, opacity (hover or click for the icons)", HG_TOOLBAR_VALUE_NONE,
+     HG_TOOLBAR_CLICK_OPEN_ICONS, HG_TOOLBAR_DRAG_NONE},
+
+    /* The three that carry a reading, drawn as icons in the Ico box. Their
+     * colour is the value, and each of the three gestures a button has answers
+     * with a different depth: the wheel changes the reading, the click does the
+     * one thing you would want without choosing, and the right button opens the
+     * choice.
      *
      * Vol: wheel = volume, click = mute, right = which output device.
      * Mon: wheel = brightness, click = this screen's scaling, right = how the
-     * screens are arranged. */
+     * screens are arranged.
+     * Alp: wheel = the taskbox's opacity; nothing to choose between. */
     {HG_TOOL_ICON_VOLUME, L"Vol", L"System volume - wheel to set, click to mute, right-click for the device",
      L"System volume - wheel to set, click to mute, right-click for the device", HG_TOOLBAR_VALUE_VOLUME,
      HG_TOOLBAR_CLICK_TOGGLE_MUTE, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_MONITOR, L"Mon", L"Screen brightness - wheel to set, click for scaling, right-click for the arrangement",
      L"Screen brightness - wheel to set, click for scaling, right-click for the arrangement",
      HG_TOOLBAR_VALUE_BRIGHTNESS, HG_TOOLBAR_CLICK_OPEN_SCALE_MENU, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_ALPHA, L"Alp", L"Taskbox opacity - wheel to set", L"Taskbox opacity - wheel to set",
+     HG_TOOLBAR_VALUE_ALPHA, HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
 
-    /* Off the row, in the Set box. They keep their descriptors because the box
-     * draws its rows from them: one table still says what every button is
-     * called and what it does. */
-    {HG_TOOL_ICON_ALPHA, L"Alp", L"Taskbox opacity", L"Taskbox opacity", HG_TOOLBAR_VALUE_ALPHA,
-     HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
+    /* Off the row, in the Set box. It keeps its descriptor because the box
+     * draws its row from it: one table still says what every button is called
+     * and what it does. */
     {HG_TOOL_ICON_PIN, L"Pin", L"Pin the Taskbox Open", L"Pin the Taskbox Open", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
-/* Twelve on the row plus the two the Set box holds. Stated rather than derived,
- * so adding a descriptor without deciding which of the two it belongs to does
- * not compile. */
+/* Eleven on the row, three in the Ico box, and the pin in the Set box. Stated
+ * rather than derived, so adding a descriptor without deciding where it belongs
+ * does not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
-        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 2) ? 1 : 0)
+        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 4) ? 1 : 0)
 };
 
 static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)

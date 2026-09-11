@@ -146,7 +146,7 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 12
+#define HG_NUM_BASIC_ICONS 11
 
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
@@ -158,26 +158,29 @@
 #define HG_TOOL_ICON_DIR 7
 #define HG_TOOL_ICON_SETTINGS 8
 #define HG_TOOL_ICON_MENU 9
-#define HG_TOOL_ICON_VOLUME 10
-#define HG_TOOL_ICON_MONITOR 11
+#define HG_TOOL_ICON_ICONS 10
 
-/* Opacity and the pin are still buttons - they are just not on the row. They
- * live in the box the Set button opens, one row each, and they keep ids of
- * their own because everything that knows how to read and set a value
- * (hg_toolbar_value_*, the tooltips, the status line) is written against an id.
- * Numbered past the row so that a loop over the toolbar cannot reach them by
- * accident.
+/* Buttons that are not on the row. They keep ids of their own because
+ * everything that knows how to read and set a value (hg_toolbar_value_*, the
+ * tooltips, the status line) is written against an id. Numbered past the row
+ * and past every shortcut (the row plus HG_MAX_SHORTCUTS ends at 74), so a loop
+ * over the toolbar cannot reach them by accident.
  *
- * Vol and Mon are back on the row above. A control whose whole point is that
- * you can see its reading without asking cannot live one click deep: the
- * colour under the label is the reading, and a list you have to open first
- * hides exactly what it was drawn to show.
+ * Vol, Mon and Alp live in the box the Ico button opens, drawn there as icons
+ * rather than as rows of text: the colour under the label is the reading, and
+ * an icon keeps that where a line of text would have to spell it out. Three
+ * reading buttons on the row were three cells of the grid spent on things that
+ * are turned now and then; one button that opens all three costs one.
  *
- * The options menu is not among these either: it was a row in that list, one
- * click deep, when what it opens is a menu of its own. It has its own button
- * again - Opt, on the row - because a menu that lives inside another list is a
- * menu nobody finds. */
+ * The pin is a row of the Set box.
+ *
+ * The options menu is not among these: it was a row in that list, one click
+ * deep, when what it opens is a menu of its own. It has its own button - Opt,
+ * on the row - because a menu that lives inside another list is a menu nobody
+ * finds. */
 #define HG_TOOL_ICON_ALPHA 100
+#define HG_TOOL_ICON_VOLUME 101
+#define HG_TOOL_ICON_MONITOR 102
 #define HG_TOOL_ICON_PIN 103
 
 #define HG_IDM_MINIMIZE 201

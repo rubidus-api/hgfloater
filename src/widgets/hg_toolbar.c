@@ -320,6 +320,78 @@ static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h
     return s_font;
 }
 
+/* A function button's word, fitted to the button and centred on its icon square. */
+static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, const RECT *rc_btn)
+{
+    const WCHAR *btn_text = hg_toolbar_builtin_label(index);
+    WCHAR stacked[16];
+    int lines = toolbar_label_lines(btn_text, stacked, HG_ARRAYSIZE(stacked));
+    HFONT label_font =
+        toolbar_label_font(dc, btn_text, rc_btn->right - rc_btn->left, rc_item->bottom - rc_item->top, lines);
+    if (!label_font)
+        label_font = hg_g_toolbar_btn_font;
+    if (!label_font)
+        return;
+
+    SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
+    SetBkMode(dc, TRANSPARENT);
+    HFONT old_font = (HFONT)SelectObject(dc, label_font);
+    /* Two lines centre as a block, which is what makes a split word sit on the
+     * button rather than above or below its middle. */
+    UINT format = (lines > 1) ? (DT_CENTER | DT_VCENTER | DT_EDITCONTROL | DT_WORDBREAK)
+                              : (DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    RECT text_rc = *rc_item;
+    draw_outlined_text(dc, stacked, lstrlenW(stacked), &text_rc, format, HG_COLOR_TEXT_DEFAULT,
+                       HG_COLOR_BG_DEFAULT);
+    SelectObject(dc, old_font);
+}
+
+/* A reading button, drawn for the Ico box.
+ *
+ * The same plate, outline, mute border and label the row would give it, so an
+ * icon does not change its looks by moving into the box. One thing is drawn
+ * differently, and on purpose: the selected icon is ringed in the focus colour
+ * rather than filled with it. On the row a focused button is painted over in
+ * yellow, which hides the one thing a reading button exists to show - and in
+ * this box the selected icon is the one PageUp and PageDown are turning, so
+ * its colour is exactly what the reader is watching. The ring sits where the
+ * outline would, at the outline's thickness, and leaves the plate alone. */
+void hg_toolbar_paint_builtin_cell(HDC dc, int index, const RECT *rc_item, int icon_size, BOOL selected,
+                                   BOOL hovered)
+{
+    (void)icon_size;
+    if (!dc || !rc_item)
+        return;
+
+    RECT rc_btn = *rc_item;
+    InflateRect(&rc_btn, SC(4), SC(4));
+
+    HBRUSH plate = hg_cached_solid_brush(toolbar_basic_icon_bg_color(index, HG_TRANSPARENT_KEY));
+    if (plate)
+        FillRect(dc, &rc_btn, plate);
+    if (hovered && !selected)
+        DrawEdge(dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
+
+    if (selected) {
+        HBRUSH ring = hg_cached_solid_brush(hg_g_color_focus_bg);
+        int thickness = SC(2);
+        if (thickness < 2)
+            thickness = 2;
+        RECT edge = rc_btn;
+        for (int i = 0; ring && i < thickness; ++i) {
+            FrameRect(dc, &edge, ring);
+            InflateRect(&edge, -1, -1);
+        }
+    } else {
+        toolbar_draw_button_outline(dc, &rc_btn);
+    }
+
+    if (index == HG_TOOL_ICON_VOLUME && get_system_mute())
+        toolbar_draw_state_border(dc, &rc_btn);
+
+    toolbar_draw_builtin_label(dc, index, rc_item, &rc_btn);
+}
+
 static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type,
                                            int pressed_index, const HgTaskboxDragState *drag_state,
                                            int *cached_icon_size)
@@ -477,15 +549,14 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
 
                     COLORREF button_bg = (i < HG_NUM_BASIC_ICONS) ? toolbar_basic_icon_bg_color(i, bg_color)
                                                                   : toolbar_invert_color(bg_color);
-                    BOOL keep_value_bg = (i == HG_TOOL_ICON_MONITOR || i == HG_TOOL_ICON_VOLUME);
+                    BOOL keep_value_bg = (i < HG_NUM_BASIC_ICONS) && hg_toolbar_builtin_has_value(i);
                     /* No plate behind a function button or a shortcut: the
                      * desktop shows through, the same as everywhere else in
-                     * this window now. The two reading buttons keep theirs,
-                     * because for them the background is not decoration - it is
-                     * the reading: Vol and Mon say the current volume and
-                     * brightness by how deep their colour is. Alp is not among
-                     * them any more - it is a row of the Set box, and a row
-                     * paints itself.
+                     * this window now. A reading button would keep its plate,
+                     * because for it the background is not decoration - it is
+                     * the reading. None is on the row at present: Vol, Mon and
+                     * Alp are icons in the Ico box, and that box draws them
+                     * with hg_toolbar_paint_builtin_cell.
                      *
                      * This also undoes an accident of making the toolbar
                      * transparent: these plates were painted as the inverse of
@@ -554,26 +625,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         if (hg_shortcut_badge_text(s_idx, badge, HG_ARRAYSIZE(badge)))
                             toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
                     } else {
-                        const WCHAR *btn_text = hg_toolbar_builtin_label(i);
-                        WCHAR stacked[16];
-                        int lines = toolbar_label_lines(btn_text, stacked, HG_ARRAYSIZE(stacked));
-                        HFONT label_font = toolbar_label_font(mem_dc, btn_text, rc_btn.right - rc_btn.left,
-                                                              rc_item.bottom - rc_item.top, lines);
-                        if (!label_font)
-                            label_font = hg_g_toolbar_btn_font;
-                        if (label_font) {
-                            SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
-                            SetBkMode(mem_dc, TRANSPARENT);
-                            HFONT old_font = (HFONT)SelectObject(mem_dc, label_font);
-                            /* Two lines centre as a block, which is what makes a
-                             * split word sit on the button rather than above or
-                             * below its middle. */
-                            UINT format = (lines > 1) ? (DT_CENTER | DT_VCENTER | DT_EDITCONTROL | DT_WORDBREAK)
-                                                      : (DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-                            draw_outlined_text(mem_dc, stacked, lstrlenW(stacked), &rc_item, format,
-                                               HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
-                            SelectObject(mem_dc, old_font);
-                        }
+                        toolbar_draw_builtin_label(mem_dc, i, &rc_item, &rc_btn);
 
                         /* And its key in the corner, over the label, for the
                          * buttons a chord reaches. */
@@ -927,16 +979,11 @@ static LRESULT toolbar_controller_on_rbutton_up(HWND hwnd, LPARAM l_param)
     if (cur_type == 0 && cur_index != -1) {
         toolbar_controller_show_task_context_menu(hwnd, cur_index, icon_size, l_param);
     } else if (cur_type == 1 && cur_index != -1) {
-        /* The two reading buttons answer the right button with the choice
-         * behind the reading; everything else on the row keeps the shortcut
-         * menu it had. */
-        if (cur_index == HG_TOOL_ICON_VOLUME) {
-            toolbar_controller_show_audio_device_menu(hwnd, cur_index, icon_size, l_param);
-        } else if (cur_index == HG_TOOL_ICON_MONITOR) {
-            toolbar_controller_show_topology_menu(hwnd, cur_index, icon_size, l_param);
-        } else {
+        /* A reading button answers the right button with the choice behind
+         * the reading; everything else on the row keeps the shortcut menu it
+         * had. */
+        if (!hg_toolbar_builtin_context_menu(cur_index, l_param != 0))
             toolbar_controller_show_shortcut_context_menu(hwnd, cur_index, icon_size, l_param);
-        }
     }
 
     return 0;
@@ -1091,6 +1138,39 @@ BOOL hg_toolbar_value_wheel(int index, short delta)
     return TRUE;
 }
 
+void hg_toolbar_value_announce(int index)
+{
+    WCHAR text[64];
+    if (hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_FOCUS, text, HG_ARRAYSIZE(text)))
+        append_message(text);
+    update_toolbar_tooltips(hg_g_toolbar_wnd);
+    if (hg_g_toolbar_wnd)
+        InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    hg_tabbox_invalidate();
+}
+
+BOOL hg_toolbar_builtin_context_menu(int index, BOOL at_pointer)
+{
+    HWND owner = hg_g_toolbar_wnd;
+    if (!owner)
+        return FALSE;
+
+    /* The menus place themselves at the pointer for any non-zero l_param and at
+     * the button for zero, which is the convention the row's right click and
+     * its context-menu key already use. */
+    LPARAM where = at_pointer ? (LPARAM)1 : 0;
+    int icon_size = taskbox_toolbar_icon_size();
+    if (index == HG_TOOL_ICON_VOLUME) {
+        toolbar_controller_show_audio_device_menu(owner, index, icon_size, where);
+        return TRUE;
+    }
+    if (index == HG_TOOL_ICON_MONITOR) {
+        toolbar_controller_show_topology_menu(owner, index, icon_size, where);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static void toolbar_update_value_tooltip(HWND hwnd, int index)
 {
     if (!hg_g_tooltip_wnd)
@@ -1113,9 +1193,9 @@ static void toolbar_update_value_tooltip(HWND hwnd, int index)
 static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
     /* The box has no focus, so its wheel messages arrive here. A notch spent
-     * over a row belongs to that row: this is how Alp is still spun with the
-     * wheel now that it is a row rather than a button. Vol and Mon are back on
-     * the row of buttons and are answered further down, by rect. */
+     * over a row or an icon of the box belongs to it: this is how Vol, Mon and
+     * Alp are spun in the Ico box. A reading button on the row itself would be
+     * answered further down, by rect. */
     if (hg_tabbox_handle_wheel((short)HIWORD(w_param)))
         return 0;
 

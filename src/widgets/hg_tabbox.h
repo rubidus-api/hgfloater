@@ -15,21 +15,25 @@
  * happens when the box opens and never otherwise - nobody looking means
  * nothing asked. */
 
-/* The same box now serves three lists, because they are the same thing: a
- * short list that belongs to the button under the pointer, placed clear of it,
- * dismissed by leaving. Only what fills the rows and what activating one does
- * differ - the window, the placement, the keys and the painting are one copy.
+/* The same box serves every list, because they are the same thing: a short
+ * list that belongs to the button under the pointer, placed clear of it,
+ * dismissed by leaving. Only what fills it and what activating an entry does
+ * differ - the window, the placement and the keys are one copy.
  *
  *   tabs      a window's tabs, on a task icon
  *   folders   the shortcuts that point at a directory, on the Dir button
- *   controls  opacity, the pin, the switches and the settings doors, on Set
+ *   controls  the pin, the switches and the settings doors, on Set
  *   menu      the options menu, flattened to one level, on Opt
+ *   icons     Vol, Mon and Alp, on Ico - drawn as the taskbox's own icons,
+ *             across and then down, rather than as lines of text, because
+ *             their colour is their reading
  */
 enum {
     HG_BOX_TABS = 0,
     HG_BOX_DIRS,
     HG_BOX_CONTROLS,
-    HG_BOX_MENU
+    HG_BOX_MENU,
+    HG_BOX_ICONS
 };
 
 /* Open (or re-target) the box for a window, anchored to that icon's rect in
@@ -41,12 +45,21 @@ void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc);
 void hg_tabbox_open_dirs(const RECT *anchor_screen_rc);
 void hg_tabbox_open_controls(const RECT *anchor_screen_rc);
 void hg_tabbox_open_menu(const RECT *anchor_screen_rc);
+void hg_tabbox_open_icons(const RECT *anchor_screen_rc);
+
+/* Where a button drawn in the open box is, on screen - its plate. FALSE when the
+ * box is not showing that button. The menus a button opens from the keyboard
+ * are placed at the button, and for Vol and Mon the button is here. */
+BOOL hg_tabbox_item_screen_rect(int button_id, RECT *out);
+
+/* Repaint the box if it is up: a reading it shows has changed. */
+void hg_tabbox_invalidate(void);
 
 /* Which list is up, or HG_BOX_TABS when nothing is. */
 int hg_tabbox_mode(void);
 
-/* A wheel notch while the pointer is over the box. Only the control list
- * answers: it is the one whose rows are values. TRUE when it was used. */
+/* A wheel notch while the pointer is over the box. The lists that hold values
+ * answer - a value row of Set or Opt, an icon of Ico. TRUE when it was used. */
 BOOL hg_tabbox_handle_wheel(short delta);
 
 /* TRUE while the pointer is inside the open box. */

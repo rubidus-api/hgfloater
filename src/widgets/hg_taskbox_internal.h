@@ -21,8 +21,7 @@ typedef struct HgTaskboxFocusState {
 
 extern HgTaskboxFocusState hg_taskbox_focus;
 
-/* hg_taskbox.c */
-int taskbox_toolbar_icon_size(void);
+/* hg_taskbox.c (taskbox_toolbar_icon_size is in hg_taskbox.h: the box uses it) */
 int taskbox_cols_from_height(int window_height, int icon_size, int border, int total_items);
 
 /* hg_taskbox_menus.c - the options list itself (hg_menu_build_rows) and running

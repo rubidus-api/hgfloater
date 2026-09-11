@@ -482,10 +482,9 @@ built, so a key you rebind is the key the tooltip shows.
 | **`Note`** Note | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
-| **`Set`** Settings | Opens the [control list](#62-the-set-button): opacity, the pin, the switches, and the doors to the settings. | — |
+| **`Set`** Settings | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
 | **`Opt`** Options | Opens the [options menu](#7-the-options-menu), **directly under the button**. | — |
-| **`Vol`** Volume | **Click** mutes and unmutes. **Right-click** picks the [output device](#64-vol-and-mon). | **Wheel** sets the volume in 5% steps. |
-| **`Mon`** Monitor | **Click** opens this screen's [scaling](#64-vol-and-mon). **Right-click** opens the screen arrangement. | **Wheel** sets the brightness in 5% steps. |
+| **`Ico`** Icons | Opens the [icon box](#64-the-ico-box): `Vol`, `Mon` and `Alp`, as icons you turn with the wheel. | — |
 
 ### 6.1 The Dir button
 
@@ -514,7 +513,6 @@ The rows are grouped by what a row **is**, top to bottom:
 
 | Row | What it does |
 | :--- | :--- |
-| **Alpha (ScrollWheel)** | Taskbox opacity, with its reading. **Wheel** over the row, or **Left / Right** (or **PageUp / PageDown**) once the row is selected, changes it. |
 | **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click**, or **Space / Enter**, toggles. |
 | **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click**, or **Space / Enter**, flips one. |
 | **Settings Window...** | The [settings window](#71-the-settings-window): every option, value and key in one list. |
@@ -531,7 +529,7 @@ one that throws work away.
 **A row with a number is turned; a row with a state is switched.** That is the
 whole keyboard model for this list. On a row that holds a percentage, **Left and
 Right are less and more**, and so are **PageUp and PageDown** — the second pair
-because that is what the `Vol` and `Mon` buttons answer, so a value can always be
+because that is what the icons of the `Ico` box answer, so a value can always be
 turned the same way wherever you meet one. On every other row Left and Right
 leave the list for the neighbouring button, as they do everywhere else, and
 **Space or Enter** does the switching. Each row says which it is **in a tooltip**
@@ -543,8 +541,12 @@ that took them would change how you leave it. In here the list is a column: Up
 and Down walk it, sideways has nothing else to do, and a reader who has arrived
 on a value reaches sideways first.
 
+**Opacity is not in this list any more.** It is `Alp` in the [`Ico`
+box](#64-the-ico-box), beside volume and brightness: the three are turned the
+same way and read the same way, by colour.
+
 **The switches used to be a submenu of the options menu.** They are here now,
-beside the opacity, because they are the same kind of thing to a
+beside the pin, because they are the same kind of thing to a
 reader — something to set, right here — and keeping the list in two places meant
 knowing which of the two a given setting had been filed under. What stayed in
 the options menu is what is not a setting: the shortcuts folder, the displays,
@@ -608,7 +610,7 @@ refuses an arrangement it cannot make — asking for the second screen when ther
 is no second screen — and the status line says so rather than the row appearing
 to do nothing.
 
-**Scale and brightness are rows you turn**, like `Alpha` in the `Set` list: the
+**Scale and brightness are rows you turn**, the way the `Ico` icons are turned: the
 **wheel** over the row, or **Left / Right** (or **PageUp / PageDown**) once it is
 selected, walks the
 display through the values it accepts — the same 100/125/150/175/200% ladder
@@ -734,60 +736,67 @@ HGFloater empties the history.**
 
 ---
 
-### 6.4 `Vol` and `Mon`
+### 6.4 The Ico box
 
-**These two are read without being opened.** The colour behind the word is the
-value: a loud machine gives `Vol` a deep plate, a dim screen gives `Mon` a pale
-one, and neither costs a click to find out. That is the whole reason they sit on
-the row instead of in a list — a control whose point is that you can see it
-cannot live one click deep, because the list you have to open first hides
-exactly what it was drawn to show. They were rows of the `Set` list until now,
-and that is the mistake being undone.
+**`Ico` opens the three readings — `Vol`, `Mon` and `Alp` — as icons.** Point at
+it, land on it with the arrow keys, or click it, and the same box the tab and
+folder lists use opens beside it. Instead of lines of text it holds three
+buttons, drawn exactly as the row draws its own, at **the taskbox's icon size**
+and spacing, across and then down. Make the taskbox icons bigger with `Ctrl` +
+wheel and these grow with them.
+
+**The colour behind each word is the value:** a loud machine gives `Vol` a deep
+plate, a dim screen gives `Mon` a pale one, a see-through taskbox gives `Alp` a
+pale one. `Vol` and `Mon` used to be buttons on the row and opacity a line of the
+`Set` list; one button that opens all three costs one cell of the grid rather
+than three, and keeps the three readings side by side.
 
 **Each of the three gestures answers at a different depth**, and the same shape
-holds for both buttons:
+holds for every icon:
 
-| Gesture | `Vol` | `Mon` |
-| :--- | :--- | :--- |
-| **Wheel** | System volume, 5% a notch. | Brightness of the screen, 5% a notch. |
-| **Click** | Mute and unmute. | The scaling for this screen — 100% to 225%, the same ladder Windows offers. |
-| **Right-click** | Which output device plays, with the current one ticked, and `Mute` below the list. | How the screens are arranged: `PC screen only`, `Duplicate`, `Extend`, `Second screen only`, with the one in force ticked. |
+| Gesture | `Vol` | `Mon` | `Alp` |
+| :--- | :--- | :--- | :--- |
+| **Wheel** | System volume, 5% a notch. A muted machine is unmuted first. | Brightness of the screen, 5% a notch. | Taskbox opacity, 5% a notch. |
+| **Click** | Mute and unmute. | The scaling for this screen — 100% to 225%, the same ladder Windows offers. | — |
+| **Right-click** | Which output device plays, with the current one ticked, and `Mute` below the list. | How the screens are arranged: `PC screen only`, `Duplicate`, `Extend`, `Second screen only`, with the one in force ticked. | — |
 
 The wheel changes the value, the click does the one thing you would want without
 being asked to choose, and the right button opens the choice. Nothing here is
 new behaviour — every one of these was already in the [options
 list](#7-the-options-menu), and picking from these menus sends the very same
-instruction. What is new is that it takes one gesture on a button you were
-already looking at.
+instruction. What is new is that it takes one gesture on the icon that shows
+the reading.
 
 **"This screen" means the screen the taskbox is on.** Not the screen the pointer
 is on: the pointer is over the button when the menu opens, so the two are almost
 always the same, and naming the taskbox's screen is the one that can also be
 said when the keyboard opened the menu with no pointer involved.
 
-**Mute is the one thing the colour cannot say.** A muted machine still holds the
-volume it was at, so the plate stays as deep as it was; the status line says
-`Muted` outright, and the tooltip says it too.
+**A muted `Vol` reads as the bottom of its ramp**, because that is what the
+machine is putting out; the level itself is kept and comes back on unmute. The
+status line says `Muted` outright, and the tooltip says it too.
 
-**The tooltip carries both halves** — the reading on one line, what the three
-gestures do on the next. The colour says "loud", not "70%", and nothing on the
-face of a button says that its right button does anything at all.
+**The tooltip carries both halves** — the reading on one line, what the gestures
+do on the next, and the keys below. The colour says "loud", not "70%", and
+nothing on the face of an icon says that its right button does anything at all.
 
-**The keyboard reaches all of it.** Arrow to the button, then `Space` is the
-click and `Enter` is the right-click — the same two keys every icon on the row
-answers. The value steps with **`PageUp` / `PageDown`**, or with **`Q` and
-`E`**, which sit either side of the `W` your hand is already on.
+**The keyboard reaches all of it.** Arrow to `Ico`, then `Down` steps into the
+box and `Left` / `Right` move between the icons. The selected icon is **ringed**
+rather than filled, so its colour — the thing being turned — stays in sight. Its
+value steps with **`PageUp` / `PageDown`**, or with **`E` and `Q`**, which sit
+either side of the `W` your hand is already on. `Space` is the click, the menu
+key is the right-click, and `Esc` steps back out. An arrow that would step off
+the side of the box closes it and moves on along the row.
 
-The arrows are deliberately not the value, here or anywhere. On the row they are
-how you get from one button to the next, and in a list they are how you leave it;
-giving them a second job on the few things that hold a number made the way out
-depend on what you happened to be standing on. `PageUp` / `PageDown` turns a
-value everywhere in the taskbox now — on these two buttons and on every row of
-the `Set` and `Opt` lists.
+The arrows only move, in this box as on the row: a reading is turned by keys of
+its own, so the way out of an icon never depends on which icon you are standing
+on. The text lists are the other way round — a list is a column, so on a row
+that holds a number `Left` and `Right` turn it (the scale and brightness rows of
+the [options list](#7-the-options-menu)).
 
-`Q` and `E` are an extra pair on these two buttons only. In the lists every row
-from the tenth down wears a letter that jumps straight to it, so both letters are
-already spoken for in there.
+`E` and `Q` work in this box only. In the text lists every row from the tenth
+down wears a letter that jumps straight to it, so both letters are already
+spoken for in there.
 
 **The four screen arrangements are listed even with one screen attached.**
 Hiding them would be a one-way door: `PC screen only` leaves exactly one
@@ -1140,12 +1149,12 @@ a chord.
 | `Arrow keys` / `WASD` | Move focus between icons |
 | `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
-| `Tab` | With a box open (tabs, `Dir`, `Set`), step into it |
+| `Tab` | With a box open (tabs, `Dir`, `Set`, `Ico`), step into it |
 | `Up` / `Down` | On an icon with a box: step into it. Inside one: move the selection |
 | `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
-| `PageUp` / `PageDown` | Turn a value: on `Vol` or `Mon`, and on any row of a list that holds a number |
-| `Q` / `E` | The same, on `Vol` and `Mon` only — inside a list both letters already jump to a row |
-| `Left` / `Right` | On a list row that holds a number: less and more. Everywhere else: move between icons |
+| `PageUp` / `PageDown` | Turn a value: on the selected icon of the `Ico` box, and on any row of a list that holds a number |
+| `E` / `Q` | The same, in the `Ico` box only — inside a list both letters already jump to a row |
+| `Left` / `Right` | On a list row that holds a number: less and more. In the `Ico` box and everywhere else: move between icons |
 | `Esc` | Inside a box: leave it |
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
@@ -1225,12 +1234,12 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Move the taskbox aside** | Left-click the `M` button |
 | **Resize the taskbox grid** | Drag a border, or drag the `R` button |
 | **Font / icon size** | `Ctrl` + wheel |
-| **Opacity** | `Alt` + wheel, or wheel over the `Alp` row of the `Set` list |
-| **Screen brightness** | Wheel over the `Mon` button |
-| **Volume / mute** | Wheel over the `Vol` button / left-click it |
-| **Output device** | Right-click the `Vol` button |
-| **Display scaling** | Left-click the `Mon` button |
-| **Screen arrangement** | Right-click the `Mon` button |
+| **Opacity** | `Alt` + wheel, or wheel over `Alp` in the `Ico` box |
+| **Screen brightness** | Wheel over `Mon` in the `Ico` box |
+| **Volume / mute** | Wheel over `Vol` in the `Ico` box / left-click it |
+| **Output device** | Right-click `Vol` in the `Ico` box |
+| **Display scaling** | Left-click `Mon` in the `Ico` box |
+| **Screen arrangement** | Right-click `Mon` in the `Ico` box |
 | **Pin the taskbox** | Click the `Pin` row of the `Set` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
 | **Open the notes** | Left-click `Note` |
@@ -1304,7 +1313,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
-  gradients behind the `Alp`, `Bri`, and `Vol` rows of the `Set` list.
+  plates behind `Alp`, `Mon` and `Vol` in the `Ico` box.
 
 ### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 

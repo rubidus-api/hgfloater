@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v0.17.13] - 2026-09-11
+
+### Changed
+- **`Vol`, `Mon` and `Alp` are icons in a box of their own, opened by a new
+  `Ico` button.** Point at `Ico`, land on it with the arrows, or click it, and
+  the same box the tab and folder lists use opens beside it - but instead of
+  lines of text it holds the three reading buttons as icons, at the taskbox's
+  own icon size and spacing, across and then down. Their colour is still the
+  reading, and each keeps its three gestures: the **wheel** over an icon turns
+  it, **click** mutes (`Vol`) or opens this screen's scaling (`Mon`), and the
+  **right button** picks the output device (`Vol`) or the screen arrangement
+  (`Mon`). Three reading buttons on the row were three cells of the grid spent
+  on things turned now and then; one button that opens all three costs one.
+- **From the keyboard:** `Down` steps into the box, `Left` / `Right` move between
+  the icons, and `PageUp` / `PageDown` or `E` / `Q` turn the one selected. The
+  selected icon is ringed rather than filled, so its colour - the thing being
+  turned - stays in sight. `Space` / `Enter` is its click, the menu key its
+  right click.
+- **Opacity left the `Set` list** for the `Ico` box, beside the other two
+  readings. `Set` keeps the pin, the switches and the settings doors.
+- The row is eleven buttons: `Vol` and `Mon` gave up their cells to `Ico`.
+  `PageUp` / `PageDown` and `Q` / `E` do nothing on the row any more - no
+  button there holds a reading.
+
 ## [v0.17.12] - 2026-09-11
 
 ### Fixed
