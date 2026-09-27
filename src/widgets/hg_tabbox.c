@@ -344,8 +344,11 @@ static void tabbox_layout(void)
     if (!s_wnd)
         return;
 
+    /* An empty grid is sized as a list, so the line that says why it is empty
+     * can be read: an empty Run box - a fresh install - would otherwise be one
+     * icon's square around an ellipsis. */
     int width, height;
-    if (tabbox_is_grid()) {
+    if (tabbox_is_grid() && s_count > 0) {
         tabbox_icon_box_size(&width, &height);
     } else {
         double ws = hg_window_scale(s_wnd);
