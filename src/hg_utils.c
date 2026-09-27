@@ -779,9 +779,6 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_CLIP, L"Clip", L"Clipboard History", L"Clipboard History", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_SHOW_CLIPBOARD, HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",
-     L"Folders (hover or click for the list)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_DIRS,
-     HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_SETTINGS, L"Set", L"Opacity, pin, switches, settings",
      L"Opacity, pin, switches, settings", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_CONTROLS,
      HG_TOOLBAR_DRAG_NONE},
@@ -791,6 +788,15 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_ICONS, L"Ico", L"Volume, brightness, opacity (hover or click for the icons)",
      L"Volume, brightness, opacity (hover or click for the icons)", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_OPEN_ICONS, HG_TOOLBAR_DRAG_NONE},
+    {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",
+     L"Folders (hover or click for the list)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_DIRS,
+     HG_TOOLBAR_DRAG_NONE},
+    /* The shortcuts, as icons in a box of their own. They were cells of the
+     * grid, one each, and a shortcuts folder of any size pushed the windows -
+     * the thing the grid is for - into fewer cells. One button costs one. */
+    {HG_TOOL_ICON_RUN, L"Run", L"Shortcuts (hover or click for the icons)",
+     L"Shortcuts (hover or click for the icons)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_RUN,
+     HG_TOOLBAR_DRAG_NONE},
 
     /* The three that carry a reading, drawn as icons in the Ico box. Their
      * colour is the value, and each of the three gestures a button has answers
@@ -818,7 +824,7 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
-/* Eleven on the row, three in the Ico box, and the pin in the Set box. Stated
+/* Twelve on the row, three in the Ico box, and the pin in the Set box. Stated
  * rather than derived, so adding a descriptor without deciding where it belongs
  * does not compile. */
 enum {
@@ -1022,9 +1028,9 @@ void get_toolbar_item_rect(int item_type, int item_index, int width, int height,
     int row_height = icon_size + SC(10);
 
     int total_tasks = hg_g_window_count;
-    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+    int total_buttons = HG_NUM_BASIC_ICONS; /* the shortcuts are in the Run box */
 
-    int min_required_rows = (total_tasks + total_shortcuts + cols - 1) / cols;
+    int min_required_rows = (total_tasks + total_buttons + cols - 1) / cols;
     if (min_required_rows <= 0)
         min_required_rows = 1;
 
@@ -1077,7 +1083,7 @@ void update_toolbar_tooltips(HWND hwnd)
         icon_size = SC(16);
 
     int total_tasks = hg_g_window_count;
-    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+    int total_buttons = HG_NUM_BASIC_ICONS;
     int id_counter = 0;
 
     for (int i = 0; i < total_tasks; i++) {
@@ -1095,7 +1101,7 @@ void update_toolbar_tooltips(HWND hwnd)
         SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti_tool);
     }
 
-    for (int i = 0; i < total_shortcuts; i++) {
+    for (int i = 0; i < total_buttons; i++) {
         RECT item_rc;
         get_toolbar_item_rect(1, i, client_rc.right, client_rc.bottom, icon_size, &item_rc);
 
@@ -1111,12 +1117,10 @@ void update_toolbar_tooltips(HWND hwnd)
         if (i >= 0 && i < HG_NUM_BASIC_ICONS &&
             hg_toolbar_builtin_tooltip_full(i, key_tips[i], HG_ARRAYSIZE(key_tips[i]))) {
             ti_tool.lpszText = key_tips[i];
-        } else if (i < HG_NUM_BASIC_ICONS) {
+        } else {
             const WCHAR *tooltip_text = hg_toolbar_builtin_tooltip_text(i);
             if (tooltip_text)
                 ti_tool.lpszText = (LPWSTR)tooltip_text;
-        } else {
-            ti_tool.lpszText = hg_g_shortcuts[i - HG_NUM_BASIC_ICONS].name;
         }
 
         ti_tool.rect = item_rc;

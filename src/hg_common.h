@@ -146,8 +146,14 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 11
+#define HG_NUM_BASIC_ICONS 12
 
+/* The row, in index order. Index 0 sits in the bottom-right cell and each one
+ * after it steps left, so on screen the row reads Run Dir Ico Opt Set ... R.
+ *
+ * Dir sits beside Ico and Run beside Dir: the three buttons that open a box of
+ * icons or places are one neighbourhood. Run is last, in the cells the
+ * shortcuts used to take - they are icons in its box now, not on the row. */
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
 #define HG_TOOL_ICON_CLOSE 2
@@ -155,15 +161,21 @@
 #define HG_TOOL_ICON_COMMAND 4
 #define HG_TOOL_ICON_NOTE 5
 #define HG_TOOL_ICON_CLIP 6
-#define HG_TOOL_ICON_DIR 7
-#define HG_TOOL_ICON_SETTINGS 8
-#define HG_TOOL_ICON_MENU 9
-#define HG_TOOL_ICON_ICONS 10
+#define HG_TOOL_ICON_SETTINGS 7
+#define HG_TOOL_ICON_MENU 8
+#define HG_TOOL_ICON_ICONS 9
+#define HG_TOOL_ICON_DIR 10
+#define HG_TOOL_ICON_RUN 11
+
+/* A shortcut's button id: past the row, so activate_toolbar_item can tell the
+ * two apart. The shortcuts are not on the row any more - they are drawn in the
+ * Run box - but a launch still goes through this one id. */
+#define HG_SHORTCUT_BUTTON_ID(s_idx) (HG_NUM_BASIC_ICONS + (s_idx))
 
 /* Buttons that are not on the row. They keep ids of their own because
  * everything that knows how to read and set a value (hg_toolbar_value_*, the
  * tooltips, the status line) is written against an id. Numbered past the row
- * and past every shortcut (the row plus HG_MAX_SHORTCUTS ends at 74), so a loop
+ * and past every shortcut (the row plus HG_MAX_SHORTCUTS ends at 75), so a loop
  * over the toolbar cannot reach them by accident.
  *
  * Vol, Mon and Alp live in the box the Ico button opens, drawn there as icons

@@ -27,13 +27,16 @@
  *   icons     Vol, Mon and Alp, on Ico - drawn as the taskbox's own icons,
  *             across and then down, rather than as lines of text, because
  *             their colour is their reading
+ *   run       the shortcuts, on Run - drawn as their own program icons, the
+ *             same grid as Ico, because an icon is how a program is known
  */
 enum {
     HG_BOX_TABS = 0,
     HG_BOX_DIRS,
     HG_BOX_CONTROLS,
     HG_BOX_MENU,
-    HG_BOX_ICONS
+    HG_BOX_ICONS,
+    HG_BOX_RUN
 };
 
 /* Open (or re-target) the box for a window, anchored to that icon's rect in
@@ -46,10 +49,12 @@ void hg_tabbox_open_dirs(const RECT *anchor_screen_rc);
 void hg_tabbox_open_controls(const RECT *anchor_screen_rc);
 void hg_tabbox_open_menu(const RECT *anchor_screen_rc);
 void hg_tabbox_open_icons(const RECT *anchor_screen_rc);
+void hg_tabbox_open_run(const RECT *anchor_screen_rc);
 
 /* Where a button drawn in the open box is, on screen - its plate. FALSE when the
  * box is not showing that button. The menus a button opens from the keyboard
- * are placed at the button, and for Vol and Mon the button is here. */
+ * are placed at the button, and for Vol and Mon the button is here - and for a
+ * shortcut (HG_SHORTCUT_BUTTON_ID) it is in the Run box. */
 BOOL hg_tabbox_item_screen_rect(int button_id, RECT *out);
 
 /* Repaint the box if it is up: a reading it shows has changed. */

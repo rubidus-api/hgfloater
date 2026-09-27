@@ -93,10 +93,10 @@ Design principles worth knowing before you use it:
    `%USERPROFILE%\.HellGates\hgfloater\` with a `config.ini` and a `shortcuts`
    folder, then shows the floater.
 3. **Add shortcuts.** Drop `.lnk` or `.url` files into
-   `%USERPROFILE%\.HellGates\hgfloater\shortcuts`. They appear in the taskbox
-   automatically; press `Esc` in the taskbox to re-scan the folder immediately.
-   A shortcut that points at a **folder** goes to the
-   [`Dir` button's list](#61-the-dir-button) rather than the icon grid.
+   `%USERPROFILE%\.HellGates\hgfloater\shortcuts`. They appear in the
+   [`Run` box](#65-the-run-box) automatically; press `Esc` in the taskbox to
+   re-scan the folder immediately. A shortcut that points at a **folder** goes to
+   the [`Dir` button's list](#61-the-dir-button) instead.
 4. **Summon it from anywhere** with `Win + Alt + Space` (configurable).
 
 Only one instance runs at a time. Launching `hgfloater.exe` again simply
@@ -260,7 +260,10 @@ built-in buttons.
   stay open regardless of what the floater and taskbox do, until you
   close them. The floater, the taskbox and the toolbar stay out: they are the
   thing you are looking at.
-- **Shortcut icons** follow: one per `.lnk` or `.url` in your shortcuts folder.
+- **Shortcuts are not in the grid.** One icon per `.lnk` or `.url` in your
+  shortcuts folder, all of them in the box the [`Run` button](#65-the-run-box)
+  opens. The grid is for your windows; a shortcuts folder of any size used to
+  push them into fewer cells.
 
 > ### 📌 How to add a shortcut icon
 >
@@ -272,8 +275,8 @@ built-in buttons.
 >    Start menu, or right-click a program and *Send to → Desktop*, then move
 >    that file here.
 >
-> The new icon appears within a second. No restart, no settings screen: the
-> folder **is** the setting.
+> The new icon appears in the `Run` box within a second. No restart, no settings
+> screen: the folder **is** the setting.
 >
 > **To change the order, rename the files.** Icons are sorted by file name, so
 > putting a number in front controls where each one sits:
@@ -297,7 +300,8 @@ activates that icon exactly as clicking it would.
 - **Windows take the digits:** `S0` to `S9`, the first ten, and no key past
   that.
 - **Shortcuts take the letters:** `SA` to `SZ`, in the order they sit in the
-  grid.
+  `Run` box. The key works from anywhere in the taskbox, whether the box is
+  open or not.
 
 They used to share one run of labels, all of it windows, so which key opened
 what depended on how many windows happened to be open — and a shortcut had no
@@ -310,8 +314,8 @@ nobody can press is furniture.
 `Shift` is what keeps this clear of the bare-letter grid movement (`WASD`) and
 of the bare `C` that opens the command box.
 
-**Every button in that half of the grid is framed** — the function buttons and
-the shortcuts alike — in **your Windows accent colour**, two pixels thick. The
+**Every button in that half of the grid is framed** — the function buttons, and
+the shortcuts in the `Run` box alike — in **your Windows accent colour**, two pixels thick. The
 taskbox is see-through, so "the background" is whatever you have on your
 desktop; a one-pixel white line vanished against a light wallpaper and was hard
 to find against a busy one. The accent is nudged toward the middle of its range
@@ -430,7 +434,7 @@ what it costs are in `docs/RFC-2026-07-tabs-as-task-icons.md`.
     button; if the tab has no such button nothing is closed and the status line
     says so. **Focus** on a tab switches to that tab rather than only raising
     its window.
-  - **Open File Location (&O)** — shortcut icons only.
+  - **Open File Location (&O)** — shortcut icons (in the `Run` box) only.
 
 ### 5.2 The status line
 
@@ -456,10 +460,10 @@ A single-line read-only field across the top of the taskbox.
 
 ## 6. The Toolbar
 
-Twelve built-in buttons sit in the same grid as the icons. Their order is fixed.
-Each carries a short word rather than a single capital, three of them open a
-list instead of doing something outright, and the last two carry a reading:
-their colour is the value they hold.
+Twelve built-in buttons sit in the same grid as the icons. Their order is fixed:
+from the left, `Run` `Dir` `Ico` `Opt` `Set` `Clip` `Note` `C` `D` `X` `M` `R`.
+Each carries a short word rather than a single capital, and five of them open a
+box instead of doing something outright.
 
 The word is **fitted to the button**: up to three letters it stays on one line,
 and four to six letters are stacked on two, at a size the button can hold. The
@@ -481,10 +485,11 @@ built, so a key you rebind is the key the tooltip shows.
 | **`C`** Command | Opens the [Command Box](#8-the-command-box). | — |
 | **`Note`** Note | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
-| **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
 | **`Set`** Settings | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
 | **`Opt`** Options | Opens the [options menu](#7-the-options-menu), **directly under the button**. | — |
 | **`Ico`** Icons | Opens the [icon box](#64-the-ico-box): `Vol`, `Mon` and `Alp`, as icons you turn with the wheel. | — |
+| **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
+| **`Run`** Shortcuts | Opens the [shortcut box](#65-the-run-box): every program shortcut, as its own icon. | — |
 
 ### 6.1 The Dir button
 
@@ -803,6 +808,29 @@ Hiding them would be a one-way door: `PC screen only` leaves exactly one
 display, and the entries that bring the other one back would be the ones that
 had just disappeared. A percentage a display will not accept is shown greyed
 rather than left out, so the ladder is the same ladder on every screen.
+
+### 6.5 The Run box
+
+**`Run` opens your shortcuts as icons.** Point at it, land on it with the arrow
+keys, or click it, and the same box `Ico` uses opens beside it, holding one icon
+per `.lnk` or `.url` in the shortcuts folder — the program's own icon, at the
+taskbox's icon size and spacing, across and then down, in file-name order. Up to
+sixteen sit four across; past that the box widens to stay square (sixty-four is
+eight by eight). `Dir` sits beside `Ico` and `Run` beside `Dir`, so the buttons
+that open a box of places or icons are together.
+
+The shortcuts used to be icons in the grid itself, after the buttons. A dozen of
+them took a dozen cells from your windows; now they cost one.
+
+| Gesture | What it does |
+| :--- | :--- |
+| **Click** | Launches it. The box closes; the taskbox stays, as it did when the shortcuts were on the row. |
+| **Right-click** | **Run** or **Open File Location**, the menu a shortcut always had. |
+| **`Shift` + its letter** | Launches it from anywhere in the taskbox, box open or not. The letter is the badge in the icon's corner. |
+
+**The keyboard:** arrow to `Run`, `Down` steps into the box, the arrows walk the
+icons (ringed, as in `Ico`), `Space` or `Enter` launches the ringed one, the menu
+key opens its menu, and `Esc` steps back out. The tooltip names the program.
 
 ## 7. The Options Menu
 
@@ -1149,7 +1177,7 @@ a chord.
 | `Arrow keys` / `WASD` | Move focus between icons |
 | `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
-| `Tab` | With a box open (tabs, `Dir`, `Set`, `Ico`), step into it |
+| `Tab` | With a box open (tabs, `Dir`, `Set`, `Ico`, `Run`), step into it |
 | `Up` / `Down` | On an icon with a box: step into it. Inside one: move the selection |
 | `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
 | `PageUp` / `PageDown` | Turn a value: on the selected icon of the `Ico` box, and on any row of a list that holds a number |
@@ -1228,6 +1256,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Item context menu** | Right-click an icon |
 | **Options menu** | Left-click `Opt`, or right-click the status line |
 | **Open a folder** | Point at `Dir`, then click a row |
+| **Launch a shortcut** | Point at `Run`, then click an icon |
 | **Open the control list** | Point at `Set` |
 | **Move a window** | Left-drag empty space, the status line, or the `M` button |
 | **Move the floater** | Drag the floater, or `Alt + drag` it |

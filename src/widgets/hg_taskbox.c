@@ -367,8 +367,8 @@ void hg_keyboard_mode_check_pointer(void)
 
 /* ...but only two of them are free to build.
  *
- * Dir reads a list already in memory, Set reads values already cached, and Ico
- * reads the three readings the row used to paint on every frame, so opening
+ * Dir and Run read lists already in memory, Set reads values already cached,
+ * and Ico reads the three readings the row used to paint on every frame, so opening
  * any of them on a passing pointer costs nothing. The options list is not
  * like that: assembling it enumerates the audio endpoints through COM and asks
  * every display for its scaling, which is real work with real latency. Sweeping
@@ -392,6 +392,8 @@ int taskbox_box_mode_for_button(int index)
         return HG_BOX_MENU;
     case HG_TOOLBAR_CLICK_OPEN_ICONS:
         return HG_BOX_ICONS;
+    case HG_TOOLBAR_CLICK_OPEN_RUN:
+        return HG_BOX_RUN;
     default:
         return -1;
     }
@@ -413,6 +415,9 @@ void taskbox_open_box_for_button(int index, const RECT *anchor)
         break;
     case HG_BOX_ICONS:
         hg_tabbox_open_icons(anchor);
+        break;
+    case HG_BOX_RUN:
+        hg_tabbox_open_run(anchor);
         break;
     default:
         break;
@@ -507,6 +512,12 @@ void activate_toolbar_item(int index)
     if (index >= HG_NUM_BASIC_ICONS) {
         int s_idx = index - HG_NUM_BASIC_ICONS;
         if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
+            /* One path for every way a shortcut is launched - a click in the
+             * Run box, Enter on it, Shift and its letter, Run in its menu - so
+             * they cannot come to behave differently. The Run box closes: the
+             * program is where the reader is going. The taskbox stays, as it
+             * did when the shortcuts were on the row. */
+            hg_tabbox_close();
             ShellExecuteW(NULL, L"open", hg_g_shortcuts[s_idx].path, NULL, NULL, SW_SHOWNORMAL);
         }
     }
@@ -556,8 +567,7 @@ void update_focus_message(int override_type, int override_index)
             append_message(hg_g_window_items[index].title);
         }
     } else if (type == 1) {
-        int total_items = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-        if (index >= 0 && index < total_items) {
+        if (index >= 0 && index < HG_NUM_BASIC_ICONS) {
             const WCHAR *focus_text = hg_toolbar_builtin_focus_text(index);
             if (focus_text) {
                 append_message(focus_text);
@@ -566,8 +576,6 @@ void update_focus_message(int override_type, int override_index)
                 if (hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_FOCUS, value_str, HG_ARRAYSIZE(value_str))) {
                     append_message(value_str);
                 }
-            } else {
-                append_message(hg_g_shortcuts[index - HG_NUM_BASIC_ICONS].name);
             }
         }
     }
@@ -679,8 +687,8 @@ void update_layout(HWND hwnd)
     if (cols <= 0)
         cols = 1;
     int total_tasks = hg_g_window_count;
-    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-    int rows = (total_tasks + total_shortcuts + cols - 1) / cols;
+    int total_buttons = HG_NUM_BASIC_ICONS;
+    int rows = (total_tasks + total_buttons + cols - 1) / cols;
     if (rows <= 0)
         rows = 1;
 
@@ -971,8 +979,8 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             int total_tasks = hg_g_window_count;
-            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-            int total_items = total_tasks + total_shortcuts;
+            int total_buttons = HG_NUM_BASIC_ICONS;
+            int total_items = total_tasks + total_buttons;
             if (total_items <= 0)
                 total_items = 1;
 
@@ -996,8 +1004,8 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             int total_tasks = hg_g_window_count;
-            int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-            int total_items = total_tasks + total_shortcuts;
+            int total_buttons = HG_NUM_BASIC_ICONS;
+            int total_items = total_tasks + total_buttons;
             if (total_items <= 0)
                 total_items = 1;
 
@@ -1031,7 +1039,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
          * lives in. */
         int shortcut_index = hg_shortcut_badge_index((WCHAR)w_param);
         if (shortcut_index >= 0 && shortcut_index < hg_g_shortcut_count) {
-            activate_toolbar_item(HG_NUM_BASIC_ICONS + shortcut_index);
+            activate_toolbar_item(HG_SHORTCUT_BUTTON_ID(shortcut_index));
             return 0;
         }
     }
@@ -1050,16 +1058,16 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
 
     /* 탐색 및 선택 */
     int total_tasks = hg_g_window_count;
-    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
+    int total_buttons = HG_NUM_BASIC_ICONS;
 
-    if (total_tasks > 0 || total_shortcuts > 0) {
+    if (total_tasks > 0 || total_buttons > 0) {
         int icon_size = taskbox_toolbar_icon_size();
 
         RECT rc_toolbar;
         GetClientRect(hg_g_toolbar_wnd, &rc_toolbar);
 
         int cols = get_items_per_row(rc_toolbar.right, icon_size);
-        int min_required_rows = (total_tasks + total_shortcuts + cols - 1) / cols;
+        int min_required_rows = (total_tasks + total_buttons + cols - 1) / cols;
         if (min_required_rows <= 0)
             min_required_rows = 1;
 
@@ -1131,9 +1139,9 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int new_cell = r * cols + c;
 
             // 빈 공간이라면 가장 가까운 유효한 셀로 이동 (이 경우는 Task의 마지막이나 Shortcut의 첫번째가 될 것)
-            if (new_cell >= total_tasks && new_cell < total_cells - total_shortcuts) {
+            if (new_cell >= total_tasks && new_cell < total_cells - total_buttons) {
                 if (new_cell > current_cell) {
-                    new_cell = total_cells - total_shortcuts;
+                    new_cell = total_cells - total_buttons;
                 } else {
                     new_cell = total_tasks - 1;
                 }
@@ -1147,7 +1155,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             if (new_cell < total_tasks) {
                 hg_taskbox_focus.area = 0;
                 hg_taskbox_focus.index = new_cell;
-            } else if (new_cell >= total_cells - total_shortcuts) {
+            } else if (new_cell >= total_cells - total_buttons) {
                 hg_taskbox_focus.area = 1;
                 hg_taskbox_focus.index = total_cells - 1 - new_cell;
             }
@@ -1337,8 +1345,8 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         int border = SC(HG_BORDER_THICKNESS);
 
         int total_tasks = hg_g_window_count;
-        int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-        int total_items = total_tasks + total_shortcuts;
+        int total_buttons = HG_NUM_BASIC_ICONS;
+        int total_items = total_tasks + total_buttons;
         if (total_items <= 0)
             total_items = 1;
 

@@ -212,8 +212,8 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
             return 1;
         }
     }
-    int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-    for (int i = 0; i < total_shortcuts; i++) {
+    int total_buttons = HG_NUM_BASIC_ICONS;
+    for (int i = 0; i < total_buttons; i++) {
         RECT rc_item, rc_btn;
         get_toolbar_item_rect(1, i, width, height, icon_size, &rc_item);
         rc_btn = rc_item;
@@ -392,6 +392,50 @@ void hg_toolbar_paint_builtin_cell(HDC dc, int index, const RECT *rc_item, int i
     toolbar_draw_builtin_label(dc, index, rc_item, &rc_btn);
 }
 
+/* A shortcut in the Run box. No plate, the same as a shortcut had on the row -
+ * the colour behind it would say nothing - and the same ring as the Ico box's
+ * icons for the one the keyboard is on, so the two boxes are walked the same
+ * way. The badge is the Shift+letter that launches it from anywhere in the
+ * taskbox; this box is the one place that letter is still written down. */
+void hg_toolbar_paint_shortcut_cell(HDC dc, int s_idx, const RECT *rc_item, int icon_size, BOOL selected,
+                                    BOOL hovered)
+{
+    if (!dc || !rc_item || s_idx < 0 || s_idx >= hg_g_shortcut_count)
+        return;
+
+    RECT rc_btn = *rc_item;
+    InflateRect(&rc_btn, SC(4), SC(4));
+
+    if (hovered && !selected) {
+        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+        if (hbr)
+            FillRect(dc, &rc_btn, hbr);
+        DrawEdge(dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
+    }
+
+    if (selected) {
+        HBRUSH ring = hg_cached_solid_brush(hg_g_color_focus_bg);
+        int thickness = SC(2);
+        if (thickness < 2)
+            thickness = 2;
+        RECT edge = rc_btn;
+        for (int i = 0; ring && i < thickness; ++i) {
+            FrameRect(dc, &edge, ring);
+            InflateRect(&edge, -1, -1);
+        }
+    } else {
+        toolbar_draw_button_outline(dc, &rc_btn);
+    }
+
+    if (hg_g_shortcuts[s_idx].icon)
+        DrawIconEx(dc, rc_item->left, rc_item->top, hg_g_shortcuts[s_idx].icon, icon_size, icon_size, 0, NULL,
+                   DI_NORMAL);
+
+    WCHAR badge[8];
+    if (hg_shortcut_badge_text(s_idx, badge, HG_ARRAYSIZE(badge)))
+        toolbar_draw_badge(dc, rc_item, badge, icon_size);
+}
+
 static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type,
                                            int pressed_index, const HgTaskboxDragState *drag_state,
                                            int *cached_icon_size)
@@ -540,16 +584,15 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                  * wears its label, because they are the same promise: press
                  * this and that happens. */
                 // Draw hg_g_shortcuts (type 1)
-                int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-                for (int i = 0; i < total_shortcuts; i++) {
+                int total_buttons = HG_NUM_BASIC_ICONS;
+                for (int i = 0; i < total_buttons; i++) {
                     RECT rc_item, rc_btn;
                     get_toolbar_item_rect(1, i, rc.right, rc.bottom, icon_size, &rc_item);
                     rc_btn = rc_item;
                     InflateRect(&rc_btn, SC(4), SC(4));
 
-                    COLORREF button_bg = (i < HG_NUM_BASIC_ICONS) ? toolbar_basic_icon_bg_color(i, bg_color)
-                                                                  : toolbar_invert_color(bg_color);
-                    BOOL keep_value_bg = (i < HG_NUM_BASIC_ICONS) && hg_toolbar_builtin_has_value(i);
+                    COLORREF button_bg = toolbar_basic_icon_bg_color(i, bg_color);
+                    BOOL keep_value_bg = hg_toolbar_builtin_has_value(i);
                     /* No plate behind a function button or a shortcut: the
                      * desktop shows through, the same as everywhere else in
                      * this window now. A reading button would keep its plate,
@@ -611,28 +654,13 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         toolbar_draw_state_border(mem_dc, &rc_btn);
                     }
 
-                    if (i >= HG_NUM_BASIC_ICONS) {
-                        int s_idx = i - HG_NUM_BASIC_ICONS;
-                        if (hg_g_shortcuts[s_idx].icon) {
-                            DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_shortcuts[s_idx].icon, icon_size,
-                                       icon_size, 0, NULL, DI_NORMAL);
-                        }
+                    toolbar_draw_builtin_label(mem_dc, i, &rc_item, &rc_btn);
 
-                        /* Shift and a letter reaches this one, and the badge is
-                         * where that is said - the same corner, the same box,
-                         * as a window's Shift and a digit. */
-                        WCHAR badge[8];
-                        if (hg_shortcut_badge_text(s_idx, badge, HG_ARRAYSIZE(badge)))
-                            toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
-                    } else {
-                        toolbar_draw_builtin_label(mem_dc, i, &rc_item, &rc_btn);
-
-                        /* And its key in the corner, over the label, for the
-                         * buttons a chord reaches. */
-                        WCHAR badge[8];
-                        if (hg_toolbar_builtin_badge_text(i, badge, HG_ARRAYSIZE(badge)))
-                            toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
-                    }
+                    /* And its key in the corner, over the label, for the
+                     * buttons a chord reaches. */
+                    WCHAR badge[8];
+                    if (hg_toolbar_builtin_badge_text(i, badge, HG_ARRAYSIZE(badge)))
+                        toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
                 }
 
                 if (drag_state->is_dragging && drag_state->source_index != -1 &&
@@ -680,8 +708,8 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         int border = SC(HG_BORDER_THICKNESS);
 
         int total_tasks = hg_g_window_count;
-        int total_shortcuts = hg_g_shortcut_count + HG_NUM_BASIC_ICONS;
-        int total_items = total_tasks + total_shortcuts;
+        int total_buttons = HG_NUM_BASIC_ICONS;
+        int total_items = total_tasks + total_buttons;
         if (total_items <= 0)
             total_items = 1;
 
@@ -1169,6 +1197,16 @@ BOOL hg_toolbar_builtin_context_menu(int index, BOOL at_pointer)
         return TRUE;
     }
     return FALSE;
+}
+
+BOOL hg_toolbar_shortcut_context_menu(int s_idx, BOOL at_pointer)
+{
+    HWND owner = hg_g_toolbar_wnd;
+    if (!owner || s_idx < 0 || s_idx >= hg_g_shortcut_count)
+        return FALSE;
+    toolbar_controller_show_shortcut_context_menu(owner, HG_SHORTCUT_BUTTON_ID(s_idx), taskbox_toolbar_icon_size(),
+                                                  at_pointer ? (LPARAM)1 : 0);
+    return TRUE;
 }
 
 static void toolbar_update_value_tooltip(HWND hwnd, int index)

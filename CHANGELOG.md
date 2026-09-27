@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **The shortcuts moved off the row into a box of their own, opened by a new
+  `Run` button.** Point at `Run`, land on it with the arrows, or click it, and
+  the box `Ico` uses opens beside it with every shortcut as its program's icon,
+  at the taskbox's icon size, four across (wider past sixteen, so the box stays
+  square). Click or `Enter` launches one, the right button gives the same Run /
+  Open File Location menu as before, and `Shift` + its letter still launches it
+  from anywhere in the taskbox - the letter is on the icon's badge. A launch
+  closes the box and leaves the taskbox open, as a click on the row did. The
+  grid is left to your windows: a dozen shortcuts used to take a dozen cells.
+- **`Dir` sits beside `Ico`, and `Run` beside `Dir`.** From the left the row is
+  now `Run` `Dir` `Ico` `Opt` `Set` `Clip` `Note` `C` `D` `X` `M` `R` - twelve
+  buttons, the three that open a box of places or icons together.
+
 ## [v0.17.13] - 2026-09-11
 
 ### Changed
