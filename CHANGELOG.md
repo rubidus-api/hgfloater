@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.17.14] - 2026-09-28
 
 ### Changed
 - **The shortcuts moved off the row into a box of their own, opened by a new
