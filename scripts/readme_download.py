@@ -67,8 +67,14 @@ def from_latest_release():
 # because a README that quietly stopped being updated is exactly the failure
 # this script exists to prevent.
 def rules(version, stamp, kb):
+    # Line 1 of each README is the workspace-wide top line (languages, name and
+    # version, a direct link per release file); it names the tag, so it moves too.
+    top = [
+        (re.compile(r"\A(.*?\*\*HGFloater )v[\d.]+(\*\*)"), r"\g<1>%s\g<2>" % version),
+        (re.compile(r"\A(.*?/releases/download/)v[\d.]+(/hgfloater\.exe\))"), r"\g<1>%s\g<2>" % version),
+    ]
     return {
-        "README.md": [
+        "README.md": top + [
             (re.compile(r"^\*\*v[\d.]+\*\* — built .*$", re.M),
              "**%s** — built %s" % (version, stamp)),
             (re.compile(r"^\*\*\[Download hgfloater\.exe.*$", re.M),
@@ -76,7 +82,7 @@ def rules(version, stamp, kb):
              % (version, kb, DOWNLOAD_URL, RELEASES_URL)),
             (re.compile(r"(executable of about )\d+( KB)"), r"\g<1>%d\g<2>" % kb),
         ],
-        "README.ko.md": [
+        "README.ko.md": top + [
             (re.compile(r"^\*\*v[\d.]+\*\* — 빌드 .*$", re.M),
              "**%s** — 빌드 %s" % (version, stamp)),
             (re.compile(r"^\*\*\[hgfloater\.exe 내려받기.*$", re.M),

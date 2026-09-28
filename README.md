@@ -1,6 +1,6 @@
-# HGFloater
+[한국어](README.ko.md) | **English** — **HGFloater v0.17.14** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.14/hgfloater.exe)
 
-**English** | [한국어](README.ko.md)
+# HGFloater
 
 **v0.17.14** — built 2026-09-28
 
