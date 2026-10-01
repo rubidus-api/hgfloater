@@ -72,7 +72,7 @@ void update_floater_alpha(int delta)
  * graphs (top to bottom, red/blue/green) with tiny labels. The panel keeps the
  * floater at its clock height; the battery row hides on systems without one. */
 /* Temperature is not a percentage, so it is scaled against a fixed window
- * rather than against itself; see docs/RFC-2026-07-temperature.md. */
+ * rather than against itself; see docs/rfc/RFC-2026-07-temperature.md. */
 #define HG_TEMP_MIN_C 20
 #define HG_TEMP_MAX_C 100
 /* Firmware that exposes no thermal zone is the common case, so a single failed

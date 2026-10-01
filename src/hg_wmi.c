@@ -9,12 +9,12 @@
  *       DDC/CI device, so every path in hg_display.c's ladder misses it and it
  *       would land on the gamma ramp - which dims the picture while the lamp
  *       stays where it was. This is what Windows' own slider drives.
- *       See docs/RFC-2026-07-brightness-control.md.
+ *       See docs/rfc/RFC-2026-07-brightness-control.md.
  *
  *   MSAcpi_ThermalZoneTemperature
  *       An ACPI thermal zone, in tenths of a degree Kelvin. It is the only way
  *       to a temperature that needs no driver and no elevation - and it is a
- *       zone on the board, not the CPU die. See docs/RFC-2026-07-temperature.md,
+ *       zone on the board, not the CPU die. See docs/rfc/RFC-2026-07-temperature.md,
  *       which says why the accurate path is the one being declined.
  *
  * Everything here is bounded in time: WMI is a cross-process call and this code

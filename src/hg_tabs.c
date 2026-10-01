@@ -1,6 +1,6 @@
 /* Tabs as task icons, through UI Automation.
  *
- * See docs/RFC-2026-07-tabs-as-task-icons.md. The three rules that shape every
+ * See docs/rfc/RFC-2026-07-tabs-as-task-icons.md. The three rules that shape every
  * function here:
  *
  * - Off is free. When the setting is off nothing in this file creates a COM

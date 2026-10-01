@@ -89,7 +89,7 @@ void hg_set_monitor_brightness(HMONITOR monitor, int percent);
 void hg_refresh_all_monitor_brightness(void);
 
 /* The internal panel's real backlight, over WMI. It is not a DDC/CI device, so
- * none of the paths above reach it; see docs/RFC-2026-07-brightness-control.md.
+ * none of the paths above reach it; see docs/rfc/RFC-2026-07-brightness-control.md.
  * Percentages here are already percentages - unlike DDC/CI, which speaks the
  * monitor's own scale. */
 BOOL hg_backlight_available(void);
@@ -99,7 +99,7 @@ void hg_backlight_shutdown(void); /* release the cached WMI connection before Co
 
 /* An ACPI thermal zone in degrees Celsius, from the same root\WMI connection.
  * FALSE on the many machines whose firmware exposes no zone. It tracks CPU
- * temperature without being it; see docs/RFC-2026-07-temperature.md. */
+ * temperature without being it; see docs/rfc/RFC-2026-07-temperature.md. */
 BOOL hg_thermal_zone_celsius(int *out_celsius);
 
 /* Every thermal zone the machine will admit to, from both surfaces, for the
@@ -318,7 +318,7 @@ int hg_get_cpu_percent(void);
 int hg_get_memory_percent(void);
 /* The adapter's own temperature sensor, through the same WDDM thunk Task
  * Manager reads. FALSE when no adapter reports one, which is common.
- * See docs/RFC-2026-07-temperature.md. */
+ * See docs/rfc/RFC-2026-07-temperature.md. */
 BOOL hg_get_gpu_temperature(int *out_celsius);
 
 #endif /* HG_UTILS_H */

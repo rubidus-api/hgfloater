@@ -1,4 +1,4 @@
-/* The tab sub-box. See hg_tabbox.h and docs/RFC-2026-07-tabs-as-task-icons.md
+/* The tab sub-box. See hg_tabbox.h and docs/rfc/RFC-2026-07-tabs-as-task-icons.md
  * section D8 for why the tabs left the grid.
  *
  * Three properties shape the code:

@@ -14,7 +14,7 @@ typedef BOOL (WINAPI *PFN_GetMonitorBrightness)(HANDLE, LPDWORD, LPDWORD, LPDWOR
 typedef BOOL (WINAPI *PFN_SetMonitorBrightness)(HANDLE, DWORD);
 /* The low-level half of the same DLL. The high-level pair above is a
  * convenience layer over these, and a monitor that refuses it often still
- * answers here; see docs/RFC-2026-07-brightness-control.md. */
+ * answers here; see docs/rfc/RFC-2026-07-brightness-control.md. */
 typedef BOOL (WINAPI *PFN_GetCapabilitiesStringLength)(HANDLE, LPDWORD);
 typedef BOOL (WINAPI *PFN_CapabilitiesRequestAndCapabilitiesReply)(HANDLE, LPSTR, DWORD);
 typedef BOOL (WINAPI *PFN_GetVCPFeatureAndVCPFeatureReply)(HANDLE, BYTE, LPVOID, LPDWORD, LPDWORD);

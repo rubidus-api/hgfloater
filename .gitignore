@@ -65,3 +65,6 @@ cloudflare*.env
 /docs/plans
 /docs/requirements
 /docs/resources
+/docs/operations
+/test
+/scripts/check-docs.py

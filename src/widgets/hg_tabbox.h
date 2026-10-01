@@ -8,7 +8,7 @@
  * Tabs used to fan out into the taskbox grid, one icon each. That crowded the
  * grid, made the icons unorderable (their order was the strip's, not the
  * reader's), and cost a background enumeration cadence to keep titles fresh.
- * See docs/RFC-2026-07-tabs-as-task-icons.md, D8.
+ * See docs/rfc/RFC-2026-07-tabs-as-task-icons.md, D8.
  *
  * Now a tab-capable window is one icon like any other, and hovering it opens
  * this box: one row per tab, titled and labelled, beside the icon. Enumeration

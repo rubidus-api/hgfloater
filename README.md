@@ -239,8 +239,7 @@ Three cases where the click does what it always did, none of them a failure:
 
 This is the only thing HGFloater does outside its own windows, and it needs a
 system-wide mouse hook to do it. The hook reads the button and the coordinates
-and nothing else; it holds no keyboard hook and never has. The design and its
-costs are in `docs/RFC-2026-07-caption-button-menu.md`.
+and nothing else; it holds no keyboard hook and never has.
 
 ## 5. The Taskbox
 
@@ -423,8 +422,7 @@ last known while the fresh answer is on its way — a cross-process call whose
 cost grows with the browser's own accessibility data is never waited for.
 Anything that fails falls back silently to one icon for the window. Some
 applications do not
-publish off-screen tabs at all, and those tabs will not appear. The design and
-what it costs are in `docs/RFC-2026-07-tabs-as-task-icons.md`.
+publish off-screen tabs at all, and those tabs will not appear.
 - **Left drag** on a task icon reorders it within the grid.
 - **Right click** (or `Enter` / `F2` on the focused icon) opens its menu:
   - **Run (&R)** — start a new instance, or launch the shortcut.
@@ -1471,7 +1469,7 @@ sh scripts/release.sh dist              # the whole thing: build, package, build
 That one command is the release build. It runs, in order:
 
 ```sh
-sh scripts/build-mingw.sh build-mingw   # a warning-clean build, tests compiled and host tests run
+sh scripts/build-mingw.sh build-mingw   # a warning-clean build (and the tests, where present)
 sh scripts/package-release.sh dist      # stages the exe into dist/, writes the download block from it
 sh scripts/build-mingw.sh build-mingw   # again: About renders the README, so it picks up the new size
 sh scripts/package-release.sh dist      # again: the checksum must belong to the binary being published
@@ -1550,9 +1548,7 @@ hgfloater/
 │       ├── hg_clip.c         clipboard history
 │       ├── hg_monitor.c
 │       └── hg_about.c
-├── test/                 console tests
-├── scripts/              build and documentation helpers
-└── docs/                 design notes and the test catalogue
+└── scripts/              build and release helpers
 ```
 
 `hg_calc.c` deliberately depends on neither Win32 nor the C runtime, so the
@@ -1564,15 +1560,15 @@ the clock reads — can be tested on any host.
 ## 17. Tests and Verification
 
 ```sh
-make test                     # compile every test, run the host-native ones
 sh scripts/build-mingw.sh     # full cross-build verification
-sh scripts/project-check.sh   # documentation and repository hygiene
 ```
 
-Every file in `test/` is compiled with the full warning set. The units that
-avoid Win32 also run natively on the build host, so their behaviour — not just
-their compilation — is checked without a Windows machine. `docs/tests/` holds the
-catalogue of what each check covers.
+The build is warning-clean under the full warning set, and that is the gate for
+every change. The tests, the design notes and the verification records are kept
+in the author's private workspace rather than in this repository: each release
+is checked there — the unit tests, and the behaviour driven on a real Windows 11
+machine — before it is published. In a checkout of this repository `make test`
+has nothing to run.
 <!-- SKIP_END -->
 
 ## 18. About the Developer

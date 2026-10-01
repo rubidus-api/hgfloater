@@ -1,6 +1,6 @@
 /* A menu on every window's maximize button.
  *
- * See docs/RFC-2026-07-caption-button-menu.md. Three rules, and the first one
+ * See docs/rfc/RFC-2026-07-caption-button-menu.md. Three rules, and the first one
  * is the whole reason the other two exist:
  *
  * - The hook is on the desktop's input path. It runs for every mouse event on

@@ -80,10 +80,14 @@ SRC := \
 
 RES := $(OUT)/hgfloater_res.o
 
+# The tests live in the private sibling and test/ is a link to them, so a public
+# checkout has none and these targets do nothing there. They include the sources
+# as "src/...", from the checkout root (-I.), because a "../src" written in a
+# file behind a link would be resolved from where the file really is.
 TESTS := $(wildcard test/*.c)
 # Units free of Win32 also run on the build host, so their behaviour is checked
 # even when no Windows runtime (or wine) is available.
-HOST_TESTS := test_calc test_relocate
+HOST_TESTS := $(basename $(notdir $(filter test/test_calc.c test/test_relocate.c,$(TESTS))))
 
 .PHONY: all release debug test test-compile test-host about clean help
 
@@ -124,14 +128,14 @@ test: test-compile test-host
 test-compile: | $(OUT)
 	@for t in $(TESTS); do \
 		n=$$(basename $$t .c); \
-		$(CC) -o $(OUT)/$$n.exe $$t $(WARNING_FLAGS) || exit 1; \
+		$(CC) -I. -o $(OUT)/$$n.exe $$t $(WARNING_FLAGS) || exit 1; \
 		echo "test compile: OK $$n"; \
 	done
 
 test-host: | $(OUT)
 	@for n in $(HOST_TESTS); do \
-		gcc -o $(OUT)/$${n}_host test/$$n.c $(WARNING_FLAGS) -Wno-logical-op 2>/dev/null \
-			|| gcc -o $(OUT)/$${n}_host test/$$n.c || exit 1; \
+		gcc -I. -o $(OUT)/$${n}_host test/$$n.c $(WARNING_FLAGS) -Wno-logical-op 2>/dev/null \
+			|| gcc -I. -o $(OUT)/$${n}_host test/$$n.c || exit 1; \
 		$(OUT)/$${n}_host || exit 1; \
 		echo "test run (host): OK $$n"; \
 	done

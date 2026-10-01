@@ -74,7 +74,7 @@ int hg_get_memory_percent(void)
  *
  * The declarations below are transcribed from the Microsoft DDI reference for
  * these structures, because the WDK header they live in is not part of the
- * mingw-w64 toolchain. See docs/RFC-2026-07-temperature.md.
+ * mingw-w64 toolchain. See docs/rfc/RFC-2026-07-temperature.md.
  *
  * Plenty of drivers answer zero. That is a display with no reading, not an
  * error, and it is handled the same way the CPU thermal zone's absence is.

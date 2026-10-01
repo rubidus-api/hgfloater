@@ -4,7 +4,7 @@
 #include "hg_common.h"
 
 /* Browser and Explorer tabs as task icons. Design, and the costs it is arranged
- * around, are in docs/RFC-2026-07-tabs-as-task-icons.md.
+ * around, are in docs/rfc/RFC-2026-07-tabs-as-task-icons.md.
  *
  * A tab is not a window, so no amount of window enumeration finds one. The only
  * supported way to ask is UI Automation, which is a cross-process call into the

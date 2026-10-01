@@ -122,7 +122,7 @@ static BOOL explorer_path_for(IShellWindows **shell_windows, HWND hwnd, const WC
 /* Tabs no longer fan out into the grid. They live in the hover sub-box
  * instead - one window is one icon, orderable like any other, and the tab
  * list is read when somebody looks at it rather than on a background clock.
- * See docs/RFC-2026-07-tabs-as-task-icons.md, D8; the reading machinery is
+ * See docs/rfc/RFC-2026-07-tabs-as-task-icons.md, D8; the reading machinery is
  * hg_tabs.c and the presentation is widgets/hg_tabbox.c. */
 
 void refresh_window_list(BOOL force)

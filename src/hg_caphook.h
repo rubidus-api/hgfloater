@@ -7,7 +7,7 @@
  *
  * Right-click the maximize button of any window and hgfloater offers the same
  * move-and-resize entries the task icons offer. Design and costs are in
- * docs/RFC-2026-07-caption-button-menu.md.
+ * docs/rfc/RFC-2026-07-caption-button-menu.md.
  *
  * This is the only thing hgfloater does outside its own windows, so it is the
  * only thing that needs a system-wide hook. The hook goes in when the setting
