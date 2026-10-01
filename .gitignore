@@ -68,3 +68,5 @@ cloudflare*.env
 /docs/operations
 /test
 /scripts/check-docs.py
+# host-test binaries that `make test-host` (and gate t2) leave in the root
+/*_host
