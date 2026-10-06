@@ -346,56 +346,9 @@ static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, c
     SelectObject(dc, old_font);
 }
 
-/* A reading button, drawn for the Ico box.
- *
- * The same plate, outline, mute border and label the row would give it, so an
- * icon does not change its looks by moving into the box. One thing is drawn
- * differently, and on purpose: the selected icon is ringed in the focus colour
- * rather than filled with it. On the row a focused button is painted over in
- * yellow, which hides the one thing a reading button exists to show - and in
- * this box the selected icon is the one PageUp and PageDown are turning, so
- * its colour is exactly what the reader is watching. The ring sits where the
- * outline would, at the outline's thickness, and leaves the plate alone. */
-void hg_toolbar_paint_builtin_cell(HDC dc, int index, const RECT *rc_item, int icon_size, BOOL selected,
-                                   BOOL hovered)
-{
-    (void)icon_size;
-    if (!dc || !rc_item)
-        return;
-
-    RECT rc_btn = *rc_item;
-    InflateRect(&rc_btn, SC(4), SC(4));
-
-    HBRUSH plate = hg_cached_solid_brush(toolbar_basic_icon_bg_color(index, HG_TRANSPARENT_KEY));
-    if (plate)
-        FillRect(dc, &rc_btn, plate);
-    if (hovered && !selected)
-        DrawEdge(dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
-
-    if (selected) {
-        HBRUSH ring = hg_cached_solid_brush(hg_g_color_focus_bg);
-        int thickness = SC(2);
-        if (thickness < 2)
-            thickness = 2;
-        RECT edge = rc_btn;
-        for (int i = 0; ring && i < thickness; ++i) {
-            FrameRect(dc, &edge, ring);
-            InflateRect(&edge, -1, -1);
-        }
-    } else {
-        toolbar_draw_button_outline(dc, &rc_btn);
-    }
-
-    if (index == HG_TOOL_ICON_VOLUME && get_system_mute())
-        toolbar_draw_state_border(dc, &rc_btn);
-
-    toolbar_draw_builtin_label(dc, index, rc_item, &rc_btn);
-}
-
 /* A shortcut in the Run box. No plate, the same as a shortcut had on the row -
- * the colour behind it would say nothing - and the same ring as the Ico box's
- * icons for the one the keyboard is on, so the two boxes are walked the same
- * way. The badge is the Shift+letter that launches it from anywhere in the
+ * the colour behind it would say nothing - and a ring in the focus colour for
+ * the one the keyboard is on. The badge is the Shift+letter that launches it from anywhere in the
  * taskbox; this box is the one place that letter is still written down. */
 void hg_toolbar_paint_shortcut_cell(HDC dc, int s_idx, const RECT *rc_item, int icon_size, BOOL selected,
                                     BOOL hovered)
@@ -595,11 +548,10 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     BOOL keep_value_bg = hg_toolbar_builtin_has_value(i);
                     /* No plate behind a function button or a shortcut: the
                      * desktop shows through, the same as everywhere else in
-                     * this window now. A reading button would keep its plate,
-                     * because for it the background is not decoration - it is
-                     * the reading. None is on the row at present: Vol, Mon and
-                     * Alp are icons in the Ico box, and that box draws them
-                     * with hg_toolbar_paint_builtin_cell.
+                     * this window now. The three reading buttons keep theirs,
+                     * because for them the background is not decoration - it is
+                     * the reading: Vol, Mon and Alp say the volume, the
+                     * brightness and the opacity by how deep their colour is.
                      *
                      * This also undoes an accident of making the toolbar
                      * transparent: these plates were painted as the inverse of
@@ -1231,9 +1183,8 @@ static void toolbar_update_value_tooltip(HWND hwnd, int index)
 static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPARAM l_param)
 {
     /* The box has no focus, so its wheel messages arrive here. A notch spent
-     * over a row or an icon of the box belongs to it: this is how Vol, Mon and
-     * Alp are spun in the Ico box. A reading button on the row itself would be
-     * answered further down, by rect. */
+     * over a row of the box belongs to it. Vol, Mon and Alp are on the row
+     * itself and are answered further down, by rect. */
     if (hg_tabbox_handle_wheel((short)HIWORD(w_param)))
         return 0;
 

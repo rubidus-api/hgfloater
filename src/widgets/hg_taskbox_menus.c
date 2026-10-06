@@ -207,8 +207,8 @@ static BOOL toolbar_controller_get_context_menu_point(HWND hwnd, int cur_type, i
 
     if (l_param == 0) {
         /* A button drawn in the box is where the box drew it. Asked first,
-         * because the row has no cell for Vol and Mon any more, and a menu
-         * placed by the row's arithmetic would open somewhere unrelated. */
+         * because the row has no cell for a shortcut, and a menu placed by the
+         * row's arithmetic would open somewhere unrelated. */
         RECT in_box;
         if (cur_type == 1 && hg_tabbox_item_screen_rect(cur_index, &in_box)) {
             screen_pt->x = in_box.left;

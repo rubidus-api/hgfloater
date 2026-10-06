@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **The floater's clock and date are formats you write.** Two rows in the
+  settings window, **Clock format** and **Date format**, take a format in
+  `strftime` notation: `%H` `%I` `%M` `%S` `%p` `%Y` `%y` `%m` `%d` `%e` `%j`
+  `%a` `%A` `%b` `%B` `%%`, and a minus to drop a number's padding (`%-d`).
+  The defaults, `%H:%M` and `%a, %b %-d`, are what the floater has always
+  shown. The codes are listed in the settings window under the two rows, `R` on
+  a row restores its default, and the floater widens and narrows to fit.
+  The formatter is the program's own - it does not call `strftime` - so it has
+  a closed list of codes and English names whatever the system locale.
+- **A format is validated before it is used.** At most 32 characters; every `%`
+  followed by a known code; no tab or line break; not empty or all spaces; and
+  refused if it could render longer than 63 characters. The edit line accepts
+  no more than 32 characters and the line beneath it says, at every keystroke,
+  what the text would show or what is wrong and at which character. `Enter` on
+  a refused format saves nothing. The same check runs on `config.ini` at start:
+  a hand-edited value that does not pass is replaced by the default. In the
+  file the format is quoted, a backslash is `\\` and anything outside ASCII is
+  `\uXXXX`, and a new value is read back after it is written before the
+  running program adopts it.
+- **Which part of the clock opens the taskbox on hover is a choice.** **Open the
+  Taskbox from the Floater** in the settings window: click only, hover on the
+  minutes, hover on the hours, or hover on either. `[taskbox] hover_region`
+  (`minutes`, `hours`, `both`) keeps the part; `open_on_hover` is still the
+  on/off switch, so existing settings behave as they did.
+- **The hours and minutes can change colour every half second**, with the
+  colour of your choice (Windows' colour chooser; `[floater] blink`,
+  `[colors] clock_blink`). Off by default, and the half-second timer exists
+  only while it is on.
+
+### Changed
+- **`Vol`, `Mon` and `Alp` are buttons on the row again, and the `Ico` button
+  and its box are gone.** From the left the row is now `Run` `Dir` `Alp` `Mon`
+  `Vol` `Opt` `Set` `Clip` `Note` `C` `D` `X` `M` `R` - fourteen buttons. Wheel,
+  click and right-click on each are what they were in the box; from the
+  keyboard, `PageUp`/`PageDown` and `E`/`Q` turn the focused one. A focused
+  button is painted in the focus colour, which covers its plate (in the box the
+  selected icon was ringed instead): while turning a value from the keyboard,
+  the number is on the status line.
+
 ## [v0.17.14] - 2026-09-28
 
 ### Changed

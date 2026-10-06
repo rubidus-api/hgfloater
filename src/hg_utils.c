@@ -785,9 +785,6 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_MENU, L"Opt", L"Options Menu", L"Options Menu", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_OPEN_MENU, HG_TOOLBAR_DRAG_NONE},
 
-    {HG_TOOL_ICON_ICONS, L"Ico", L"Volume, brightness, opacity (hover or click for the icons)",
-     L"Volume, brightness, opacity (hover or click for the icons)", HG_TOOLBAR_VALUE_NONE,
-     HG_TOOLBAR_CLICK_OPEN_ICONS, HG_TOOLBAR_DRAG_NONE},
     {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",
      L"Folders (hover or click for the list)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_DIRS,
      HG_TOOLBAR_DRAG_NONE},
@@ -798,11 +795,10 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      L"Shortcuts (hover or click for the icons)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_RUN,
      HG_TOOLBAR_DRAG_NONE},
 
-    /* The three that carry a reading, drawn as icons in the Ico box. Their
-     * colour is the value, and each of the three gestures a button has answers
-     * with a different depth: the wheel changes the reading, the click does the
-     * one thing you would want without choosing, and the right button opens the
-     * choice.
+    /* The three that carry a reading, on the row. Their colour is the value,
+     * and each of the three gestures a button has answers with a different
+     * depth: the wheel changes the reading, the click does the one thing you
+     * would want without choosing, and the right button opens the choice.
      *
      * Vol: wheel = volume, click = mute, right = which output device.
      * Mon: wheel = brightness, click = this screen's scaling, right = how the
@@ -824,12 +820,11 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
-/* Twelve on the row, three in the Ico box, and the pin in the Set box. Stated
- * rather than derived, so adding a descriptor without deciding where it belongs
- * does not compile. */
+/* Fourteen on the row, and the pin in the Set box. Stated rather than derived,
+ * so adding a descriptor without deciding where it belongs does not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
-        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 4) ? 1 : 0)
+        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 1) ? 1 : 0)
 };
 
 static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)

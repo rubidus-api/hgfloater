@@ -19,6 +19,7 @@
 #include "../hg_options.h"
 #include "../hg_values.h"
 #include "../hg_keys.h"
+#include "../hg_clock.h"
 #include "hg_commandbox.h"
 #include "hg_taskbox.h"
 #include "hg_note.h"
@@ -27,6 +28,7 @@
 
 #define HG_SETTINGS_LIST_ID 100
 #define HG_SETTINGS_STATUS_ID 101
+#define HG_SETTINGS_EDIT_ID 102
 
 enum {
     HG_ROW_HEADING = 1,
@@ -34,7 +36,19 @@ enum {
     HG_ROW_VALUE,
     HG_ROW_FONT, /* one of the three families */
     HG_ROW_KEY,  /* a function */
-    HG_ROW_CHORD /* one of that function's chords */
+    HG_ROW_CHORD, /* one of that function's chords */
+    HG_ROW_CLOCK  /* one of the floater clock's settings, below */
+};
+
+/* The floater clock's rows. Not rows of the options or the values table because
+ * none of them is a switch or a number: one is a choice of four, one is a
+ * colour, and two are text. */
+enum {
+    HG_CLOCK_ROW_HOVER = 1,
+    HG_CLOCK_ROW_BLINK,
+    HG_CLOCK_ROW_BLINK_COLOR,
+    HG_CLOCK_ROW_TIME_FORMAT,
+    HG_CLOCK_ROW_DATE_FORMAT
 };
 
 /* The three families, and what each is for.
@@ -83,8 +97,18 @@ static int s_capture_action = 0;
 static BOOL s_capture_replaces = FALSE;
 static HgChord s_capture_replaced = {0, 0};
 
+/* The format being typed: HG_CLOCK_FORMAT_TIME or _DATE, or -1 when the edit
+ * line is away. While it is up it sits between the list and the status line,
+ * and the status line says, at every keystroke, what the text would show or
+ * what is wrong with it. */
+static int s_edit_which = -1;
+/* Set while the edit line is being taken down on purpose, so that losing the
+ * focus on its way out is not read as the reader walking away from it. */
+static BOOL s_edit_closing = FALSE;
+
 static void settings_fill(HWND hwnd);
 static void settings_layout_current(HWND hwnd);
+static void settings_describe(HWND hwnd);
 
 BOOL hg_settings_capturing(void)
 {
@@ -149,7 +173,7 @@ static void settings_release_row_font(void)
 static BOOL settings_row_is_actionable(int kind)
 {
     return kind == HG_ROW_OPTION || kind == HG_ROW_VALUE || kind == HG_ROW_FONT || kind == HG_ROW_KEY ||
-           kind == HG_ROW_CHORD;
+           kind == HG_ROW_CHORD || kind == HG_ROW_CLOCK;
 }
 
 static void settings_apply_font(HWND hwnd)
@@ -168,7 +192,7 @@ static void settings_apply_font(HWND hwnd)
         s_row_font = CreateFontIndirectW(&lf);
     }
 
-    const int ids[] = {HG_SETTINGS_LIST_ID, HG_SETTINGS_STATUS_ID};
+    const int ids[] = {HG_SETTINGS_LIST_ID, HG_SETTINGS_STATUS_ID, HG_SETTINGS_EDIT_ID};
     for (int i = 0; i < (int)HG_ARRAYSIZE(ids); ++i) {
         HWND child = GetDlgItem(hwnd, ids[i]);
         if (child)
@@ -192,16 +216,22 @@ static void settings_layout(HWND hwnd, int width, int height)
 
     HWND status = GetDlgItem(hwnd, HG_SETTINGS_STATUS_ID);
     HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
+    HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
 
-    int list_h = height - status_h - pad * 3;
+    /* The edit line takes a row of its own above the status line while a format
+     * is being typed, and no room at all otherwise. */
+    int edit_h = (s_edit_which >= 0) ? status_h + pad : 0;
+    int list_h = height - status_h - edit_h - pad * 3;
     if (list_h < 0)
         list_h = 0;
     int inner_w = (width - pad * 2 > 0) ? width - pad * 2 : 0;
 
     if (list)
         MoveWindow(list, pad, pad, inner_w, list_h, TRUE);
+    if (edit && edit_h > 0)
+        MoveWindow(edit, pad, pad * 2 + list_h, inner_w, status_h, TRUE);
     if (status)
-        MoveWindow(status, pad, pad * 2 + list_h, inner_w, status_h, TRUE);
+        MoveWindow(status, pad, pad * 2 + list_h + edit_h, inner_w, status_h, TRUE);
 }
 
 static void settings_say(HWND hwnd, const WCHAR *text)
@@ -324,6 +354,60 @@ static void settings_add_row(HWND list, int kind, int number, const WCHAR *text)
     settings_add_row_at(list, kind, number, 0, text);
 }
 
+/* The floater clock: how the taskbox opens from it, the colour change, the two
+ * formats, and - because a format is a notation nobody should have to look up
+ * elsewhere - the codes it is written in, listed right under the rows that take
+ * them. */
+static void settings_fill_clock(HWND list)
+{
+    WCHAR line[256];
+
+    settings_add_row(list, HG_ROW_HEADING, 0, L"");
+    settings_add_row(list, HG_ROW_HEADING, 0, L"FLOATER CLOCK");
+
+    StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", L"Open the Taskbox from the Floater",
+                     hg_clock_hover_mode_text(hg_clock_hover_mode()));
+    settings_add_row(list, HG_ROW_CLOCK, HG_CLOCK_ROW_HOVER, line);
+
+    StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", L"Change Hour/Minute Colour (0.5s)",
+                     hg_clock_blink() ? L"on" : L"off");
+    settings_add_row(list, HG_ROW_CLOCK, HG_CLOCK_ROW_BLINK, line);
+
+    COLORREF color = hg_clock_blink_color();
+    StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls #%02X%02X%02X", L"Colour to Change To", GetRValue(color),
+                     GetGValue(color), GetBValue(color));
+    settings_add_row(list, HG_ROW_CLOCK, HG_CLOCK_ROW_BLINK_COLOR, line);
+
+    for (int which = 0; which < HG_CLOCK_FORMAT_COUNT; ++which) {
+        /* The format goes in as an argument, never as the format string. What
+         * it renders to is said on the status line while the row is selected:
+         * the two together do not fit a row at this window's width. */
+        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", hg_clock_format_label(which),
+                         hg_clock_format(which));
+        settings_add_row(list, HG_ROW_CLOCK,
+                         (which == HG_CLOCK_FORMAT_TIME) ? HG_CLOCK_ROW_TIME_FORMAT : HG_CLOCK_ROW_DATE_FORMAT, line);
+    }
+
+    /* Two to a line and short, so every code can be read without widening the
+     * window. */
+    static const WCHAR *const help[] = {
+        L"     Format codes, as in strftime (up to 32 characters):",
+        L"       %H  hour 00-23          %I  hour 01-12",
+        L"       %M  minute 00-59        %S  second 00-59",
+        L"       %p  AM / PM             %j  day of year 001-366",
+        L"       %Y  year 2026           %y  year 26",
+        L"       %m  month 01-12         %d  day 01-31",
+        L"       %b  Jan                 %B  January",
+        L"       %a  Sun                 %A  Sunday",
+        L"       %e  day, space padded   %%  a percent sign",
+        L"       %-d drops the padding: 6, not 06 (numbers only).",
+        L"       Other text is shown as typed.",
+        L"       Example: %Y-%m-%d (%a) %I:%M %p",
+    };
+    for (size_t i = 0; i < HG_ARRAYSIZE(help); ++i)
+        settings_add_row(list, HG_ROW_HEADING, 0, help[i]);
+}
+
 static void settings_fill(HWND hwnd)
 {
     HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
@@ -350,6 +434,8 @@ static void settings_fill(HWND hwnd)
         StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", info.label, state);
         settings_add_row(list, HG_ROW_OPTION, i, line);
     }
+
+    settings_fill_clock(list);
 
     settings_add_row(list, HG_ROW_HEADING, 0, L"");
     settings_add_row(list, HG_ROW_HEADING, 0, L"FONTS");
@@ -452,6 +538,8 @@ static void settings_layout_current(HWND hwnd)
 static void settings_describe(HWND hwnd)
 {
     HgSettingsRow row;
+    if (s_edit_which >= 0)
+        return; /* the status line belongs to the format being typed */
     if (s_capture_action) {
         settings_say(hwnd, L"Press the chord to add.  Esc cancels.");
         return;
@@ -473,6 +561,28 @@ static void settings_describe(HWND hwnd)
         break;
     case HG_ROW_CHORD:
         settings_say(hwnd, L"Del removes this key.  Enter replaces it with the next one you press.");
+        break;
+    case HG_ROW_CLOCK:
+        switch (row.number) {
+        case HG_CLOCK_ROW_HOVER:
+            settings_say(hwnd, L"Left/Right or Enter: click only, or hover on the minutes, the hours, or both.");
+            break;
+        case HG_CLOCK_ROW_BLINK:
+            settings_say(hwnd, L"Enter or Space switches it.");
+            break;
+        case HG_CLOCK_ROW_BLINK_COLOR:
+            settings_say(hwnd, L"Enter picks the colour.  R restores the default.");
+            break;
+        default: {
+            int which = (row.number == HG_CLOCK_ROW_TIME_FORMAT) ? HG_CLOCK_FORMAT_TIME : HG_CLOCK_FORMAT_DATE;
+            WCHAR preview[HG_TIMEFMT_OUT_CCH];
+            WCHAR text[200];
+            hg_clock_preview(hg_clock_format(which), preview, (int)HG_ARRAYSIZE(preview));
+            StringCchPrintfW(text, HG_ARRAYSIZE(text), L"Enter edits, R restores the default.   Now: %ls", preview);
+            settings_say(hwnd, text);
+            break;
+        }
+        }
         break;
     default:
         settings_say(hwnd, L"Up/Down to walk the list.");
@@ -512,6 +622,250 @@ static void settings_step_value(HWND hwnd, int number, int direction)
     WCHAR text[128];
     StringCchPrintfW(text, HG_ARRAYSIZE(text), L"%ls  %d%ls", info.name, now, info.unit);
     settings_say(hwnd, text);
+}
+
+/* ------------------------------------------------------- the floater clock */
+
+static int settings_clock_row_format(int number)
+{
+    if (number == HG_CLOCK_ROW_TIME_FORMAT)
+        return HG_CLOCK_FORMAT_TIME;
+    if (number == HG_CLOCK_ROW_DATE_FORMAT)
+        return HG_CLOCK_FORMAT_DATE;
+    return -1;
+}
+
+/* What the text in the edit line would do, said on the status line: the
+ * rendered result when it is a format, the fault and its column when it is not.
+ * Returns the error, so the commit can use the same answer. */
+static HgTimefmtError settings_edit_judge(HWND hwnd, WCHAR *text, int text_cch, int *err_pos)
+{
+    HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
+    text[0] = L'\0';
+    /* The control is limited to HG_TIMEFMT_MAX_FORMAT characters, but a limit
+     * on a control is a courtesy to the typist rather than a guarantee: the
+     * length is asked for first, and a text that would not fit the buffer is
+     * refused without being copied. */
+    int length = edit ? GetWindowTextLengthW(edit) : 0;
+    if (length >= text_cch) {
+        *err_pos = HG_TIMEFMT_MAX_FORMAT;
+        return HG_TIMEFMT_TOO_LONG;
+    }
+    if (edit)
+        GetWindowTextW(edit, text, text_cch);
+    return hg_timefmt_validate(text, err_pos);
+}
+
+static void settings_edit_report(HWND hwnd)
+{
+    WCHAR text[HG_TIMEFMT_MAX_FORMAT + 2];
+    WCHAR message[200];
+    int err_pos = 0;
+    HgTimefmtError error = settings_edit_judge(hwnd, text, (int)HG_ARRAYSIZE(text), &err_pos);
+
+    if (error == HG_TIMEFMT_OK) {
+        WCHAR preview[HG_TIMEFMT_OUT_CCH];
+        hg_clock_preview(text, preview, (int)HG_ARRAYSIZE(preview));
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"Enter keeps it, Esc cancels.   -> %ls", preview);
+    } else if (error == HG_TIMEFMT_EMPTY || error == HG_TIMEFMT_BLANK || error == HG_TIMEFMT_OUTPUT) {
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"Not usable: %ls.", hg_timefmt_error_text(error));
+    } else {
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"Not usable, character %d: %ls.", err_pos + 1,
+                         hg_timefmt_error_text(error));
+    }
+    settings_say(hwnd, message);
+}
+
+static void settings_edit_end(HWND hwnd)
+{
+    if (s_edit_which < 0)
+        return;
+    HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
+    HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
+
+    s_edit_closing = TRUE;
+    s_edit_which = -1;
+    if (edit)
+        ShowWindow(edit, SW_HIDE);
+    settings_layout_current(hwnd);
+    if (list && GetForegroundWindow() == hwnd)
+        SetFocus(list);
+    s_edit_closing = FALSE;
+}
+
+static void settings_edit_begin(HWND hwnd, int which)
+{
+    HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
+    if (!edit || which < 0 || which >= HG_CLOCK_FORMAT_COUNT)
+        return;
+
+    s_edit_which = which;
+    SendMessageW(edit, EM_SETLIMITTEXT, (WPARAM)HG_TIMEFMT_MAX_FORMAT, 0);
+    SetWindowTextW(edit, hg_clock_format(which));
+    settings_layout_current(hwnd);
+    ShowWindow(edit, SW_SHOW);
+    SetFocus(edit);
+    SendMessageW(edit, EM_SETSEL, 0, -1);
+    settings_edit_report(hwnd);
+}
+
+static void settings_edit_commit(HWND hwnd)
+{
+    int which = s_edit_which;
+    if (which < 0)
+        return;
+
+    WCHAR text[HG_TIMEFMT_MAX_FORMAT + 2];
+    int err_pos = 0;
+    HgTimefmtError error = settings_edit_judge(hwnd, text, (int)HG_ARRAYSIZE(text), &err_pos);
+    int result = (error == HG_TIMEFMT_OK) ? hg_clock_set_format(which, text, &err_pos) : (int)error;
+
+    if (result != HG_CLOCK_SET_OK) {
+        /* Refused: the line stays up with the fault selected, and the format
+         * in use is the one it was. */
+        HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
+        if (result == HG_CLOCK_SET_NOT_KEPT) {
+            settings_say(hwnd, L"Not kept: the settings file did not hand that text back unchanged.");
+        } else {
+            settings_edit_report(hwnd);
+            if (edit)
+                SendMessageW(edit, EM_SETSEL, (WPARAM)err_pos, (LPARAM)(err_pos + 1));
+        }
+        MessageBeep(MB_ICONWARNING);
+        return;
+    }
+
+    settings_edit_end(hwnd);
+    settings_fill(hwnd);
+
+    WCHAR preview[HG_TIMEFMT_OUT_CCH];
+    WCHAR message[200];
+    hg_clock_preview(hg_clock_format(which), preview, (int)HG_ARRAYSIZE(preview));
+    StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls: %ls   -> %ls", hg_clock_format_label(which),
+                     hg_clock_format(which), preview);
+    settings_say(hwnd, message);
+}
+
+static void settings_edit_cancel(HWND hwnd)
+{
+    if (s_edit_which < 0)
+        return;
+    settings_edit_end(hwnd);
+    settings_describe(hwnd);
+}
+
+static LRESULT CALLBACK settings_edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
+                                                    UINT_PTR subclass_id, DWORD_PTR ref_data)
+{
+    (void)subclass_id;
+    (void)ref_data;
+    HWND parent = GetParent(hwnd);
+
+    if (msg == WM_KEYDOWN && w_param == VK_RETURN) {
+        settings_edit_commit(parent);
+        return 0;
+    }
+    if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
+        settings_edit_cancel(parent);
+        return 0;
+    }
+    /* The characters those two keys also produce: a single-line edit answers
+     * them with a beep. */
+    if (msg == WM_CHAR && (w_param == L'\r' || w_param == L'\n' || w_param == 0x1B))
+        return 0;
+    if (msg == WM_KILLFOCUS && !s_edit_closing && s_edit_which >= 0) {
+        /* Walking away is not agreeing: nothing typed is kept. */
+        LRESULT result = DefSubclassProc(hwnd, msg, w_param, l_param);
+        settings_edit_cancel(parent);
+        return result;
+    }
+    return DefSubclassProc(hwnd, msg, w_param, l_param);
+}
+
+/* Windows' own colour chooser, seeded with the colour in use, for the same
+ * reason the fonts use Windows' font chooser. */
+static BOOL settings_choose_blink_color(HWND hwnd)
+{
+    static COLORREF s_custom[16];
+
+    CHOOSECOLORW cc;
+    SecureZeroMemory(&cc, sizeof(cc));
+    cc.lStructSize = sizeof(cc);
+    cc.hwndOwner = hwnd;
+    cc.rgbResult = hg_clock_blink_color();
+    cc.lpCustColors = s_custom;
+    cc.Flags = CC_RGBINIT | CC_FULLOPEN | CC_ANYCOLOR;
+    if (!ChooseColorW(&cc))
+        return FALSE; /* cancelled, or the dialog would not open */
+
+    hg_clock_set_blink_color(cc.rgbResult);
+    return TRUE;
+}
+
+/* A floater-clock row and the key pressed on it. Enter and Space are the row's
+ * own act; Left and Right walk the choice of four; R is back to the default. */
+static BOOL settings_clock_row_command(HWND hwnd, int number, UINT vk)
+{
+    BOOL act = (vk == VK_RETURN || vk == VK_SPACE);
+    WCHAR message[200];
+
+    switch (number) {
+    case HG_CLOCK_ROW_HOVER: {
+        if (!act && vk != VK_LEFT && vk != VK_RIGHT)
+            return FALSE;
+        int mode = (int)hg_clock_hover_mode();
+        mode += (vk == VK_LEFT) ? HG_HOVER_MODE_COUNT - 1 : 1;
+        mode %= HG_HOVER_MODE_COUNT;
+        hg_clock_set_hover_mode((HgHoverMode)mode);
+        settings_fill(hwnd);
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"Taskbox opens from the floater: %ls",
+                         hg_clock_hover_mode_text(hg_clock_hover_mode()));
+        settings_say(hwnd, message);
+        return TRUE;
+    }
+    case HG_CLOCK_ROW_BLINK:
+        if (!act)
+            return FALSE;
+        hg_clock_set_blink(!hg_clock_blink());
+        settings_fill(hwnd);
+        settings_say(hwnd, hg_clock_blink() ? L"Clock: hours and minutes change colour every half second"
+                                            : L"Clock: one colour");
+        return TRUE;
+    case HG_CLOCK_ROW_BLINK_COLOR:
+        if (vk == 'R') {
+            hg_clock_reset_blink_color();
+            settings_fill(hwnd);
+            settings_say(hwnd, L"Colour back to its default.");
+            return TRUE;
+        }
+        if (!act)
+            return FALSE;
+        if (settings_choose_blink_color(hwnd)) {
+            settings_fill(hwnd);
+            settings_describe(hwnd);
+        }
+        return TRUE;
+    case HG_CLOCK_ROW_TIME_FORMAT:
+    case HG_CLOCK_ROW_DATE_FORMAT: {
+        int which = settings_clock_row_format(number);
+        if (vk == 'R') {
+            int result = hg_clock_set_format(which, hg_clock_default_format(which), NULL);
+            settings_fill(hwnd);
+            StringCchPrintfW(message, HG_ARRAYSIZE(message),
+                             (result == HG_CLOCK_SET_OK) ? L"%ls back to its default: %ls"
+                                                         : L"%ls could not be written; it stays %ls",
+                             hg_clock_format_label(which), hg_clock_format(which));
+            settings_say(hwnd, message);
+            return TRUE;
+        }
+        if (!act)
+            return FALSE;
+        settings_edit_begin(hwnd, which);
+        return TRUE;
+    }
+    default:
+        return FALSE;
+    }
 }
 
 static void settings_capture_chord(HWND hwnd, UINT vk)
@@ -730,6 +1084,10 @@ static BOOL settings_list_key(HWND parent, UINT vk)
             return TRUE;
         }
         break;
+    case HG_ROW_CLOCK:
+        if (settings_clock_row_command(parent, row.number, vk))
+            return TRUE;
+        break;
     default:
         break;
     }
@@ -898,6 +1256,10 @@ static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM 
                 settings_toggle_option(parent, row.number);
                 return 0;
             }
+            if (row.kind == HG_ROW_CLOCK) {
+                settings_clock_row_command(parent, row.number, VK_RETURN);
+                return 0;
+            }
             if (row.kind == HG_ROW_KEY || row.kind == HG_ROW_CHORD) {
                 if (row.kind == HG_ROW_KEY)
                     settings_key_row_command(parent, row.number, VK_RETURN);
@@ -927,6 +1289,16 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
                         0, 0, 0, 0, hwnd, (HMENU)HG_SETTINGS_LIST_ID, instance, NULL);
         CreateWindowExW(0, L"STATIC", NULL, WS_CHILD | WS_VISIBLE | SS_LEFTNOWORDWRAP, 0, 0, 0, 0, hwnd,
                         (HMENU)HG_SETTINGS_STATUS_ID, instance, NULL);
+
+        /* Hidden until a format row asks for it. Single line, so no line break
+         * can be typed or pasted into it, and limited to the longest format. */
+        CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd,
+                        (HMENU)HG_SETTINGS_EDIT_ID, instance, NULL);
+        HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
+        if (edit) {
+            SendMessageW(edit, EM_SETLIMITTEXT, (WPARAM)HG_TIMEFMT_MAX_FORMAT, 0);
+            SetWindowSubclass(edit, settings_edit_subclass_proc, 2, 0);
+        }
 
         HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
         if (list)
@@ -998,6 +1370,19 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         text_rc.left += 2;
         DrawTextW(dis->hDC, text, -1, &text_rc, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
 
+        /* The colour row shows its colour, in the indent, as well as naming it. */
+        if (kind == HG_ROW_CLOCK && s_rows[index].number == HG_CLOCK_ROW_BLINK_COLOR) {
+            int inset = (dis->rcItem.bottom - dis->rcItem.top) / 5;
+            int side = (dis->rcItem.bottom - dis->rcItem.top) - inset * 2;
+            RECT swatch = {dis->rcItem.left + 2, dis->rcItem.top + inset, dis->rcItem.left + 2 + side,
+                           dis->rcItem.bottom - inset};
+            HBRUSH swatch_brush = hg_cached_solid_brush(hg_clock_blink_color());
+            if (swatch_brush && side > 0) {
+                FillRect(dis->hDC, &swatch, swatch_brush);
+                FrameRect(dis->hDC, &swatch, (HBRUSH)GetStockObject(GRAY_BRUSH));
+            }
+        }
+
         if (old_font)
             SelectObject(dis->hDC, old_font);
         return TRUE;
@@ -1005,10 +1390,18 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
 
     case WM_SETFOCUS: {
         HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
-        if (list)
+        HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
+        if (s_edit_which >= 0 && edit)
+            SetFocus(edit);
+        else if (list)
             SetFocus(list);
         return 0;
     }
+
+    case WM_COMMAND:
+        if (LOWORD(w_param) == HG_SETTINGS_EDIT_ID && HIWORD(w_param) == EN_CHANGE && s_edit_which >= 0)
+            settings_edit_report(hwnd);
+        return 0;
 
     case WM_ACTIVATE:
         /* Whatever changed while this window was away - a wheel over the
@@ -1045,6 +1438,9 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         }
         return 0;
 
+    case WM_CTLCOLOREDIT:
+        return hg_on_ctlcolor_field((HDC)w_param);
+
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORLISTBOX: {
         /* The same two-tone the command box has: the list is the page, and the
@@ -1068,6 +1464,7 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
     case WM_DESTROY:
         s_capture_action = 0;
         s_capture_replaces = FALSE;
+        s_edit_which = -1;
         s_settings_wnd = NULL;
         settings_release_row_font();
         s_hover_row = -1;

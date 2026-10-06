@@ -9,6 +9,7 @@ extern COLORREF hg_g_color_stat_mem;
 extern COLORREF hg_g_color_stat_bat;
 extern COLORREF hg_g_color_stat_temp;
 extern COLORREF hg_g_color_stat_gpu;
+extern COLORREF hg_g_color_clock_blink; /* [colors] clock_blink */
 extern COLORREF hg_g_color_value_alpha_lo;
 extern COLORREF hg_g_color_value_alpha_hi;
 extern COLORREF hg_g_color_value_bright_lo;
@@ -28,7 +29,7 @@ extern double hg_g_scale_factor;
 extern HWND hg_g_toolbar_wnd;
 extern HWND hg_g_edit_msg_wnd;
 extern HWND hg_g_tooltip_wnd;
-/* TRUE while a box (tabs, Dir, Set, Opt, Ico) is open: the row's tooltip stays
+/* TRUE while a box (tabs, Dir, Set, Opt, Run) is open: the row's tooltip stays
  * off, because the button that opened the box pops its tip right over it and a
  * tooltip under the pointer takes the wheel and the click meant for the box. */
 extern BOOL hg_g_toolbar_tips_suppressed;

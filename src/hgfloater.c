@@ -8,6 +8,7 @@
 #include "hg_tabs.h"
 #include "hg_caphook.h"
 #include "hg_options.h"
+#include "hg_clock.h"
 #include "hg_keys.h"
 
 /* =========================================================================
@@ -425,6 +426,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     load_floater_font_config();
     load_floater_stats_config();
     hg_options_load();
+    hg_clock_load_config();
     hg_keys_load();
     load_taskbox_font_config();
 

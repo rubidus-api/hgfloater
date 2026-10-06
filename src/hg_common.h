@@ -146,14 +146,17 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 12
+#define HG_NUM_BASIC_ICONS 14
 
 /* The row, in index order. Index 0 sits in the bottom-right cell and each one
- * after it steps left, so on screen the row reads Run Dir Ico Opt Set ... R.
+ * after it steps left, so on screen the row reads
+ * Run Dir Alp Mon Vol Opt Set Clip Note C D X M R.
  *
- * Dir sits beside Ico and Run beside Dir: the three buttons that open a box of
- * icons or places are one neighbourhood. Run is last, in the cells the
- * shortcuts used to take - they are icons in its box now, not on the row. */
+ * Vol, Mon and Alp are on the row itself. They spent v0.17.13 and v0.17.14 in
+ * a box behind an Ico button; a reading that has to be opened to be seen was
+ * one step too far, so the three are back where their colour can be read at a
+ * glance and the Ico button is gone. Dir and Run, the two that open a box of
+ * places or programs, stay together at the end. */
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
 #define HG_TOOL_ICON_CLOSE 2
@@ -163,36 +166,27 @@
 #define HG_TOOL_ICON_CLIP 6
 #define HG_TOOL_ICON_SETTINGS 7
 #define HG_TOOL_ICON_MENU 8
-#define HG_TOOL_ICON_ICONS 9
-#define HG_TOOL_ICON_DIR 10
-#define HG_TOOL_ICON_RUN 11
+#define HG_TOOL_ICON_VOLUME 9
+#define HG_TOOL_ICON_MONITOR 10
+#define HG_TOOL_ICON_ALPHA 11
+#define HG_TOOL_ICON_DIR 12
+#define HG_TOOL_ICON_RUN 13
 
 /* A shortcut's button id: past the row, so activate_toolbar_item can tell the
  * two apart. The shortcuts are not on the row any more - they are drawn in the
  * Run box - but a launch still goes through this one id. */
 #define HG_SHORTCUT_BUTTON_ID(s_idx) (HG_NUM_BASIC_ICONS + (s_idx))
 
-/* Buttons that are not on the row. They keep ids of their own because
- * everything that knows how to read and set a value (hg_toolbar_value_*, the
- * tooltips, the status line) is written against an id. Numbered past the row
- * and past every shortcut (the row plus HG_MAX_SHORTCUTS ends at 75), so a loop
- * over the toolbar cannot reach them by accident.
+/* The one button that is not on the row: the pin, a row of the Set box. It
+ * keeps an id of its own because everything that knows what a button is called
+ * and what it does is written against an id. Numbered past the row and past
+ * every shortcut (the row plus HG_MAX_SHORTCUTS ends at 77), so a loop over the
+ * toolbar cannot reach it by accident.
  *
- * Vol, Mon and Alp live in the box the Ico button opens, drawn there as icons
- * rather than as rows of text: the colour under the label is the reading, and
- * an icon keeps that where a line of text would have to spell it out. Three
- * reading buttons on the row were three cells of the grid spent on things that
- * are turned now and then; one button that opens all three costs one.
- *
- * The pin is a row of the Set box.
- *
- * The options menu is not among these: it was a row in that list, one click
- * deep, when what it opens is a menu of its own. It has its own button - Opt,
- * on the row - because a menu that lives inside another list is a menu nobody
+ * The options menu is not like it: it was a row in that list, one click deep,
+ * when what it opens is a menu of its own. It has its own button - Opt, on the
+ * row - because a menu that lives inside another list is a menu nobody
  * finds. */
-#define HG_TOOL_ICON_ALPHA 100
-#define HG_TOOL_ICON_VOLUME 101
-#define HG_TOOL_ICON_MONITOR 102
 #define HG_TOOL_ICON_PIN 103
 
 #define HG_IDM_MINIMIZE 201
@@ -267,6 +261,7 @@
 #define HG_TIMER_MONITOR_REFRESH 2
 #define HG_TIMER_HIGHLIGHT 1001
 #define HG_TIMER_HOVER_CHECK 1002
+#define HG_TIMER_FLOATER_BLINK 1004
 /* One shot, a moment after a theme broadcast: see hg_theme_settle_later(). */
 #define HG_TIMER_THEME_SETTLE 1003
 #define HG_HIGHLIGHT_TICKS 6
@@ -315,6 +310,9 @@
 #define HG_COLOR_STAT_BAT_DEFAULT RGB(80, 190, 100)
 #define HG_COLOR_STAT_TEMP_DEFAULT RGB(240, 150, 60)
 #define HG_COLOR_STAT_GPU_DEFAULT RGB(200, 110, 210)
+/* What the clock's hours and minutes turn to on alternate half seconds, when
+ * that is switched on. */
+#define HG_COLOR_CLOCK_BLINK_DEFAULT RGB(255, 140, 40)
 #define HG_COLOR_VALUE_ALPHA_LO_DEFAULT RGB(24, 0, 0)
 #define HG_COLOR_VALUE_ALPHA_HI_DEFAULT RGB(255, 56, 56)
 #define HG_COLOR_VALUE_BRIGHT_LO_DEFAULT RGB(0, 24, 0)

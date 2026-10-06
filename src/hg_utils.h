@@ -248,7 +248,6 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_OPEN_DIRS,     /* the folder list, in the shared box */
     HG_TOOLBAR_CLICK_OPEN_CONTROLS, /* opacity, pin, and the doors to the settings */
     HG_TOOLBAR_CLICK_OPEN_SCALE_MENU, /* the scaling ladder for the screen this window is on */
-    HG_TOOLBAR_CLICK_OPEN_ICONS,      /* Vol, Mon and Alp, as icons, in the shared box */
     HG_TOOLBAR_CLICK_OPEN_RUN         /* the shortcuts, as icons, in the shared box */
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
@@ -272,24 +271,16 @@ BOOL hg_toolbar_builtin_tooltip_full(int index, WCHAR *buffer, size_t buffer_cch
 BOOL hg_toolbar_builtin_badge_text(int index, WCHAR *buffer, size_t buffer_cch);
 BOOL hg_toolbar_builtin_has_value(int index);
 BOOL hg_toolbar_builtin_value_text(int index, HgToolbarTextMode mode, WCHAR *buffer, size_t buffer_cch);
-/* One wheel notch on a value button, wherever the wheel was pointed: an icon in
- * the Ico box and a key on it are the same control, so they step the same way
- * and in the same units. FALSE when that button has no value. */
+/* One wheel notch on a value button. A key on the button makes the same call,
+ * so the two step the same way and in the same units. FALSE when that button
+ * has no value. */
 BOOL hg_toolbar_value_wheel(int index, short delta);
 /* That button's reading, 0-100. FALSE when it has no value. */
 BOOL hg_toolbar_value_percent(int index, int *out);
-/* Say the reading on the status line and repaint everything that shows it -
- * the row and the Ico box. For a change made anywhere: the wheel, a key, the
- * mute click, a pick from the device menu. */
+/* Say the reading on the status line and repaint everything that shows it.
+ * For a change made anywhere: the wheel, a key, the mute click, a pick from
+ * the device menu. */
 void hg_toolbar_value_announce(int index);
-/* One function button drawn as the row draws it - the plate that is its reading,
- * the outline, the mute border, the label - into rc_item, which is the icon's
- * square; the plate spills SC(4) past it the way it does on the row. The Ico
- * box draws its icons with this, so an icon there and a button on the row
- * cannot come to look different. selected rings it in the focus colour;
- * hovered raises its edge. */
-void hg_toolbar_paint_builtin_cell(HDC dc, int index, const RECT *rc_item, int icon_size, BOOL selected,
-                                   BOOL hovered);
 /* The menu behind a reading button's right click: Vol the output devices, Mon
  * the screen arrangement. at_pointer places it at the pointer, otherwise at the
  * button, wherever that button is drawn. FALSE when the button has no such

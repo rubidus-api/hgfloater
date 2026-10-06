@@ -100,23 +100,17 @@ static int s_menu_row_count = 0;
 static void tabbox_menu_row_text(int index, WCHAR *out, size_t out_cch);
 static int tabbox_row_at(POINT client_pt);
 
-/* The Ico box: the buttons it holds, in the order they are drawn - the order the
- * reader named them in. */
-static const int s_icon_ids[] = {HG_TOOL_ICON_VOLUME, HG_TOOL_ICON_MONITOR, HG_TOOL_ICON_ALPHA};
-
-/* The two boxes drawn as a grid of icons rather than as lines of text: Ico and
- * Run. Everything about the grid's shape - placement, hit testing, painting the
- * cells, the arrows - is asked through this; what a cell *does* (a reading that
- * turns, a program that runs) is asked by mode. */
+/* The one box drawn as a grid of icons rather than as lines of text: Run.
+ * Everything about the grid's shape - placement, hit testing, painting the
+ * cells, the arrows - is asked through this. */
 static BOOL tabbox_is_grid(void)
 {
-    return s_mode == HG_BOX_ICONS || s_mode == HG_BOX_RUN;
+    return s_mode == HG_BOX_RUN;
 }
 
-/* Across, then down, like the taskbox grid. Four across before a row wraps:
- * three icons sit in one line, which is how a reader looks along a set of
- * readings, and a longer set still keeps the box roughly square rather than a
- * strip running off the side of the icon it hangs from.
+/* Across, then down, like the taskbox grid. Four across before a row wraps: a
+ * few icons sit in one line, and a longer set still keeps the box roughly
+ * square rather than a strip running off the side of the icon it hangs from.
  *
  * Run can hold every shortcut in the folder - up to sixty-four - and four
  * across would make that a column taller than the screen, whose rows the
@@ -170,9 +164,9 @@ static void tabbox_icon_box_size(int *out_w, int *out_h)
  * The button that opens a box is the one the pointer is resting on, so its
  * tooltip pops half a second later - directly under the pointer, which is
  * where the box has just opened. A tooltip is a window: whatever it covers
- * cannot be wheeled or clicked. Measured on the Ico box, a wheel notch given
- * within about a third of a second of moving onto Mon went to the tooltip and
- * was lost every time. The box is the button's explanation anyway, and the
+ * cannot be wheeled or clicked. Measured on a box of reading icons, a wheel notch
+ * given within about a third of a second of moving onto one went to the tooltip
+ * and was lost every time. The box is the button's explanation anyway, and the
  * box's own tips say what each entry does. */
 static void tabbox_toolbar_tips(BOOL box_open)
 {
@@ -200,10 +194,9 @@ static void tabbox_build_control_rows(void)
 {
     s_control_row_count = 0;
 
-    /* No values here any more. Opacity went to the Ico box with volume and
+    /* No values here. Opacity is a button on the row beside volume and
      * brightness: the three are turned the same way and read the same way -
-     * by colour - and a reading that has to be opened to be seen is one list
-     * away from the other two. */
+     * by colour. */
 
     /* The ones that are on or off, starting with the pin - it is a button
      * rather than a setting in the file, but to a reader it is the same
@@ -450,14 +443,6 @@ static void tabbox_pull(void)
         s_count = 0;
         for (int i = 0; i < hg_g_shortcut_count && s_count < HG_BOX_MAX_ROWS; ++i) {
             StringCchCopyW(s_titles[s_count], HG_MAX_STR, hg_g_shortcuts[i].name);
-            ++s_count;
-        }
-    } else if (s_mode == HG_BOX_ICONS) {
-        /* Fixed: the three buttons. Their readings are asked for when they are
-         * painted, so there is nothing here to go stale. */
-        s_count = 0;
-        for (size_t i = 0; i < HG_ARRAYSIZE(s_icon_ids); ++i) {
-            StringCchCopyW(s_titles[s_count], HG_MAX_STR, hg_toolbar_builtin_label(s_icon_ids[i]));
             ++s_count;
         }
     } else if (s_mode == HG_BOX_MENU) {
@@ -753,15 +738,6 @@ static void tabbox_tip_show(int index)
          * how it is confirmed - and what the gestures do. */
         hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%ls\r\n%ls", s_titles[index],
                            L"Click, Space or Enter: run   Right-click: open its location");
-    } else if (s_mode == HG_BOX_ICONS) {
-        /* An icon has no text of its own to clip. What it owes is the number -
-         * the colour says "loud", not "70%" - then what its gestures do, then
-         * the keys, because nothing on its face says PageUp turns it. */
-        WCHAR full[256];
-        if (!hg_toolbar_builtin_tooltip_full(s_icon_ids[index], full, HG_ARRAYSIZE(full)))
-            full[0] = L'\0';
-        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%ls\r\n%ls", full,
-                           L"PageUp / PageDown or E / Q: more / less   (the wheel does the same)");
     } else {
         /* Two reasons for a tip, and they compose: a row too long to be read
          * whole, and a row whose keys are worth saying out loud. A control row
@@ -926,11 +902,6 @@ void hg_tabbox_open_menu(const RECT *anchor_screen_rc)
     tabbox_open_list(HG_BOX_MENU, anchor_screen_rc);
 }
 
-void hg_tabbox_open_icons(const RECT *anchor_screen_rc)
-{
-    tabbox_open_list(HG_BOX_ICONS, anchor_screen_rc);
-}
-
 void hg_tabbox_open_run(const RECT *anchor_screen_rc)
 {
     tabbox_open_list(HG_BOX_RUN, anchor_screen_rc);
@@ -941,20 +912,8 @@ BOOL hg_tabbox_item_screen_rect(int button_id, RECT *out)
     if (!out || !hg_tabbox_is_open() || !tabbox_is_grid())
         return FALSE;
 
-    int index = -1;
-    if (s_mode == HG_BOX_RUN) {
-        int s_idx = button_id - HG_SHORTCUT_BUTTON_ID(0);
-        if (s_idx >= 0 && s_idx < s_count)
-            index = s_idx;
-    } else {
-        for (int i = 0; i < s_count && i < (int)HG_ARRAYSIZE(s_icon_ids); ++i) {
-            if (s_icon_ids[i] == button_id) {
-                index = i;
-                break;
-            }
-        }
-    }
-    if (index < 0)
+    int index = button_id - HG_SHORTCUT_BUTTON_ID(0);
+    if (index < 0 || index >= s_count)
         return FALSE;
 
     tabbox_icon_rect(index, out);
@@ -967,20 +926,6 @@ void hg_tabbox_invalidate(void)
 {
     if (hg_tabbox_is_open())
         InvalidateRect(s_wnd, NULL, FALSE);
-}
-
-/* One step on an icon of the Ico box: the same call a wheel notch makes, so a
- * key and a notch move a reading by the same amount. */
-static BOOL tabbox_step_icon(int index, int direction)
-{
-    if (index < 0 || index >= s_count)
-        return FALSE;
-    if (!hg_toolbar_value_wheel(s_icon_ids[index], (short)(direction * WHEEL_DELTA)))
-        return FALSE;
-    s_selected = index;
-    hg_toolbar_value_announce(s_icon_ids[index]);
-    tabbox_tip_show(index); /* the reading in it just changed */
-    return TRUE;
 }
 
 void hg_tabbox_enter(void)
@@ -1086,16 +1031,6 @@ static void tabbox_activate(int index)
         return;
     }
 
-    if (s_mode == HG_BOX_ICONS) {
-        /* The button's own click, as it answered on the row: Vol mutes, Mon
-         * opens this screen's scaling at the icon, Alp has nothing to do. The
-         * box stays - a reading is changed and then looked at. */
-        s_selected = index;
-        activate_toolbar_item(s_icon_ids[index]);
-        hg_tabbox_invalidate();
-        return;
-    }
-
     if (s_mode == HG_BOX_MENU) {
         if (index >= s_menu_row_count)
             return;
@@ -1168,7 +1103,7 @@ BOOL hg_tabbox_handle_wheel(short delta)
 {
     if (!hg_tabbox_is_open() || !hg_tabbox_pointer_over())
         return FALSE;
-    if (s_mode != HG_BOX_CONTROLS && s_mode != HG_BOX_MENU && s_mode != HG_BOX_ICONS)
+    if (s_mode != HG_BOX_CONTROLS && s_mode != HG_BOX_MENU)
         return FALSE;
 
     POINT pt;
@@ -1179,17 +1114,6 @@ BOOL hg_tabbox_handle_wheel(short delta)
     int row = tabbox_row_at(pt);
     if (row < 0)
         return FALSE;
-
-    if (s_mode == HG_BOX_ICONS) {
-        /* The wheel works on the icon under the pointer, whichever one is
-         * selected - the same as it did over the button on the row. */
-        if (!hg_toolbar_value_wheel(s_icon_ids[row], delta))
-            return FALSE;
-        s_selected = row;
-        hg_toolbar_value_announce(s_icon_ids[row]);
-        tabbox_tip_show(row);
-        return TRUE;
-    }
 
     if (s_mode == HG_BOX_MENU)
         return tabbox_row_is_value(row) && tabbox_adjust_menu_row(row, (delta > 0) ? 1 : -1);
@@ -1208,23 +1132,18 @@ BOOL hg_tabbox_handle_wheel(short delta)
     return TRUE;
 }
 
-/* The keys of an entered Ico box.
+/* The keys of an entered Run box.
  *
- * A grid, so the arrows walk it the way they walk the taskbox grid - and, as
- * there, they only walk: a reading is turned by PageUp/PageDown and E/Q, the
- * keys the reading buttons answered on the row. E and Q are free in here
- * because the icons wear no letters, which is exactly why the text lists cannot
- * have them. An arrow that would step off the side closes the box and goes on
- * to the grid, the same as it does from a list row that holds no number.
- *
- * The Run box walks the same way and has nothing to turn, so PageUp, PageDown,
- * E and Q are not taken there: they go on to the taskbox, where Shift and a
- * letter still launches the shortcut that wears it. */
+ * A grid, so the arrows walk it the way they walk the taskbox grid. An arrow
+ * that would step off the side closes the box and goes on to the grid, the
+ * same as it does from a list row that holds no number. There is nothing in
+ * here to turn, so PageUp, PageDown, E and Q are not taken: they go on to the
+ * taskbox, where Shift and a letter still launches the shortcut that wears
+ * it. */
 static BOOL tabbox_icons_handle_key(WPARAM key)
 {
     int cols = tabbox_icon_cols();
     int next = s_selected;
-    BOOL readings = (s_mode == HG_BOX_ICONS);
 
     switch (key) {
     case VK_TAB:
@@ -1232,30 +1151,14 @@ static BOOL tabbox_icons_handle_key(WPARAM key)
     case VK_ESCAPE:
         hg_tabbox_close();
         return TRUE;
-    case VK_PRIOR:
-    case 'E':
-        if (!readings)
-            return FALSE;
-        tabbox_step_icon(s_selected, 1);
-        return TRUE;
-    case VK_NEXT:
-    case 'Q':
-        if (!readings)
-            return FALSE;
-        tabbox_step_icon(s_selected, -1);
-        return TRUE;
     case VK_RETURN:
     case VK_SPACE:
         tabbox_activate(s_selected);
         return TRUE;
     case VK_APPS:
         /* The right click, from the keyboard: the menu opens at the icon. */
-        if (s_selected >= 0 && s_selected < s_count) {
-            if (readings)
-                hg_toolbar_builtin_context_menu(s_icon_ids[s_selected], FALSE);
-            else
-                hg_toolbar_shortcut_context_menu(s_selected, FALSE);
-        }
+        if (s_selected >= 0 && s_selected < s_count)
+            hg_toolbar_shortcut_context_menu(s_selected, FALSE);
         return TRUE;
     case VK_LEFT:
         if (s_selected % cols == 0) {
@@ -1321,7 +1224,7 @@ BOOL hg_tabbox_handle_key(WPARAM key)
             tabbox_tip_show(s_selected);
             return TRUE;
         }
-        /* Not in the Ico or Run box: their icons wear no digits, and a key
+        /* Not in the Run box: its icons wear no digits, and a key
          * that did something unlabelled would be a trap. */
         if (!tabbox_is_grid() && key >= L'0' && key <= L'9') {
             int index = tabbox_index_for_key(key);
@@ -1347,11 +1250,11 @@ BOOL hg_tabbox_handle_key(WPARAM key)
     case VK_PRIOR:
     case VK_NEXT:
         /* On a row that holds a number, these are more and less - the same two
-         * keys the icons of the Ico box answer, so a value is turned the same
-         * way wherever it is met. On any other row they do nothing rather than
+         * keys the reading buttons on the row answer, so a value is turned the
+         * same way wherever it is met. On any other row they do nothing rather than
          * something surprising.
          *
-         * Not Q and E, which is what those icons also take: from the tenth row
+         * Not Q and E, which is what those buttons also take: from the tenth row
          * down every row wears a letter that jumps straight to it, so in here Q
          * and E are already spoken for. */
         if (tabbox_adjust_row(s_selected, (key == VK_PRIOR) ? 1 : -1))
@@ -1532,10 +1435,7 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 tabbox_icon_rect(i, &icon_rc);
                 BOOL selected = (i == s_selected) && s_focused;
                 BOOL hovered = (i == s_selected) && s_pointer_on_row;
-                if (s_mode == HG_BOX_RUN)
-                    hg_toolbar_paint_shortcut_cell(dc, i, &icon_rc, icon_size, selected, hovered);
-                else
-                    hg_toolbar_paint_builtin_cell(dc, s_icon_ids[i], &icon_rc, icon_size, selected, hovered);
+                hg_toolbar_paint_shortcut_cell(dc, i, &icon_rc, icon_size, selected, hovered);
             }
         }
 
@@ -1619,15 +1519,6 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
          * row is the reason anyone right-clicks a tab list. */
         POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         int row = tabbox_row_at(pt);
-        if (row >= 0 && s_mode == HG_BOX_ICONS) {
-            /* On an icon: the choice behind its reading, as the right button
-             * gave it on the row - Vol the output device, Mon the arrangement
-             * of the screens. */
-            s_selected = row;
-            InvalidateRect(hwnd, NULL, FALSE);
-            hg_toolbar_builtin_context_menu(s_icon_ids[row], TRUE);
-            return 0;
-        }
         if (row >= 0 && s_mode == HG_BOX_RUN) {
             /* On a shortcut: the menu it had on the row - run it, or open the
              * folder it lives in. */

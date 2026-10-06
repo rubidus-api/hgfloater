@@ -121,7 +121,7 @@ no socket, HTTP, or download function of any kind, so it cannot phone home,
 fetch anything, or send anything anywhere.
 
 Two features are **switched off in the published builds** until the executable
-is code-signed — the [maximize-button menu](#41-the-maximize-button-menu), which
+is code-signed — the [maximize-button menu](#42-the-maximize-button-menu), which
 needs a system-wide mouse hook, and **Start with Windows**, which writes one
 value under the per-user `Run` key. Both stay in the options menu, greyed, reading
 `(off in this build)`.
@@ -189,11 +189,14 @@ of other windows.
 
 - **Left click** — toggles the taskbox, from anywhere on the floater. It opens
   in place, and the floater hides itself while the taskbox is up.
-- **Hover** — nothing, unless **Open the Taskbox on Hover** is switched on in
-  the [Options menu](#7-the-options-menu). With it on, resting the pointer on
-  **the clock's minutes** — the two digits after the colon, and nothing else on
-  the floater — opens the taskbox. The click above keeps working from anywhere
-  either way.
+- **Hover** — nothing, unless you ask for it. **Open the Taskbox from the
+  Floater** in the [settings window](#71-the-settings-window) has four choices:
+  **click only** (the default), or the pointer resting on **the minutes**, on
+  **the hours**, or on **either** of them. Nothing else on the floater answers
+  a hover — the bars, the date and the host name are things a hand crosses on
+  its way elsewhere. The click above keeps working from anywhere in every mode.
+  **Open the Taskbox on Hover** in the [Options menu](#7-the-options-menu) is
+  the same switch, on and off; which part answers is the settings window's.
 - **Left drag** — moves the floater anywhere on any monitor. A press and
   release without moving is a click and toggles the taskbox; a few pixels of
   travel makes it a drag instead. `Alt + drag` does the same and is the one to
@@ -209,7 +212,52 @@ of other windows.
 When the cursor leaves the taskbox, it collapses back to the floater after a
 half-second grace period, so brushing past the edge does not dismiss it.
 
-### 4.1 The maximize button menu
+### 4.1 The clock and the date
+
+**Both lines are yours to write.** The large line and the line under it each
+have a format, set in the [settings window](#71-the-settings-window) under
+**Floater Clock** and kept as `time_format` and `date_format` in
+[`config.ini`](#13-configuration-file). The notation is the one `strftime` uses,
+so `%H:%M` is `23:05` and `%a, %b %-d` is `Tue, Oct 6` — those two are the
+defaults, and they are what the floater has always shown.
+
+| Code | Shows | Code | Shows |
+| :--- | :--- | :--- | :--- |
+| `%H` | hour, 00–23 | `%I` | hour, 01–12 |
+| `%M` | minute, 00–59 | `%S` | second, 00–59 |
+| `%p` | `AM` or `PM` | `%j` | day of the year, 001–366 |
+| `%Y` | year, `2026` | `%y` | year, `26` |
+| `%m` | month, 01–12 | `%d` | day, 01–31 |
+| `%b` | `Jan` | `%B` | `January` |
+| `%a` | `Sun` | `%A` | `Sunday` |
+| `%e` | day, padded with a space | `%%` | a percent sign |
+
+A minus drops the padding of a number: `%-d` is `6` where `%d` is `06`, and
+`%-I` is `9` where `%I` is `09`. Everything that is not a code is shown as
+typed, so `%Y-%m-%d (%a)` and `%I:%M %p` are both formats. The floater widens
+and narrows to fit what the format renders.
+
+**A format is checked before it is used, every time.** It can be at most 32
+characters, every `%` must be followed by one of the codes above, it cannot
+hold a tab or a line break, it cannot be empty or all spaces, and it is refused
+if it *could* render longer than 63 characters — seven `%A` are accepted, an
+eighth is not. The settings window says what is wrong and at which character as
+you type, and `Enter` on a format it has refused keeps the old one. The same
+check runs on what is read from `config.ini` at start, so a value edited by
+hand into something unusable is replaced by the default rather than drawn.
+Names are in English whatever the system language: the program does not ask the
+C library, and so does not inherit its locale.
+
+**`R` on either row** puts that format back to its default.
+
+**The hours and minutes can change colour every half second.** **Change
+Hour/Minute Colour** switches it on, and **Colour to Change To** opens Windows'
+colour chooser for the colour they alternate with; `R` on that row restores the
+default orange. It is off by default, and while it is off the floater repaints
+only when its text changes. A format with no `%H`, `%I` or `%M` in it has
+nothing to recolour.
+
+### 4.2 The maximize button menu
 
 While HGFloater is running, **right-click the maximize button** — the one left
 of the X — on **any** window, and you get HGFloater's menu for that window:
@@ -458,10 +506,11 @@ A single-line read-only field across the top of the taskbox.
 
 ## 6. The Toolbar
 
-Twelve built-in buttons sit in the same grid as the icons. Their order is fixed:
-from the left, `Run` `Dir` `Ico` `Opt` `Set` `Clip` `Note` `C` `D` `X` `M` `R`.
-Each carries a short word rather than a single capital, and five of them open a
-box instead of doing something outright.
+Fourteen built-in buttons sit in the same grid as the icons. Their order is
+fixed: from the left, `Run` `Dir` `Alp` `Mon` `Vol` `Opt` `Set` `Clip` `Note`
+`C` `D` `X` `M` `R`. Each carries a short word rather than a single capital,
+four of them open a box instead of doing something outright, and three —
+`Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
 
 The word is **fitted to the button**: up to three letters it stays on one line,
 and four to six letters are stacked on two, at a size the button can hold. The
@@ -485,7 +534,9 @@ built, so a key you rebind is the key the tooltip shows.
 | **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Set`** Settings | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
 | **`Opt`** Options | Opens the [options menu](#7-the-options-menu), **directly under the button**. | — |
-| **`Ico`** Icons | Opens the [icon box](#64-the-ico-box): `Vol`, `Mon` and `Alp`, as icons you turn with the wheel. | — |
+| **`Vol`** Volume | Mutes and unmutes. Right-click: which output device plays. See [the reading buttons](#64-vol-mon-and-alp). | **Wheel** sets the volume. |
+| **`Mon`** Monitor | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
+| **`Alp`** Opacity | — | **Wheel** sets the taskbox's opacity. |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
 | **`Run`** Shortcuts | Opens the [shortcut box](#65-the-run-box): every program shortcut, as its own icon. | — |
 
@@ -532,8 +583,8 @@ one that throws work away.
 **A row with a number is turned; a row with a state is switched.** That is the
 whole keyboard model for this list. On a row that holds a percentage, **Left and
 Right are less and more**, and so are **PageUp and PageDown** — the second pair
-because that is what the icons of the `Ico` box answer, so a value can always be
-turned the same way wherever you meet one. On every other row Left and Right
+because that is what `Vol`, `Mon` and `Alp` answer on the row, so a value can
+always be turned the same way wherever you meet one. On every other row Left and Right
 leave the list for the neighbouring button, as they do everywhere else, and
 **Space or Enter** does the switching. Each row says which it is **in a tooltip**
 as you arrive on it, since nothing about the row itself would tell you.
@@ -544,9 +595,9 @@ that took them would change how you leave it. In here the list is a column: Up
 and Down walk it, sideways has nothing else to do, and a reader who has arrived
 on a value reaches sideways first.
 
-**Opacity is not in this list any more.** It is `Alp` in the [`Ico`
-box](#64-the-ico-box), beside volume and brightness: the three are turned the
-same way and read the same way, by colour.
+**Opacity is not in this list.** It is [`Alp`, on the
+row](#64-vol-mon-and-alp), beside volume and brightness: the three are turned
+the same way and read the same way, by colour.
 
 **The switches used to be a submenu of the options menu.** They are here now,
 beside the pin, because they are the same kind of thing to a
@@ -613,7 +664,7 @@ refuses an arrangement it cannot make — asking for the second screen when ther
 is no second screen — and the status line says so rather than the row appearing
 to do nothing.
 
-**Scale and brightness are rows you turn**, the way the `Ico` icons are turned: the
+**Scale and brightness are rows you turn**, the way the reading buttons are turned: the
 **wheel** over the row, or **Left / Right** (or **PageUp / PageDown**) once it is
 selected, walks the
 display through the values it accepts — the same 100/125/150/175/200% ladder
@@ -739,20 +790,17 @@ HGFloater empties the history.**
 
 ---
 
-### 6.4 The Ico box
+### 6.4 Vol, Mon and Alp
 
-**`Ico` opens the three readings — `Vol`, `Mon` and `Alp` — as icons.** Point at
-it, land on it with the arrow keys, or click it, and the same box the tab and
-folder lists use opens beside it. Instead of lines of text it holds three
-buttons, drawn exactly as the row draws its own, at **the taskbox's icon size**
-and spacing, across and then down. Make the taskbox icons bigger with `Ctrl` +
-wheel and these grow with them.
+**Three buttons on the row carry a reading: `Vol`, `Mon` and `Alp`.** They sit
+together between `Dir` and `Opt`, drawn like every other button except for one
+thing — **the colour behind each word is the value.** A loud machine gives `Vol`
+a deep plate, a dim screen gives `Mon` a pale one, a see-through taskbox gives
+`Alp` a pale one. The three can be read at a glance, without opening anything.
 
-**The colour behind each word is the value:** a loud machine gives `Vol` a deep
-plate, a dim screen gives `Mon` a pale one, a see-through taskbox gives `Alp` a
-pale one. `Vol` and `Mon` used to be buttons on the row and opacity a line of the
-`Set` list; one button that opens all three costs one cell of the grid rather
-than three, and keeps the three readings side by side.
+For two releases (v0.17.13 and v0.17.14) they lived in a box behind an `Ico`
+button. A reading that has to be opened to be seen was one step too many, so
+they are back on the row and `Ico` is gone.
 
 **Each of the three gestures answers at a different depth**, and the same shape
 holds for every icon:
@@ -767,8 +815,8 @@ The wheel changes the value, the click does the one thing you would want without
 being asked to choose, and the right button opens the choice. Nothing here is
 new behaviour — every one of these was already in the [options
 list](#7-the-options-menu), and picking from these menus sends the very same
-instruction. What is new is that it takes one gesture on the icon that shows
-the reading.
+instruction. What the buttons add is that it takes one gesture on the button
+that shows the reading.
 
 **"This screen" means the screen the taskbox is on.** Not the screen the pointer
 is on: the pointer is over the button when the menu opens, so the two are almost
@@ -779,27 +827,27 @@ said when the keyboard opened the menu with no pointer involved.
 machine is putting out; the level itself is kept and comes back on unmute. The
 status line says `Muted` outright, and the tooltip says it too.
 
-**The tooltip carries both halves** — the reading on one line, what the gestures
-do on the next, and the keys below. The colour says "loud", not "70%", and
-nothing on the face of an icon says that its right button does anything at all.
+**The tooltip carries both halves** — the reading and what the gestures do. The
+colour says "loud", not "70%", and nothing on the face of a button says that
+its right button does anything at all. The status line gives the number each
+time it changes.
 
-**The keyboard reaches all of it.** Arrow to `Ico`, then `Down` steps into the
-box and `Left` / `Right` move between the icons. The selected icon is **ringed**
-rather than filled, so its colour — the thing being turned — stays in sight. Its
-value steps with **`PageUp` / `PageDown`**, or with **`E` and `Q`**, which sit
-either side of the `W` your hand is already on. `Space` is the click, the menu
-key is the right-click, and `Esc` steps back out. An arrow that would step off
-the side of the box closes it and moves on along the row.
+**The keyboard reaches all of it.** Arrow to the button; its value steps with
+**`PageUp` / `PageDown`**, or with **`E` and `Q`**, which sit either side of the
+`W` your hand is already on. `Space` is the click and `Enter` or the menu key
+is the right-click.
 
-The arrows only move, in this box as on the row: a reading is turned by keys of
-its own, so the way out of an icon never depends on which icon you are standing
-on. The text lists are the other way round — a list is a column, so on a row
-that holds a number `Left` and `Right` turn it (the scale and brightness rows of
-the [options list](#7-the-options-menu)).
+The arrows only move, on these three as on every other button: a reading is
+turned by keys of its own, so the way out of a button never depends on which
+button you are standing on. The text lists are the other way round — a list is
+a column, so on a row that holds a number `Left` and `Right` turn it (the scale
+and brightness rows of the [options list](#7-the-options-menu)).
 
-`E` and `Q` work in this box only. In the text lists every row from the tenth
-down wears a letter that jumps straight to it, so both letters are already
-spoken for in there.
+A focused button is painted in the focus colour, which covers its plate: while
+you are turning a value from the keyboard, read it off the status line. `E` and
+`Q` work on these three buttons only; in the text lists every row from the
+tenth down wears a letter that jumps straight to it, so both letters are
+already spoken for in there.
 
 **The four screen arrangements are listed even with one screen attached.**
 Hiding them would be a one-way door: `PC screen only` leaves exactly one
@@ -810,12 +858,12 @@ rather than left out, so the ladder is the same ladder on every screen.
 ### 6.5 The Run box
 
 **`Run` opens your shortcuts as icons.** Point at it, land on it with the arrow
-keys, or click it, and the same box `Ico` uses opens beside it, holding one icon
+keys, or click it, and the box the tab and folder lists use opens beside it, holding one icon
 per `.lnk` or `.url` in the shortcuts folder — the program's own icon, at the
 taskbox's icon size and spacing, across and then down, in file-name order. Up to
 sixteen sit four across; past that the box widens to stay square (sixty-four is
-eight by eight). `Dir` sits beside `Ico` and `Run` beside `Dir`, so the buttons
-that open a box of places or icons are together.
+eight by eight). `Run` sits beside `Dir`, so the two buttons that open a box of
+places or programs are together.
 
 The shortcuts used to be icons in the grid itself, after the buttons. A dozen of
 them took a dozen cells from your windows; now they cost one.
@@ -827,7 +875,7 @@ them took a dozen cells from your windows; now they cost one.
 | **`Shift` + its letter** | Launches it from anywhere in the taskbox, box open or not. The letter is the badge in the icon's corner. |
 
 **The keyboard:** arrow to `Run`, `Down` steps into the box, the arrows walk the
-icons (ringed, as in `Ico`), `Space` or `Enter` launches the ringed one, the menu
+icons (the selected one is ringed), `Space` or `Enter` launches the ringed one, the menu
 key opens its menu, and `Esc` steps back out. The tooltip names the program.
 
 ## 7. The Options Menu
@@ -875,9 +923,23 @@ right-clicking the status line, which opens the same list at the pointer.
 ### 7.1 The settings window
 
 **Settings Window...** in the `Set` list, `Ctrl + ,` from the floater or the
-taskbox, or `settings` in the command box. One list, in four parts:
+taskbox, or `settings` in the command box. One list, in five parts:
 
 - **Options** — the switches above. `Enter` or `Space` flips the selected one.
+- **Floater Clock** — five rows for [the clock](#41-the-clock-and-the-date):
+  - **Open the Taskbox from the Floater** — `Left` / `Right` or `Enter` walks
+    click only, hover on the minutes, hover on the hours, hover on either.
+  - **Change Hour/Minute Colour (0.5s)** — `Enter` or `Space` switches it.
+  - **Colour to Change To** — `Enter` opens Windows' colour chooser; `R`
+    restores the default. The row wears a swatch of the colour.
+  - **Clock format** and **Date format** — `Enter` opens an edit line under the
+    list. It takes at most 32 characters, and the line beneath it answers every
+    keystroke: what the text would show right now, or what is wrong with it and
+    at which character. `Enter` keeps a valid format; on one that is not, the
+    edit line stays, the fault is selected, and nothing is saved. `Esc`, or
+    clicking away, cancels. `R` on the row restores the default.
+
+  The codes a format is written in are listed right under those rows.
 - **Fonts** — three families, each opened with `Enter`, `Space` or a double
   click into **Windows' own font dialog**:
   - **Interface** — buttons, lists, the floater.
@@ -1175,12 +1237,12 @@ a chord.
 | `Arrow keys` / `WASD` | Move focus between icons |
 | `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
-| `Tab` | With a box open (tabs, `Dir`, `Set`, `Ico`, `Run`), step into it |
+| `Tab` | With a box open (tabs, `Dir`, `Set`, `Run`), step into it |
 | `Up` / `Down` | On an icon with a box: step into it. Inside one: move the selection |
 | `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
-| `PageUp` / `PageDown` | Turn a value: on the selected icon of the `Ico` box, and on any row of a list that holds a number |
-| `E` / `Q` | The same, in the `Ico` box only — inside a list both letters already jump to a row |
-| `Left` / `Right` | On a list row that holds a number: less and more. In the `Ico` box and everywhere else: move between icons |
+| `PageUp` / `PageDown` | Turn a value: on `Vol`, `Mon` or `Alp`, and on any row of a list that holds a number |
+| `E` / `Q` | The same, on `Vol`, `Mon` and `Alp` only — inside a list both letters already jump to a row |
+| `Left` / `Right` | On a list row that holds a number: less and more. Everywhere else: move between icons |
 | `Esc` | Inside a box: leave it |
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
@@ -1261,12 +1323,12 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Move the taskbox aside** | Left-click the `M` button |
 | **Resize the taskbox grid** | Drag a border, or drag the `R` button |
 | **Font / icon size** | `Ctrl` + wheel |
-| **Opacity** | `Alt` + wheel, or wheel over `Alp` in the `Ico` box |
-| **Screen brightness** | Wheel over `Mon` in the `Ico` box |
-| **Volume / mute** | Wheel over `Vol` in the `Ico` box / left-click it |
-| **Output device** | Right-click `Vol` in the `Ico` box |
-| **Display scaling** | Left-click `Mon` in the `Ico` box |
-| **Screen arrangement** | Right-click `Mon` in the `Ico` box |
+| **Opacity** | `Alt` + wheel, or wheel over `Alp` |
+| **Screen brightness** | Wheel over `Mon` |
+| **Volume / mute** | Wheel over `Vol` / left-click it |
+| **Output device** | Right-click `Vol` |
+| **Display scaling** | Left-click `Mon` |
+| **Screen arrangement** | Right-click `Mon` |
 | **Pin the taskbox** | Click the `Pin` row of the `Set` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
 | **Open the notes** | Left-click `Note` |
@@ -1298,8 +1360,20 @@ every wheel notch.
 | `font_size` | Text size |
 | `icon_size` | Icon resolution (`[taskbox]` only) |
 | `show_stats` | `0` hides the CPU/memory/battery line (`[floater]` only, default `1`) |
+| `time_format` | The clock line's [format](#41-the-clock-and-the-date) (`[floater]` only, default `"%H:%M"`) |
+| `date_format` | The date line's format (`[floater]` only, default `"%a, %b %-d"`) |
+| `blink` | `1` changes the colour of the hours and minutes every half second (`[floater]` only, default `0`) |
+| `open_on_hover` | `1` lets the pointer open the taskbox from the floater (`[taskbox]` only, default `0`) |
+| `hover_region` | Which part of the clock answers when it is on: `minutes`, `hours` or `both` (`[taskbox]` only, default `minutes`) |
 | `show_tabs` | `1` gives a tabbed application's tabs their own task icons (`[taskbox]` only, default `0`) |
 | `tab_classes` | Extra window classes to look for tabs in, `;`-separated (`[taskbox]` only) |
+
+The two formats are written **in double quotes**, which is what keeps a space
+at either end; a value you type without them is read too. A backslash is
+written `\\` and any character outside plain ASCII as `\uXXXX`, so the file
+reads the same in every code page. A format that is longer than 32 characters,
+holds a code the clock does not know, or carries any other backslash is
+replaced by the default at the next start.
 
 ### `[clipboard]`
 
@@ -1340,7 +1414,9 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
-  plates behind `Alp`, `Mon` and `Vol` in the `Ico` box.
+  plates behind `Alp`, `Mon` and `Vol`.
+- `clock_blink` — the colour the clock's hours and minutes change to when
+  `[floater] blink` is on.
 
 ### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 
@@ -1533,6 +1609,8 @@ hgfloater/
 │   ├── hg_utils.*        theme, icons, toolbar descriptors, helpers
 │   ├── hg_config.*       config.ini load/save, deferred writes
 │   ├── hg_calc.*         pure math: layout, placement, clock formatting
+│   ├── hg_timefmt.*      the floater's clock and date formats: validate, render
+│   ├── hg_clock.*        the clock's settings: formats, hover part, colour change
 │   ├── hg_command.*      the command box language
 │   ├── hg_audio.c        volume and device selection
 │   ├── hg_display.c      monitors, DPI, the brightness path ladder
@@ -1551,9 +1629,10 @@ hgfloater/
 └── scripts/              build and release helpers
 ```
 
-`hg_calc.c` deliberately depends on neither Win32 nor the C runtime, so the
-logic that is easy to get wrong — grid snapping, where a window moves to, how
-the clock reads — can be tested on any host.
+`hg_calc.c` and `hg_timefmt.c` deliberately depend on neither Win32 nor the C
+runtime, so the logic that is easy to get wrong — grid snapping, where a window
+moves to, how the clock reads, what a format somebody typed is allowed to do —
+can be tested on any host.
 <!-- SKIP_END -->
 
 <!-- SKIP_START -->

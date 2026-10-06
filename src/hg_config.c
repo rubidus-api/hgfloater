@@ -1,5 +1,6 @@
 #include "hg_config.h"
 #include "hg_keys.h"
+#include "hg_clock.h"
 #include "hg_utils.h"
 
 /* Deferred INI writes.
@@ -268,6 +269,11 @@ static void save_color_value(const WCHAR *key, COLORREF color)
     WritePrivateProfileStringW(L"colors", key, buf, hg_g_config_path);
 }
 
+void hg_config_save_color(const WCHAR *key, COLORREF color)
+{
+    save_color_value(key, color);
+}
+
 static COLORREF load_color_value(const WCHAR *key, COLORREF def)
 {
     WCHAR buf[16] = {0};
@@ -300,6 +306,7 @@ void load_colors_config(void)
     hg_g_color_stat_bat = load_color_value(L"stat_bat", HG_COLOR_STAT_BAT_DEFAULT);
     hg_g_color_stat_temp = load_color_value(L"stat_temp", HG_COLOR_STAT_TEMP_DEFAULT);
     hg_g_color_stat_gpu = load_color_value(L"stat_gpu", HG_COLOR_STAT_GPU_DEFAULT);
+    hg_g_color_clock_blink = load_color_value(L"clock_blink", HG_COLOR_CLOCK_BLINK_DEFAULT);
     hg_g_color_value_alpha_lo = load_color_value(L"value_alpha_low", HG_COLOR_VALUE_ALPHA_LO_DEFAULT);
     hg_g_color_value_alpha_hi = load_color_value(L"value_alpha_high", HG_COLOR_VALUE_ALPHA_HI_DEFAULT);
     hg_g_color_value_bright_lo = load_color_value(L"value_brightness_low", HG_COLOR_VALUE_BRIGHT_LO_DEFAULT);
@@ -319,6 +326,7 @@ void reset_colors_config(void)
     hg_g_color_stat_bat = HG_COLOR_STAT_BAT_DEFAULT;
     hg_g_color_stat_temp = HG_COLOR_STAT_TEMP_DEFAULT;
     hg_g_color_stat_gpu = HG_COLOR_STAT_GPU_DEFAULT;
+    hg_g_color_clock_blink = HG_COLOR_CLOCK_BLINK_DEFAULT;
     hg_g_color_value_alpha_lo = HG_COLOR_VALUE_ALPHA_LO_DEFAULT;
     hg_g_color_value_alpha_hi = HG_COLOR_VALUE_ALPHA_HI_DEFAULT;
     hg_g_color_value_bright_lo = HG_COLOR_VALUE_BRIGHT_LO_DEFAULT;
@@ -337,6 +345,7 @@ void reset_colors_config(void)
     save_color_value(L"stat_bat", hg_g_color_stat_bat);
     save_color_value(L"stat_temp", hg_g_color_stat_temp);
     save_color_value(L"stat_gpu", hg_g_color_stat_gpu);
+    save_color_value(L"clock_blink", hg_g_color_clock_blink);
     save_color_value(L"value_alpha_low", hg_g_color_value_alpha_lo);
     save_color_value(L"value_alpha_high", hg_g_color_value_alpha_hi);
     save_color_value(L"value_brightness_low", hg_g_color_value_bright_lo);
@@ -559,6 +568,7 @@ void hg_config_reset_all(HWND hwnd)
 
     (void)hwnd;
     reset_colors_config();
+    hg_clock_reset_all(); /* formats, hover region and blink; the floater is laid out again below */
     refresh_theme_surfaces(hg_g_taskbox_wnd);
     hg_g_floater_alpha = 204;
     hg_g_taskbox_alpha = 204;

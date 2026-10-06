@@ -35,7 +35,7 @@ enum {
 
 static const HgOptionInfo hg_options[] = {
     {L"hoveropen", L"Open the Taskbox on Hover",
-     L"the pointer resting on the floater opens the taskbox, as it did before v0.13.0", TRUE, NULL},
+     L"the pointer resting on the clock opens the taskbox - on its minutes, its hours or both, as set", TRUE, NULL},
     {L"windowoutline", L"Outline the Window Under the Pointer",
      L"pointing at a task icon draws a frame around the window it stands for", TRUE, NULL},
     {L"tabbox", L"Show a Window's Tabs on Hover",
@@ -103,7 +103,7 @@ BOOL hg_option_set(int number, BOOL value, const WCHAR **out_message)
         hg_g_taskbox_open_on_hover = value;
         WritePrivateProfileStringW(L"taskbox", L"open_on_hover", value ? L"1" : L"0", hg_g_config_path);
         if (out_message)
-            *out_message = value ? L"Taskbox: opens when the pointer rests on the floater"
+            *out_message = value ? L"Taskbox: opens when the pointer rests on the chosen part of the clock"
                                  : L"Taskbox: opens on a click, not on hover";
         break;
     case HG_OPTION_WINDOW_OUTLINE:

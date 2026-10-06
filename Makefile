@@ -58,6 +58,8 @@ SRC := \
 	src/hg_sysinfo.c \
 	src/hg_config.c \
 	src/hg_calc.c \
+	src/hg_timefmt.c \
+	src/hg_clock.c \
 	src/hg_command.c \
 	src/hg_values.c \
 	src/hg_options.c \
@@ -87,7 +89,7 @@ RES := $(OUT)/hgfloater_res.o
 TESTS := $(wildcard test/*.c)
 # Units free of Win32 also run on the build host, so their behaviour is checked
 # even when no Windows runtime (or wine) is available.
-HOST_TESTS := $(basename $(notdir $(filter test/test_calc.c test/test_relocate.c,$(TESTS))))
+HOST_TESTS := $(basename $(notdir $(filter test/test_calc.c test/test_relocate.c test/test_timefmt.c,$(TESTS))))
 
 .PHONY: all release debug test test-compile test-host about clean help
 

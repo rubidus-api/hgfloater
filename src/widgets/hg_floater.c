@@ -9,6 +9,7 @@
 #include "../hg_keys.h"
 #include "../hg_caphook.h"
 #include "../hg_config.h"
+#include "../hg_clock.h"
 
 /* Forward declaration for show_about_window which is in hgfloater.c (or widgets/hg_about.c when created) */
 void show_about_window(void);
@@ -390,7 +391,9 @@ static HgInkExtent floater_ink_extent_uncached(HDC hdc, HFONT font, const WCHAR 
  * release_font_handle bumps hg_g_font_generation, which retires every entry at
  * once, so a reused HFONT value can never serve another font's measurements. */
 #define HG_INK_CACHE_ENTRIES 48
-#define HG_INK_CACHE_TEXT_CCH 48
+/* Long enough for any clock or date line a format can render, so a long format
+ * is cached like a short one instead of being measured afresh on every paint. */
+#define HG_INK_CACHE_TEXT_CCH HG_TIMEFMT_OUT_CCH
 
 static HgInkExtent floater_ink_extent(HDC hdc, HFONT font, const WCHAR *text)
 {
@@ -668,52 +671,115 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
         SelectObject(dc, old_font);
 }
 
-/* The rectangle of the clock's *minutes*, in client coordinates.
+/* The clock and the date as they read this instant, and where in the clock
+ * line the hours and the minutes are. One place builds them, from the formats
+ * in the settings, so the layout, the paint and the hover test cannot disagree
+ * about what is on screen. */
+typedef struct HgFloaterClock {
+    WCHAR time[HG_TIMEFMT_OUT_CCH];
+    WCHAR date[HG_TIMEFMT_OUT_CCH];
+    HgTimeSpans spans;
+} HgFloaterClock;
+
+static void floater_clock_now(HgFloaterClock *clock)
+{
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    hg_clock_render(HG_CLOCK_FORMAT_TIME, &st, clock->time, (int)HG_ARRAYSIZE(clock->time), &clock->spans);
+    hg_clock_render(HG_CLOCK_FORMAT_DATE, &st, clock->date, (int)HG_ARRAYSIZE(clock->date), NULL);
+}
+
+/* Half-second phase of the colour change: TRUE while the hours and minutes
+ * wear the other colour. Only ever TRUE while that setting is on. */
+static BOOL s_floater_blink_lit = FALSE;
+
+/* The horizontal extent, in client coordinates, of characters [start, end) of
+ * the clock line.
+ *
+ * The line is drawn centred in its column, so a part of it is found by
+ * measuring: the whole string, the text before the part, and the text up to
+ * its end. Measuring rather than dividing the string matters because digits are
+ * not all one width in every font, and the format decides what stands before
+ * the hours. */
+static BOOL floater_time_span_x(HDC hdc, const HgFloaterClock *clock, const HgFloaterMetrics *m, int start, int end,
+                                int *left, int *right)
+{
+    int length = lstrlenW(clock->time);
+    if (!hg_g_floater_time_font || start < 0 || end > length || start >= end)
+        return FALSE;
+
+    SIZE whole = {0, 0}, before = {0, 0}, upto = {0, 0};
+    HFONT old_font = (HFONT)SelectObject(hdc, hg_g_floater_time_font);
+    GetTextExtentPoint32W(hdc, clock->time, length, &whole);
+    if (start > 0)
+        GetTextExtentPoint32W(hdc, clock->time, start, &before);
+    GetTextExtentPoint32W(hdc, clock->time, end, &upto);
+    SelectObject(hdc, old_font);
+
+    int origin = m->column_x + (m->column_w - whole.cx) / 2;
+    *left = origin + before.cx;
+    *right = origin + upto.cx;
+    return *right > *left;
+}
+
+/* The part of the clock that opens the taskbox when the pointer rests on it, in
+ * client coordinates: the minutes, the hours, or the run from one to the
+ * other, as the settings say. FALSE when opening is by click only.
  *
  * Hover-to-open uses it instead of the whole window. The floater is mostly
  * system bars and a host name, and a pointer crossing any of that had the
- * dashboard over the desktop before the hand had finished moving. Two digits
- * are small enough that resting on them is a decision rather than an accident,
- * and they are the end of the clock, so the pointer arrives there from the
- * outside rather than through the rest of the widget.
+ * dashboard over the desktop before the hand had finished moving. A couple of
+ * digits are small enough that resting on them is a decision rather than an
+ * accident.
+ *
+ * A format need not have hours or minutes in it at all. A part that is not
+ * there falls back to the whole clock line, so switching hover on can never
+ * leave it with nowhere to answer.
  *
  * A click still counts anywhere on the floater, so nothing is unreachable for
  * being a small target. */
-static BOOL floater_minute_rect(HWND hwnd, RECT *out)
+static BOOL floater_hover_rect(HWND hwnd, RECT *out)
 {
-    if (!out || !hg_g_floater_time_font || !hg_g_floater_date_font)
+    HgHoverMode mode = hg_clock_hover_mode();
+    if (!out || mode == HG_HOVER_CLICK_ONLY || !hg_g_floater_time_font || !hg_g_floater_date_font)
         return FALSE;
 
-    SYSTEMTIME st;
-    GetLocalTime(&st);
-    WCHAR time_str[16], date_str[32];
-    hellgates_wsprintf(time_str, 16, L"%02d:%02d", st.wHour, st.wMinute);
-    const WCHAR *months[] = {L"",    L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
-                             L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
-    const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
-    hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
+    HgFloaterClock clock;
+    floater_clock_now(&clock);
 
     HDC hdc = GetDC(hwnd);
     if (!hdc)
         return FALSE;
 
     HgFloaterMetrics m;
-    floater_compute_metrics(hdc, time_str, date_str, &m);
+    floater_compute_metrics(hdc, clock.time, clock.date, &m);
 
-    /* The clock is drawn centred in its column, so the minutes are the last
-     * two glyphs of that centred run: measure the whole string and the tail,
-     * and the difference is where the tail starts. Measuring rather than
-     * halving the string matters because the two halves are not the same width
-     * in every font, and "12" is not "58". */
-    SIZE sz_time = floater_text_extent(hdc, hg_g_floater_time_font, time_str);
-    const WCHAR *minutes = wcschr(time_str, L':');
-    minutes = minutes ? minutes + 1 : time_str;
-    SIZE sz_minutes = floater_text_extent(hdc, hg_g_floater_time_font, minutes);
+    int left = 0, right = 0;
+    BOOL found = FALSE;
+    if (mode == HG_HOVER_HOURS || mode == HG_HOVER_BOTH) {
+        found = floater_time_span_x(hdc, &clock, &m, clock.spans.hour_start, clock.spans.hour_end, &left, &right);
+    }
+    if (mode == HG_HOVER_MINUTES || mode == HG_HOVER_BOTH) {
+        int minute_left = 0, minute_right = 0;
+        if (floater_time_span_x(hdc, &clock, &m, clock.spans.minute_start, clock.spans.minute_end, &minute_left,
+                                &minute_right)) {
+            /* Both: one rectangle from the first of the two to the last, so the
+             * separator between them is not a gap the pointer can fall into. */
+            if (!found || minute_left < left)
+                left = minute_left;
+            if (!found || minute_right > right)
+                right = minute_right;
+            found = TRUE;
+        }
+    }
+    if (!found)
+        found = floater_time_span_x(hdc, &clock, &m, 0, lstrlenW(clock.time), &left, &right);
     ReleaseDC(hwnd, hdc);
 
-    int text_left = m.column_x + (m.column_w - sz_time.cx) / 2;
-    out->left = text_left + sz_time.cx - sz_minutes.cx;
-    out->right = text_left + sz_time.cx;
+    if (!found)
+        return FALSE;
+    out->left = left;
+    out->right = right;
     out->top = m.text_y;
     out->bottom = m.text_y + m.time_h;
     return (out->right > out->left && out->bottom > out->top);
@@ -721,14 +787,8 @@ static BOOL floater_minute_rect(HWND hwnd, RECT *out)
 
 void update_floater_layout(HWND hwnd)
 {
-    SYSTEMTIME st;
-    GetLocalTime(&st);
-    WCHAR time_str[16], date_str[32];
-    hellgates_wsprintf(time_str, 16, L"%02d:%02d", st.wHour, st.wMinute);
-    const WCHAR *months[] = {L"",    L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
-                             L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
-    const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
-    hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
+    HgFloaterClock clock;
+    floater_clock_now(&clock);
 
     if (!hg_g_floater_time_font)
         hg_g_floater_time_font = CreateFontW(SC(floater_time_font_height()), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
@@ -748,7 +808,7 @@ void update_floater_layout(HWND hwnd)
         return;
 
     HgFloaterMetrics m;
-    floater_compute_metrics(hdc, time_str, date_str, &m);
+    floater_compute_metrics(hdc, clock.time, clock.date, &m);
 
     RECT rc;
     GetWindowRect(hwnd, &rc);
@@ -771,6 +831,30 @@ void hg_floater_refresh_surface(void)
         UpdateWindow(hwnd); /* now, not at the next idle: the ghost is on screen */
 }
 
+/* The half-second timer runs only while the colour change is switched on: a
+ * clock that is not blinking repaints when its text changes and not otherwise. */
+static void floater_apply_blink_timer(HWND hwnd)
+{
+    if (hg_clock_blink()) {
+        SetTimer(hwnd, HG_TIMER_FLOATER_BLINK, 500, NULL);
+    } else {
+        KillTimer(hwnd, HG_TIMER_FLOATER_BLINK);
+        s_floater_blink_lit = FALSE;
+    }
+}
+
+void hg_floater_clock_changed(void)
+{
+    HWND hwnd = hg_g_floater_wnd;
+    if (!hwnd || !IsWindow(hwnd))
+        return;
+
+    floater_apply_blink_timer(hwnd);
+    /* A format is layout, not just paint: it decides how wide the floater is. */
+    update_floater_layout(hwnd);
+    InvalidateRect(hwnd, NULL, TRUE);
+}
+
 static LRESULT floater_controller_on_create(HWND hwnd)
 {
     hg_g_shellhook_msg = RegisterWindowMessageW(L"SHELLHOOK");
@@ -783,6 +867,7 @@ static LRESULT floater_controller_on_create(HWND hwnd)
 
     update_floater_layout(hwnd);
     SetTimer(hwnd, HG_TIMER_FLOATER_CLOCK, 1000, NULL);
+    floater_apply_blink_timer(hwnd);
     return 0;
 }
 
@@ -861,14 +946,10 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
 
                 if (hg_g_floater_time_font && hg_g_floater_date_font) {
 
-                    SYSTEMTIME st;
-                    GetLocalTime(&st);
-                    WCHAR time_str[16], date_str[32];
-                    hellgates_wsprintf(time_str, 16, L"%02d:%02d", st.wHour, st.wMinute);
-                    const WCHAR *months[] = {L"",    L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
-                                             L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
-                    const WCHAR *days[] = {L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat"};
-                    hellgates_wsprintf(date_str, 32, L"%ls, %ls %d", days[st.wDayOfWeek], months[st.wMonth], st.wDay);
+                    HgFloaterClock clock;
+                    floater_clock_now(&clock);
+                    const WCHAR *time_str = clock.time;
+                    const WCHAR *date_str = clock.date;
 
                     SetBkMode(mem_dc, TRANSPARENT);
                     SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
@@ -908,11 +989,47 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     RECT time_rc = {m.column_x, time_y, m.column_x + m.column_w, time_y + m.time_h * 4};
                     RECT date_rc = {m.column_x, date_y, m.column_x + m.column_w, date_y + m.date_h * 4};
 
+                    /* DT_NOPREFIX on both lines: the text comes from a format
+                     * somebody typed, and an ampersand in it is an ampersand,
+                     * not an instruction to underline the next character. */
+                    const UINT line_format = DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP | DT_NOPREFIX;
+
+                    /* On the lit half second the hours and the minutes are
+                     * drawn in the other colour. The line is drawn whole both
+                     * times and clipped - once with those two parts cut out,
+                     * once to each of them - so every glyph sits exactly where
+                     * it sits on the unlit half second, and no edge of one
+                     * colour is left under the other. */
+                    int lit_x[2][2];
+                    int lit_count = 0;
+                    if (s_floater_blink_lit && hg_clock_blink()) {
+                        if (floater_time_span_x(mem_dc, &clock, &m, clock.spans.hour_start, clock.spans.hour_end,
+                                                &lit_x[lit_count][0], &lit_x[lit_count][1]))
+                            lit_count++;
+                        if (floater_time_span_x(mem_dc, &clock, &m, clock.spans.minute_start,
+                                                clock.spans.minute_end, &lit_x[lit_count][0], &lit_x[lit_count][1]))
+                            lit_count++;
+                    }
+
                     SelectObject(mem_dc, hg_g_floater_time_font);
-                    DrawTextW(mem_dc, time_str, -1, &time_rc, DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
+                    int saved_dc = (lit_count > 0) ? SaveDC(mem_dc) : 0;
+                    for (int i = 0; saved_dc && i < lit_count; ++i)
+                        ExcludeClipRect(mem_dc, lit_x[i][0], rc.top, lit_x[i][1], rc.bottom);
+                    DrawTextW(mem_dc, time_str, -1, &time_rc, line_format);
+                    if (saved_dc)
+                        RestoreDC(mem_dc, saved_dc);
+                    for (int i = 0; saved_dc && i < lit_count; ++i) {
+                        int part_dc = SaveDC(mem_dc);
+                        if (!part_dc)
+                            continue;
+                        IntersectClipRect(mem_dc, lit_x[i][0], rc.top, lit_x[i][1], rc.bottom);
+                        SetTextColor(mem_dc, hg_clock_blink_color());
+                        DrawTextW(mem_dc, time_str, -1, &time_rc, line_format);
+                        RestoreDC(mem_dc, part_dc);
+                    }
 
                     SelectObject(mem_dc, hg_g_floater_date_font);
-                    DrawTextW(mem_dc, date_str, -1, &date_rc, DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
+                    DrawTextW(mem_dc, date_str, -1, &date_rc, line_format);
 
                     SelectObject(mem_dc, old_font_in_paint);
                 }
@@ -928,13 +1045,13 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
     return 0;
 }
 
-static BOOL floater_pointer_on_minutes(HWND hwnd, LPARAM l_param)
+static BOOL floater_pointer_on_hover_part(HWND hwnd, LPARAM l_param)
 {
-    RECT minutes;
-    if (!floater_minute_rect(hwnd, &minutes))
+    RECT part;
+    if (!floater_hover_rect(hwnd, &part))
         return FALSE;
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
-    return PtInRect(&minutes, pt);
+    return PtInRect(&part, pt);
 }
 
 /* One place where a bound floater function turns into the thing it does. The
@@ -1213,6 +1330,7 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
 {
     DeregisterShellHookWindow(hwnd);
     KillTimer(hwnd, HG_TIMER_FLOATER_CLOCK);
+    KillTimer(hwnd, HG_TIMER_FLOATER_BLINK);
     KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
     if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
         DestroyWindow(hg_g_about_wnd);
@@ -1356,14 +1474,15 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     ensure_window_visible(hwnd, L"floater");
                 }
             }
-        } else if (hg_g_taskbox_open_on_hover && floater_pointer_on_minutes(hwnd, l_param)) {
+        } else if (hg_g_taskbox_open_on_hover && floater_pointer_on_hover_part(hwnd, l_param)) {
             /* Off by default: pointer travel across the desktop used to expand
              * the whole dashboard by accident, so opening is something you say
              * with a click. Those who liked reaching it without one switch this
-             * back on, and it answers over the clock's minutes alone: the rest
-             * of the floater is bars, a date and a host name that a hand
-             * crosses on its way elsewhere, and it stays draggable and tunable
-             * as a result. */
+             * back on, and it answers over one part of the clock - the minutes,
+             * the hours, or both, as chosen in the settings: the rest of the
+             * floater is bars, a date and a host name that a hand crosses on
+             * its way elsewhere, and it stays draggable and tunable as a
+             * result. */
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
                 hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
                 /* Make it appear instantly, refresh without forcing icon reload */
@@ -1443,12 +1562,17 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
              * which is what a watchdog needs. It throttles itself. */
             hg_caphook_watchdog();
 
-            static SYSTEMTIME last_st = {0};
-            SYSTEMTIME st;
-            GetLocalTime(&st);
-            if (st.wMinute != last_st.wMinute || st.wHour != last_st.wHour || st.wDay != last_st.wDay ||
-                st.wMonth != last_st.wMonth || st.wYear != last_st.wYear) {
-                last_st = st;
+            /* Compared as text, not as fields: what has to trigger a layout
+             * is the lines reading differently, and which fields that depends
+             * on is the format's business - a clock with seconds in it changes
+             * every tick, one without changes once a minute. */
+            static WCHAR last_time[HG_TIMEFMT_OUT_CCH];
+            static WCHAR last_date[HG_TIMEFMT_OUT_CCH];
+            HgFloaterClock clock;
+            floater_clock_now(&clock);
+            if (wcscmp(clock.time, last_time) != 0 || wcscmp(clock.date, last_date) != 0) {
+                StringCchCopyW(last_time, HG_ARRAYSIZE(last_time), clock.time);
+                StringCchCopyW(last_date, HG_ARRAYSIZE(last_date), clock.date);
                 update_floater_layout(hwnd);
                 InvalidateRect(hwnd, NULL, FALSE);
             }
@@ -1480,6 +1604,14 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             /* Monitor previews are not invalidated here: each one runs its own
              * refresh timer, and a second invalidation from this tick only
              * doubled a repaint that already happens. */
+        } else if (w_param == HG_TIMER_FLOATER_BLINK) {
+            if (!hg_clock_blink()) {
+                floater_apply_blink_timer(hwnd); /* switched off since: stop */
+            } else {
+                s_floater_blink_lit = !s_floater_blink_lit;
+                if (IsWindowVisible(hwnd))
+                    InvalidateRect(hwnd, NULL, FALSE);
+            }
         } else if (w_param == HG_TIMER_THEME_SETTLE) {
             KillTimer(hwnd, HG_TIMER_THEME_SETTLE);
             update_theme_colors();
