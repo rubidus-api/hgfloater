@@ -161,6 +161,175 @@ int hg_calc_format_clock(wchar_t *out, int cch, int year, int month, int day, in
     return pos;
 }
 
+static int hg_grid_rows_of(int count, int cols)
+{
+    return (count > 0) ? (count + cols - 1) / cols : 0;
+}
+
+int hg_calc_grid_rows(int cols, int tasks, int shortcuts, int buttons, int grouped)
+{
+    if (cols < 1)
+        cols = 1;
+    if (tasks < 0)
+        tasks = 0;
+    if (shortcuts < 0)
+        shortcuts = 0;
+    if (buttons < 0)
+        buttons = 0;
+
+    int rows = grouped ? hg_grid_rows_of(tasks, cols) + hg_grid_rows_of(shortcuts, cols) +
+                             hg_grid_rows_of(buttons, cols)
+                       : hg_grid_rows_of(tasks + buttons, cols);
+    return (rows > 0) ? rows : 1;
+}
+
+int hg_calc_grid_cols_for_rows(int target_rows, int tasks, int shortcuts, int buttons, int grouped)
+{
+    if (tasks < 0)
+        tasks = 0;
+    if (shortcuts < 0)
+        shortcuts = 0;
+    if (buttons < 0)
+        buttons = 0;
+    if (target_rows < 1)
+        target_rows = 1;
+
+    /* Past the widest group (or, ungrouped, the whole run) more columns change
+     * nothing, so that is where the search ends. */
+    int widest = grouped ? tasks : tasks + buttons;
+    if (grouped && shortcuts > widest)
+        widest = shortcuts;
+    if (grouped && buttons > widest)
+        widest = buttons;
+    if (widest < 1)
+        widest = 1;
+
+    for (int cols = 1; cols < widest; ++cols) {
+        if (hg_calc_grid_rows(cols, tasks, shortcuts, buttons, grouped) <= target_rows)
+            return cols;
+    }
+    return widest;
+}
+
+void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int buttons, int grouped, HgGrid *out)
+{
+    if (!out)
+        return;
+    if (cols < 1)
+        cols = 1;
+    if (tasks < 0)
+        tasks = 0;
+    if (shortcuts < 0 || !grouped)
+        shortcuts = 0;
+    if (buttons < 0)
+        buttons = 0;
+
+    int rows = hg_calc_grid_rows(cols, tasks, shortcuts, buttons, grouped);
+    if (visible_rows > rows)
+        rows = visible_rows;
+
+    out->cols = cols;
+    out->rows = rows;
+    out->cells = rows * cols;
+    out->tasks = tasks;
+    out->shortcuts = shortcuts;
+    out->buttons = buttons;
+    out->shortcut_first = hg_grid_rows_of(tasks, cols) * cols;
+    out->button_first = out->cells - buttons;
+}
+
+int hg_calc_grid_cell(const HgGrid *grid, int type, int index)
+{
+    if (!grid || index < 0)
+        return -1;
+    if (type == HG_GRID_TASK)
+        return (index < grid->tasks) ? index : -1;
+    if (type != HG_GRID_BUTTON)
+        return -1;
+    if (index < grid->buttons)
+        return grid->cells - 1 - index;
+    index -= grid->buttons;
+    return (index < grid->shortcuts) ? grid->shortcut_first + index : -1;
+}
+
+int hg_calc_grid_item(const HgGrid *grid, int cell, int *out_type, int *out_index)
+{
+    int type = -1;
+    int index = -1;
+
+    if (grid && cell >= 0 && cell < grid->cells) {
+        if (cell < grid->tasks) {
+            type = HG_GRID_TASK;
+            index = cell;
+        } else if (cell >= grid->button_first) {
+            type = HG_GRID_BUTTON;
+            index = grid->cells - 1 - cell;
+        } else if (cell >= grid->shortcut_first && cell < grid->shortcut_first + grid->shortcuts) {
+            type = HG_GRID_BUTTON;
+            index = grid->buttons + (cell - grid->shortcut_first);
+        }
+    }
+    if (out_type)
+        *out_type = type;
+    if (out_index)
+        *out_index = index;
+    return type >= 0;
+}
+
+int hg_calc_grid_move(const HgGrid *grid, int cell, int direction)
+{
+    if (!grid || grid->cells <= 0)
+        return cell;
+    if (cell < 0)
+        cell = 0;
+    if (cell >= grid->cells)
+        cell = grid->cells - 1;
+
+    /* Left and Right read the grid as one line, so the end of a row leads to
+     * the start of the next. Off either end of the grid, or above the first
+     * row or below the last, there is nowhere to go. */
+    int target = cell;
+    switch (direction) {
+    case HG_GRID_LEFT:
+        target = cell - 1;
+        break;
+    case HG_GRID_RIGHT:
+        target = cell + 1;
+        break;
+    case HG_GRID_UP:
+        target = cell - grid->cols;
+        break;
+    case HG_GRID_DOWN:
+        target = cell + grid->cols;
+        break;
+    default:
+        return cell;
+    }
+    if (target < 0 || target >= grid->cells)
+        return cell;
+    if (hg_calc_grid_item(grid, target, NULL, NULL))
+        return target;
+
+    /* An empty cell: on to the next item the way the key was heading, and
+     * failing that the nearest one behind it. */
+    int forward = (target > cell);
+    for (int pass = 0; pass < 2; ++pass) {
+        if (forward) {
+            for (int next = target + 1; next < grid->cells; ++next) {
+                if (hg_calc_grid_item(grid, next, NULL, NULL))
+                    return next;
+            }
+        } else {
+            for (int next = target - 1; next >= 0; --next) {
+                if (hg_calc_grid_item(grid, next, NULL, NULL))
+                    return next;
+            }
+        }
+        forward = !forward;
+    }
+    return cell;
+}
+
 int get_items_per_row(int width, int icon_size)
 {
     if (width <= 0)

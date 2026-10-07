@@ -497,6 +497,26 @@ A single-line read-only field across the top of the taskbox.
 
 ### 5.3 Shape and size
 
+**The grid is three groups, each starting a row of its own:** your windows,
+then your shortcuts, then the buttons. A group that is longer than a row wraps
+onto the next, so with twelve columns thirteen windows take two rows and the
+shortcuts still begin on a fresh one. A group with nothing in it takes no row.
+The buttons always end in the bottom-right corner, `R` last; when the taskbox is
+taller than it needs to be, the spare rows fall above them.
+
+The arrow keys walk all three: `Right` off the last window lands on the first
+shortcut, off the last shortcut on the first button, and `Up` and `Down` step
+between the groups without stopping in the empty cells. A shortcut in the grid
+is the same thing it is in the [Run box](#65-the-run-box): click or `Space`
+launches it, the right button or `Enter` opens its menu, and `Shift` + its
+letter reaches it from anywhere.
+
+This is the default. **Windows, Shortcuts, Buttons by Row** in the `Set` list
+or the [settings window](#71-the-settings-window) switches it off
+(`[taskbox] group_rows=0`, or `write option grouprows off`): windows and
+buttons then share rows, as they did up to v0.17.14, and the shortcuts are
+only in the Run box.
+
 - **Drag any border** to change the grid: the taskbox snaps to whole columns, so
   no half icon is ever left hanging.
 - **Ctrl + Wheel** (or `Ctrl` + `+` / `-`) scales icons and text together and
@@ -865,8 +885,10 @@ sixteen sit four across; past that the box widens to stay square (sixty-four is
 eight by eight). `Run` sits beside `Dir`, so the two buttons that open a box of
 places or programs are together.
 
-The shortcuts used to be icons in the grid itself, after the buttons. A dozen of
-them took a dozen cells from your windows; now they cost one.
+With the [grouped layout](#53-shape-and-size) on - the default - the same
+shortcuts are also on the grid, on rows of their own between the windows and
+the buttons, and this box is a second way to them. With it off they are here
+only, and cost the grid one cell.
 
 | Gesture | What it does |
 | :--- | :--- |
@@ -1364,6 +1386,7 @@ every wheel notch.
 | `date_format` | The date line's format (`[floater]` only, default `"%a, %b %-d"`) |
 | `blink` | `1` changes the colour of the hours and minutes every half second (`[floater]` only, default `0`) |
 | `open_on_hover` | `1` lets the pointer open the taskbox from the floater (`[taskbox]` only, default `0`) |
+| `group_rows` | `1` starts a new row for the shortcuts and another for the buttons; `0` lets windows and buttons share rows and keeps the shortcuts in the Run box (`[taskbox]` only, default `1`) |
 | `hover_region` | Which part of the clock answers when it is on: `minutes`, `hours` or `both` (`[taskbox]` only, default `minutes`) |
 | `show_tabs` | `1` gives a tabbed application's tabs their own task icons (`[taskbox]` only, default `0`) |
 | `tab_classes` | Extra window classes to look for tabs in, `;`-separated (`[taskbox]` only) |

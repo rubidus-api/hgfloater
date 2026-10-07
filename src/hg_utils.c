@@ -1009,46 +1009,63 @@ HgToolbarDragRole hg_toolbar_builtin_drag_role(int index)
     return desc ? desc->drag_role : HG_TOOLBAR_DRAG_NONE;
 }
 
-void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect)
+int hg_toolbar_grid_shortcuts(void)
 {
-    if (width <= 0 || !out_rect) {
-        if (out_rect)
-            SetRectEmpty(out_rect);
-        return;
-    }
+    return hg_g_taskbox_group_rows ? hg_g_shortcut_count : 0;
+}
 
+int hg_toolbar_grid_item_count(void)
+{
+    int count = hg_g_window_count + hg_toolbar_grid_shortcuts() + HG_NUM_BASIC_ICONS;
+    return (count > 0) ? count : 1;
+}
+
+int hg_toolbar_rows_for_cols(int cols)
+{
+    return hg_calc_grid_rows(cols, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_NUM_BASIC_ICONS,
+                             hg_g_taskbox_group_rows);
+}
+
+int hg_toolbar_cols_for_rows(int target_rows)
+{
+    return hg_calc_grid_cols_for_rows(target_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(),
+                                      HG_NUM_BASIC_ICONS, hg_g_taskbox_group_rows);
+}
+
+void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)
+{
     int cols = get_items_per_row(width, icon_size);
-    if (cols <= 0)
-        cols = 1;
     int row_height = icon_size + SC(10);
-
-    int total_tasks = hg_g_window_count;
-    int total_buttons = HG_NUM_BASIC_ICONS; /* the shortcuts are in the Run box */
-
-    int min_required_rows = (total_tasks + total_buttons + cols - 1) / cols;
-    if (min_required_rows <= 0)
-        min_required_rows = 1;
-
-    int visible_rows = (height - SC(20) + SC(10)) / row_height;
+    int visible_rows = (row_height > 0) ? (height - SC(20) + SC(10)) / row_height : 1;
     if (visible_rows <= 0)
         visible_rows = 1;
 
-    int rows = (visible_rows > min_required_rows) ? visible_rows : min_required_rows;
+    hg_calc_grid(cols, visible_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_NUM_BASIC_ICONS,
+                 hg_g_taskbox_group_rows, out);
+}
 
-    int total_cells = rows * cols;
+/* item_type 0 is a task icon. item_type 1 is a function button, or - past the
+ * last of those, HG_SHORTCUT_BUTTON_ID - a shortcut. An item that is not on the
+ * grid (a shortcut, while they are only in the Run box) gets an empty rect. */
+void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect)
+{
+    if (!out_rect)
+        return;
+    SetRectEmpty(out_rect);
+    if (width <= 0)
+        return;
 
-    int cell_index;
-    if (item_type == 0) {
-        cell_index = item_index;
-    } else {
-        cell_index = total_cells - 1 - item_index;
-    }
+    HgGrid grid;
+    hg_toolbar_grid(width, height, icon_size, &grid);
+    int cell_index = hg_calc_grid_cell(&grid, item_type, item_index);
+    if (cell_index < 0)
+        return;
 
-    int row = cell_index / cols;
-    int col = cell_index % cols;
+    int row = cell_index / grid.cols;
+    int col = cell_index % grid.cols;
 
     out_rect->left = SC(10) + col * (icon_size + SC(15));
-    out_rect->top = SC(10) + row * row_height;
+    out_rect->top = SC(10) + row * (icon_size + SC(10));
     out_rect->right = out_rect->left + icon_size;
     out_rect->bottom = out_rect->top + icon_size;
 }
@@ -1118,6 +1135,25 @@ void update_toolbar_tooltips(HWND hwnd)
                 ti_tool.lpszText = (LPWSTR)tooltip_text;
         }
 
+        ti_tool.rect = item_rc;
+        InflateRect(&ti_tool.rect, SC(4), SC(4));
+        SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti_tool);
+    }
+
+    /* The shortcuts, when the grouped layout has them on the grid: the name of
+     * the program, which the array keeps for as long as the shortcut exists. */
+    for (int i = 0; i < hg_toolbar_grid_shortcuts(); i++) {
+        RECT item_rc;
+        get_toolbar_item_rect(1, HG_SHORTCUT_BUTTON_ID(i), client_rc.right, client_rc.bottom, icon_size, &item_rc);
+        if (IsRectEmpty(&item_rc))
+            continue;
+
+        TOOLINFOW ti_tool = {0};
+        ti_tool.cbSize = TOOLINFO_V1_SIZE;
+        ti_tool.uFlags = TTF_SUBCLASS;
+        ti_tool.hwnd = hwnd;
+        ti_tool.uId = (UINT_PTR)id_counter++;
+        ti_tool.lpszText = hg_g_shortcuts[i].name;
         ti_tool.rect = item_rc;
         InflateRect(&ti_tool.rect, SC(4), SC(4));
         SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti_tool);

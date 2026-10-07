@@ -212,10 +212,14 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
             return 1;
         }
     }
-    int total_buttons = HG_NUM_BASIC_ICONS;
+    /* The buttons, and after them the shortcuts the grouped layout puts on the
+     * grid. One that has no cell comes back as an empty rect and is skipped. */
+    int total_buttons = HG_NUM_BASIC_ICONS + hg_toolbar_grid_shortcuts();
     for (int i = 0; i < total_buttons; i++) {
         RECT rc_item, rc_btn;
         get_toolbar_item_rect(1, i, width, height, icon_size, &rc_item);
+        if (IsRectEmpty(&rc_item))
+            continue;
         rc_btn = rc_item;
         InflateRect(&rc_btn, SC(4), SC(4));
         if (PtInRect(&rc_btn, pt)) {
@@ -533,6 +537,23 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     }
                 }
 
+                /* The shortcuts, on rows of their own between the windows and
+                 * the buttons, when the grouped layout is on. Drawn by the same
+                 * painter the Run box uses, so a shortcut looks the same in
+                 * both places: no plate, an outline, its icon, its Shift
+                 * letter, and a ring when the keyboard is on it. */
+                for (int s_idx = 0; s_idx < hg_toolbar_grid_shortcuts(); s_idx++) {
+                    int id = HG_SHORTCUT_BUTTON_ID(s_idx);
+                    RECT rc_item;
+                    get_toolbar_item_rect(1, id, rc.right, rc.bottom, icon_size, &rc_item);
+                    if (IsRectEmpty(&rc_item))
+                        continue;
+                    BOOL focused = (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == id);
+                    BOOL pointed = (hovered_type == 1 && hovered_index == id) ||
+                                   (pressed_type == 1 && pressed_index == id);
+                    hg_toolbar_paint_shortcut_cell(mem_dc, s_idx, &rc_item, icon_size, focused, pointed);
+                }
+
                 /* A function button wears its key the same way a task icon
                  * wears its label, because they are the same promise: press
                  * this and that happens. */
@@ -659,11 +680,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         int dh = cur_mouse.y - state->start_mouse.y;
         int border = SC(HG_BORDER_THICKNESS);
 
-        int total_tasks = hg_g_window_count;
-        int total_buttons = HG_NUM_BASIC_ICONS;
-        int total_items = total_tasks + total_buttons;
-        if (total_items <= 0)
-            total_items = 1;
+        int total_items = hg_toolbar_grid_item_count();
 
         int cols = 1;
         if (ABS(dh) > ABS(dw)) {
@@ -686,9 +703,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
         int req_w = exact_tb_width + border * 2;
 
-        int rows = (total_items + cols - 1) / cols;
-        if (rows <= 0)
-            rows = 1;
+        int rows = hg_toolbar_rows_for_cols(cols);
         int row_height = icon_size + SC(10);
         int req_toolbar_height = SC(10) + rows * row_height;
 

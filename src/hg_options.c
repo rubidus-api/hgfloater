@@ -9,6 +9,7 @@
 #include "hg_tabs.h"
 #include "hg_caphook.h"
 #include "widgets/hg_floater.h"
+#include "widgets/hg_taskbox.h"
 #include "widgets/hg_hilite.h"
 #include "widgets/hg_tabbox.h"
 
@@ -22,7 +23,8 @@ enum {
     HG_OPTION_TABS,
     HG_OPTION_CAPTION_MENU,
     HG_OPTION_STARTUP,
-    HG_OPTION_STAT_BARS
+    HG_OPTION_STAT_BARS,
+    HG_OPTION_GROUP_ROWS
 };
 
 #if HG_TEMP_DISABLE_FLAGGED_FEATURES
@@ -47,6 +49,8 @@ static const HgOptionInfo hg_options[] = {
      HG_OPTION_FLAGGED_NOTE},
     {L"statbars", L"Stat Bars on the Floater", L"battery, CPU, memory and temperature, behind the clock",
      TRUE, NULL},
+    {L"grouprows", L"Windows, Shortcuts, Buttons by Row",
+     L"the taskbox starts a new row for the shortcuts and another for the buttons", TRUE, NULL},
 };
 
 int hg_option_count(void)
@@ -79,6 +83,8 @@ BOOL hg_option_get(int number)
         return hg_startup_is_enabled();
     case HG_OPTION_STAT_BARS:
         return hg_g_floater_show_stats;
+    case HG_OPTION_GROUP_ROWS:
+        return hg_g_taskbox_group_rows;
     default:
         return FALSE;
     }
@@ -158,6 +164,14 @@ BOOL hg_option_set(int number, BOOL value, const WCHAR **out_message)
         if (out_message)
             *out_message = value ? L"Floater: stat bars shown" : L"Floater: stat bars hidden";
         break;
+    case HG_OPTION_GROUP_ROWS:
+        hg_g_taskbox_group_rows = value;
+        WritePrivateProfileStringW(L"taskbox", L"group_rows", value ? L"1" : L"0", hg_g_config_path);
+        hg_taskbox_grid_changed();
+        if (out_message)
+            *out_message = value ? L"Taskbox: windows, shortcuts and buttons each start a row"
+                                 : L"Taskbox: windows and buttons share rows, shortcuts in the Run box";
+        break;
     default:
         return FALSE;
     }
@@ -215,4 +229,8 @@ void hg_options_load(void)
         (GetPrivateProfileIntW(L"taskbox", L"open_on_hover", 0, hg_g_config_path) != 0);
     hg_g_window_outline = (GetPrivateProfileIntW(L"taskbox", L"window_outline", 1, hg_g_config_path) != 0);
     hg_g_tabbox_on_hover = (GetPrivateProfileIntW(L"taskbox", L"tab_box", 1, hg_g_config_path) != 0);
+    /* On unless the file says otherwise, and written back so the key is there
+     * to be found. */
+    hg_g_taskbox_group_rows = (GetPrivateProfileIntW(L"taskbox", L"group_rows", 1, hg_g_config_path) != 0);
+    WritePrivateProfileStringW(L"taskbox", L"group_rows", hg_g_taskbox_group_rows ? L"1" : L"0", hg_g_config_path);
 }

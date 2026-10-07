@@ -109,6 +109,7 @@ extern RECT hg_g_floater_home_rect;   /* floater position before a click/hotkey 
 extern RECT hg_g_taskbox_expand_rect; /* taskbox position right after that expand */
 extern BOOL hg_g_floater_home_valid;
 extern BOOL hg_g_taskbox_pinned;      /* P button: taskbox stays open, no hover auto-collapse */
+extern BOOL hg_g_taskbox_group_rows;    /* [taskbox] group_rows: windows, shortcuts and buttons each start a row */
 extern BOOL hg_g_taskbox_open_on_hover; /* [taskbox] open_on_hover: pointer opens it, not just a click */
 extern BOOL hg_g_window_outline;        /* [taskbox] window_outline: a task icon outlines its window */
 extern BOOL hg_g_tabbox_on_hover;       /* [taskbox] tab_box: a tabbed icon opens its list of tabs */

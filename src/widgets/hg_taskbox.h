@@ -128,6 +128,10 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows);
 void activate_taskbar_item(int index);
 void update_focus_message(int override_type, int override_index);
 void reset_taskbox_focus(void);
+/* What is on the grid changed - the grouped layout was switched: bring the
+ * focus back onto an item if it was left on one that is gone, size the window
+ * for the new number of rows, repaint. */
+void hg_taskbox_grid_changed(void);
 int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type, int *out_index);
 
 #endif /* HG_TASKBOX_H */

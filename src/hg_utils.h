@@ -296,6 +296,14 @@ void hg_toolbar_paint_shortcut_cell(HDC dc, int s_idx, const RECT *rc_item, int 
                                     BOOL hovered);
 HgToolbarClickRole hg_toolbar_builtin_click_role(int index);
 HgToolbarDragRole hg_toolbar_builtin_drag_role(int index);
+/* The taskbox grid as it is now: the windows, the shortcuts when the grouped
+ * layout has them on the grid, and the row of buttons. Every place that sizes,
+ * paints, hit-tests or walks the grid asks these (hg_calc.h has the rules). */
+int hg_toolbar_grid_shortcuts(void);  /* shortcuts on the grid: all of them when grouped, else 0 */
+int hg_toolbar_grid_item_count(void); /* everything on the grid */
+int hg_toolbar_rows_for_cols(int cols);
+int hg_toolbar_cols_for_rows(int target_rows);
+void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out);
 void update_toolbar_tooltips(HWND hwnd);
 BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param);
 void move_window_by_offset(HWND hwnd, int dx, int dy);

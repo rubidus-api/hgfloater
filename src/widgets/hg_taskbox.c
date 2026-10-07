@@ -309,6 +309,9 @@ void hide_taskbox(HWND hwnd)
     }
     ShowWindow(hwnd, SW_HIDE);
     load_shortcuts_if_changed();
+    /* With the grouped layout the shortcuts are rows of the grid, so a folder
+     * that gained or lost one changes how tall the window has to be. */
+    update_layout(hwnd);
     update_toolbar_tooltips(hg_g_toolbar_wnd);
     InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
 }
@@ -571,6 +574,9 @@ void update_focus_message(int override_type, int override_index)
                     append_message(value_str);
                 }
             }
+        } else if (index >= HG_SHORTCUT_BUTTON_ID(0) && index < HG_SHORTCUT_BUTTON_ID(hg_g_shortcut_count)) {
+            /* A shortcut on the grid: its name, as a window's title is said. */
+            append_message(hg_g_shortcuts[index - HG_SHORTCUT_BUTTON_ID(0)].name);
         }
     }
 }
@@ -580,6 +586,19 @@ void reset_taskbox_focus(void)
     hg_taskbox_focus.area = 0;
     hg_taskbox_focus.index = 0;
     update_focus_message(-2, -2);
+}
+
+void hg_taskbox_grid_changed(void)
+{
+    /* Switching the grouped layout off takes the shortcuts off the grid: a
+     * focus left on one of them would be on nothing. */
+    if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index >= HG_SHORTCUT_BUTTON_ID(hg_toolbar_grid_shortcuts()))
+        reset_taskbox_focus();
+    if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
+        update_layout(hg_g_taskbox_wnd);
+        if (hg_g_toolbar_wnd)
+            InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
+    }
 }
 
 /* Shared by interactive resize and WM_EXITSIZEMOVE: pick the column count that
@@ -594,7 +613,9 @@ int taskbox_cols_from_height(int window_height, int icon_size, int border, int t
         target_rows = 1;
     if (target_rows > total_items)
         target_rows = total_items;
-    return (total_items + target_rows - 1) / target_rows;
+    /* The fewest columns that fit that many rows - which, with the grouped
+     * layout, is not a division: each group wraps on its own. */
+    return hg_toolbar_cols_for_rows(target_rows);
 }
 
 LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass,
@@ -680,11 +701,7 @@ void update_layout(HWND hwnd)
     int cols = get_items_per_row(tb_width, icon_size);
     if (cols <= 0)
         cols = 1;
-    int total_tasks = hg_g_window_count;
-    int total_buttons = HG_NUM_BASIC_ICONS;
-    int rows = (total_tasks + total_buttons + cols - 1) / cols;
-    if (rows <= 0)
-        rows = 1;
+    int rows = hg_toolbar_rows_for_cols(cols);
 
     int row_height = icon_size + SC(10);
 
@@ -972,17 +989,13 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int border = SC(HG_BORDER_THICKNESS);
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
-            int total_tasks = hg_g_window_count;
-            int total_buttons = HG_NUM_BASIC_ICONS;
-            int total_items = total_tasks + total_buttons;
-            if (total_items <= 0)
-                total_items = 1;
+            int total_items = hg_toolbar_grid_item_count();
 
-            int current_rows = (total_items + cols - 1) / cols;
+            int current_rows = hg_toolbar_rows_for_cols(cols);
             if (current_rows > 1) {
                 while (cols < total_items) {
                     cols++;
-                    int new_rows = (total_items + cols - 1) / cols;
+                    int new_rows = hg_toolbar_rows_for_cols(cols);
                     if (new_rows < current_rows)
                         break;
                 }
@@ -997,16 +1010,10 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int border = SC(HG_BORDER_THICKNESS);
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
-            int total_tasks = hg_g_window_count;
-            int total_buttons = HG_NUM_BASIC_ICONS;
-            int total_items = total_tasks + total_buttons;
-            if (total_items <= 0)
-                total_items = 1;
-
-            int current_rows = (total_items + cols - 1) / cols;
+            int current_rows = hg_toolbar_rows_for_cols(cols);
             while (cols > 1) {
                 cols--;
-                int new_rows = (total_items + cols - 1) / cols;
+                int new_rows = hg_toolbar_rows_for_cols(cols);
                 if (new_rows > current_rows)
                     break;
             }
@@ -1051,39 +1058,20 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         return DefWindowProcW(hwnd, msg, w_param, l_param);
 
     /* 탐색 및 선택 */
-    int total_tasks = hg_g_window_count;
-    int total_buttons = HG_NUM_BASIC_ICONS;
-
-    if (total_tasks > 0 || total_buttons > 0) {
+    {
         int icon_size = taskbox_toolbar_icon_size();
 
         RECT rc_toolbar;
         GetClientRect(hg_g_toolbar_wnd, &rc_toolbar);
 
-        int cols = get_items_per_row(rc_toolbar.right, icon_size);
-        int min_required_rows = (total_tasks + total_buttons + cols - 1) / cols;
-        if (min_required_rows <= 0)
-            min_required_rows = 1;
-
-        int visible_rows = (rc_toolbar.bottom - SC(20) + SC(10)) / (icon_size + SC(10));
-        if (visible_rows <= 0)
-            visible_rows = 1;
-
-        int rows = (visible_rows > min_required_rows) ? visible_rows : min_required_rows;
-        int total_cells = rows * cols;
-
-        int current_cell = -1;
-        if (hg_taskbox_focus.area == 0) {
-            current_cell = hg_taskbox_focus.index;
-        } else {
-            current_cell = total_cells - 1 - hg_taskbox_focus.index;
-        }
-
+        /* The grid as it is laid out now; the arrows walk its cells. */
+        HgGrid grid;
+        hg_toolbar_grid(rc_toolbar.right, rc_toolbar.bottom, icon_size, &grid);
+        int current_cell = hg_calc_grid_cell(&grid, hg_taskbox_focus.area, hg_taskbox_focus.index);
         if (current_cell < 0)
             current_cell = 0;
 
-        int r = current_cell / cols;
-        int c = current_cell % cols;
+        int direction = -1;
         BOOL changed = FALSE;
 
         /* On a button that holds a reading, PageUp/PageDown and Q/E are less and
@@ -1111,16 +1099,16 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         }
 
         if (w_param == VK_LEFT || w_param == 'A') {
-            c--;
+            direction = HG_GRID_LEFT;
             changed = TRUE;
         } else if (w_param == VK_RIGHT || w_param == 'D') {
-            c++;
+            direction = HG_GRID_RIGHT;
             changed = TRUE;
         } else if (w_param == VK_UP || w_param == 'W') {
-            r--;
+            direction = HG_GRID_UP;
             changed = TRUE;
         } else if (w_param == VK_DOWN || w_param == 'S') {
-            r++;
+            direction = HG_GRID_DOWN;
             changed = TRUE;
         } else if (w_param == VK_F2) {
             if (hg_g_floater_wnd)
@@ -1138,41 +1126,13 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         }
 
         if (changed) {
-            if (c < 0) {
-                c = cols - 1;
-                r--;
-            }
-            if (c >= cols) {
-                c = 0;
-                r++;
-            }
-            if (r < 0)
-                r = 0;
-            if (r >= rows)
-                r = rows - 1;
-
-            int new_cell = r * cols + c;
-
-            // 빈 공간이라면 가장 가까운 유효한 셀로 이동 (이 경우는 Task의 마지막이나 Shortcut의 첫번째가 될 것)
-            if (new_cell >= total_tasks && new_cell < total_cells - total_buttons) {
-                if (new_cell > current_cell) {
-                    new_cell = total_cells - total_buttons;
-                } else {
-                    new_cell = total_tasks - 1;
-                }
-            }
-            if (new_cell < 0)
-                new_cell = 0;
-            if (new_cell >= total_cells)
-                new_cell = total_cells - 1;
-
-            // 새로운 cell의 정보를 다시 item_type/index로 매핑
-            if (new_cell < total_tasks) {
-                hg_taskbox_focus.area = 0;
-                hg_taskbox_focus.index = new_cell;
-            } else if (new_cell >= total_cells - total_buttons) {
-                hg_taskbox_focus.area = 1;
-                hg_taskbox_focus.index = total_cells - 1 - new_cell;
+            /* One step, landing on an item: a step into the empty cells between
+             * the groups goes on to the next icon that way (hg_calc_grid_move). */
+            int new_cell = hg_calc_grid_move(&grid, current_cell, direction);
+            int new_type = -1, new_index = -1;
+            if (hg_calc_grid_item(&grid, new_cell, &new_type, &new_index)) {
+                hg_taskbox_focus.area = new_type;
+                hg_taskbox_focus.index = new_index;
             }
             update_focus_message(-2, -2);
 
@@ -1359,11 +1319,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         int icon_size = taskbox_toolbar_icon_size();
         int border = SC(HG_BORDER_THICKNESS);
 
-        int total_tasks = hg_g_window_count;
-        int total_buttons = HG_NUM_BASIC_ICONS;
-        int total_items = total_tasks + total_buttons;
-        if (total_items <= 0)
-            total_items = 1;
+        int total_items = hg_toolbar_grid_item_count();
 
         int cols;
         if (ABS(dh) > ABS(dw)) {

@@ -36,7 +36,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `[colors] clock_blink`). Off by default, and the half-second timer exists
   only while it is on.
 
+- **The taskbox grid is three groups, each starting a row of its own:** the
+  windows, then the shortcuts, then the buttons, each wrapping when it is
+  longer than a row. **This is the default.** The shortcuts are on the grid
+  again - on rows of their own, so they no longer take cells from the windows'
+  row - and the Run box still opens them too. The arrows walk all three groups
+  and step over the empty cells between them. A new switch, **Windows,
+  Shortcuts, Buttons by Row** (`[taskbox] group_rows`, `write option
+  grouprows`), turns it off: windows and buttons share rows again and the
+  shortcuts are only in the Run box.
+
 ### Changed
+- **`Left` on the first icon of the grid stays where it is.** It used to wrap
+  to the far end of the first row and from there jump to the buttons; the
+  arrows now stop at the first and last cell, in either layout.
 - **`Vol`, `Mon` and `Alp` are buttons on the row again, and the `Ico` button
   and its box are gone.** From the left the row is now `Run` `Dir` `Alp` `Mon`
   `Vol` `Opt` `Set` `Clip` `Note` `C` `D` `X` `M` `R` - fourteen buttons. Wheel,
