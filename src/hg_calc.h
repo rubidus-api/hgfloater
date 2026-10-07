@@ -61,14 +61,18 @@ HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
 /* The taskbox grid: which cell holds what.
  *
  * Three kinds of item share it - task icons, shortcut icons, and the function
- * buttons. Tasks fill from the first cell. The buttons fill the last cells,
- * the first button in the very last one, so the row of buttons ends in the
- * bottom-right corner whatever the window's size.
+ * buttons. Tasks fill from the first cell.
  *
  * Grouped, each kind starts on a row of its own: the tasks' rows, then the
- * shortcuts' rows, then the buttons' rows, each wrapping when it is longer than
- * a row. Not grouped, tasks and buttons share rows and the shortcuts are not on
- * the grid at all (pass 0 for them) - they are in the Run box.
+ * shortcuts' rows, then the buttons' rows, each flowing left to right and
+ * wrapping when it is longer than a row. The buttons take the last rows of the
+ * grid and read in their on-screen order - the highest index first - so the
+ * last row holds whatever did not fit on the one before, from its left edge.
+ *
+ * Not grouped, tasks and buttons share rows and the shortcuts are not on the
+ * grid at all (pass 0 for them) - they are in the Run box. The buttons then
+ * fill the last cells, the first button in the very last one, so the run of
+ * buttons ends in the bottom-right corner.
  *
  * Every piece of code that places, paints, hit-tests or walks the grid asks
  * these, so they cannot come to disagree about where an icon is. */
@@ -79,8 +83,9 @@ typedef struct HgGrid {
     int tasks;
     int shortcuts;      /* on the grid; 0 when they are not */
     int buttons;
+    int grouped;
     int shortcut_first; /* the first shortcut's cell */
-    int button_first;   /* cells - buttons: the last button's cell */
+    int button_first;   /* the cell of the leftmost button, which is the last by index */
 } HgGrid;
 
 enum { HG_GRID_TASK = 0, HG_GRID_BUTTON = 1 };

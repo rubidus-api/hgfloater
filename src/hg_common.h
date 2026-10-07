@@ -148,9 +148,10 @@
 #define HG_MAX_AUDIO_DEVICES 16
 #define HG_NUM_BASIC_ICONS 14
 
-/* The row, in index order. Index 0 sits in the bottom-right cell and each one
- * after it steps left, so on screen the row reads
- * Run Dir Alp Mon Vol Opt Set Clip Note C D X M R.
+/* The row, in index order. On screen the highest index is leftmost, so the row
+ * reads Run Dir Alp Mon Vol Opt Set Clip Note C D X M R. (Where the row sits -
+ * flowing from the left of rows of its own, or ending in the bottom-right cell -
+ * is the grid's business: see HgGrid in hg_calc.h.)
  *
  * Vol, Mon and Alp are on the row itself. They spent v0.17.13 and v0.17.14 in
  * a box behind an Ico button; a reading that has to be opened to be seen was

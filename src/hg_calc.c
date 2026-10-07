@@ -234,8 +234,11 @@ void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int butt
     out->tasks = tasks;
     out->shortcuts = shortcuts;
     out->buttons = buttons;
+    out->grouped = grouped ? 1 : 0;
     out->shortcut_first = hg_grid_rows_of(tasks, cols) * cols;
-    out->button_first = out->cells - buttons;
+    /* Grouped, the buttons start the first of their own rows; otherwise they
+     * end in the last cell. */
+    out->button_first = grouped ? (rows - hg_grid_rows_of(buttons, cols)) * cols : out->cells - buttons;
 }
 
 int hg_calc_grid_cell(const HgGrid *grid, int type, int index)
@@ -247,7 +250,7 @@ int hg_calc_grid_cell(const HgGrid *grid, int type, int index)
     if (type != HG_GRID_BUTTON)
         return -1;
     if (index < grid->buttons)
-        return grid->cells - 1 - index;
+        return grid->button_first + (grid->buttons - 1 - index); /* the highest index is leftmost */
     index -= grid->buttons;
     return (index < grid->shortcuts) ? grid->shortcut_first + index : -1;
 }
@@ -261,9 +264,9 @@ int hg_calc_grid_item(const HgGrid *grid, int cell, int *out_type, int *out_inde
         if (cell < grid->tasks) {
             type = HG_GRID_TASK;
             index = cell;
-        } else if (cell >= grid->button_first) {
+        } else if (cell >= grid->button_first && cell < grid->button_first + grid->buttons) {
             type = HG_GRID_BUTTON;
-            index = grid->cells - 1 - cell;
+            index = grid->buttons - 1 - (cell - grid->button_first);
         } else if (cell >= grid->shortcut_first && cell < grid->shortcut_first + grid->shortcuts) {
             type = HG_GRID_BUTTON;
             index = grid->buttons + (cell - grid->shortcut_first);

@@ -501,8 +501,10 @@ A single-line read-only field across the top of the taskbox.
 then your shortcuts, then the buttons. A group that is longer than a row wraps
 onto the next, so with twelve columns thirteen windows take two rows and the
 shortcuts still begin on a fresh one. A group with nothing in it takes no row.
-The buttons always end in the bottom-right corner, `R` last; when the taskbox is
-taller than it needs to be, the spare rows fall above them.
+The buttons flow like the other two, from the left: `Run` `Dir` `Alp` ... in
+order, and whatever does not fit - `M` `R` at twelve columns - starts the next
+row. When the taskbox is taller than it needs to be, the spare rows fall above
+the buttons.
 
 The arrow keys walk all three: `Right` off the last window lands on the first
 shortcut, off the last shortcut on the first button, and `Up` and `Down` step
@@ -514,8 +516,8 @@ letter reaches it from anywhere.
 This is the default. **Windows, Shortcuts, Buttons by Row** in the `Set` list
 or the [settings window](#71-the-settings-window) switches it off
 (`[taskbox] group_rows=0`, or `write option grouprows off`): windows and
-buttons then share rows, as they did up to v0.17.14, and the shortcuts are
-only in the Run box.
+buttons then share rows, as they did up to v0.17.14, the buttons run up to the
+bottom-right corner with `R` in it, and the shortcuts are only in the Run box.
 
 - **Drag any border** to change the grid: the taskbox snaps to whole columns, so
   no half icon is ever left hanging.

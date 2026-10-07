@@ -40,11 +40,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   windows, then the shortcuts, then the buttons, each wrapping when it is
   longer than a row. **This is the default.** The shortcuts are on the grid
   again - on rows of their own, so they no longer take cells from the windows'
-  row - and the Run box still opens them too. The arrows walk all three groups
+  row - and the Run box still opens them too. The buttons flow from the left
+  like the other two groups, `Run` first, and the ones that do not fit start
+  the next row (`M` `R` at twelve columns). The arrows walk all three groups
   and step over the empty cells between them. A new switch, **Windows,
   Shortcuts, Buttons by Row** (`[taskbox] group_rows`, `write option
-  grouprows`), turns it off: windows and buttons share rows again and the
-  shortcuts are only in the Run box.
+  grouprows`), turns it off: windows and buttons share rows again, the buttons
+  end in the bottom-right corner, and the shortcuts are only in the Run box.
 
 ### Changed
 - **`Left` on the first icon of the grid stays where it is.** It used to wrap
