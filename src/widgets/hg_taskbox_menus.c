@@ -145,18 +145,13 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
 
     /* What this list holds, and what it does not.
      *
-     * Nothing here is a setting. The switches went to the Set button's list,
-     * and so did the three doors that lead to settings - the settings window,
-     * the config file, the reset - because a reader looking for what to change
-     * should find one list, not two. What is left is the machine: the folder,
-     * the audio devices, the displays, and the two ways to stop.
-     *
-     * About and Exit are last, in that order. They are the end of the list in
-     * the sense that matters - you are leaving - and About sits above Exit
-     * because the two are one keystroke apart and only one of them is
-     * reversible. */
+     * Sound and picture: the audio devices and the displays. Nothing here is a
+     * setting of this program - the switches and the doors to the settings are
+     * the Set button's list - and since 2026-10-08 the shortcuts folder, the
+     * lock and About are rows of that list too, which is why this button is
+     * called A/V. Exit is last: it is the one way out that is not a button's
+     * own business, and it was not asked to move. */
     int count = 0;
-    count = menu_add_row(rows, max_rows, count, L"Open Shortcuts Folder", HG_IDM_OPEN_SHORTCUTS, TRUE, FALSE);
 
     WCHAR label[HG_MENU_ROW_MAX];
     for (int i = 0; i < hg_g_audio_device_count; ++i) {
@@ -186,8 +181,6 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
     for (int i = 0; i < hg_g_monitor_count; ++i)
         count = menu_add_display_rows(rows, max_rows, count, i);
 
-    count = menu_add_row(rows, max_rows, count, L"Lock Screen (Power Off)", HG_IDM_POWER_OFF, TRUE, FALSE);
-    count = menu_add_row(rows, max_rows, count, L"About...", HG_IDM_ABOUT, TRUE, FALSE);
     count = menu_add_row(rows, max_rows, count, L"Exit", HG_IDM_CLOSE_APP, TRUE, FALSE);
     return count;
 }

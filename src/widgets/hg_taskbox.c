@@ -764,7 +764,7 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
     if (hg_g_edit_msg_wnd) {
         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
         SetWindowTextW(hg_g_edit_msg_wnd,
-                       L"X: Exit | O: Options | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
+                       L"X: Exit | Ctrl+O: A/V | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
         hg_g_edit_msg_tick = GetTickCount64();
         SetWindowSubclass(hg_g_edit_msg_wnd, edit_subclass_proc, 0, 0);
         disable_window_ime(hg_g_edit_msg_wnd);

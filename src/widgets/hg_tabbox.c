@@ -159,13 +159,17 @@ static void tabbox_build_control_rows(void)
         tabbox_add_control_row(row);
     }
 
-    /* Then the two other doors out of this list, which came here from the
-     * options menu. They are below the switches because a door is a bigger step
-     * than a toggle, and Reset is last because it is the one that throws work
-     * away. */
+    /* Then the other doors out of this list. They are below the switches
+     * because a door is a bigger step than a toggle. The first three are about
+     * this program's own files and settings, Reset last of them because it is
+     * the one that throws work away; the lock and About came here from the A/V
+     * list (owner's request, 2026-10-08), which keeps only sound and picture. */
     const HgControlRow commands[] = {
+        {HG_ROW_COMMAND, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder"},
         {HG_ROW_COMMAND, HG_IDM_EDIT_CONFIG, L"Edit Configuration"},
         {HG_ROW_COMMAND, HG_IDM_RESET_ALL, L"Reset Settings"},
+        {HG_ROW_COMMAND, HG_IDM_POWER_OFF, L"Lock Screen (Power Off)"},
+        {HG_ROW_COMMAND, HG_IDM_ABOUT, L"About..."},
     };
     for (size_t i = 0; i < HG_ARRAYSIZE(commands); ++i)
         tabbox_add_control_row(commands[i]);

@@ -782,7 +782,12 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_SETTINGS, L"Set", L"Opacity, pin, switches, settings",
      L"Opacity, pin, switches, settings", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_CONTROLS,
      HG_TOOLBAR_DRAG_NONE},
-    {HG_TOOL_ICON_MENU, L"Opt", L"Options Menu", L"Options Menu", HG_TOOLBAR_VALUE_NONE,
+    /* A/V: what is left in this list is the machine's sound and picture - the
+     * output device, how the screens are arranged, each display's scaling and
+     * brightness - so the button says so. It was "Opt" while the list also held
+     * the shortcuts folder, the lock and About; those are rows of Set now. */
+    {HG_TOOL_ICON_MENU, L"A/V", L"Audio and Video: output device, screens, scaling, brightness",
+     L"Audio and Video: output device, screens, scaling, brightness", HG_TOOLBAR_VALUE_NONE,
      HG_TOOLBAR_CLICK_OPEN_MENU, HG_TOOLBAR_DRAG_NONE},
 
     {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",

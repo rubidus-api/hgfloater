@@ -635,7 +635,7 @@ static const WCHAR *const cmd_help_move[] = {
     L"  top-left corner rather than the virtual desktop's, so the same",
     L"  pair means the same place on every screen.",
     L"  Without a display, the one the window is already on.",
-    L"  The display number is the one the options menu shows beside",
+    L"  The display number is the one the A/V list shows beside",
     L"  that monitor's name.",
     L"  The window keeps its size; only its position changes.",
     L"",

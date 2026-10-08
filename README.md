@@ -29,7 +29,7 @@ it starts instantly and stays out of your way.
 4. [The Floater](#4-the-floater)
 5. [The Taskbox](#5-the-taskbox)
 6. [The Toolbar](#6-the-toolbar)
-7. [The Options Menu](#7-the-options-menu)
+7. [The A/V List](#7-the-av-list)
 8. [The Command Box](#8-the-command-box)
 9. [Monitor Thumbnails](#9-monitor-thumbnails)
 10. [Notes](#10-notes)
@@ -125,7 +125,7 @@ fetch anything, or send anything anywhere.
 Two features are **switched off in the published builds** until the executable
 is code-signed — the [maximize-button menu](#42-the-maximize-button-menu), which
 needs a system-wide mouse hook, and **Start with Windows**, which writes one
-value under the per-user `Run` key. Both stay in the options menu, greyed, reading
+value under the per-user `Run` key. Both stay in the `Set` list, greyed, reading
 `(off in this build)`.
 
 ## 3. The Two Windows
@@ -197,7 +197,7 @@ of other windows.
   **the hours**, or on **either** of them. Nothing else on the floater answers
   a hover — the bars, the date and the host name are things a hand crosses on
   its way elsewhere. The click above keeps working from anywhere in every mode.
-  **Open the Taskbox on Hover** in the [Options menu](#7-the-options-menu) is
+  **Open the Taskbox on Hover** in the [`Set` list](#62-the-set-button) is
   the same switch, on and off; which part answers is the settings window's.
 - **Left drag** — moves the floater anywhere on any monitor. A press and
   release without moving is a click and toggles the taskbox; a few pixels of
@@ -274,7 +274,7 @@ hit-tests its own way (a PuTTY-style utility): where the window declines to
 name its buttons, the DWM-computed button bounds say which third the click
 landed on.
 
-Switch it off with **Menu on Maximize Button** in the options menu, or
+Switch it off with **Menu on Maximize Button** in the `Set` list, or
 `caption_menu=0` under `[etc]`. **Close HGFloater and the behaviour is gone** —
 there is nothing installed and nothing to uninstall.
 
@@ -316,8 +316,8 @@ built-in buttons.
 
 > ### 📌 How to add a shortcut icon
 >
-> 1. **Open the options menu** — the `Opt` button, `Ctrl + O`, or a right-click
->    on the status line.
+> 1. **Open the `Set` list** — point at the `Set` button, or land on it with
+>    the arrow keys.
 > 2. Choose **Open Shortcuts Folder**. Explorer opens on
 >    `%USERPROFILE%\.HellGates\hgfloater\shortcuts\`.
 > 3. **Copy a shortcut into it** — any `.lnk` or `.url`. Drag one out of the
@@ -371,14 +371,14 @@ first, because a very pale accent disappears on white and a very dark one
 disappears on black, and this line has to hold on both.
 
 **The function buttons wear the same badge**, for the same reason: `C` shows
-`C`, `Note` shows `N`, `Clip` shows `CL`, `Opt` shows `CO`, `X` shows `CQ`. The
+`C`, `Note` shows `N`, `Clip` shows `CL`, `A/V` shows `CO`, `X` shows `CQ`. The
 modifiers are their initials in a fixed order — `C`trl, `A`lt, `S`hift, `W`in —
 so `CN` is `Ctrl + N` and `CSR` is `Ctrl + Shift + R`. A button no chord reaches
 wears nothing, and a key whose name is too long for the box (`Space`, `Delete`)
 is left to the tooltip, which spells it out in full.
 
 **Hover a tabbed application's icon and its tabs appear next to it.** Off by
-default; turn it on with **Show Tabs as Task Icons** in the options menu, or
+default; turn it on with **Show Tabs as Task Icons** in the `Set` list, or
 `show_tabs=1` under `[taskbox]` in `config.ini`. The window keeps its single
 icon — orderable like any other — and the hover box lists its tabs by title:
 
@@ -491,7 +491,7 @@ A single-line read-only field across the top of the taskbox.
   predecessor.
 - Ten seconds after the last message it falls back to the **current time**,
   written as `2026. 11. 23.(Tue) 13:24`, and refreshes as the minute changes.
-- **Right click** it to open the options list (the same one the `Opt` button
+- **Right click** it to open the A/V list (the same one the `A/V` button
   opens).
 - **Left drag** it to move the whole taskbox.
 - **Ctrl + Wheel** over it changes only its own font size.
@@ -529,7 +529,7 @@ shortcuts to the left of `Dir`.
 ## 6. The Toolbar
 
 Thirteen built-in buttons sit in the same grid as the icons. Their order is
-fixed: from the left, `Dir` `Alp` `Mon` `Vol` `Opt` `Set` `Clip` `Note` `C` `D`
+fixed: from the left, `Dir` `Alp` `Mon` `Vol` `A/V` `Set` `Clip` `Note` `C` `D`
 `X` `M` `R`. Each carries a short word rather than a single capital, three of
 them open a box instead of doing something outright, and three —
 `Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
@@ -555,7 +555,7 @@ built, so a key you rebind is the key the tooltip shows.
 | **`Note`** Note | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Set`** Settings | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
-| **`Opt`** Options | Opens the [options menu](#7-the-options-menu), **directly under the button**. | — |
+| **`A/V`** Audio / Video | Opens the [A/V list](#7-the-av-list) — output device, screens, scaling, brightness — **directly under the button**. | — |
 | **`Vol`** Volume | Mutes and unmutes. Right-click: which output device plays. See [the reading buttons](#64-vol-mon-and-alp). | **Wheel** sets the volume. |
 | **`Mon`** Monitor | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
 | **`Alp`** Opacity | — | **Wheel** sets the taskbox's opacity. |
@@ -591,15 +591,20 @@ The rows are grouped by what a row **is**, top to bottom:
 | **Settings Window...** | First, because it is where everything below can also be changed: the [settings window](#71-the-settings-window), every option, value, font and key in one list. |
 | **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click**, or **Space / Enter**, toggles. |
 | **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click**, or **Space / Enter**, flips one. |
+| **Open Shortcuts Folder** | Opens the shortcuts directory in Explorer. This is how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts). |
 | **Edit Configuration** | Opens the config file in your editor. |
 | **Reset Settings** | Position, size and opacity back to their defaults. |
+| **Lock Screen (Power Off)** | Locks the session and turns the displays off. |
+| **About...** | The About window, with this manual in it — what `F1` opens. |
 | **(off in this build)** | Last: the ones this build cannot switch. Listed rather than hidden, and out of the way of the ones that work. |
 
-The last three came from the options menu. Everything about changing settings
-belongs with the settings, so a reader looking for what to change finds one
-list rather than two. They sit below the switches because a door is a bigger
-step than a toggle, and `Reset Settings` is last of the three because it is the
-one that throws work away.
+The rows that lead somewhere all came from what used to be the options menu.
+Everything about this program itself — its settings, its files, its manual —
+is in this one list, so a reader looking for it finds one place rather than
+two. They sit below the switches because a door is a bigger step than a toggle.
+The shortcuts folder, the lock and About moved here last (after v0.17.15),
+which left the other list with nothing but sound and picture — and its button
+with the name [`A/V`](#63-the-av-button).
 
 **A row with a number is turned; a row with a state is switched.** That is the
 whole keyboard model for this list. On a row that holds a percentage, **Left and
@@ -624,8 +629,8 @@ the same way and read the same way, by colour.
 beside the pin, because they are the same kind of thing to a
 reader — something to set, right here — and keeping the list in two places meant
 knowing which of the two a given setting had been filed under. What stayed in
-the options menu is what is not a setting: the shortcuts folder, the displays,
-the audio devices, About, Reset, Exit.
+the other list is the machine's sound and picture: the audio devices and the
+displays, with Exit at the end.
 
 The wheel works wherever the pointer is over a row, and the reading on that row
 follows it as it moves, so a value can be set without looking anywhere else. The
@@ -635,9 +640,13 @@ It is the same box the tabs and the folders use — same placement rules, same
 keys, same painting — because it is the same idea: a short list belonging to the
 button under the pointer.
 
-### 6.3 The Opt button
+### 6.3 The A/V button
 
-**`Opt` opens the options as a list** — the same box `Dir` and `Set` use, in the
+**`A/V` opens the sound and picture controls as a list** — the output device,
+how the screens are arranged, and each display's scaling and brightness. It was
+called `Opt` up to v0.17.15, when the list also held the shortcuts folder, the
+lock and About; those are rows of the [`Set` list](#62-the-set-button) now. It
+is — the same box `Dir` and `Set` use, in the
 same place, answering the same keys. Click it, press `Space` on it, or press
 `Ctrl + O`. Right-clicking the status line opens the same list.
 
@@ -653,7 +662,6 @@ chosen.
 that led to it:
 
 ```
-Open Shortcuts Folder
 Select Audio Device > Speakers (Realtek)
 Select Audio Device > Mute
 Screens > PC screen only
@@ -663,8 +671,6 @@ Screens > Second screen only
 Display 1 > Preview Window
 Display 1 > Scale                 125%
 Display 1 > Brightness             50%
-Lock Screen (Power Off)
-About...
 Exit
 ```
 
@@ -703,9 +709,7 @@ reading as you walk it and the change is sent once — when you press `Esc`, ste
 away to another icon, click elsewhere, or the taskbox folds up. The tooltip on
 that row says so.
 
-`About...` and `Exit` are last, in that order — the end of the list in the sense
-that matters — and `About` sits above `Exit` because the two are one keystroke
-apart and only one of them is reversible.
+`Exit` is last: the end of the list in the sense that matters - you are leaving.
 
 A submenu that only opens when you hover its parent is a thing to discover, and
 there is nothing here to discover: four displays' worth of brightness steps is a
@@ -728,7 +732,7 @@ counter-clockwise — north, west, south, east, and back to north. If no directi
 has room, nothing moves.
 
 **`Bri` — brightness.** The wheel moves brightness in **5% steps**, the same as
-opacity and volume. The `Opt` menu offers quarter steps per display when you
+opacity and volume. The `A/V` list offers quarter steps per display when you
 want a specific level rather than a nudge.
 
 HGFloater tries three things per display, in order, and remembers which one
@@ -814,7 +818,7 @@ HGFloater empties the history.**
 ### 6.4 Vol, Mon and Alp
 
 **Three buttons on the row carry a reading: `Vol`, `Mon` and `Alp`.** They sit
-together between `Dir` and `Opt`, drawn like every other button except for one
+together between `Dir` and `A/V`, drawn like every other button except for one
 thing — **the colour behind each word is the value.** A loud machine gives `Vol`
 a deep plate, a dim screen gives `Mon` a pale one, a see-through taskbox gives
 `Alp` a pale one. The three can be read at a glance, without opening anything.
@@ -834,8 +838,8 @@ holds for every icon:
 
 The wheel changes the value, the click does the one thing you would want without
 being asked to choose, and the right button opens the choice. Nothing here is
-new behaviour — every one of these was already in the [options
-list](#7-the-options-menu), and picking from these menus sends the very same
+new behaviour — every one of these was already in the [A/V
+list](#7-the-av-list), and picking from these menus sends the very same
 instruction. What the buttons add is that it takes one gesture on the button
 that shows the reading.
 
@@ -862,7 +866,7 @@ The arrows only move, on these three as on every other button: a reading is
 turned by keys of its own, so the way out of a button never depends on which
 button you are standing on. The text lists are the other way round — a list is
 a column, so on a row that holds a number `Left` and `Right` turn it (the scale
-and brightness rows of the [options list](#7-the-options-menu)).
+and brightness rows of the [A/V list](#7-the-av-list)).
 
 A focused button is painted in the focus colour, which covers its plate: while
 you are turning a value from the keyboard, read it off the status line. `E` and
@@ -899,23 +903,16 @@ The icon the keyboard is on is **ringed** in the focus colour; the tooltip and
 the status line name the program. A shortcut that points at a folder is not
 here: it is a row of the [`Dir` list](#61-the-dir-button).
 
-## 7. The Options Menu
+## 7. The A/V List
 
-Open it with the [`Opt` button](#63-the-opt-button) — as a list under the
+Open it with the [`A/V` button](#63-the-av-button) — as a list under the
 button, flattened to one level — with `Ctrl + O` in the taskbox, or by
 right-clicking the status line, which opens the same list at the pointer.
 
-- **Settings...** — the [settings window](#71-the-settings-window): every
-  option, every value and every key in one list.
-- **Open Shortcuts Folder** — opens the shortcuts directory in Explorer. This is
-  how shortcut icons are added; see [the box in 5.1](#51-running-windows-and-shortcuts).
-- **Edit Configuration** — opens `config.ini` in Notepad.
-- **The switches are not here any more.** Every on/off setting is a row of the
-  [`Set` button's list](#62-the-set-button), where the volume and the opacity
-  are: one place for the things you set. The [settings window](#71-the-settings-window)
-  still lists them all as well, beside the numbers and the keys.
-- **About...** — this document, rendered inside the app.
-- **Reset Settings** — restores default geometry, opacity, sizes, and colors.
+It holds the machine's sound and picture, and `Exit`. The switches, the
+settings window, the config file, the reset, the shortcuts folder, the lock and
+About are all rows of the [`Set` button's list](#62-the-set-button).
+
 - **Select Audio Device** — lists the output devices with the current one
   checked, and offers a **Mute** toggle.
 - **_(one entry per display)_** — every connected monitor gets its own submenu,
@@ -938,7 +935,6 @@ right-clicking the status line, which opens the same list at the pointer.
   running DisplayPort alt mode reports as `DP` and cannot be told apart from a
   DisplayPort socket. `USB-C` appears when DisplayPort is tunnelled over USB4 or
   Thunderbolt, which is the only case Windows reports separately.
-- **Lock Screen (Power Off)** — locks the workstation.
 - **Exit** — quits.
 
 ### 7.1 The settings window
@@ -1110,7 +1106,7 @@ could come and go between the list you read and the number you typed.
 
 `X` and `Y` are measured from the target display's own top-left corner, not from
 the virtual desktop's, so the same pair of numbers means the same place on every
-screen. The display number is the one the options menu shows beside that
+screen. The display number is the one the A/V list shows beside that
 monitor's name. A search term may contain spaces; everything after `windows` is
 the term.
 
@@ -1273,7 +1269,7 @@ a chord.
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
 | `Ctrl + L` | Open the clipboard history |
-| `Ctrl + O` | The options menu, as if `Opt` had been chosen |
+| `Ctrl + O` | The A/V list, as if `A/V` had been chosen |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
 ### Inside the note list
@@ -1340,7 +1336,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Activate an item** | Left-click an icon |
 | **Reorder icons** | Left-drag a task icon |
 | **Item context menu** | Right-click an icon |
-| **Options menu** | Left-click `Opt`, or right-click the status line |
+| **A/V list** | Left-click `A/V`, or right-click the status line |
 | **Open a folder** | Point at `Dir`, then click a row |
 | **Launch a shortcut** | Click its icon on the grid |
 | **Open the control list** | Point at `Set` |
@@ -1364,7 +1360,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Note text size** | `Ctrl` + wheel over the list or an editor |
 | **Edit a note's text** | Right-click inside an editor |
 | **Command box text size** | `Ctrl` + wheel |
-| **Quit** | Left-click `X`, or Exit in the options menu |
+| **Quit** | Left-click `X`, or Exit in the A/V list |
 
 ## 13. Configuration File
 
@@ -1503,7 +1499,7 @@ size, so `Ctrl + Wheel` in either one moves both.
 | `%USERPROFILE%\.HellGates\hgfloater\note\` | One `.txt` per [note](#10-notes), plus `note.ini` for everything the text files cannot carry |
 
 That is the complete list on disk. The only thing written outside it is the
-`Run` registry value behind [Start with Windows](#7-the-options-menu), and only
+`Run` registry value behind [Start with Windows](#7-the-av-list), and only
 while that is switched on. HGFloater writes no log files, no caches, and no
 temporary files, and nothing it writes grows without bound.
 
