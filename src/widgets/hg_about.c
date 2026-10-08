@@ -26,7 +26,7 @@ void show_about_window(void)
      * of painting under it and being painted over - the flicker the other
      * document windows already avoid this way. */
     hg_g_about_wnd = CreateWindowExW(0, HG_CLASS_ABOUT, L"about hgfloater", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
-                                     CW_USEDEFAULT, CW_USEDEFAULT, SC(400), SC(300), NULL, NULL,
+                                     CW_USEDEFAULT, CW_USEDEFAULT, SC(680), SC(560), NULL, NULL,
                                      GetModuleHandle(NULL), NULL);
     if (hg_g_about_wnd) {
         ShowWindow(hg_g_about_wnd, SW_SHOW);
@@ -64,12 +64,18 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
          * inversion of the system theme. */
         hg_apply_dwm_attributes_document(hwnd);
         double ws = hg_window_scale(hwnd);
+        /* Created empty and filled afterwards. The help is the whole README,
+         * some eighty thousand characters, and a window cannot be *created*
+         * with a name that long: CreateWindowExW failed, no text box existed,
+         * and F1 opened an empty frame. WM_SETTEXT has no such limit. */
         HWND edit_wnd =
-            CreateWindowExW(0, L"EDIT", HG_ABOUT_TEXT_W,
+            CreateWindowExW(0, L"EDIT", NULL,
                             WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
-                            SCW(ws, 10), SCW(ws, 10), SCW(ws, 364), SCW(ws, 240), hwnd, (HMENU)100, GetModuleHandle(NULL), NULL);
+                            SCW(ws, 10), SCW(ws, 10), SCW(ws, 644), SCW(ws, 500), hwnd, (HMENU)100, GetModuleHandle(NULL), NULL);
         if (edit_wnd) {
+            SendMessageW(edit_wnd, EM_SETLIMITTEXT, 0, 0); /* 0: as much as the control can hold */
             SendMessageW(edit_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
+            SetWindowTextW(edit_wnd, HG_ABOUT_TEXT_W);
             SetWindowSubclass(edit_wnd, about_edit_subclass_proc, 1, 0);
             disable_window_ime(edit_wnd);
         }

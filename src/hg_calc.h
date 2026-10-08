@@ -69,10 +69,10 @@ HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
  * grid and read in their on-screen order - the highest index first - so the
  * last row holds whatever did not fit on the one before, from its left edge.
  *
- * Not grouped, tasks and buttons share rows and the shortcuts are not on the
- * grid at all (pass 0 for them) - they are in the Run box. The buttons then
- * fill the last cells, the first button in the very last one, so the run of
- * buttons ends in the bottom-right corner.
+ * Not grouped, everything shares rows: the tasks from the first cell, and one
+ * run that ends in the last cell - the shortcuts and then the buttons, the
+ * first button in the very last cell, so the run ends in the bottom-right
+ * corner.
  *
  * Every piece of code that places, paints, hit-tests or walks the grid asks
  * these, so they cannot come to disagree about where an icon is. */
@@ -81,10 +81,10 @@ typedef struct HgGrid {
     int rows;
     int cells;          /* rows * cols */
     int tasks;
-    int shortcuts;      /* on the grid; 0 when they are not */
+    int shortcuts;
     int buttons;
     int grouped;
-    int shortcut_first; /* the first shortcut's cell */
+    int shortcut_first; /* the leftmost shortcut's cell */
     int button_first;   /* the cell of the leftmost button, which is the last by index */
 } HgGrid;
 

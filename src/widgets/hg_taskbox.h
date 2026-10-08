@@ -12,8 +12,7 @@ void update_layout(HWND hwnd);
 void update_size(int delta);
 /* The icon size in points, and setting it outright. */
 int hg_taskbox_icon_point_size(void);
-/* The icon size in pixels, as the grid draws it. The Run box draws its icons at
- * this size, so they follow the taskbox's when it changes. */
+/* The icon size in pixels, as the grid draws it. */
 int taskbox_toolbar_icon_size(void);
 void hg_set_taskbox_icon_point_size(int points);
 void update_edit_font_size(int delta);

@@ -24,16 +24,12 @@
  *   folders   the shortcuts that point at a directory, on the Dir button
  *   controls  the pin, the switches and the settings doors, on Set
  *   menu      the options menu, flattened to one level, on Opt
- *   run       the shortcuts, on Run - drawn as their own program icons,
- *             across and then down, rather than as lines of text, because an
- *             icon is how a program is known
  */
 enum {
     HG_BOX_TABS = 0,
     HG_BOX_DIRS,
     HG_BOX_CONTROLS,
-    HG_BOX_MENU,
-    HG_BOX_RUN
+    HG_BOX_MENU
 };
 
 /* Open (or re-target) the box for a window, anchored to that icon's rect in
@@ -45,13 +41,6 @@ void hg_tabbox_open(HWND target, const RECT *anchor_screen_rc);
 void hg_tabbox_open_dirs(const RECT *anchor_screen_rc);
 void hg_tabbox_open_controls(const RECT *anchor_screen_rc);
 void hg_tabbox_open_menu(const RECT *anchor_screen_rc);
-void hg_tabbox_open_run(const RECT *anchor_screen_rc);
-
-/* Where a button drawn in the open box is, on screen - its plate. FALSE when the
- * box is not showing that button. The menus a button opens from the keyboard
- * are placed at the button, and for a shortcut (HG_SHORTCUT_BUTTON_ID) the
- * button is in the Run box. */
-BOOL hg_tabbox_item_screen_rect(int button_id, RECT *out);
 
 /* Repaint the box if it is up: a reading it shows has changed. */
 void hg_tabbox_invalidate(void);

@@ -328,6 +328,10 @@ static BOOL settings_choose_font(HWND hwnd, int which)
         save_font_name_config();
         hg_note_set_font_size(chosen_points);
         hg_clip_set_font_size(chosen_points);
+        /* Those two do nothing when the size is the one already in use, and a
+         * different family at the same size is the usual choice. */
+        hg_note_fonts_changed();
+        hg_clip_fonts_changed();
         break;
     default:
         return FALSE;
@@ -555,6 +559,9 @@ static void settings_describe(HWND hwnd)
         break;
     case HG_ROW_VALUE:
         settings_say(hwnd, L"Left/Right changes it - by 5 for a percentage, by 1 otherwise.");
+        break;
+    case HG_ROW_FONT:
+        settings_say(hwnd, L"Enter, Space or a double click opens the font dialog: family and size.");
         break;
     case HG_ROW_KEY:
         settings_say(hwnd, L"Enter adds a key.  Del takes them all away, R restores the default.");

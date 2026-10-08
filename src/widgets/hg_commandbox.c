@@ -315,6 +315,10 @@ void hg_commandbox_set_font_point_size(int points)
 
     hg_g_commandbox_font_size = -SC(points);
     save_commandbox_font_config();
+    /* Written now, not when the debounce timer comes round: load_commandbox_font
+     * reads the family and the size back from the file, and a family chosen a
+     * moment ago was being replaced by the one still on disk. */
+    hg_config_flush_pending();
     load_commandbox_font();
 
     /* Everything drawn in it takes the new handle: the window that owns the

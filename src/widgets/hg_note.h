@@ -35,6 +35,8 @@ int hg_note_command_count(void);
 BOOL hg_note_command_new(void);
 int hg_note_font_size(void);
 void hg_note_set_font_size(int size);
+/* The document font family changed: rebuild the fonts of the list and of every open editor. */
+void hg_note_fonts_changed(void);
 BOOL hg_note_command_brief(int number, HgNoteBrief *out);
 BOOL hg_note_command_matches(int number, const WCHAR *needle);
 BOOL hg_note_command_open(int number);

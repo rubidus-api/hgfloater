@@ -19,6 +19,20 @@ static HFONT s_floater_label_font = NULL;
 /* Thin host-name font; same lifecycle as the label font. */
 static HFONT s_floater_host_font = NULL;
 
+/* The interface family changed: every font the floater draws with is built
+ * from it, so all four go and the floater is laid out for the new face. */
+void hg_floater_fonts_changed(void)
+{
+    release_font_handle(&hg_g_floater_time_font, FALSE);
+    release_font_handle(&hg_g_floater_date_font, FALSE);
+    release_font_handle(&s_floater_label_font, FALSE);
+    release_font_handle(&s_floater_host_font, FALSE);
+    if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
+        update_floater_layout(hg_g_floater_wnd);
+        InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
+    }
+}
+
 void update_floater_font_size(int delta)
 {
     int new_size = hg_g_floater_font_size + (delta > 0 ? 2 : -2);

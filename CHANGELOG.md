@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- **`F1` showed an empty window.** The About window puts the whole manual in a
+  text box, and the box was created with that text as its window name - which
+  a window cannot be created with once the text passes about 32,000
+  characters. The box was never made. It is created empty and filled now.
+- **A font chosen in the settings window was not applied.** The size was, the
+  family mostly was not: the interface family left the floater's clock, date
+  and labels and the words on the buttons in the old face; the notes and
+  clipboard family did nothing at all unless the size changed with it; and the
+  command box family was overwritten by the one still in the settings file. All
+  three take effect at once now, everywhere they are drawn. A font row also
+  says what it does on the status line.
+- **A window of HGFloater's own lost the keyboard when the taskbox folded
+  away.** Open the settings window from the `Set` list, move the pointer into
+  it, and the taskbox collapsing behind it handed the keyboard to the floater:
+  the window that had just been opened stopped answering keys until it was
+  clicked. The same went for a note, the clipboard, the command box and About.
+  The floater now comes back without taking the foreground from them.
+
+### Changed
+- **The manual in the `F1` window is readable text, not raw Markdown.** Headings
+  are set off, paragraphs are joined so the box wraps them to the window,
+  tables become lines, and the marks for bold, code and links are gone. The
+  window opens larger. Both README generators (`gen_about.py`, `gen_about.ps1`)
+  do the same conversion and produce the same bytes.
+- **The `Run` button and its box are gone; the shortcuts are icons on the grid,
+  each shown once.** With the grouped layout on they are on rows of their own
+  between the windows and the buttons, as in v0.17.15; with it off they sit to
+  the left of the buttons. The row is thirteen buttons: `Dir` `Alp` `Mon` `Vol`
+  `Opt` `Set` `Clip` `Note` `C` `D` `X` `M` `R`.
+- **`Settings Window...` is the first row of the `Set` list.**
+
 ## [v0.17.15] - 2026-10-08
 
 ### Added

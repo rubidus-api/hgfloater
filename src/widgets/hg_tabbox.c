@@ -100,65 +100,6 @@ static int s_menu_row_count = 0;
 static void tabbox_menu_row_text(int index, WCHAR *out, size_t out_cch);
 static int tabbox_row_at(POINT client_pt);
 
-/* The one box drawn as a grid of icons rather than as lines of text: Run.
- * Everything about the grid's shape - placement, hit testing, painting the
- * cells, the arrows - is asked through this. */
-static BOOL tabbox_is_grid(void)
-{
-    return s_mode == HG_BOX_RUN;
-}
-
-/* Across, then down, like the taskbox grid. Four across before a row wraps: a
- * few icons sit in one line, and a longer set still keeps the box roughly
- * square rather than a strip running off the side of the icon it hangs from.
- *
- * Run can hold every shortcut in the folder - up to sixty-four - and four
- * across would make that a column taller than the screen, whose rows the
- * placement below gives up rather than cover the button. So past sixteen it
- * widens with the square root, which keeps it square: sixty-four is eight by
- * eight. */
-#define HG_BOX_ICON_COLS_MAX 4
-
-static int tabbox_icon_cols(void)
-{
-    int n = (s_count > 0) ? s_count : 1;
-    if (n <= HG_BOX_ICON_COLS_MAX)
-        return n;
-    int cols = HG_BOX_ICON_COLS_MAX;
-    if (s_mode == HG_BOX_RUN) {
-        while (cols * cols < n)
-            ++cols;
-    }
-    return cols;
-}
-
-/* One icon's square, in client coordinates. The spacing is the taskbox grid's -
- * a margin of 10, SC(15) between columns and SC(10) between rows - and so is
- * the size, read from the taskbox each time, so a box opened after the icons
- * were made bigger has bigger icons too. */
-static void tabbox_icon_rect(int index, RECT *out)
-{
-    int icon = taskbox_toolbar_icon_size();
-    int cols = tabbox_icon_cols();
-    int col = index % cols;
-    int row = index / cols;
-    out->left = SC(10) + col * (icon + SC(15));
-    out->top = SC(10) + row * (icon + SC(10));
-    out->right = out->left + icon;
-    out->bottom = out->top + icon;
-}
-
-static void tabbox_icon_box_size(int *out_w, int *out_h)
-{
-    int icon = taskbox_toolbar_icon_size();
-    int cols = tabbox_icon_cols();
-    int rows = (s_count > 0) ? (s_count + cols - 1) / cols : 1;
-    /* The window's own one-pixel border sits outside the client area. */
-    int border = GetSystemMetrics(SM_CXBORDER) * 2;
-    *out_w = SC(10) * 2 + cols * icon + (cols - 1) * SC(15) + border;
-    *out_h = SC(10) * 2 + rows * icon + (rows - 1) * SC(10) + border;
-}
-
 /* The row's tooltip, off while a box is up.
  *
  * The button that opens a box is the one the pointer is resting on, so its
@@ -198,6 +139,12 @@ static void tabbox_build_control_rows(void)
      * brightness: the three are turned the same way and read the same way -
      * by colour. */
 
+    /* The settings window first (owner's request, 2026-10-08): it is where
+     * everything below can also be changed, and a good deal more besides, so
+     * it is the row a reader opening this list most often wants. */
+    HgControlRow settings_window = {HG_ROW_COMMAND, HG_IDM_SETTINGS, L"Settings Window..."};
+    tabbox_add_control_row(settings_window);
+
     /* The ones that are on or off, starting with the pin - it is a button
      * rather than a setting in the file, but to a reader it is the same
      * question with the same answer. */
@@ -212,13 +159,11 @@ static void tabbox_build_control_rows(void)
         tabbox_add_control_row(row);
     }
 
-    /* Then the three doors out of this list, which came here from the options
-     * menu: everything that is about changing settings belongs with the
-     * settings. They are below the switches because a door is a bigger step
-     * than a toggle, and Reset is last of the three because it is the one that
-     * throws work away. */
+    /* Then the two other doors out of this list, which came here from the
+     * options menu. They are below the switches because a door is a bigger step
+     * than a toggle, and Reset is last because it is the one that throws work
+     * away. */
     const HgControlRow commands[] = {
-        {HG_ROW_COMMAND, HG_IDM_SETTINGS, L"Settings Window..."},
         {HG_ROW_COMMAND, HG_IDM_EDIT_CONFIG, L"Edit Configuration"},
         {HG_ROW_COMMAND, HG_IDM_RESET_ALL, L"Reset Settings"},
     };
@@ -337,13 +282,8 @@ static void tabbox_layout(void)
     if (!s_wnd)
         return;
 
-    /* An empty grid is sized as a list, so the line that says why it is empty
-     * can be read: an empty Run box - a fresh install - would otherwise be one
-     * icon's square around an ellipsis. */
     int width, height;
-    if (tabbox_is_grid() && s_count > 0) {
-        tabbox_icon_box_size(&width, &height);
-    } else {
+    {
         double ws = hg_window_scale(s_wnd);
         int row_h = tabbox_row_height();
         int pad = SCW(ws, 6);
@@ -435,14 +375,6 @@ static void tabbox_pull(void)
         s_count = 0;
         for (int i = 0; i < hg_g_folder_count && s_count < HG_BOX_MAX_ROWS; ++i) {
             StringCchCopyW(s_titles[s_count], HG_MAX_STR, hg_g_folders[i].name);
-            ++s_count;
-        }
-    } else if (s_mode == HG_BOX_RUN) {
-        /* The shortcuts as loaded. Their icons are drawn from the same array
-         * when painted, so this only needs the names, for the tooltip. */
-        s_count = 0;
-        for (int i = 0; i < hg_g_shortcut_count && s_count < HG_BOX_MAX_ROWS; ++i) {
-            StringCchCopyW(s_titles[s_count], HG_MAX_STR, hg_g_shortcuts[i].name);
             ++s_count;
         }
     } else if (s_mode == HG_BOX_MENU) {
@@ -733,12 +665,7 @@ static void tabbox_tip_show(int index)
     }
 
     WCHAR text[HG_MAX_STR + 128];
-    if (s_mode == HG_BOX_RUN) {
-        /* The program's name - the icon is how it is recognised, the name is
-         * how it is confirmed - and what the gestures do. */
-        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%ls\r\n%ls", s_titles[index],
-                           L"Click, Space or Enter: run   Right-click: open its location");
-    } else {
+    {
         /* Two reasons for a tip, and they compose: a row too long to be read
          * whole, and a row whose keys are worth saying out loud. A control row
          * gets the second whether or not it needs the first. */
@@ -791,14 +718,7 @@ static void tabbox_tip_show(int index)
      * pointer, and a tip that jumps to the mouse while the arrows are moving
      * would be pointing at the wrong row. */
     POINT pt;
-    if (tabbox_is_grid()) {
-        /* Under the icon, clear of its plate, so the colour being turned stays
-         * in sight. */
-        RECT icon_rc;
-        tabbox_icon_rect(index, &icon_rc);
-        pt.x = icon_rc.left;
-        pt.y = icon_rc.bottom + SC(6);
-    } else {
+    {
         double ws = hg_window_scale(s_wnd);
         int pad = SCW(ws, 6);
         int row_h = tabbox_row_height();
@@ -900,26 +820,6 @@ void hg_tabbox_open_controls(const RECT *anchor_screen_rc)
 void hg_tabbox_open_menu(const RECT *anchor_screen_rc)
 {
     tabbox_open_list(HG_BOX_MENU, anchor_screen_rc);
-}
-
-void hg_tabbox_open_run(const RECT *anchor_screen_rc)
-{
-    tabbox_open_list(HG_BOX_RUN, anchor_screen_rc);
-}
-
-BOOL hg_tabbox_item_screen_rect(int button_id, RECT *out)
-{
-    if (!out || !hg_tabbox_is_open() || !tabbox_is_grid())
-        return FALSE;
-
-    int index = button_id - HG_SHORTCUT_BUTTON_ID(0);
-    if (index < 0 || index >= s_count)
-        return FALSE;
-
-    tabbox_icon_rect(index, out);
-    InflateRect(out, SC(4), SC(4));
-    MapWindowPoints(s_wnd, NULL, (POINT *)out, 2);
-    return TRUE;
 }
 
 void hg_tabbox_invalidate(void)
@@ -1024,13 +924,6 @@ static void tabbox_activate(int index)
         return;
     }
 
-    if (s_mode == HG_BOX_RUN) {
-        /* The same call Shift and the shortcut's letter make, and the one the
-         * row made when the shortcuts were on it. It closes this box. */
-        activate_toolbar_item(HG_SHORTCUT_BUTTON_ID(index));
-        return;
-    }
-
     if (s_mode == HG_BOX_MENU) {
         if (index >= s_menu_row_count)
             return;
@@ -1132,72 +1025,6 @@ BOOL hg_tabbox_handle_wheel(short delta)
     return TRUE;
 }
 
-/* The keys of an entered Run box.
- *
- * A grid, so the arrows walk it the way they walk the taskbox grid. An arrow
- * that would step off the side closes the box and goes on to the grid, the
- * same as it does from a list row that holds no number. There is nothing in
- * here to turn, so PageUp, PageDown, E and Q are not taken: they go on to the
- * taskbox, where Shift and a letter still launches the shortcut that wears
- * it. */
-static BOOL tabbox_icons_handle_key(WPARAM key)
-{
-    int cols = tabbox_icon_cols();
-    int next = s_selected;
-
-    switch (key) {
-    case VK_TAB:
-        return TRUE; /* already in */
-    case VK_ESCAPE:
-        hg_tabbox_close();
-        return TRUE;
-    case VK_RETURN:
-    case VK_SPACE:
-        tabbox_activate(s_selected);
-        return TRUE;
-    case VK_APPS:
-        /* The right click, from the keyboard: the menu opens at the icon. */
-        if (s_selected >= 0 && s_selected < s_count)
-            hg_toolbar_shortcut_context_menu(s_selected, FALSE);
-        return TRUE;
-    case VK_LEFT:
-        if (s_selected % cols == 0) {
-            hg_tabbox_close();
-            return FALSE;
-        }
-        --next;
-        break;
-    case VK_RIGHT:
-        if (s_selected % cols == cols - 1 || s_selected + 1 >= s_count) {
-            hg_tabbox_close();
-            return FALSE;
-        }
-        ++next;
-        break;
-    case VK_UP:
-        if (s_selected >= cols)
-            next -= cols;
-        break;
-    case VK_DOWN:
-        if (s_selected + cols < s_count)
-            next += cols;
-        break;
-    case VK_HOME:
-        next = 0;
-        break;
-    case VK_END:
-        next = (s_count > 0) ? s_count - 1 : 0;
-        break;
-    default:
-        return FALSE;
-    }
-
-    s_selected = next;
-    InvalidateRect(s_wnd, NULL, FALSE);
-    tabbox_tip_show(s_selected);
-    return TRUE;
-}
-
 BOOL hg_tabbox_handle_key(WPARAM key)
 {
     if (!hg_tabbox_is_open())
@@ -1224,9 +1051,7 @@ BOOL hg_tabbox_handle_key(WPARAM key)
             tabbox_tip_show(s_selected);
             return TRUE;
         }
-        /* Not in the Run box: its icons wear no digits, and a key
-         * that did something unlabelled would be a trap. */
-        if (!tabbox_is_grid() && key >= L'0' && key <= L'9') {
+        if (key >= L'0' && key <= L'9') {
             int index = tabbox_index_for_key(key);
             if (index >= 0 && index < s_count) {
                 tabbox_activate(index);
@@ -1235,9 +1060,6 @@ BOOL hg_tabbox_handle_key(WPARAM key)
         }
         return FALSE;
     }
-
-    if (tabbox_is_grid())
-        return tabbox_icons_handle_key(key);
 
     switch (key) {
     case VK_TAB:
@@ -1342,18 +1164,6 @@ void hg_tabbox_pointer_moved(void)
 
 static int tabbox_row_at(POINT client_pt)
 {
-    if (tabbox_is_grid()) {
-        /* The plate counts, not just the square, the same as on the row. */
-        for (int i = 0; i < s_count; ++i) {
-            RECT plate;
-            tabbox_icon_rect(i, &plate);
-            InflateRect(&plate, SC(4), SC(4));
-            if (PtInRect(&plate, client_pt))
-                return i;
-        }
-        return -1;
-    }
-
     double ws = hg_window_scale(s_wnd);
     int pad = SCW(ws, 6);
     int row_h = tabbox_row_height();
@@ -1406,10 +1216,8 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                                      ? L"(reading tabs...)"
                                      : (s_mode == HG_BOX_DIRS)
                                            ? L"(no folder shortcuts - put one in the shortcuts folder)"
-                                           : (s_mode == HG_BOX_RUN)
-                                                 ? L"(no shortcuts - put one in the shortcuts folder)"
-                                                 : (s_mode == HG_BOX_MENU) ? L"(the menu is empty)"
-                                                                           : L"(nothing to show)";
+                                           : (s_mode == HG_BOX_MENU) ? L"(the menu is empty)"
+                                                                     : L"(nothing to show)";
             DrawTextW(dc, empty, -1, &row, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
         }
 
@@ -1428,18 +1236,7 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             }
         }
 
-        if (tabbox_is_grid()) {
-            int icon_size = taskbox_toolbar_icon_size();
-            for (int i = 0; i < s_count; ++i) {
-                RECT icon_rc;
-                tabbox_icon_rect(i, &icon_rc);
-                BOOL selected = (i == s_selected) && s_focused;
-                BOOL hovered = (i == s_selected) && s_pointer_on_row;
-                hg_toolbar_paint_shortcut_cell(dc, i, &icon_rc, icon_size, selected, hovered);
-            }
-        }
-
-        for (int i = 0; !tabbox_is_grid() && i < s_count; ++i) {
+        for (int i = 0; i < s_count; ++i) {
             RECT row = {pad, pad + i * row_h, rc.right - pad, pad + (i + 1) * row_h};
             BOOL selected = (i == s_selected) && (s_focused || s_pointer_on_row);
             if (selected) {
@@ -1519,14 +1316,6 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
          * row is the reason anyone right-clicks a tab list. */
         POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         int row = tabbox_row_at(pt);
-        if (row >= 0 && s_mode == HG_BOX_RUN) {
-            /* On a shortcut: the menu it had on the row - run it, or open the
-             * folder it lives in. */
-            s_selected = row;
-            InvalidateRect(hwnd, NULL, FALSE);
-            hg_toolbar_shortcut_context_menu(row, TRUE);
-            return 0;
-        }
         if (row >= 0 && s_target && s_mode == HG_BOX_TABS) {
             hg_tabs_close(s_target, row);
             hg_tabs_request(&s_target, 1); /* the list just changed */

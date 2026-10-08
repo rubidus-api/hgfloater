@@ -170,7 +170,7 @@ BOOL hg_option_set(int number, BOOL value, const WCHAR **out_message)
         hg_taskbox_grid_changed();
         if (out_message)
             *out_message = value ? L"Taskbox: windows, shortcuts and buttons each start a row"
-                                 : L"Taskbox: windows and buttons share rows, shortcuts in the Run box";
+                                 : L"Taskbox: windows, shortcuts and buttons share rows";
         break;
     default:
         return FALSE;

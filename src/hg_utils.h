@@ -248,7 +248,6 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_OPEN_DIRS,     /* the folder list, in the shared box */
     HG_TOOLBAR_CLICK_OPEN_CONTROLS, /* opacity, pin, and the doors to the settings */
     HG_TOOLBAR_CLICK_OPEN_SCALE_MENU, /* the scaling ladder for the screen this window is on */
-    HG_TOOLBAR_CLICK_OPEN_RUN         /* the shortcuts, as icons, in the shared box */
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
     HG_TOOLBAR_DRAG_NONE = 0,
@@ -286,20 +285,17 @@ void hg_toolbar_value_announce(int index);
  * button, wherever that button is drawn. FALSE when the button has no such
  * menu. */
 BOOL hg_toolbar_builtin_context_menu(int index, BOOL at_pointer);
-/* A shortcut's right-click menu - Run, Open File Location - for the Run box.
- * at_pointer as above; otherwise it opens at the shortcut's icon in the box. */
-BOOL hg_toolbar_shortcut_context_menu(int s_idx, BOOL at_pointer);
-/* One shortcut drawn as the Run box shows it: the plate, the outline or the
+/* One shortcut drawn on the grid: the plate, the outline or the
  * focus ring, the program's icon, and the Shift+letter badge that reaches it
  * from anywhere in the taskbox. rc_item is the icon's square. */
 void hg_toolbar_paint_shortcut_cell(HDC dc, int s_idx, const RECT *rc_item, int icon_size, BOOL selected,
                                     BOOL hovered);
 HgToolbarClickRole hg_toolbar_builtin_click_role(int index);
 HgToolbarDragRole hg_toolbar_builtin_drag_role(int index);
-/* The taskbox grid as it is now: the windows, the shortcuts when the grouped
- * layout has them on the grid, and the row of buttons. Every place that sizes,
+/* The taskbox grid as it is now: the windows, the shortcuts and the row of
+ * buttons. Every place that sizes,
  * paints, hit-tests or walks the grid asks these (hg_calc.h has the rules). */
-int hg_toolbar_grid_shortcuts(void);  /* shortcuts on the grid: all of them when grouped, else 0 */
+int hg_toolbar_grid_shortcuts(void);  /* the shortcuts: every one is on the grid, once */
 int hg_toolbar_grid_item_count(void); /* everything on the grid */
 int hg_toolbar_rows_for_cols(int cols);
 int hg_toolbar_cols_for_rows(int target_rows);

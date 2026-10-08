@@ -112,8 +112,8 @@
     L"https://github.com/rubidus-api/hgfloater\r\n\r\n"                                                                \
     L"Developer: rubidus-api (rubidus@gmail.com)\r\n\r\n"                                                              \
     L"License: MIT License\r\n\r\n"                                                                                    \
-    L"--- How to use Link ---\r\n"                                                                                     \
-    L"You can select and copy the URL/Email above using context menu or Ctrl+C.\r\n"                                   \
+    L"The address above can be selected and copied (Ctrl+C). Esc or Ctrl+W closes this window.\r\n"                    \
+    L"What follows is the manual.\r\n"                                                                                 \
     L"------------------------------\r\n\r\n"
 
 #define HG_ABOUT_TEXT_W HG_ABOUT_FIXED_W HG_ABOUT_README_W
@@ -146,18 +146,21 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 14
+#define HG_NUM_BASIC_ICONS 13
 
 /* The row, in index order. On screen the highest index is leftmost, so the row
- * reads Run Dir Alp Mon Vol Opt Set Clip Note C D X M R. (Where the row sits -
+ * reads Dir Alp Mon Vol Opt Set Clip Note C D X M R. (Where the row sits -
  * flowing from the left of rows of its own, or ending in the bottom-right cell -
  * is the grid's business: see HgGrid in hg_calc.h.)
  *
  * Vol, Mon and Alp are on the row itself. They spent v0.17.13 and v0.17.14 in
  * a box behind an Ico button; a reading that has to be opened to be seen was
  * one step too far, so the three are back where their colour can be read at a
- * glance and the Ico button is gone. Dir and Run, the two that open a box of
- * places or programs, stay together at the end. */
+ * glance and the Ico button is gone.
+ *
+ * There is no Run button either (it existed in v0.17.14 and v0.17.15): the
+ * shortcuts it opened are icons on the grid itself, once, so a button that
+ * opened a second copy of them had nothing left to do. */
 #define HG_TOOL_ICON_RESIZE 0
 #define HG_TOOL_ICON_MOVE 1
 #define HG_TOOL_ICON_CLOSE 2
@@ -171,17 +174,15 @@
 #define HG_TOOL_ICON_MONITOR 10
 #define HG_TOOL_ICON_ALPHA 11
 #define HG_TOOL_ICON_DIR 12
-#define HG_TOOL_ICON_RUN 13
 
 /* A shortcut's button id: past the row, so activate_toolbar_item can tell the
- * two apart. The shortcuts are not on the row any more - they are drawn in the
- * Run box - but a launch still goes through this one id. */
+ * two apart. A shortcut is an item of the grid (type 1) under this id. */
 #define HG_SHORTCUT_BUTTON_ID(s_idx) (HG_NUM_BASIC_ICONS + (s_idx))
 
 /* The one button that is not on the row: the pin, a row of the Set box. It
  * keeps an id of its own because everything that knows what a button is called
  * and what it does is written against an id. Numbered past the row and past
- * every shortcut (the row plus HG_MAX_SHORTCUTS ends at 77), so a loop over the
+ * every shortcut (the row plus HG_MAX_SHORTCUTS ends at 76), so a loop over the
  * toolbar cannot reach it by accident.
  *
  * The options menu is not like it: it was a row in that list, one click deep,

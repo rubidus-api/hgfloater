@@ -19,6 +19,8 @@ void hg_floater_refresh_surface(void);
 /* The clock's formats, its colour change or its hover part changed: lay the
  * floater out for the new text, start or stop the half-second timer, repaint. */
 void hg_floater_clock_changed(void);
+/* The interface font family changed: rebuild the floater's fonts and lay it out. */
+void hg_floater_fonts_changed(void);
 void update_floater_font_size(int delta);
 /* That size outright, for anything that knows what it wants. */
 void hg_set_floater_font_size(int size);

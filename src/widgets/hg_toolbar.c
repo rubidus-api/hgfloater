@@ -212,8 +212,8 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
             return 1;
         }
     }
-    /* The buttons, and after them the shortcuts the grouped layout puts on the
-     * grid. One that has no cell comes back as an empty rect and is skipped. */
+    /* The buttons, and after them the shortcuts. One that has no cell comes
+     * back as an empty rect and is skipped. */
     int total_buttons = HG_NUM_BASIC_ICONS + hg_toolbar_grid_shortcuts();
     for (int i = 0; i < total_buttons; i++) {
         RECT rc_item, rc_btn;
@@ -272,6 +272,11 @@ static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h
 {
     static HFONT s_font = NULL;
     static int s_height = 0;
+    /* The family the cached font was built in: a different interface font has
+     * to rebuild it even when the height is the same. */
+    static WCHAR s_face[LF_FACESIZE] = L"";
+    if (s_font && lstrcmpW(s_face, hg_g_font_name) != 0)
+        release_font_handle(&s_font, FALSE);
 
     if (!label || !*label || box_w <= 0 || box_h <= 0)
         return NULL;
@@ -301,6 +306,7 @@ static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h
                                  OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY,
                                  DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
             s_height = height;
+            StringCchCopyW(s_face, HG_ARRAYSIZE(s_face), hg_g_font_name);
         }
         if (!s_font)
             return NULL;
@@ -350,7 +356,7 @@ static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, c
     SelectObject(dc, old_font);
 }
 
-/* A shortcut in the Run box. No plate, the same as a shortcut had on the row -
+/* A shortcut on the grid. No plate -
  * the colour behind it would say nothing - and a ring in the focus colour for
  * the one the keyboard is on. The badge is the Shift+letter that launches it from anywhere in the
  * taskbox; this box is the one place that letter is still written down. */
@@ -537,11 +543,10 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     }
                 }
 
-                /* The shortcuts, on rows of their own between the windows and
-                 * the buttons, when the grouped layout is on. Drawn by the same
-                 * painter the Run box uses, so a shortcut looks the same in
-                 * both places: no plate, an outline, its icon, its Shift
-                 * letter, and a ring when the keyboard is on it. */
+                /* The shortcuts: on rows of their own between the windows and
+                 * the buttons when the grouped layout is on, beside the buttons
+                 * when it is not. No plate, an outline, the program's icon, its
+                 * Shift letter, and a ring when the keyboard is on it. */
                 for (int s_idx = 0; s_idx < hg_toolbar_grid_shortcuts(); s_idx++) {
                     int id = HG_SHORTCUT_BUTTON_ID(s_idx);
                     RECT rc_item;
@@ -1164,16 +1169,6 @@ BOOL hg_toolbar_builtin_context_menu(int index, BOOL at_pointer)
         return TRUE;
     }
     return FALSE;
-}
-
-BOOL hg_toolbar_shortcut_context_menu(int s_idx, BOOL at_pointer)
-{
-    HWND owner = hg_g_toolbar_wnd;
-    if (!owner || s_idx < 0 || s_idx >= hg_g_shortcut_count)
-        return FALSE;
-    toolbar_controller_show_shortcut_context_menu(owner, HG_SHORTCUT_BUTTON_ID(s_idx), taskbox_toolbar_icon_size(),
-                                                  at_pointer ? (LPARAM)1 : 0);
-    return TRUE;
 }
 
 static void toolbar_update_value_tooltip(HWND hwnd, int index)

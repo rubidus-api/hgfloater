@@ -31,6 +31,8 @@ int hg_clip_max(void);
 /* The history's text size, in points. */
 int hg_clip_font_size(void);
 void hg_clip_set_font_size(int points);
+/* The document font family changed: rebuild the window's font. */
+void hg_clip_fonts_changed(void);
 void hg_clip_set_max(int value);
 /* One row of display text for entry `number`; FALSE when there is no such entry. */
 BOOL hg_clip_row(int number, WCHAR *out, size_t out_cch);

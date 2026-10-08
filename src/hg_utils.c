@@ -788,12 +788,6 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_DIR, L"Dir", L"Folders (hover or click for the list)",
      L"Folders (hover or click for the list)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_DIRS,
      HG_TOOLBAR_DRAG_NONE},
-    /* The shortcuts, as icons in a box of their own. They were cells of the
-     * grid, one each, and a shortcuts folder of any size pushed the windows -
-     * the thing the grid is for - into fewer cells. One button costs one. */
-    {HG_TOOL_ICON_RUN, L"Run", L"Shortcuts (hover or click for the icons)",
-     L"Shortcuts (hover or click for the icons)", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_OPEN_RUN,
-     HG_TOOLBAR_DRAG_NONE},
 
     /* The three that carry a reading, on the row. Their colour is the value,
      * and each of the three gestures a button has answers with a different
@@ -820,7 +814,7 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
-/* Fourteen on the row, and the pin in the Set box. Stated rather than derived,
+/* Thirteen on the row, and the pin in the Set box. Stated rather than derived,
  * so adding a descriptor without deciding where it belongs does not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
@@ -1011,7 +1005,7 @@ HgToolbarDragRole hg_toolbar_builtin_drag_role(int index)
 
 int hg_toolbar_grid_shortcuts(void)
 {
-    return hg_g_taskbox_group_rows ? hg_g_shortcut_count : 0;
+    return hg_g_shortcut_count;
 }
 
 int hg_toolbar_grid_item_count(void)
@@ -1045,8 +1039,8 @@ void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)
 }
 
 /* item_type 0 is a task icon. item_type 1 is a function button, or - past the
- * last of those, HG_SHORTCUT_BUTTON_ID - a shortcut. An item that is not on the
- * grid (a shortcut, while they are only in the Run box) gets an empty rect. */
+ * last of those, HG_SHORTCUT_BUTTON_ID - a shortcut. An index nothing answers
+ * to gets an empty rect. */
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect)
 {
     if (!out_rect)
@@ -1140,7 +1134,7 @@ void update_toolbar_tooltips(HWND hwnd)
         SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti_tool);
     }
 
-    /* The shortcuts, when the grouped layout has them on the grid: the name of
+    /* The shortcuts: the name of
      * the program, which the array keeps for as long as the shortcut exists. */
     for (int i = 0; i < hg_toolbar_grid_shortcuts(); i++) {
         RECT item_rc;

@@ -995,6 +995,13 @@ int hg_clip_font_size(void)
     return s_clip_font_pt;
 }
 
+/* The document family changed: rebuild the clipboard window's font. */
+void hg_clip_fonts_changed(void)
+{
+    if (s_clip_wnd && IsWindow(s_clip_wnd))
+        clip_apply_font(s_clip_wnd);
+}
+
 void hg_clip_set_font_size(int points)
 {
     clip_load_view();

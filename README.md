@@ -20,6 +20,7 @@ it starts instantly and stays out of your way.
 
 ---
 
+<!-- SKIP_START -->
 ## Table of Contents
 
 1. [Overview](#1-overview)
@@ -42,6 +43,7 @@ it starts instantly and stays out of your way.
 18. [About the Developer](#18-about-the-developer)
 19. [The HellGates Series](#19-the-hellgates-series)
 20. [License](#20-license)
+<!-- SKIP_END -->
 
 ---
 
@@ -94,7 +96,7 @@ Design principles worth knowing before you use it:
    folder, then shows the floater.
 3. **Add shortcuts.** Drop `.lnk` or `.url` files into
    `%USERPROFILE%\.HellGates\hgfloater\shortcuts`. They appear in the
-   [`Run` box](#65-the-run-box) automatically; press `Esc` in the taskbox to
+   [taskbox grid](#65-shortcuts-on-the-grid) automatically; press `Esc` in the taskbox to
    re-scan the folder immediately. A shortcut that points at a **folder** goes to
    the [`Dir` button's list](#61-the-dir-button) instead.
 4. **Summon it from anywhere** with `Win + Alt + Space` (configurable).
@@ -207,7 +209,7 @@ of other windows.
   widget with it.
 - **Alt + Arrows / WASD** — moves the window from the keyboard.
 - **`T`** — opens the taskbox. **`C`** or **`Ctrl + E`** — opens the Command
-  Box. **`F1`** — About.
+  Box. **`F1`** — About, which holds this whole manual as plain text.
 
 When the cursor leaves the taskbox, it collapses back to the floater after a
 half-second grace period, so brushing past the edge does not dismiss it.
@@ -307,10 +309,10 @@ built-in buttons.
   stay open regardless of what the floater and taskbox do, until you
   close them. The floater, the taskbox and the toolbar stay out: they are the
   thing you are looking at.
-- **Shortcuts are not in the grid.** One icon per `.lnk` or `.url` in your
-  shortcuts folder, all of them in the box the [`Run` button](#65-the-run-box)
-  opens. The grid is for your windows; a shortcuts folder of any size used to
-  push them into fewer cells.
+- **Shortcuts come next.** One icon per `.lnk` or `.url` in your shortcuts
+  folder, each shown once, [on the grid itself](#65-shortcuts-on-the-grid) - on
+  rows of their own under the windows, so a shortcuts folder of any size takes
+  no cell from the windows' rows.
 
 > ### 📌 How to add a shortcut icon
 >
@@ -322,7 +324,7 @@ built-in buttons.
 >    Start menu, or right-click a program and *Send to → Desktop*, then move
 >    that file here.
 >
-> The new icon appears in the `Run` box within a second. No restart, no settings
+> The new icon appears in the taskbox within a second. No restart, no settings
 > screen: the folder **is** the setting.
 >
 > **To change the order, rename the files.** Icons are sorted by file name, so
@@ -346,9 +348,8 @@ activates that icon exactly as clicking it would.
 
 - **Windows take the digits:** `S0` to `S9`, the first ten, and no key past
   that.
-- **Shortcuts take the letters:** `SA` to `SZ`, in the order they sit in the
-  `Run` box. The key works from anywhere in the taskbox, whether the box is
-  open or not.
+- **Shortcuts take the letters:** `SA` to `SZ`, in the order they sit on the
+  grid. The key works from anywhere in the taskbox.
 
 They used to share one run of labels, all of it windows, so which key opened
 what depended on how many windows happened to be open — and a shortcut had no
@@ -362,7 +363,7 @@ nobody can press is furniture.
 of the bare `C` that opens the command box.
 
 **Every button in that half of the grid is framed** — the function buttons, and
-the shortcuts in the `Run` box alike — in **your Windows accent colour**, two pixels thick. The
+the shortcuts alike — in **your Windows accent colour**, two pixels thick. The
 taskbox is see-through, so "the background" is whatever you have on your
 desktop; a one-pixel white line vanished against a light wallpaper and was hard
 to find against a busy one. The accent is nudged toward the middle of its range
@@ -480,7 +481,7 @@ publish off-screen tabs at all, and those tabs will not appear.
     button; if the tab has no such button nothing is closed and the status line
     says so. **Focus** on a tab switches to that tab rather than only raising
     its window.
-  - **Open File Location (&O)** — shortcut icons (in the `Run` box) only.
+  - **Open File Location (&O)** — shortcut icons only.
 
 ### 5.2 The status line
 
@@ -501,23 +502,22 @@ A single-line read-only field across the top of the taskbox.
 then your shortcuts, then the buttons. A group that is longer than a row wraps
 onto the next, so with twelve columns thirteen windows take two rows and the
 shortcuts still begin on a fresh one. A group with nothing in it takes no row.
-The buttons flow like the other two, from the left: `Run` `Dir` `Alp` ... in
-order, and whatever does not fit - `M` `R` at twelve columns - starts the next
+The buttons flow like the other two, from the left: `Dir` `Alp` `Mon` ... in
+order, and whatever does not fit - `R` alone at twelve columns - starts the next
 row. When the taskbox is taller than it needs to be, the spare rows fall above
 the buttons.
 
 The arrow keys walk all three: `Right` off the last window lands on the first
 shortcut, off the last shortcut on the first button, and `Up` and `Down` step
-between the groups without stopping in the empty cells. A shortcut in the grid
-is the same thing it is in the [Run box](#65-the-run-box): click or `Space`
-launches it, the right button or `Enter` opens its menu, and `Shift` + its
-letter reaches it from anywhere.
+between the groups without stopping in the empty cells. What a shortcut
+answers to is in [Shortcuts on the grid](#65-shortcuts-on-the-grid).
 
 This is the default. **Windows, Shortcuts, Buttons by Row** in the `Set` list
 or the [settings window](#71-the-settings-window) switches it off
-(`[taskbox] group_rows=0`, or `write option grouprows off`): windows and
-buttons then share rows, as they did up to v0.17.14, the buttons run up to the
-bottom-right corner with `R` in it, and the shortcuts are only in the Run box.
+(`[taskbox] group_rows=0`, or `write option grouprows off`): everything then
+shares rows. The windows fill from the first cell, and the shortcuts and the
+buttons form one run that ends in the bottom-right corner with `R` in it - the
+shortcuts to the left of `Dir`.
 
 - **Drag any border** to change the grid: the taskbox snaps to whole columns, so
   no half icon is ever left hanging.
@@ -528,10 +528,10 @@ bottom-right corner with `R` in it, and the shortcuts are only in the Run box.
 
 ## 6. The Toolbar
 
-Fourteen built-in buttons sit in the same grid as the icons. Their order is
-fixed: from the left, `Run` `Dir` `Alp` `Mon` `Vol` `Opt` `Set` `Clip` `Note`
-`C` `D` `X` `M` `R`. Each carries a short word rather than a single capital,
-four of them open a box instead of doing something outright, and three —
+Thirteen built-in buttons sit in the same grid as the icons. Their order is
+fixed: from the left, `Dir` `Alp` `Mon` `Vol` `Opt` `Set` `Clip` `Note` `C` `D`
+`X` `M` `R`. Each carries a short word rather than a single capital, three of
+them open a box instead of doing something outright, and three —
 `Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
 
 The word is **fitted to the button**: up to three letters it stays on one line,
@@ -560,7 +560,6 @@ built, so a key you rebind is the key the tooltip shows.
 | **`Mon`** Monitor | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
 | **`Alp`** Opacity | — | **Wheel** sets the taskbox's opacity. |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
-| **`Run`** Shortcuts | Opens the [shortcut box](#65-the-run-box): every program shortcut, as its own icon. | — |
 
 ### 6.1 The Dir button
 
@@ -589,9 +588,9 @@ The rows are grouped by what a row **is**, top to bottom:
 
 | Row | What it does |
 | :--- | :--- |
+| **Settings Window...** | First, because it is where everything below can also be changed: the [settings window](#71-the-settings-window), every option, value, font and key in one list. |
 | **Pin** | Pins the taskbox open — while pinned, moving the mouse away no longer collapses it. **Click**, or **Space / Enter**, toggles. |
 | **the switches** | Every on/off setting, one row each, with `on` or `off` beside it. **Click**, or **Space / Enter**, flips one. |
-| **Settings Window...** | The [settings window](#71-the-settings-window): every option, value and key in one list. |
 | **Edit Configuration** | Opens the config file in your editor. |
 | **Reset Settings** | Position, size and opacity back to their defaults. |
 | **(off in this build)** | Last: the ones this build cannot switch. Listed rather than hidden, and out of the way of the ones that work. |
@@ -877,30 +876,28 @@ display, and the entries that bring the other one back would be the ones that
 had just disappeared. A percentage a display will not accept is shown greyed
 rather than left out, so the ladder is the same ladder on every screen.
 
-### 6.5 The Run box
+### 6.5 Shortcuts on the grid
 
-**`Run` opens your shortcuts as icons.** Point at it, land on it with the arrow
-keys, or click it, and the box the tab and folder lists use opens beside it, holding one icon
-per `.lnk` or `.url` in the shortcuts folder — the program's own icon, at the
-taskbox's icon size and spacing, across and then down, in file-name order. Up to
-sixteen sit four across; past that the box widens to stay square (sixty-four is
-eight by eight). `Run` sits beside `Dir`, so the two buttons that open a box of
-places or programs are together.
+**Your shortcuts are icons on the taskbox grid, each shown once.** One per
+`.lnk` or `.url` in the shortcuts folder - the program's own icon, in file-name
+order. With the [grouped layout](#53-shape-and-size) on (the default) they have
+rows of their own between the windows and the buttons; with it off they sit to
+the left of the buttons.
 
-With the [grouped layout](#53-shape-and-size) on - the default - the same
-shortcuts are also on the grid, on rows of their own between the windows and
-the buttons, and this box is a second way to them. With it off they are here
-only, and cost the grid one cell.
+For two releases (v0.17.14 and v0.17.15) they were behind a `Run` button, in a
+box of their own. That button is gone: with the shortcuts on rows of their own
+they no longer crowd the windows, which was the box's only reason, and a button
+that opened a second copy of icons already on screen had nothing left to do.
 
 | Gesture | What it does |
 | :--- | :--- |
-| **Click** | Launches it. The box closes; the taskbox stays, as it did when the shortcuts were on the row. |
-| **Right-click** | **Run** or **Open File Location**, the menu a shortcut always had. |
-| **`Shift` + its letter** | Launches it from anywhere in the taskbox, box open or not. The letter is the badge in the icon's corner. |
+| **Click**, or **`Space`** on it | Launches it. The taskbox stays open. |
+| **Right-click**, or **`Enter`** on it | **Run** or **Open File Location**. |
+| **`Shift` + its letter** | Launches it from anywhere in the taskbox. The letter is the badge in the icon's corner. |
 
-**The keyboard:** arrow to `Run`, `Down` steps into the box, the arrows walk the
-icons (the selected one is ringed), `Space` or `Enter` launches the ringed one, the menu
-key opens its menu, and `Esc` steps back out. The tooltip names the program.
+The icon the keyboard is on is **ringed** in the focus colour; the tooltip and
+the status line name the program. A shortcut that points at a folder is not
+here: it is a row of the [`Dir` list](#61-the-dir-button).
 
 ## 7. The Options Menu
 
@@ -974,6 +971,11 @@ taskbox, or `settings` in the command box. One list, in five parts:
   - **Notes and clipboard** — prose you write at length, which is neither of the
     other two jobs. It was the interface family until v0.17.8 and now has its
     own, `[etc] doc_font_name`, defaulting to what it used before.
+
+  A family takes effect at once and everywhere it is drawn - the floater's
+  clock, date and labels and the words on the buttons for the interface family,
+  open notes and the clipboard window for the document family - whether or not
+  the size changed with it.
 
   The size you pick in the dialog is applied too: the interface size, the
   command box size, or the note and clipboard size, whichever family you were
@@ -1261,7 +1263,7 @@ a chord.
 | `Arrow keys` / `WASD` | Move focus between icons |
 | `Space` | Activate the focused item — a window comes forward and the dashboard collapses back to the floater, exactly as clicking it does |
 | `Enter` / `F2` | Open the focused item's context menu |
-| `Tab` | With a box open (tabs, `Dir`, `Set`, `Run`), step into it |
+| `Tab` | With a box open (tabs, `Dir`, `Set`), step into it |
 | `Up` / `Down` | On an icon with a box: step into it. Inside one: move the selection |
 | `Left` / `Right` | Inside a box: leave it, and move to the icon beside |
 | `PageUp` / `PageDown` | Turn a value: on `Vol`, `Mon` or `Alp`, and on any row of a list that holds a number |
@@ -1306,7 +1308,7 @@ a chord.
 
 | Key | Action |
 | :--- | :--- |
-| `F1` | About |
+| `F1` | About and the manual |
 | `Ctrl + W` | Close the focused document window (note, note list, clipboard history, command box, About) |
 | `T` | Open the taskbox (from the floater) |
 | `Ctrl + Q` | Quit. Works from any HGFloater window. |
@@ -1340,7 +1342,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Item context menu** | Right-click an icon |
 | **Options menu** | Left-click `Opt`, or right-click the status line |
 | **Open a folder** | Point at `Dir`, then click a row |
-| **Launch a shortcut** | Point at `Run`, then click an icon |
+| **Launch a shortcut** | Click its icon on the grid |
 | **Open the control list** | Point at `Set` |
 | **Move a window** | Left-drag empty space, the status line, or the `M` button |
 | **Move the floater** | Drag the floater, or `Alt + drag` it |
@@ -1388,7 +1390,7 @@ every wheel notch.
 | `date_format` | The date line's format (`[floater]` only, default `"%a, %b %-d"`) |
 | `blink` | `1` changes the colour of the hours and minutes every half second (`[floater]` only, default `0`) |
 | `open_on_hover` | `1` lets the pointer open the taskbox from the floater (`[taskbox]` only, default `0`) |
-| `group_rows` | `1` starts a new row for the shortcuts and another for the buttons; `0` lets windows and buttons share rows and keeps the shortcuts in the Run box (`[taskbox]` only, default `1`) |
+| `group_rows` | `1` starts a new row for the shortcuts and another for the buttons; `0` lets everything share rows, the shortcuts beside the buttons (`[taskbox]` only, default `1`) |
 | `hover_region` | Which part of the clock answers when it is on: `minutes`, `hours` or `both` (`[taskbox]` only, default `minutes`) |
 | `show_tabs` | `1` gives a tabbed application's tabs their own task icons (`[taskbox]` only, default `0`) |
 | `tab_classes` | Extra window classes to look for tabs in, `;`-separated (`[taskbox]` only) |

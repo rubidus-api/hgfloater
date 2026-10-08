@@ -66,6 +66,13 @@ void update_size(int delta)
 void hg_apply_ui_font(void)
 {
     release_font_handle(&hg_g_main_font, TRUE);
+    /* The buttons' words and badges and the floater's four fonts are built
+     * from the same family. They were left alone here, so choosing a different
+     * interface font changed the status line and nothing else. Released, they
+     * are rebuilt at the next paint. */
+    release_font_handle(&hg_g_toolbar_btn_font, FALSE);
+    release_font_handle(&hg_g_toolbar_badge_font, FALSE);
+    hg_floater_fonts_changed();
 
     hg_g_main_font =
         CreateFontW(hg_g_edit_font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
@@ -289,21 +296,32 @@ void hide_taskbox(HWND hwnd)
             fy = t_rc.top + (t_rc.bottom - t_rc.top) / 2 - fh / 2;
         }
 
-        SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, fx, fy, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
-        ShowWindow(hg_g_floater_wnd, SW_SHOW);
-        /* Hidden, moved, shown again - the sequence that leaves a layered
-         * window composited from a surface it no longer matches. Both halves
-         * are set again here, where it happens most. */
-        hg_floater_refresh_surface();
         /* Take foreground only while this process still owns it; the auto-collapse
-         * path must not steal focus from the application the user switched to. */
+         * path must not steal focus from the application the user switched to.
+         *
+         * Nor from one of this program's own document windows - the settings
+         * window, a note, the clipboard, the command box, About - or from a
+         * dialog one of them has up. They belong to this process too, and that
+         * was enough to lose them the keyboard: open the settings window from
+         * the Set list, let the taskbox fold away behind it, and the window
+         * that had just been opened stopped answering keys. Asked before the
+         * floater is shown, because showing it is itself an activation unless
+         * it is shown without one. */
         HWND fg_wnd = GetForegroundWindow();
         DWORD fg_pid = 0;
         if (fg_wnd)
             GetWindowThreadProcessId(fg_wnd, &fg_pid);
-        if (!fg_wnd || fg_pid == GetCurrentProcessId()) {
+        BOOL fg_is_document = fg_wnd && hg_is_document_window(GetAncestor(fg_wnd, GA_ROOTOWNER));
+        BOOL take_foreground = !fg_wnd || (fg_pid == GetCurrentProcessId() && !fg_is_document);
+
+        SetWindowPos(hg_g_floater_wnd, HWND_TOPMOST, fx, fy, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+        ShowWindow(hg_g_floater_wnd, take_foreground ? SW_SHOW : SW_SHOWNA);
+        /* Hidden, moved, shown again - the sequence that leaves a layered
+         * window composited from a surface it no longer matches. Both halves
+         * are set again here, where it happens most. */
+        hg_floater_refresh_surface();
+        if (take_foreground)
             SetForegroundWindow(hg_g_floater_wnd);
-        }
         save_floater_geometry_config(fx, fy, fw, fh);
         hg_g_floater_home_valid = FALSE;
     }
@@ -370,8 +388,8 @@ void hg_keyboard_mode_check_pointer(void)
 
 /* ...but only two of them are free to build.
  *
- * Dir and Run read lists already in memory and Set reads values already cached,
- * so opening any of them on a passing pointer costs nothing. The options list is not
+ * Dir reads a list already in memory and Set reads values already cached,
+ * so opening either on a passing pointer costs nothing. The options list is not
  * like that: assembling it enumerates the audio endpoints through COM and asks
  * every display for its scaling, which is real work with real latency. Sweeping
  * the pointer across the toolbar - or walking the grid with the arrows - must
@@ -392,8 +410,6 @@ int taskbox_box_mode_for_button(int index)
         return HG_BOX_CONTROLS;
     case HG_TOOLBAR_CLICK_OPEN_MENU:
         return HG_BOX_MENU;
-    case HG_TOOLBAR_CLICK_OPEN_RUN:
-        return HG_BOX_RUN;
     default:
         return -1;
     }
@@ -412,9 +428,6 @@ void taskbox_open_box_for_button(int index, const RECT *anchor)
         break;
     case HG_BOX_MENU:
         hg_tabbox_open_menu(anchor);
-        break;
-    case HG_BOX_RUN:
-        hg_tabbox_open_run(anchor);
         break;
     default:
         break;
@@ -510,10 +523,10 @@ void activate_toolbar_item(int index)
         int s_idx = index - HG_NUM_BASIC_ICONS;
         if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
             /* One path for every way a shortcut is launched - a click in the
-             * Run box, Enter on it, Shift and its letter, Run in its menu - so
-             * they cannot come to behave differently. The Run box closes: the
-             * program is where the reader is going. The taskbox stays, as it
-             * did when the shortcuts were on the row. */
+             * the grid, Space on it, Shift and its letter, Run in its menu - so
+             * they cannot come to behave differently. Any box that is up
+             * closes: the program is where the reader is going. The taskbox
+             * stays. */
             hg_tabbox_close();
             ShellExecuteW(NULL, L"open", hg_g_shortcuts[s_idx].path, NULL, NULL, SW_SHOWNORMAL);
         }

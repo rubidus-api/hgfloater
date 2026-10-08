@@ -2010,6 +2010,12 @@ int hg_note_font_size(void)
     return s_font_size;
 }
 
+/* The document family changed: rebuild every note font, whatever the size. */
+void hg_note_fonts_changed(void)
+{
+    note_refresh_fonts();
+}
+
 void hg_note_set_font_size(int size)
 {
     hg_notes_load();
