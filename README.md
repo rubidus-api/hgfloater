@@ -630,7 +630,7 @@ beside the pin, because they are the same kind of thing to a
 reader — something to set, right here — and keeping the list in two places meant
 knowing which of the two a given setting had been filed under. What stayed in
 the other list is the machine's sound and picture: the audio devices and the
-displays, with Exit at the end.
+displays, and nothing else.
 
 The wheel works wherever the pointer is over a row, and the reading on that row
 follows it as it moves, so a value can be set without looking anywhere else. The
@@ -671,7 +671,6 @@ Screens > Second screen only
 Display 1 > Preview Window
 Display 1 > Scale                 125%
 Display 1 > Brightness             50%
-Exit
 ```
 
 **`Screens >` is `Win + P` without the overlay** — the four arrangements Windows
@@ -709,7 +708,7 @@ reading as you walk it and the change is sent once — when you press `Esc`, ste
 away to another icon, click elsewhere, or the taskbox folds up. The tooltip on
 that row says so.
 
-`Exit` is last: the end of the list in the sense that matters - you are leaving.
+There is no `Exit` row: the `X` button and `Ctrl + Q` quit.
 
 A submenu that only opens when you hover its parent is a thing to discover, and
 there is nothing here to discover: four displays' worth of brightness steps is a
@@ -909,7 +908,8 @@ Open it with the [`A/V` button](#63-the-av-button) — as a list under the
 button, flattened to one level — with `Ctrl + O` in the taskbox, or by
 right-clicking the status line, which opens the same list at the pointer.
 
-It holds the machine's sound and picture, and `Exit`. The switches, the
+It holds the machine's sound and picture, and nothing else. To quit, use the
+`X` button or `Ctrl + Q`. The switches, the
 settings window, the config file, the reset, the shortcuts folder, the lock and
 About are all rows of the [`Set` button's list](#62-the-set-button).
 
@@ -935,7 +935,6 @@ About are all rows of the [`Set` button's list](#62-the-set-button).
   running DisplayPort alt mode reports as `DP` and cannot be told apart from a
   DisplayPort socket. `USB-C` appears when DisplayPort is tunnelled over USB4 or
   Thunderbolt, which is the only case Windows reports separately.
-- **Exit** — quits.
 
 ### 7.1 The settings window
 
@@ -1360,7 +1359,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Note text size** | `Ctrl` + wheel over the list or an editor |
 | **Edit a note's text** | Right-click inside an editor |
 | **Command box text size** | `Ctrl` + wheel |
-| **Quit** | Left-click `X`, or Exit in the A/V list |
+| **Quit** | Left-click `X` |
 
 ## 13. Configuration File
 

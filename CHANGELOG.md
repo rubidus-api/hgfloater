@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.17.16] - 2026-10-09
 
 ### Fixed
 - **`F1` showed an empty window.** The About window puts the whole manual in a
@@ -40,8 +40,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **The `Opt` button is `A/V`, and its list holds only sound and picture.**
   `Open Shortcuts Folder`, `Lock Screen (Power Off)` and `About...` moved to the
   `Set` list, under the switches. What is left behind `A/V` is the output
-  device, the screen arrangement, each display's scaling and brightness, and
-  `Exit`. `Ctrl + O` and a right-click on the status line still open it.
+  device, the screen arrangement, and each display's preview, scaling and
+  brightness. The `Exit` row is gone as well: the `X` button and `Ctrl + Q`
+  quit. `Ctrl + O` and a right-click on the status line still open the list.
 
 ## [v0.17.15] - 2026-10-08
 

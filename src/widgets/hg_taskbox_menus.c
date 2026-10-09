@@ -149,8 +149,9 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
      * setting of this program - the switches and the doors to the settings are
      * the Set button's list - and since 2026-10-08 the shortcuts folder, the
      * lock and About are rows of that list too, which is why this button is
-     * called A/V. Exit is last: it is the one way out that is not a button's
-     * own business, and it was not asked to move. */
+     * called A/V. Exit is not here either (owner's request, 2026-10-09): the
+     * X button and Ctrl+Q quit, and a list about sound and picture is no place
+     * for the way out. */
     int count = 0;
 
     WCHAR label[HG_MENU_ROW_MAX];
@@ -181,7 +182,6 @@ int hg_menu_build_rows(HgMenuRow *rows, int max_rows)
     for (int i = 0; i < hg_g_monitor_count; ++i)
         count = menu_add_display_rows(rows, max_rows, count, i);
 
-    count = menu_add_row(rows, max_rows, count, L"Exit", HG_IDM_CLOSE_APP, TRUE, FALSE);
     return count;
 }
 
