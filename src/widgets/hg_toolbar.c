@@ -1076,15 +1076,17 @@ static int toolbar_value_min_percent(int index)
     return 0;
 }
 
-/* One step for all three. Brightness had its own 1% for a while, on the
- * reasoning that a monitor's real scale is known rather than assumed - true,
- * but it made the wheel a hundred notches wide to cross, and a control you have
- * to spin is worse than one that lands slightly off where you wanted. The seam
- * stays in case a value ever wants its own step again. */
+/* 5% for volume and opacity, 10% for brightness. Brightness had its own 1% for
+ * a while, on the reasoning that a monitor's real scale is known rather than
+ * assumed - true, but it made the wheel a hundred notches wide to cross, and a
+ * control you have to spin is worse than one that lands slightly off where you
+ * wanted. It then shared the 5% (2026-10-06 to 2026-10-14) and moved to 10% on
+ * the owner's request: a backlight does not show a 5% step as anything, and
+ * every DDC/CI write is a round trip to the monitor. A level off the 10% grid
+ * (a monitor that reports 55) snaps to it on the first notch. */
 static int toolbar_value_step_percent(int index)
 {
-    (void)index;
-    return 5;
+    return (index == HG_TOOL_ICON_MONITOR) ? 10 : 5;
 }
 
 static int toolbar_value_next_percent(int index, int current, short delta)

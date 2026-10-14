@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the focus colour - so the plate whose depth is the reading was hidden exactly
   while the wheel turned it. Their focus is now a ring at the edge, and the
   plate deepens or pales notch by notch under the hand.
+- **`Mon` steps brightness by 10%** a notch (and per `PageUp`/`PageDown`/`E`/`Q`),
+  where it was 5%; volume and opacity stay at 5%.
 - **The wheel on `Vol`, `Mon` or `Alp` writes the new value on the status
   line**, as `PageUp`/`PageDown` already did; arriving on one shows its
   reading before what the button does.

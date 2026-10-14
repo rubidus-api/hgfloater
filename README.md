@@ -743,8 +743,8 @@ window across the screen; when that heading runs out of room it turns
 counter-clockwise — north, west, south, east, and back to north. If no direction
 has room, nothing moves.
 
-**`Bri` — brightness.** The wheel moves brightness in **5% steps**, the same as
-opacity and volume. The `A/V` list offers quarter steps per display when you
+**`Bri` — brightness.** The wheel moves brightness in **10% steps**; opacity
+and volume move in 5%. The `A/V` list offers quarter steps per display when you
 want a specific level rather than a nudge.
 
 HGFloater tries three things per display, in order, and remembers which one
@@ -844,7 +844,7 @@ holds for every icon:
 
 | Gesture | `Vol` | `Mon` | `Alp` |
 | :--- | :--- | :--- | :--- |
-| **Wheel** | System volume, 5% a notch. A muted machine is unmuted first. | Brightness of the screen, 5% a notch. | Taskbox opacity, 5% a notch. |
+| **Wheel** | System volume, 5% a notch. A muted machine is unmuted first. | Brightness of the screen, 10% a notch. | Taskbox opacity, 5% a notch. |
 | **Click** | Mute and unmute. | The scaling for this screen — 100% to 225%, the same ladder Windows offers. | — |
 | **Right-click** | Which output device plays, with the current one ticked, and `Mute` below the list. | How the screens are arranged: `PC screen only`, `Duplicate`, `Extend`, `Second screen only`, with the one in force ticked. | — |
 
