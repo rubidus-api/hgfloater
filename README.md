@@ -294,7 +294,7 @@ and nothing else; it holds no keyboard hook and never has.
 ## 5. The Taskbox
 
 The taskbox is a grid of icons under a strip that holds the status line and,
-in the top-right corner, the `X` `M` `R` `D` buttons; the rest of the built-in
+in the top-right corner, the `D` `R` `M` `X` buttons; the rest of the built-in
 buttons are in the grid.
 
 ### 5.1 Running windows and shortcuts
@@ -491,7 +491,7 @@ publish off-screen tabs at all, and those tabs will not appear.
 ### 5.2 The status line
 
 A single-line read-only field in the top-left corner of the taskbox, against
-the frame's top and left edges. It runs as far as the `X` `M` `R` `D` buttons
+the frame's top and left edges. It runs as far as the `D` `R` `M` `X` buttons
 beside it and stops a gap short of them, so the two never overlap. The strip is
 as tall as the taller of the two - a large status-line font or large icons - and
 the grid starts under it. The taskbox is never narrower than six columns, so
@@ -520,7 +520,7 @@ the buttons.
 The arrow keys walk all three: `Right` off the last window lands on the first
 shortcut, off the last shortcut on the first button, and `Up` and `Down` step
 between the groups without stopping in the empty cells. `Up` from the top row
-goes to the button in the strip above it (`X` from anything left of the four),
+goes to the button in the strip above it (`D` from anything left of the four),
 `Left` and `Right` walk the four, and `Down` comes back. What a shortcut
 answers to is in [Shortcuts on the grid](#65-shortcuts-on-the-grid).
 
@@ -541,7 +541,7 @@ shortcuts to the left of `Dir`.
 ## 6. The Toolbar
 
 Thirteen built-in buttons. Four sit in the top-right corner, beside the status
-line, `D` flush against the corner: `X` `M` `R` `D`. The other nine are in the
+line, `X` flush against the corner: `D` `R` `M` `X`. The other nine are in the
 same grid as the icons, in a fixed order from the left: `Dir` `Alp` `Mon` `Vol`
 `A/V` `Set` `Clip` `Note` `C`. Each carries a short word rather than a single capital, three of
 them open a box instead of doing something outright, and three —

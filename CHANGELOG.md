@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+- **The corner buttons read `D` `R` `M` `X`**, `X` flush against the
+  taskbox's top-right corner. v0.17.18 put them the other way round
+  (`X` `M` `R` `D`, `D` in the corner) from a mistaken request. `Up` from a
+  column left of the four reaches `D` again.
+
 ## [v0.17.18] - 2026-10-14
 
 ### Changed

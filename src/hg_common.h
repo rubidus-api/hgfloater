@@ -150,7 +150,7 @@
 
 /* The buttons, in index order. The first HG_GRID_HEADER_BUTTONS (hg_calc.h)
  * are in the strip at the top of the taskbox, beside the status line, index 0
- * flush right: it reads X M R D, D in the corner. The rest are the row in the grid, where the
+ * flush right: it reads D R M X, X in the corner. The rest are the row in the grid, where the
  * highest index is leftmost, so it reads Dir Alp Mon Vol A/V Set Clip Note C.
  * (Where the row sits - flowing from the left of rows of its own, or ending in
  * the bottom-right cell - is the grid's business: see HgGrid in hg_calc.h.)
@@ -163,10 +163,10 @@
  * There is no Run button either (it existed in v0.17.14 and v0.17.15): the
  * shortcuts it opened are icons on the grid itself, once, so a button that
  * opened a second copy of them had nothing left to do. */
-#define HG_TOOL_ICON_DESKTOP 0
-#define HG_TOOL_ICON_RESIZE 1
-#define HG_TOOL_ICON_MOVE 2
-#define HG_TOOL_ICON_CLOSE 3
+#define HG_TOOL_ICON_CLOSE 0
+#define HG_TOOL_ICON_MOVE 1
+#define HG_TOOL_ICON_RESIZE 2
+#define HG_TOOL_ICON_DESKTOP 3
 #define HG_TOOL_ICON_COMMAND 4
 #define HG_TOOL_ICON_NOTE 5
 #define HG_TOOL_ICON_CLIP 6
