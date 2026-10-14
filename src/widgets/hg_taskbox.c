@@ -50,7 +50,7 @@ void update_size(int delta)
 
         load_shortcuts();
         update_layout(hg_g_taskbox_wnd);
-        InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+        hg_taskbox_invalidate(TRUE);
     }
     refresh_window_list(TRUE);
 }
@@ -99,7 +99,7 @@ void hg_apply_ui_font(void)
 
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         update_layout(hg_g_taskbox_wnd);
-        InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+        hg_taskbox_invalidate(TRUE);
     }
 
     for (int i = 0; i < hg_g_monitor_count; ++i) {
@@ -141,7 +141,7 @@ void hg_set_taskbox_icon_point_size(int points)
 
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         update_layout(hg_g_taskbox_wnd);
-        InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+        hg_taskbox_invalidate(TRUE);
     }
     if (hg_g_toolbar_wnd && IsWindow(hg_g_toolbar_wnd)) {
         update_toolbar_tooltips(hg_g_toolbar_wnd);
@@ -1272,7 +1272,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         hg_apply_dpi_suggested_rect(hwnd, l_param);
         release_font_handle(&hg_g_toolbar_btn_font, FALSE);
         update_layout(hwnd);
-        InvalidateRect(hwnd, NULL, TRUE);
+        hg_taskbox_invalidate(TRUE);
         if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
             release_font_handle(&hg_g_floater_time_font, FALSE);
             release_font_handle(&hg_g_floater_date_font, FALSE);
@@ -1404,7 +1404,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             if (hg_g_taskbox_highlight_ticks <= 0) {
                 KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
             }
-            InvalidateRect(hwnd, NULL, FALSE);
+            hg_taskbox_invalidate(FALSE); /* the toolbar and the status line flash too */
         } else if (w_param == HG_TIMER_HOVER_CHECK) {
             /* The one place that watches the pointer on a clock, so the one
              * place that can notice it has started moving again. */
@@ -1488,7 +1488,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         return taskbox_controller_on_command(hwnd, w_param, l_param);
     case WM_SIZE: {
         update_layout(hwnd);
-        InvalidateRect(hwnd, NULL, TRUE); /* 외곽선 다시 그리기 */
+        hg_taskbox_invalidate(TRUE); /* 외곽선 다시 그리기 */
         return 0;
     }
     case WM_CTLCOLORSTATIC:

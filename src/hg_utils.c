@@ -526,7 +526,9 @@ void refresh_theme_surfaces(HWND hwnd)
 
 
     if (hwnd) {
-        InvalidateRect(hwnd, NULL, TRUE);
+        /* The children too: the status line takes its colours from here, and
+         * the taskbox clips its children out of its own repaint. */
+        RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
     }
     if (hg_g_floater_wnd && IsWindow(hg_g_floater_wnd)) {
         InvalidateRect(hg_g_floater_wnd, NULL, TRUE);
@@ -1070,6 +1072,13 @@ int hg_toolbar_height_for_rows(int rows, int icon_size)
     if (rows < 1)
         rows = 1;
     return hg_toolbar_header_height(icon_size) + SC(10) + rows * (icon_size + SC(10));
+}
+
+void hg_taskbox_invalidate(BOOL erase)
+{
+    if (!hg_g_taskbox_wnd || !IsWindow(hg_g_taskbox_wnd))
+        return;
+    RedrawWindow(hg_g_taskbox_wnd, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN | (erase ? RDW_ERASE : 0));
 }
 
 void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)

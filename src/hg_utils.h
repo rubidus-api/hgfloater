@@ -311,6 +311,11 @@ int hg_toolbar_header_gap(void);
 /* The toolbar's height for that many grid rows, header included; the taskbox
  * is this plus its border top and bottom. */
 int hg_toolbar_height_for_rows(int rows, int icon_size);
+/* Repaint the whole taskbox: its frame, the toolbar and the status line.
+ * The taskbox has WS_CLIPCHILDREN, so invalidating it alone repaints only the
+ * frame; anything that changes what the children show (a font, a colour, the
+ * highlight flash) asks for this instead. */
+void hg_taskbox_invalidate(BOOL erase);
 void update_toolbar_tooltips(HWND hwnd);
 BOOL CALLBACK minimize_restore_enum_proc(HWND hwnd, LPARAM l_param);
 void move_window_by_offset(HWND hwnd, int dx, int dy);

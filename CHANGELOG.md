@@ -23,7 +23,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **The taskbox's icons could vanish for a moment** every few seconds: the
   taskbox's periodic full repaint painted its background over the grid, and
   the icons came back only when the grid painted again. The taskbox now leaves
-  its children alone when it paints (it only draws its frame).
+  its children alone when it paints (it only draws its frame), and everything
+  that changes what the grid or the status line shows - a font, the theme, the
+  flash when the hotkey summons it - repaints them along with it.
 
 ## [v0.17.16] - 2026-10-09
 

@@ -1381,7 +1381,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
          * opacity set again, which a repaint alone does not restore. */
         hg_floater_refresh_surface();
         if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
-            InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+            hg_taskbox_invalidate(TRUE);
             if (hg_g_toolbar_wnd) {
                 InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
             }
@@ -1400,7 +1400,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         hg_floater_refresh_surface();
         if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
             update_layout(hg_g_taskbox_wnd);
-            InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+            hg_taskbox_invalidate(TRUE);
         }
         return 0;
     }
@@ -1609,7 +1609,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     InvalidateRect(hwnd, NULL, TRUE);
                 }
                 if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
-                    InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+                    hg_taskbox_invalidate(TRUE);
                     if (hg_g_toolbar_wnd) {
                         InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
                     }
@@ -1632,7 +1632,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
             apply_dwm_attributes(hwnd);
             hg_floater_refresh_surface();
             if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
-                InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+                hg_taskbox_invalidate(TRUE);
                 if (hg_g_toolbar_wnd)
                     InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
             }
@@ -1697,7 +1697,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                         hg_g_taskbox_highlight_ticks = 0;
                     }
                 }
-                InvalidateRect(hg_g_taskbox_wnd, NULL, FALSE);
+                hg_taskbox_invalidate(FALSE);
 
                 SetFocus(hg_g_toolbar_wnd);
                 reset_taskbox_focus();

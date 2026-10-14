@@ -659,7 +659,7 @@ void hg_config_reset_all(HWND hwnd)
             save_taskbox_geometry_config(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
         }
 
-        InvalidateRect(hg_g_taskbox_wnd, NULL, TRUE);
+        hg_taskbox_invalidate(TRUE);
     }
 
     update_monitor_enum();
