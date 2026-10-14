@@ -148,10 +148,12 @@
 #define HG_MAX_AUDIO_DEVICES 16
 #define HG_NUM_BASIC_ICONS 13
 
-/* The row, in index order. On screen the highest index is leftmost, so the row
- * reads Dir Alp Mon Vol Opt Set Clip Note C D X M R. (Where the row sits -
- * flowing from the left of rows of its own, or ending in the bottom-right cell -
- * is the grid's business: see HgGrid in hg_calc.h.)
+/* The buttons, in index order. The first HG_GRID_HEADER_BUTTONS (hg_calc.h)
+ * are in the strip at the top of the taskbox, beside the status line, index 0
+ * flush right: it reads D M R X. The rest are the row in the grid, where the
+ * highest index is leftmost, so it reads Dir Alp Mon Vol A/V Set Clip Note C.
+ * (Where the row sits - flowing from the left of rows of its own, or ending in
+ * the bottom-right cell - is the grid's business: see HgGrid in hg_calc.h.)
  *
  * Vol, Mon and Alp are on the row itself. They spent v0.17.13 and v0.17.14 in
  * a box behind an Ico button; a reading that has to be opened to be seen was
@@ -161,9 +163,9 @@
  * There is no Run button either (it existed in v0.17.14 and v0.17.15): the
  * shortcuts it opened are icons on the grid itself, once, so a button that
  * opened a second copy of them had nothing left to do. */
-#define HG_TOOL_ICON_RESIZE 0
-#define HG_TOOL_ICON_MOVE 1
-#define HG_TOOL_ICON_CLOSE 2
+#define HG_TOOL_ICON_CLOSE 0
+#define HG_TOOL_ICON_RESIZE 1
+#define HG_TOOL_ICON_MOVE 2
 #define HG_TOOL_ICON_DESKTOP 3
 #define HG_TOOL_ICON_COMMAND 4
 #define HG_TOOL_ICON_NOTE 5

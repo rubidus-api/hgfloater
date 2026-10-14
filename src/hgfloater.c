@@ -441,9 +441,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
     register_global_hotkey(hg_g_floater_wnd, TRUE);
 
+    /* WS_CLIPCHILDREN: the toolbar covers everything inside the frame, so the
+     * taskbox's own paint is only the frame. Without it every full repaint of
+     * the taskbox (one every five seconds, see the floater's revalidation)
+     * filled the toolbar's area with background, and the icons were gone until
+     * the toolbar painted again. */
     hg_g_taskbox_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, HG_CLASS_TASKBOX,
                                        L"HGFloater Taskbox",
-                                       WS_POPUP, tx, ty, tw, th, NULL, NULL, instance, NULL);
+                                       WS_POPUP | WS_CLIPCHILDREN, tx, ty, tw, th, NULL, NULL, instance, NULL);
     if (!hg_g_taskbox_wnd) {
         MessageBoxW(NULL, L"Failed to create taskbox window.", L"hgfloater", MB_ICONERROR);
         exit_code = 1;

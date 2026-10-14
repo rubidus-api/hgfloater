@@ -17,8 +17,8 @@ int hg_clamp_alpha(int alpha)
  * repeated at every resize, keyboard, and layout site. */
 int hg_snap_width_for_cols(int cols, int icon_size)
 {
-    if (cols < 1)
-        cols = 1;
+    if (cols < HG_GRID_MIN_COLS)
+        cols = HG_GRID_MIN_COLS;
     return (cols - 1) * (icon_size + SC(15)) + icon_size + SC(20);
 }
 
@@ -204,14 +204,18 @@ int hg_calc_grid_cols_for_rows(int target_rows, int tasks, int shortcuts, int bu
     if (widest < 1)
         widest = 1;
 
-    for (int cols = 1; cols < widest; ++cols) {
+    if (widest < HG_GRID_MIN_COLS)
+        widest = HG_GRID_MIN_COLS;
+
+    for (int cols = HG_GRID_MIN_COLS; cols < widest; ++cols) {
         if (hg_calc_grid_rows(cols, tasks, shortcuts, buttons, grouped) <= target_rows)
             return cols;
     }
     return widest;
 }
 
-void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int buttons, int grouped, HgGrid *out)
+void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int buttons, int header, int grouped,
+                  HgGrid *out)
 {
     if (!out)
         return;
@@ -223,6 +227,8 @@ void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int butt
         shortcuts = 0;
     if (buttons < 0)
         buttons = 0;
+    if (header < 0)
+        header = 0;
 
     int rows = hg_calc_grid_rows(cols, tasks, shortcuts, buttons, grouped);
     if (visible_rows > rows)
@@ -234,6 +240,7 @@ void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int butt
     out->tasks = tasks;
     out->shortcuts = shortcuts;
     out->buttons = buttons;
+    out->header = header;
     out->grouped = grouped ? 1 : 0;
     /* Grouped, the shortcuts start the row after the tasks and the buttons
      * start the first of their own rows. Otherwise the two are one run that
@@ -250,6 +257,9 @@ int hg_calc_grid_cell(const HgGrid *grid, int type, int index)
         return (index < grid->tasks) ? index : -1;
     if (type != HG_GRID_BUTTON)
         return -1;
+    if (index < grid->header)
+        return grid->cells + index;
+    index -= grid->header;
     if (index < grid->buttons)
         return grid->button_first + (grid->buttons - 1 - index); /* the highest index is leftmost */
     index -= grid->buttons;
@@ -266,16 +276,19 @@ int hg_calc_grid_item(const HgGrid *grid, int cell, int *out_type, int *out_inde
     int type = -1;
     int index = -1;
 
-    if (grid && cell >= 0 && cell < grid->cells) {
+    if (grid && cell >= grid->cells && cell < grid->cells + grid->header) {
+        type = HG_GRID_BUTTON;
+        index = cell - grid->cells;
+    } else if (grid && cell >= 0 && cell < grid->cells) {
         if (cell < grid->tasks) {
             type = HG_GRID_TASK;
             index = cell;
         } else if (cell >= grid->button_first && cell < grid->button_first + grid->buttons) {
             type = HG_GRID_BUTTON;
-            index = grid->buttons - 1 - (cell - grid->button_first);
+            index = grid->header + grid->buttons - 1 - (cell - grid->button_first);
         } else if (cell >= grid->shortcut_first && cell < grid->shortcut_first + grid->shortcuts) {
             type = HG_GRID_BUTTON;
-            index = grid->buttons +
+            index = grid->header + grid->buttons +
                     (grid->grouped ? cell - grid->shortcut_first : grid->button_first - 1 - cell);
         }
     }
@@ -290,10 +303,51 @@ int hg_calc_grid_move(const HgGrid *grid, int cell, int direction)
 {
     if (!grid || grid->cells <= 0)
         return cell;
+
+    /* In the header: sideways along it, Down to the top row's item under it
+     * (or the nearest), Up nowhere. Slot 0 is the rightmost. */
+    if (grid->header > 0 && cell >= grid->cells && cell < grid->cells + grid->header) {
+        int slot = cell - grid->cells;
+        switch (direction) {
+        case HG_GRID_LEFT:
+            return (slot + 1 < grid->header) ? cell + 1 : cell;
+        case HG_GRID_RIGHT:
+            return (slot > 0) ? cell - 1 : cell;
+        case HG_GRID_DOWN: {
+            int col = grid->cols - 1 - slot;
+            if (col < 0)
+                col = 0;
+            for (int d = 0; d < grid->cols; ++d) {
+                if (col - d >= 0 && hg_calc_grid_item(grid, col - d, NULL, NULL))
+                    return col - d;
+                if (col + d < grid->cols && hg_calc_grid_item(grid, col + d, NULL, NULL))
+                    return col + d;
+            }
+            for (int next = grid->cols; next < grid->cells; ++next) {
+                if (hg_calc_grid_item(grid, next, NULL, NULL))
+                    return next;
+            }
+            return cell;
+        }
+        default:
+            return cell;
+        }
+    }
+
     if (cell < 0)
         cell = 0;
     if (cell >= grid->cells)
         cell = grid->cells - 1;
+
+    /* Up from the top row: the header button over that column, or the nearest
+     * one to it - the header is right-aligned, so a column left of it goes to
+     * its leftmost button. */
+    if (direction == HG_GRID_UP && grid->header > 0 && cell < grid->cols) {
+        int slot = grid->cols - 1 - cell;
+        if (slot >= grid->header)
+            slot = grid->header - 1;
+        return grid->cells + slot;
+    }
 
     /* Left and Right read the grid as one line, so the end of a row leads to
      * the start of the next. Off either end of the grid, or above the first
@@ -343,10 +397,10 @@ int hg_calc_grid_move(const HgGrid *grid, int cell, int direction)
 int get_items_per_row(int width, int icon_size)
 {
     if (width <= 0)
-        return 1;
+        return HG_GRID_MIN_COLS;
     int denom = icon_size + SC(15);
     if (denom <= 0)
-        return 1;
+        return HG_GRID_MIN_COLS;
     int n = (width - icon_size - SC(20)) / denom + 1;
-    return (n > 0) ? n : 1;
+    return (n > HG_GRID_MIN_COLS) ? n : HG_GRID_MIN_COLS;
 }

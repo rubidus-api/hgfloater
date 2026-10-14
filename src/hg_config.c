@@ -649,7 +649,7 @@ void hg_config_reset_all(HWND hwnd)
         int cols = get_items_per_row(tb_width, target_icon_size);
         if (cols <= 0)
             cols = 1;
-        int exact_tb_width = (cols - 1) * (target_icon_size + SC(15)) + target_icon_size + SC(20);
+        int exact_tb_width = hg_snap_width_for_cols(cols, target_icon_size);
         int new_w = exact_tb_width + border * 2;
 
         if ((rc.right - rc.left) != new_w) {

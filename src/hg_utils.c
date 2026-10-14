@@ -1013,34 +1013,76 @@ int hg_toolbar_grid_shortcuts(void)
     return hg_g_shortcut_count;
 }
 
+/* The buttons in the grid itself; the first HG_GRID_HEADER_BUTTONS are in the
+ * strip above it. */
+#define HG_TOOLBAR_GRID_BUTTONS (HG_NUM_BASIC_ICONS - HG_GRID_HEADER_BUTTONS)
+
 int hg_toolbar_grid_item_count(void)
 {
-    int count = hg_g_window_count + hg_toolbar_grid_shortcuts() + HG_NUM_BASIC_ICONS;
+    int count = hg_g_window_count + hg_toolbar_grid_shortcuts() + HG_TOOLBAR_GRID_BUTTONS;
     return (count > 0) ? count : 1;
 }
 
 int hg_toolbar_rows_for_cols(int cols)
 {
-    return hg_calc_grid_rows(cols, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_NUM_BASIC_ICONS,
+    return hg_calc_grid_rows(cols, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_TOOLBAR_GRID_BUTTONS,
                              hg_g_taskbox_group_rows);
 }
 
 int hg_toolbar_cols_for_rows(int target_rows)
 {
     return hg_calc_grid_cols_for_rows(target_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(),
-                                      HG_NUM_BASIC_ICONS, hg_g_taskbox_group_rows);
+                                      HG_TOOLBAR_GRID_BUTTONS, hg_g_taskbox_group_rows);
+}
+
+int hg_toolbar_header_height(int icon_size)
+{
+    /* Measuring the status line takes a DC, and every rect on the toolbar asks
+     * for this, several times a paint. The answer only changes with the font,
+     * and every font change ticks hg_g_font_generation. */
+    static HFONT cached_font = NULL;
+    static unsigned cached_generation = 0;
+    static double cached_scale = 0.0;
+    static int cached_edit_h = 0;
+    if (cached_edit_h <= 0 || cached_font != hg_g_main_font || cached_generation != hg_g_font_generation ||
+        cached_scale != hg_g_scale_factor) {
+        cached_edit_h = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font, hg_g_scale_factor);
+        cached_font = hg_g_main_font;
+        cached_generation = hg_g_font_generation;
+        cached_scale = hg_g_scale_factor;
+    }
+    int button_h = icon_size + SC(8); /* the plate: the icon and SC(4) round it */
+    return (cached_edit_h > button_h) ? cached_edit_h : button_h;
+}
+
+int hg_toolbar_header_buttons_width(int icon_size)
+{
+    return HG_GRID_HEADER_BUTTONS * (icon_size + SC(15)) - SC(7);
+}
+
+int hg_toolbar_header_gap(void)
+{
+    return SC(7); /* the same gap as between two plates */
+}
+
+int hg_toolbar_height_for_rows(int rows, int icon_size)
+{
+    if (rows < 1)
+        rows = 1;
+    return hg_toolbar_header_height(icon_size) + SC(10) + rows * (icon_size + SC(10));
 }
 
 void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)
 {
     int cols = get_items_per_row(width, icon_size);
     int row_height = icon_size + SC(10);
-    int visible_rows = (row_height > 0) ? (height - SC(20) + SC(10)) / row_height : 1;
+    int grid_height = height - hg_toolbar_header_height(icon_size);
+    int visible_rows = (row_height > 0) ? (grid_height - SC(20) + SC(10)) / row_height : 1;
     if (visible_rows <= 0)
         visible_rows = 1;
 
-    hg_calc_grid(cols, visible_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_NUM_BASIC_ICONS,
-                 hg_g_taskbox_group_rows, out);
+    hg_calc_grid(cols, visible_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_TOOLBAR_GRID_BUTTONS,
+                 HG_GRID_HEADER_BUTTONS, hg_g_taskbox_group_rows, out);
 }
 
 /* item_type 0 is a task icon. item_type 1 is a function button, or - past the
@@ -1054,17 +1096,28 @@ void get_toolbar_item_rect(int item_type, int item_index, int width, int height,
     if (width <= 0)
         return;
 
+    /* A header button: in the strip, its plate against the top edge and, for
+     * the first, against the right one; the rest leftwards at the grid's
+     * pitch. */
+    if (item_type == 1 && item_index >= 0 && item_index < HG_GRID_HEADER_BUTTONS) {
+        out_rect->right = width - SC(4) - item_index * (icon_size + SC(15));
+        out_rect->left = out_rect->right - icon_size;
+        out_rect->top = SC(4);
+        out_rect->bottom = out_rect->top + icon_size;
+        return;
+    }
+
     HgGrid grid;
     hg_toolbar_grid(width, height, icon_size, &grid);
     int cell_index = hg_calc_grid_cell(&grid, item_type, item_index);
-    if (cell_index < 0)
+    if (cell_index < 0 || cell_index >= grid.cells)
         return;
 
     int row = cell_index / grid.cols;
     int col = cell_index % grid.cols;
 
     out_rect->left = SC(10) + col * (icon_size + SC(15));
-    out_rect->top = SC(10) + row * (icon_size + SC(10));
+    out_rect->top = hg_toolbar_header_height(icon_size) + SC(10) + row * (icon_size + SC(10));
     out_rect->right = out_rect->left + icon_size;
     out_rect->bottom = out_rect->top + icon_size;
 }

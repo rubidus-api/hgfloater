@@ -618,9 +618,8 @@ void hg_taskbox_grid_changed(void)
  * best fits the requested window height. */
 int taskbox_cols_from_height(int window_height, int icon_size, int border, int total_items)
 {
-    int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font, hg_g_scale_factor);
     int row_height = icon_size + SC(10);
-    int available_toolbar_h = window_height - (border * 2 + edit_height);
+    int available_toolbar_h = window_height - (border * 2 + hg_toolbar_header_height(icon_size));
     int target_rows = (available_toolbar_h - SC(10) + row_height / 2) / row_height;
     if (target_rows < 1)
         target_rows = 1;
@@ -716,15 +715,15 @@ void update_layout(HWND hwnd)
         cols = 1;
     int rows = hg_toolbar_rows_for_cols(cols);
 
-    int row_height = icon_size + SC(10);
-
     RECT win_rc;
     GetWindowRect(hwnd, &win_rc);
     int current_height = win_rc.bottom - win_rc.top;
     int current_width = win_rc.right - win_rc.left;
 
-    int req_toolbar_height = SC(10) + rows * row_height;
-    int required_total_height = border * 2 + edit_height + req_toolbar_height;
+    /* The toolbar takes the whole inside of the frame: the header strip at
+     * its top, the grid under it. */
+    int req_toolbar_height = hg_toolbar_height_for_rows(rows, icon_size);
+    int required_total_height = border * 2 + req_toolbar_height;
 
     int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
     int required_total_width = border * 2 + exact_tb_width;
@@ -738,8 +737,16 @@ void update_layout(HWND hwnd)
         }
     }
 
-    MoveWindow(hg_g_edit_msg_wnd, border, border, exact_tb_width, edit_height, TRUE);
-    MoveWindow(hg_g_toolbar_wnd, border, border + edit_height, exact_tb_width, req_toolbar_height, TRUE);
+    /* The status line sits in the header strip's left part, over the toolbar
+     * (which clips it out - WS_CLIPSIBLINGS), against the frame's top and left
+     * edges, and ends a plate's gap short of the header buttons so the two
+     * never overlap. Its own height, top-aligned: the strip is as tall as the
+     * taller of the two. */
+    int edit_width = exact_tb_width - hg_toolbar_header_buttons_width(icon_size) - hg_toolbar_header_gap();
+    if (edit_width < 1)
+        edit_width = 1;
+    MoveWindow(hg_g_toolbar_wnd, border, border, exact_tb_width, req_toolbar_height, TRUE);
+    SetWindowPos(hg_g_edit_msg_wnd, HWND_TOP, border, border, edit_width, edit_height, SWP_NOACTIVATE);
     update_toolbar_tooltips(hg_g_toolbar_wnd);
 }
 
@@ -754,12 +761,12 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
     if (!hg_g_main_font)
         hg_g_main_font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
-    hg_g_toolbar_wnd = CreateWindowExW(0, HG_CLASS_TOOLBAR, NULL, WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd,
+    hg_g_toolbar_wnd = CreateWindowExW(0, HG_CLASS_TOOLBAR, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, 0, 0, 0, 0, hwnd,
                                        (HMENU)HG_IDC_TOOLBAR, GetModuleHandle(NULL), NULL);
 
     hg_g_edit_msg_wnd =
         CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", NULL,
-                        WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_READONLY, 0, 0, 0, 0, hwnd,
+                        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | ES_AUTOHSCROLL | ES_READONLY, 0, 0, 0, 0, hwnd,
                         (HMENU)HG_IDC_EDIT_MSG, GetModuleHandle(NULL), NULL);
     if (hg_g_edit_msg_wnd) {
         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
@@ -977,7 +984,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
 
             if (tb_width > exact_tb_width + SC(5)) {
                 /* Right padding exists, snap to current cols */
-            } else if (cols > 1) {
+            } else if (cols > HG_GRID_MIN_COLS) {
                 cols--;
                 exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
             }
@@ -1024,7 +1031,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             int current_rows = hg_toolbar_rows_for_cols(cols);
-            while (cols > 1) {
+            while (cols > HG_GRID_MIN_COLS) {
                 cols--;
                 int new_rows = hg_toolbar_rows_for_cols(cols);
                 if (new_rows > current_rows)

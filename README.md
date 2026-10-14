@@ -293,8 +293,9 @@ and nothing else; it holds no keyboard hook and never has.
 
 ## 5. The Taskbox
 
-The taskbox is a grid of icons with a status line on top and a toolbar of
-built-in buttons.
+The taskbox is a grid of icons under a strip that holds the status line and,
+in the top-right corner, the `D` `M` `R` `X` buttons; the rest of the built-in
+buttons are in the grid.
 
 ### 5.1 Running windows and shortcuts
 
@@ -485,7 +486,12 @@ publish off-screen tabs at all, and those tabs will not appear.
 
 ### 5.2 The status line
 
-A single-line read-only field across the top of the taskbox.
+A single-line read-only field in the top-left corner of the taskbox, against
+the frame's top and left edges. It runs as far as the `D` `M` `R` `X` buttons
+beside it and stops a gap short of them, so the two never overlap. The strip is
+as tall as the taller of the two - a large status-line font or large icons - and
+the grid starts under it. The taskbox is never narrower than six columns, so
+the line always has room.
 
 - It shows **one message at a time** — the most recent one replaces its
   predecessor.
@@ -503,20 +509,22 @@ then your shortcuts, then the buttons. A group that is longer than a row wraps
 onto the next, so with twelve columns thirteen windows take two rows and the
 shortcuts still begin on a fresh one. A group with nothing in it takes no row.
 The buttons flow like the other two, from the left: `Dir` `Alp` `Mon` ... in
-order, and whatever does not fit - `R` alone at twelve columns - starts the next
-row. When the taskbox is taller than it needs to be, the spare rows fall above
+order, and whatever does not fit - `Note` and `C` at seven columns - starts the
+next row. When the taskbox is taller than it needs to be, the spare rows fall above
 the buttons.
 
 The arrow keys walk all three: `Right` off the last window lands on the first
 shortcut, off the last shortcut on the first button, and `Up` and `Down` step
-between the groups without stopping in the empty cells. What a shortcut
+between the groups without stopping in the empty cells. `Up` from the top row
+goes to the button in the strip above it (`D` from anything left of the four),
+`Left` and `Right` walk the four, and `Down` comes back. What a shortcut
 answers to is in [Shortcuts on the grid](#65-shortcuts-on-the-grid).
 
 This is the default. **Windows, Shortcuts, Buttons by Row** in the `Set` list
 or the [settings window](#71-the-settings-window) switches it off
 (`[taskbox] group_rows=0`, or `write option grouprows off`): everything then
 shares rows. The windows fill from the first cell, and the shortcuts and the
-buttons form one run that ends in the bottom-right corner with `R` in it - the
+buttons form one run that ends in the bottom-right corner with `C` in it - the
 shortcuts to the left of `Dir`.
 
 - **Drag any border** to change the grid: the taskbox snaps to whole columns, so
@@ -528,9 +536,10 @@ shortcuts to the left of `Dir`.
 
 ## 6. The Toolbar
 
-Thirteen built-in buttons sit in the same grid as the icons. Their order is
-fixed: from the left, `Dir` `Alp` `Mon` `Vol` `A/V` `Set` `Clip` `Note` `C` `D`
-`X` `M` `R`. Each carries a short word rather than a single capital, three of
+Thirteen built-in buttons. Four sit in the top-right corner, beside the status
+line, `X` flush against the corner: `D` `M` `R` `X`. The other nine are in the
+same grid as the icons, in a fixed order from the left: `Dir` `Alp` `Mon` `Vol`
+`A/V` `Set` `Clip` `Note` `C`. Each carries a short word rather than a single capital, three of
 them open a box instead of doing something outright, and three —
 `Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
 

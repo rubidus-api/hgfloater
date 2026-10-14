@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **`D` `M` `R` `X` moved to the taskbox's top-right corner**, beside the status
+  line, `X` flush against the corner. The status line keeps the top-left
+  corner and ends short of them, so the two never overlap; both sit against
+  the frame's top edge, the line against its left and the buttons against its
+  right. The strip is as tall as the taller of the two, and the grid starts
+  under it. Nine buttons are left in the grid: `Dir` `Alp` `Mon` `Vol` `A/V`
+  `Set` `Clip` `Note` `C`.
+- `Up` from the grid's top row reaches the buttons in the corner, `Left` and
+  `Right` walk them, `Down` comes back.
+- The taskbox is never narrower than six columns, so the status line always
+  has room beside the four buttons.
+
+### Fixed
+- **The taskbox's icons could vanish for a moment** every few seconds: the
+  taskbox's periodic full repaint painted its background over the grid, and
+  the icons came back only when the grid painted again. The taskbox now leaves
+  its children alone when it paints (it only draws its frame).
+
 ## [v0.17.16] - 2026-10-09
 
 ### Fixed
