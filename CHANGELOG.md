@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **The corner buttons read `X` `M` `R` `D`**, `D` flush against the
+  taskbox's top-right corner (they read `D` `M` `R` `X` in v0.17.17). `Up` from
+  a column left of the four reaches `X`.
+- **A button's list hangs one icon's width past the button.** The `Dir`, `Set`
+  and `A/V` lists and a task icon's tab list used to start exactly at the
+  button's edge, so leaving the button on a slant fell off the list's corner
+  and closed it. They now start one icon's width further out on the near side,
+  still flush above or below the button and still never over it.
+- **Pointing at a task icon washes its window as well as outlining it.** The
+  frame is unchanged; the inside is tinted in the same colour, faintly enough
+  to read through. The tint stays under the taskbox, so its icons are not
+  coloured by it.
+
 ## [v0.17.17] - 2026-10-14
 
 ### Changed

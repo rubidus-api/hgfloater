@@ -11,6 +11,13 @@
  * the outline can sit directly under the cursor's path back to the taskbox, and
  * an overlay that ate those messages would break the hover it exists to serve.
  * WS_EX_NOACTIVATE keeps it out of the keyboard's.
+ *
+ * The frame alone was too little to find at a glance on a busy desktop, so the
+ * window's own rectangle is washed in the same colour as well (2026-10-14,
+ * owner's request). That is a second layered window, uniformly translucent,
+ * because one window cannot have an opaque frame and a translucent middle
+ * without a per-pixel alpha bitmap the size of the target - tens of megabytes
+ * for a maximized window on a 4K display, for a hover.
  */
 #include "hg_hilite.h"
 #include "../hg_utils.h"
@@ -18,13 +25,18 @@
 
 static const WCHAR HG_CLASS_HILITE[] = L"hghilite_class";
 
-static HWND s_wnd = NULL;
+static HWND s_wnd = NULL;  /* the frame */
+static HWND s_fill = NULL; /* the wash inside it */
 static BOOL s_class_ready = FALSE;
 
 /* Thick enough to read against a busy desktop at a glance, from the corner of
  * the eye, while the eye itself is on the taskbox. Three pixels was legible but
  * easy to miss - this is a signal, not a hairline. */
 #define HG_HILITE_THICKNESS 6
+
+/* The wash: enough to mark the window from the corner of the eye, little enough
+ * that what is in it can still be read through it. Out of 255. */
+#define HG_HILITE_FILL_ALPHA 64
 
 static COLORREF hilite_color(void)
 {
@@ -43,6 +55,14 @@ static LRESULT CALLBACK hilite_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
         HDC hdc = BeginPaint(hwnd, &ps);
         RECT rc;
         GetClientRect(hwnd, &rc);
+
+        if (hwnd == s_fill) {
+            HBRUSH wash = hg_cached_solid_brush(hilite_color());
+            if (wash)
+                FillRect(hdc, &rc, wash);
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
 
         HBRUSH key = hg_cached_solid_brush(HG_TRANSPARENT_KEY);
         if (key)
@@ -68,6 +88,8 @@ static LRESULT CALLBACK hilite_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
     if (msg == WM_DESTROY) {
         if (s_wnd == hwnd)
             s_wnd = NULL;
+        if (s_fill == hwnd)
+            s_fill = NULL;
         return 0;
     }
 
@@ -76,7 +98,7 @@ static LRESULT CALLBACK hilite_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
 
 static BOOL hilite_ensure_window(void)
 {
-    if (s_wnd && IsWindow(s_wnd))
+    if (s_wnd && IsWindow(s_wnd) && s_fill && IsWindow(s_fill))
         return TRUE;
 
     if (!s_class_ready) {
@@ -91,15 +113,24 @@ static BOOL hilite_ensure_window(void)
         s_class_ready = TRUE;
     }
 
-    s_wnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
-                            HG_CLASS_HILITE, L"", WS_POPUP, 0, 0, 0, 0, NULL, NULL, GetModuleHandleW(NULL), NULL);
-    if (!s_wnd)
-        return FALSE;
-
-    /* Colour key only: the frame is fully opaque and the middle is fully gone.
-     * An alpha here would fade the frame as well, which is the one part that
-     * has to be seen. */
-    SetLayeredWindowAttributes(s_wnd, HG_TRANSPARENT_KEY, 255, LWA_COLORKEY);
+    DWORD ex = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
+    if (!s_wnd || !IsWindow(s_wnd)) {
+        s_wnd = CreateWindowExW(ex, HG_CLASS_HILITE, L"", WS_POPUP, 0, 0, 0, 0, NULL, NULL, GetModuleHandleW(NULL),
+                                NULL);
+        if (!s_wnd)
+            return FALSE;
+        /* Colour key only: the frame is fully opaque and the middle is fully
+         * gone. An alpha here would fade the frame as well, which is the one
+         * part that has to be seen. */
+        SetLayeredWindowAttributes(s_wnd, HG_TRANSPARENT_KEY, 255, LWA_COLORKEY);
+    }
+    if (!s_fill || !IsWindow(s_fill)) {
+        s_fill = CreateWindowExW(ex, HG_CLASS_HILITE, L"", WS_POPUP, 0, 0, 0, 0, NULL, NULL, GetModuleHandleW(NULL),
+                                 NULL);
+        if (!s_fill)
+            return FALSE;
+        SetLayeredWindowAttributes(s_fill, 0, HG_HILITE_FILL_ALPHA, LWA_ALPHA);
+    }
     return TRUE;
 }
 
@@ -138,8 +169,22 @@ void hg_hilite_show(HWND target)
         return;
     }
 
-    if (!hilite_ensure_window())
+    if (!hilite_ensure_window()) {
+        hg_hilite_hide();
         return;
+    }
+
+    /* The wash covers the window itself, and sits just under the taskbox
+     * rather than over everything: the taskbox often floats over the very
+     * window it is pointing at, and its icons are what the reader is looking
+     * at. Placing it after the taskbox keeps it in the topmost band (the
+     * taskbox is topmost), under the taskbox and over everything else. */
+    HWND under = (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && IsWindowVisible(hg_g_taskbox_wnd))
+                     ? hg_g_taskbox_wnd
+                     : HWND_TOPMOST;
+    SetWindowPos(s_fill, under, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top,
+                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    InvalidateRect(s_fill, NULL, TRUE);
 
     /* Outside the window rather than over it, so the outline adds to what is
      * on screen instead of hiding the window's own edge. */
@@ -158,11 +203,16 @@ void hg_hilite_hide(void)
 {
     if (s_wnd && IsWindow(s_wnd))
         ShowWindow(s_wnd, SW_HIDE);
+    if (s_fill && IsWindow(s_fill))
+        ShowWindow(s_fill, SW_HIDE);
 }
 
 void hg_hilite_shutdown(void)
 {
     if (s_wnd && IsWindow(s_wnd))
         DestroyWindow(s_wnd);
+    if (s_fill && IsWindow(s_fill))
+        DestroyWindow(s_fill);
     s_wnd = NULL;
+    s_fill = NULL;
 }

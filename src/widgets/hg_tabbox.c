@@ -302,9 +302,15 @@ static void tabbox_layout(void)
      * running right or left from the icon, sitting under it or over it - and
      * the first that fits the work area whole is the one used.
      *
-     * Running "right" means the box's left edge starts at the icon's left, so
-     * the icon's whole width lands inside the box's width and the two read as
-     * attached. Running "left" mirrors it from the icon's right edge. */
+     * Running "right" means the box starts one icon's width left of the icon
+     * and runs right, so the icon's whole width lands inside the box's width
+     * with that much more of the box beside it. Running "left" mirrors it. The
+     * overhang is for the pointer (2026-10-14, owner's request): flush with the
+     * icon's edge, a move off the icon that drifted diagonally fell off the
+     * box's corner, the box closed, and the reader had to come back and aim
+     * straight. With an icon's width to spare on the near side, the natural
+     * slant of a hand moving up or down still lands on the box. A box too
+     * narrow to hang over that far hangs over as far as it can. */
     HMONITOR monitor = MonitorFromRect(&s_anchor, MONITOR_DEFAULTTONEAREST);
     MONITORINFO mi;
     SecureZeroMemory(&mi, sizeof(mi));
@@ -313,8 +319,14 @@ static void tabbox_layout(void)
     if (GetMonitorInfoW(monitor, &mi))
         work = mi.rcWork;
 
-    int x_right = s_anchor.left;          /* box runs right from the icon's left edge */
-    int x_left = s_anchor.right - width;  /* box runs left from the icon's right edge */
+    int anchor_w = s_anchor.right - s_anchor.left;
+    int overhang = anchor_w;
+    if (overhang > width - anchor_w)
+        overhang = width - anchor_w;  /* never so far that the box stops spanning the icon */
+    if (overhang < 0)
+        overhang = 0;
+    int x_right = s_anchor.left - overhang;           /* box runs right, hanging over the icon's left */
+    int x_left = s_anchor.right + overhang - width;   /* box runs left, hanging over the icon's right */
     BOOL fits_right = (x_right >= work.left) && (x_right + width <= work.right);
     BOOL fits_left = (x_left >= work.left) && (x_left + width <= work.right);
 
@@ -323,7 +335,16 @@ static void tabbox_layout(void)
         x = x_right;
     else if (fits_left)
         x = x_left;
-    else {
+    else if (width <= work.right - work.left) {
+        /* Fits the display but not with the overhang on either side - an icon
+         * near a display edge. Slide the box back on screen: it still spans
+         * the icon, only with less to spare on the side against the edge. */
+        x = x_right;
+        if (x < work.left)
+            x = work.left;
+        if (x + width > work.right)
+            x = work.right - width;
+    } else {
         /* Wider than the display it is on. Nothing to choose between, so keep
          * it on screen; the icon stays uncovered either way, because what
          * decides that is above-or-below and not this. */
