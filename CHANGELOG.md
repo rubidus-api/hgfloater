@@ -19,6 +19,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   frame is unchanged; the inside is tinted in the same colour, faintly enough
   to read through. The tint stays under the taskbox, so its icons are not
   coloured by it.
+- **`Vol`, `Mon` and `Alp` keep their colour under the pointer and the focus.**
+  Pointing at one moved the focus there, and a focused button was filled in
+  the focus colour - so the plate whose depth is the reading was hidden exactly
+  while the wheel turned it. Their focus is now a ring at the edge, and the
+  plate deepens or pales notch by notch under the hand.
+- **The wheel on `Vol`, `Mon` or `Alp` writes the new value on the status
+  line**, as `PageUp`/`PageDown` already did; arriving on one shows its
+  reading before what the button does.
 
 ## [v0.17.17] - 2026-10-14
 

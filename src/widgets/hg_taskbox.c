@@ -579,13 +579,20 @@ void update_focus_message(int override_type, int override_index)
     } else if (type == 1) {
         if (index >= 0 && index < HG_NUM_BASIC_ICONS) {
             const WCHAR *focus_text = hg_toolbar_builtin_focus_text(index);
-            if (focus_text) {
-                append_message(focus_text);
-            } else if (hg_toolbar_builtin_has_value(index)) {
-                static WCHAR value_str[64];
-                if (hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_FOCUS, value_str, HG_ARRAYSIZE(value_str))) {
+            /* Vol, Mon and Alp lead with their reading, so arriving on one says
+             * where it stands before saying what it does; the reading is first
+             * because the line is narrow and its end is what gets cut. */
+            WCHAR value_str[64];
+            if (hg_toolbar_builtin_has_value(index) &&
+                hg_toolbar_builtin_value_text(index, HG_TOOLBAR_TEXT_FOCUS, value_str, HG_ARRAYSIZE(value_str))) {
+                WCHAR line[256];
+                if (focus_text && SUCCEEDED(hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%ls  |  %ls", value_str,
+                                                               focus_text)))
+                    append_message(line);
+                else
                     append_message(value_str);
-                }
+            } else if (focus_text) {
+                append_message(focus_text);
             }
         } else if (index >= HG_SHORTCUT_BUTTON_ID(0) && index < HG_SHORTCUT_BUTTON_ID(hg_g_shortcut_count)) {
             /* A shortcut on the grid: its name, as a window's title is said. */

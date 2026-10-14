@@ -356,6 +356,24 @@ static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, c
     SelectObject(dc, old_font);
 }
 
+/* The keyboard's mark where a fill would hide something: a ring in the focus
+ * colour, inside the button's edge. Used for a shortcut (no plate, and its icon
+ * is the thing to see) and for Vol, Mon and Alp (the plate is the reading). */
+static void toolbar_draw_focus_ring(HDC dc, const RECT *rc_btn)
+{
+    HBRUSH ring = hg_cached_solid_brush(hg_g_color_focus_bg);
+    if (!ring)
+        return;
+    int thickness = SC(2);
+    if (thickness < 2)
+        thickness = 2;
+    RECT edge = *rc_btn;
+    for (int i = 0; i < thickness; ++i) {
+        FrameRect(dc, &edge, ring);
+        InflateRect(&edge, -1, -1);
+    }
+}
+
 /* A shortcut on the grid. No plate -
  * the colour behind it would say nothing - and a ring in the focus colour for
  * the one the keyboard is on. The badge is the Shift+letter that launches it from anywhere in the
@@ -377,15 +395,7 @@ void hg_toolbar_paint_shortcut_cell(HDC dc, int s_idx, const RECT *rc_item, int 
     }
 
     if (selected) {
-        HBRUSH ring = hg_cached_solid_brush(hg_g_color_focus_bg);
-        int thickness = SC(2);
-        if (thickness < 2)
-            thickness = 2;
-        RECT edge = rc_btn;
-        for (int i = 0; ring && i < thickness; ++i) {
-            FrameRect(dc, &edge, ring);
-            InflateRect(&edge, -1, -1);
-        }
+        toolbar_draw_focus_ring(dc, &rc_btn);
     } else {
         toolbar_draw_button_outline(dc, &rc_btn);
     }
@@ -601,12 +611,17 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     } else if ((hovered_type == 1 && hovered_index == i) ||
                                (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)) {
                         BOOL focused = (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i);
-                        if (focused) {
+                        /* Vol, Mon and Alp are never filled over: their plate
+                         * is the reading, and the moment it is pointed at is
+                         * the moment it is being turned. Hover leaves it as it
+                         * is; the focus is a ring, drawn after the outline
+                         * below so the outline does not cover it. */
+                        if (focused && !keep_value_bg) {
                             HBRUSH hbr = hg_cached_solid_brush(hg_g_color_focus_bg);
                             if (hbr) {
                                 FillRect(mem_dc, &rc_btn, hbr);
                             }
-                        } else if (!keep_value_bg) {
+                        } else if (!focused && !keep_value_bg) {
                             HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                             if (hbr) {
                                 FillRect(mem_dc, &rc_btn, hbr);
@@ -626,6 +641,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                      * the line still frames it - and before the state border,
                      * which is a louder mark and should win where both apply. */
                     toolbar_draw_button_outline(mem_dc, &rc_btn);
+                    if (keep_value_bg && hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i &&
+                        !(pressed_type == 1 && pressed_index == i))
+                        toolbar_draw_focus_ring(mem_dc, &rc_btn);
 
                     if ((i == HG_TOOL_ICON_VOLUME && get_system_mute()) ||
                         (i == HG_TOOL_ICON_PIN && hg_g_taskbox_pinned)) {
@@ -1224,9 +1242,11 @@ static LRESULT toolbar_controller_on_mouse_wheel(HWND hwnd, WPARAM w_param, LPAR
             int new_value = toolbar_value_next_percent(i, cur_value, delta);
             toolbar_value_apply_percent(i, new_value);
 
-            update_toolbar_tooltips(hwnd);
+            /* Every notch says where it landed, on the status line as well as
+             * in the plate's colour - the same words PageUp and PageDown
+             * write. The repaint is what turns the plate. */
             toolbar_update_value_tooltip(hwnd, i);
-            update_focus_message(1, i);
+            hg_toolbar_value_announce(i);
             InvalidateRect(hwnd, NULL, FALSE);
             return 0;
         }

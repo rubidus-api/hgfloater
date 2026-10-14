@@ -880,8 +880,12 @@ button you are standing on. The text lists are the other way round — a list is
 a column, so on a row that holds a number `Left` and `Right` turn it (the scale
 and brightness rows of the [A/V list](#7-the-av-list)).
 
-A focused button is painted in the focus colour, which covers its plate: while
-you are turning a value from the keyboard, read it off the status line. `E` and
+**The plate is never covered.** Pointing at one of these three, or arriving on
+it with the arrows, leaves its colour as it is: the focus is a ring in the
+focus colour round its edge, where every other button is filled. So the colour
+deepens or pales under your hand, notch by notch, while you turn it - and the
+status line says the number each time, from the wheel as from the keys,
+`Brightness: 60%` first and what the button does after it. `E` and
 `Q` work on these three buttons only; in the text lists every row from the
 tenth down wears a letter that jumps straight to it, so both letters are
 already spoken for in there.
