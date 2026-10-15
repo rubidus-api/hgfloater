@@ -163,12 +163,17 @@ static void tabbox_build_control_rows(void)
      * because a door is a bigger step than a toggle. The first three are about
      * this program's own files and settings, Reset last of them because it is
      * the one that throws work away; the lock and About came here from the A/V
-     * list (owner's request, 2026-10-08), which keeps only sound and picture. */
+     * list (owner's request, 2026-10-08), which keeps only sound and picture.
+     * The password and the screen saver sit beside the lock (owner's request,
+     * 2026-10-15): the three are about leaving the desk, and both open
+     * Windows' own page for it rather than a copy of it here. */
     const HgControlRow commands[] = {
         {HG_ROW_COMMAND, HG_IDM_OPEN_SHORTCUTS, L"Open Shortcuts Folder"},
         {HG_ROW_COMMAND, HG_IDM_EDIT_CONFIG, L"Edit Configuration"},
         {HG_ROW_COMMAND, HG_IDM_RESET_ALL, L"Reset Settings"},
         {HG_ROW_COMMAND, HG_IDM_POWER_OFF, L"Lock Screen (Power Off)"},
+        {HG_ROW_COMMAND, HG_IDM_CHANGE_PASSWORD, L"Change Password..."},
+        {HG_ROW_COMMAND, HG_IDM_SCREEN_SAVER, L"Screen Saver..."},
         {HG_ROW_COMMAND, HG_IDM_ABOUT, L"About..."},
     };
     for (size_t i = 0; i < HG_ARRAYSIZE(commands); ++i)

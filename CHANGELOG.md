@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **`Change Password...` and `Screen Saver...` in the `Set` list**, below
+  `Lock Screen (Power Off)`. The first opens Windows' sign-in options, where
+  the current account's password is changed; the second opens the Screen Saver
+  Settings dialog, where the wait in minutes is set.
+
 ## [v0.17.19] - 2026-10-14
 
 ### Fixed

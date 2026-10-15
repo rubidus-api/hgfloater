@@ -526,6 +526,8 @@ Row** 로 끌 수 있습니다(`[taskbox] group_rows=0`, 또는 `write option gr
 | **Edit Configuration** | 설정 파일을 편집기로 엽니다 |
 | **Reset Settings** | 위치·크기·투명도를 기본값으로 되돌립니다 |
 | **Lock Screen (Power Off)** | 세션을 잠그고 화면을 끕니다 |
+| **Change Password...** | Windows 로그인 옵션을 엽니다. 거기서 *암호* 로 현재 계정의 암호를 바꿉니다(Microsoft 계정은 그곳에서 온라인으로 바꿉니다) |
+| **Screen Saver...** | Windows 화면 보호기 설정을 엽니다. 화면 보호기 종류, 몇 분 뒤에 켤지, 다시 돌아올 때 로그인 화면을 보일지 정합니다 |
 | **About...** | 정보 창. 이 설명서가 들어 있습니다 — `F1` 이 여는 창 |
 | **(off in this build)** | 맨 아래: 이 빌드에서 쓸 수 없는 항목들. 숨기지 않고 남기되, 쓸 수 있는 줄들 사이에 끼지 않게 모아 둡니다 |
 

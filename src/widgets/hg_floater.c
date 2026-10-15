@@ -1322,6 +1322,16 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             ShellExecuteW(NULL, L"open", L"notepad.exe", hg_g_config_path, NULL, SW_SHOWNORMAL);
         } else if (cmd == HG_IDM_SETTINGS) {
             hg_settings_toggle_window();
+        } else if (cmd == HG_IDM_CHANGE_PASSWORD) {
+            /* The sign-in options page: its Password entry changes a local
+             * account's password, and a Microsoft account's is changed online
+             * from the same place. The Ctrl+Alt+Del screen that also has it
+             * cannot be opened by a program. */
+            ShellExecuteW(NULL, L"open", L"ms-settings:signinoptions", NULL, NULL, SW_SHOWNORMAL);
+        } else if (cmd == HG_IDM_SCREEN_SAVER) {
+            /* The classic Screen Saver Settings dialog: the saver, its Wait
+             * minutes and whether resuming shows the sign-in screen. */
+            ShellExecuteW(NULL, L"open", L"control.exe", L"desk.cpl,,@screensaver", NULL, SW_SHOWNORMAL);
         } else if (cmd == HG_IDM_ABOUT) {
             show_about_window();
         } else if (cmd == HG_IDM_RESET_ALL) {

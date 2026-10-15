@@ -608,6 +608,8 @@ The rows are grouped by what a row **is**, top to bottom:
 | **Edit Configuration** | Opens the config file in your editor. |
 | **Reset Settings** | Position, size and opacity back to their defaults. |
 | **Lock Screen (Power Off)** | Locks the session and turns the displays off. |
+| **Change Password...** | Opens Windows' sign-in options, where *Password* changes the current account's password (a Microsoft account's is changed online from there). |
+| **Screen Saver...** | Opens Windows' Screen Saver Settings: the saver, how many minutes it waits, and whether coming back asks for the sign-in screen. |
 | **About...** | The About window, with this manual in it — what `F1` opens. |
 | **(off in this build)** | Last: the ones this build cannot switch. Listed rather than hidden, and out of the way of the ones that work. |
 
