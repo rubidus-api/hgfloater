@@ -512,9 +512,9 @@ the line always has room.
 then your shortcuts, then the buttons. A group that is longer than a row wraps
 onto the next, so with twelve columns thirteen windows take two rows and the
 shortcuts still begin on a fresh one. A group with nothing in it takes no row.
-The buttons flow like the other two, from the left: `Dir` `Alp` `Mon` ... in
-order, and whatever does not fit - `Note` and `C` at seven columns - starts the
-next row. When the taskbox is taller than it needs to be, the spare rows fall above
+The buttons are two lines, each starting a row of its own: `A/V` `Vol` `Mon`
+`Alp` - the ones that are read and turned - and under them `Dir` `Set` `Clip`
+`Note` `C`. When the taskbox is taller than it needs to be, the spare rows fall above
 the buttons.
 
 The arrow keys walk all three: `Right` off the last window lands on the first
@@ -528,8 +528,10 @@ This is the default. **Windows, Shortcuts, Buttons by Row** in the `Set` list
 or the [settings window](#71-the-settings-window) switches it off
 (`[taskbox] group_rows=0`, or `write option grouprows off`): everything then
 shares rows. The windows fill from the first cell, and the shortcuts and the
-buttons form one run that ends in the bottom-right corner with `C` in it - the
-shortcuts to the left of `Dir`.
+buttons end in the bottom-right corner: `Dir` `Set` `Clip` `Note` `C` on the
+last row, ending in the corner with `C`, and the shortcuts and `A/V` `Vol`
+`Mon` `Alp` one run ending at the row above - the shortcuts to the left of
+`A/V`.
 
 - **Drag any border** to change the grid: the taskbox snaps to whole columns, so
   no half icon is ever left hanging.
@@ -542,8 +544,8 @@ shortcuts to the left of `Dir`.
 
 Thirteen built-in buttons. Four sit in the top-right corner, beside the status
 line, `X` flush against the corner: `D` `R` `M` `X`. The other nine are in the
-same grid as the icons, in a fixed order from the left: `Dir` `Alp` `Mon` `Vol`
-`A/V` `Set` `Clip` `Note` `C`. Each carries a short word rather than a single capital, three of
+same grid as the icons, in two lines from the left: `A/V` `Vol` `Mon` `Alp`,
+then `Dir` `Set` `Clip` `Note` `C`. Each carries a short word rather than a single capital, three of
 them open a box instead of doing something outright, and three —
 `Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
 

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **The grid's buttons are two lines**: `A/V` `Vol` `Mon` `Alp`, and under
+  them `Dir` `Set` `Clip` `Note` `C`, each line starting a row of its own. With
+  the shortcuts sharing rows (`group_rows=0`) the second line ends in the
+  bottom-right corner and the first ends at the row above it.
+
 ## [v0.17.20] - 2026-10-15
 
 ### Added

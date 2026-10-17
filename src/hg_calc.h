@@ -30,6 +30,10 @@ static inline int hg_calc_scale(int x)
  * all floor there. */
 #define HG_GRID_HEADER_BUTTONS 4
 #define HG_GRID_MIN_COLS (HG_GRID_HEADER_BUTTONS + 2)
+/* The grid's buttons are two lines (owner's request, 2026-10-17): the first
+ * HG_GRID_BUTTON_BREAK in reading order - A/V Vol Mon Alp, the ones that are
+ * read and turned - then a break, then the rest, Dir Set Clip Note C. */
+#define HG_GRID_BUTTON_BREAK 4
 
 int hg_clamp_alpha(int alpha);
 int hg_snap_width_for_cols(int cols, int icon_size);
@@ -82,6 +86,12 @@ HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
  * first button in the very last cell, so the run ends in the bottom-right
  * corner.
  *
+ * `line` (when above 0 and below the button count) breaks the buttons in two:
+ * that many, in reading order, then the rest on a row of their own. Grouped,
+ * both lines start at a row's left edge. Not grouped, the second line ends in
+ * the bottom-right corner, the cells left of it on its first row stay empty,
+ * and the run of shortcuts and the first line ends at the row above it.
+ *
  * The first `header` buttons are not in the grid at all: they sit in the strip
  * above it, the first of them flush right and the rest leftwards from it. They
  * have cells of their own past the grid's - `cells + slot` - so the arrows can
@@ -101,21 +111,23 @@ typedef struct HgGrid {
     int grouped;
     int shortcut_first; /* the leftmost shortcut's cell */
     int button_first;   /* the cell of the leftmost button, which is the last by index */
+    int line;           /* the buttons on the first line; the rest are on the second */
+    int button_second;  /* the cell of the second line's leftmost button */
 } HgGrid;
 
 enum { HG_GRID_TASK = 0, HG_GRID_BUTTON = 1 };
 enum { HG_GRID_LEFT = 0, HG_GRID_RIGHT, HG_GRID_UP, HG_GRID_DOWN };
 
 /* The rows that many items need at that many columns. Never less than 1. */
-int hg_calc_grid_rows(int cols, int tasks, int shortcuts, int buttons, int grouped);
+int hg_calc_grid_rows(int cols, int tasks, int shortcuts, int buttons, int line, int grouped);
 /* The fewest columns at which they fit in target_rows rows - or, when no width
  * gets them into so few, the width at which they take the fewest rows. Never
  * fewer than HG_GRID_MIN_COLS. */
-int hg_calc_grid_cols_for_rows(int target_rows, int tasks, int shortcuts, int buttons, int grouped);
+int hg_calc_grid_cols_for_rows(int target_rows, int tasks, int shortcuts, int buttons, int line, int grouped);
 /* The grid at that many columns, at least visible_rows tall. `buttons` counts
  * only the grid's own buttons; `header` more come before them by index. */
-void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int buttons, int header, int grouped,
-                  HgGrid *out);
+void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int buttons, int line, int header,
+                  int grouped, HgGrid *out);
 /* An item's cell, or -1. type is HG_GRID_TASK with the task's index, or
  * HG_GRID_BUTTON with a button's index - the header's first (cells + index),
  * then the grid's - and, past the last button, a shortcut's

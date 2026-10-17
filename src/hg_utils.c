@@ -1028,13 +1028,13 @@ int hg_toolbar_grid_item_count(void)
 int hg_toolbar_rows_for_cols(int cols)
 {
     return hg_calc_grid_rows(cols, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_TOOLBAR_GRID_BUTTONS,
-                             hg_g_taskbox_group_rows);
+                             HG_GRID_BUTTON_BREAK, hg_g_taskbox_group_rows);
 }
 
 int hg_toolbar_cols_for_rows(int target_rows)
 {
     return hg_calc_grid_cols_for_rows(target_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(),
-                                      HG_TOOLBAR_GRID_BUTTONS, hg_g_taskbox_group_rows);
+                                      HG_TOOLBAR_GRID_BUTTONS, HG_GRID_BUTTON_BREAK, hg_g_taskbox_group_rows);
 }
 
 int hg_toolbar_header_height(int icon_size)
@@ -1091,7 +1091,7 @@ void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)
         visible_rows = 1;
 
     hg_calc_grid(cols, visible_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_TOOLBAR_GRID_BUTTONS,
-                 HG_GRID_HEADER_BUTTONS, hg_g_taskbox_group_rows, out);
+                 HG_GRID_BUTTON_BREAK, HG_GRID_HEADER_BUTTONS, hg_g_taskbox_group_rows, out);
 }
 
 /* item_type 0 is a task icon. item_type 1 is a function button, or - past the

@@ -151,7 +151,8 @@
 /* The buttons, in index order. The first HG_GRID_HEADER_BUTTONS (hg_calc.h)
  * are in the strip at the top of the taskbox, beside the status line, index 0
  * flush right: it reads D R M X, X in the corner. The rest are the row in the grid, where the
- * highest index is leftmost, so it reads Dir Alp Mon Vol A/V Set Clip Note C.
+ * highest index is leftmost, in two lines (HG_GRID_BUTTON_BREAK): A/V Vol Mon
+ * Alp, then Dir Set Clip Note C.
  * (Where the row sits - flowing from the left of rows of its own, or ending in
  * the bottom-right cell - is the grid's business: see HgGrid in hg_calc.h.)
  *
@@ -171,11 +172,11 @@
 #define HG_TOOL_ICON_NOTE 5
 #define HG_TOOL_ICON_CLIP 6
 #define HG_TOOL_ICON_SETTINGS 7
-#define HG_TOOL_ICON_MENU 8
-#define HG_TOOL_ICON_VOLUME 9
+#define HG_TOOL_ICON_DIR 8
+#define HG_TOOL_ICON_ALPHA 9
 #define HG_TOOL_ICON_MONITOR 10
-#define HG_TOOL_ICON_ALPHA 11
-#define HG_TOOL_ICON_DIR 12
+#define HG_TOOL_ICON_VOLUME 11
+#define HG_TOOL_ICON_MENU 12
 
 /* A shortcut's button id: past the row, so activate_toolbar_item can tell the
  * two apart. A shortcut is an item of the grid (type 1) under this id. */
