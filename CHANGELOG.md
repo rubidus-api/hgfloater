@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [v0.17.21] - 2026-10-17
 
 ### Changed
 - **The grid's buttons are two lines**: `A/V` `Vol` `Mon` `Alp`, and under
