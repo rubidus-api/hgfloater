@@ -11,6 +11,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   them `Dir` `Set` `Clip` `Note` `C`, each line starting a row of its own. With
   the shortcuts sharing rows (`group_rows=0`) the second line ends in the
   bottom-right corner and the first ends at the row above it.
+- **The Command Box button reads `Cmd`**, where it read `C`. The key that opens
+  the box is still `C`.
+- **`A/V` opens its list on hover**, and when the arrows land on it, like `Dir`
+  and `Set`. It used to open only when chosen, because the list is assembled as
+  it opens (the audio endpoints and every display's scaling).
+
+### Fixed
+- **Button words are no longer clipped at their edges.** A word is sized to the
+  button's plate but was drawn into the narrower icon square inside it, so the
+  outer letters of the wider ones lost a sliver - `Mon` read as `Vlon`. And on a
+  button that wears its key (`A/V`, `Clip`, `Note`, `Cmd`, `X`) the word now sits
+  below the key's badge instead of under it.
 
 ## [v0.17.20] - 2026-10-15
 

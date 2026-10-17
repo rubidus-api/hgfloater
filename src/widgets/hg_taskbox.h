@@ -121,8 +121,8 @@ typedef struct HgMenuRow {
 } HgMenuRow;
 
 /* Fills rows and answers how many. Building this enumerates the audio endpoints
- * and asks every display for its scaling, so it belongs to a deliberate act -
- * see taskbox_button_box_opens_on_arrival. */
+ * and asks every display for its scaling, which is why it was once kept off the
+ * hover - see taskbox_button_box_opens_on_arrival. */
 int hg_menu_build_rows(HgMenuRow *rows, int max_rows);
 void activate_taskbar_item(int index);
 void update_focus_message(int override_type, int override_index);

@@ -34,8 +34,8 @@ int taskbox_track_owned_popup_menu(HMENU h_menu, UINT flags, int x, int y, HWND 
  * without a parent above it to lean on.
  *
  * Assembling this costs something real: the audio endpoints are enumerated
- * through COM and every display is asked for its scaling. That is why nothing
- * builds it on a hover - see taskbox_button_box_opens_on_arrival. */
+ * through COM and every display is asked for its scaling. It is built on a
+ * hover all the same since 2026-10-17 - see taskbox_button_box_opens_on_arrival. */
 static int menu_add_row(HgMenuRow *rows, int max_rows, int count, const WCHAR *label, UINT id, BOOL enabled,
                         BOOL checked)
 {

@@ -371,7 +371,7 @@ to find against a busy one. The accent is nudged toward the middle of its range
 first, because a very pale accent disappears on white and a very dark one
 disappears on black, and this line has to hold on both.
 
-**The function buttons wear the same badge**, for the same reason: `C` shows
+**The function buttons wear the same badge**, for the same reason: `Cmd` shows
 `C`, `Note` shows `N`, `Clip` shows `CL`, `A/V` shows `CO`, `X` shows `CQ`. The
 modifiers are their initials in a fixed order — `C`trl, `A`lt, `S`hift, `W`in —
 so `CN` is `Ctrl + N` and `CSR` is `Ctrl + Shift + R`. A button no chord reaches
@@ -514,7 +514,7 @@ onto the next, so with twelve columns thirteen windows take two rows and the
 shortcuts still begin on a fresh one. A group with nothing in it takes no row.
 The buttons are two lines, each starting a row of its own: `A/V` `Vol` `Mon`
 `Alp` - the ones that are read and turned - and under them `Dir` `Set` `Clip`
-`Note` `C`. When the taskbox is taller than it needs to be, the spare rows fall above
+`Note` `Cmd`. When the taskbox is taller than it needs to be, the spare rows fall above
 the buttons.
 
 The arrow keys walk all three: `Right` off the last window lands on the first
@@ -528,8 +528,8 @@ This is the default. **Windows, Shortcuts, Buttons by Row** in the `Set` list
 or the [settings window](#71-the-settings-window) switches it off
 (`[taskbox] group_rows=0`, or `write option grouprows off`): everything then
 shares rows. The windows fill from the first cell, and the shortcuts and the
-buttons end in the bottom-right corner: `Dir` `Set` `Clip` `Note` `C` on the
-last row, ending in the corner with `C`, and the shortcuts and `A/V` `Vol`
+buttons end in the bottom-right corner: `Dir` `Set` `Clip` `Note` `Cmd` on the
+last row, ending in the corner with `Cmd`, and the shortcuts and `A/V` `Vol`
 `Mon` `Alp` one run ending at the row above - the shortcuts to the left of
 `A/V`.
 
@@ -545,7 +545,7 @@ last row, ending in the corner with `C`, and the shortcuts and `A/V` `Vol`
 Thirteen built-in buttons. Four sit in the top-right corner, beside the status
 line, `X` flush against the corner: `D` `R` `M` `X`. The other nine are in the
 same grid as the icons, in two lines from the left: `A/V` `Vol` `Mon` `Alp`,
-then `Dir` `Set` `Clip` `Note` `C`. Each carries a short word rather than a single capital, three of
+then `Dir` `Set` `Clip` `Note` `Cmd`. Each carries a short word rather than a single capital, three of
 them open a box instead of doing something outright, and three —
 `Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
 
@@ -554,7 +554,7 @@ and four to six letters are stacked on two, at a size the button can hold. The
 alternative — shrinking a long word until it fits across — ends at a size nobody
 can read.
 
-**A button's tooltip names its key.** Hovering `C` reads
+**A button's tooltip names its key.** Hovering `Cmd` reads
 `Command Box  (C, Ctrl+E)`; a button that no chord reaches says only what it
 does.
 The chords come from the [key table](#13-configuration-file) as the tooltip is
@@ -566,7 +566,7 @@ built, so a key you rebind is the key the tooltip shows.
 | **`M`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
 | **`X`** Exit | Quits HGFloater. | — |
 | **`D`** Desktop | Minimizes every window; click again to restore. | — |
-| **`C`** Command | Opens the [Command Box](#8-the-command-box). | — |
+| **`Cmd`** Command | Opens the [Command Box](#8-the-command-box). | — |
 | **`Note`** Note | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Set`** Settings | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
@@ -667,13 +667,10 @@ is — the same box `Dir` and `Set` use, in the
 same place, answering the same keys. Click it, press `Space` on it, or press
 `Ctrl + O`. Right-clicking the status line opens the same list.
 
-**Unlike `Dir` and `Set`, it does not open on hover**, and that is deliberate.
-Those two read a list already in memory and values already cached, so opening
-either on a passing pointer costs nothing. This one is assembled by enumerating
-the audio endpoints through COM and asking every display for its scaling — real
-work with real latency — and a pointer sweeping across the toolbar, or the
-arrows walking past the button, should not set that off. It opens when it is
-chosen.
+**Like `Dir` and `Set`, it opens on hover** — and when the arrows land on it.
+It is assembled as it opens, by enumerating the audio endpoints and asking every
+display for its scaling, so on a machine with many of either it can take a
+moment longer to appear than the other two.
 
 **Every submenu is flattened into that one list**, each row carrying the path
 that led to it:
@@ -1029,7 +1026,7 @@ follows — `Alt + Wheel` sets this window's opacity, `Alt + arrows` move it, an
 
 ## 8. The Command Box
 
-A standalone console window, opened with the `C` toolbar button or the `C` key
+A standalone console window, opened with the `Cmd` toolbar button or the `C` key
 while the floater or taskbox has focus.
 
 **The keyboard goes to the input box** the moment the window opens, and again

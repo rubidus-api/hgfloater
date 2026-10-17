@@ -386,19 +386,17 @@ void hg_keyboard_mode_check_pointer(void)
  * keyboard arriving) asks these rather than repeating the mapping, because
  * three copies of it is how one of them ends up disagreeing. */
 
-/* ...but only two of them are free to build.
+/* ...and all three open on arrival.
  *
- * Dir reads a list already in memory and Set reads values already cached,
- * so opening either on a passing pointer costs nothing. The options list is not
- * like that: assembling it enumerates the audio endpoints through COM and asks
- * every display for its scaling, which is real work with real latency. Sweeping
- * the pointer across the toolbar - or walking the grid with the arrows - must
- * not set that off. So Opt opens when it is chosen, the way its menu always
- * did, and Dir and Set keep opening on arrival. */
+ * Dir reads a list already in memory and Set reads values already cached. The
+ * A/V list costs more - assembling it enumerates the audio endpoints through
+ * COM and asks every display for its scaling - and until 2026-10-17 it opened
+ * only when chosen for that reason. The owner asked for it to open on a hover
+ * like the other two, and a button that answers the pointer differently from
+ * its neighbours is the bigger surprise. */
 BOOL taskbox_button_box_opens_on_arrival(int index)
 {
-    return taskbox_box_mode_for_button(index) >= 0 &&
-           hg_toolbar_builtin_click_role(index) != HG_TOOLBAR_CLICK_OPEN_MENU;
+    return taskbox_box_mode_for_button(index) >= 0;
 }
 
 int taskbox_box_mode_for_button(int index)
@@ -1179,7 +1177,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
                 hg_hilite_hide();
             }
             /* A function button with a list of its own opens it on arrival
-             * too. Pointing at Dir or Set opens it; landing on them with the
+             * too. Pointing at Dir, Set or A/V opens it; landing on them with the
              * arrows is the same arrival, and a list that needed a second key
              * from the keyboard and none from the mouse would be two rules
              * where there is one. */

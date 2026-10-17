@@ -164,14 +164,18 @@ static void toolbar_draw_state_border(HDC hdc, const RECT *rc)
  * costs a character, and a square box would either clip it or force a font too
  * small to read. It stays half an icon tall, which is what keeps it a badge
  * rather than a second label. */
+static int toolbar_badge_height(int icon_size)
+{
+    int badge_h = icon_size / 2;
+    return (badge_h < SC(10)) ? SC(10) : badge_h;
+}
+
 static void toolbar_draw_badge(HDC dc, const RECT *rc_item, const WCHAR *text, int icon_size)
 {
     if (!dc || !rc_item || !text || !*text || !hg_g_toolbar_badge_font)
         return;
 
-    int badge_h = icon_size / 2;
-    if (badge_h < SC(10))
-        badge_h = SC(10);
+    int badge_h = toolbar_badge_height(icon_size);
 
     HFONT old_badge = (HFONT)SelectObject(dc, hg_g_toolbar_badge_font);
 
@@ -336,8 +340,27 @@ static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, c
     const WCHAR *btn_text = hg_toolbar_builtin_label(index);
     WCHAR stacked[16];
     int lines = toolbar_label_lines(btn_text, stacked, HG_ARRAYSIZE(stacked));
+    /* A button that wears its key has the badge over its top-left corner, and
+     * a word centred on the whole square lost its first letter under it - the
+     * A of A/V, the C of Cmd. Those words sit in what is left below the badge,
+     * down to the plate's inner edge. */
+    /* The word is fitted to the plate's width, so it is drawn across the
+     * plate rather than the icon square inside it: DrawText clips to its box,
+     * and a word wider than the square lost an edge of its outer letters. */
+    RECT text_rc = *rc_item;
+    text_rc.left = rc_btn->left + SC(1);
+    text_rc.right = rc_btn->right - SC(1);
+    WCHAR badge[8];
+    if (hg_toolbar_builtin_badge_text(index, badge, HG_ARRAYSIZE(badge))) {
+        text_rc.top = rc_item->top - SC(2) + toolbar_badge_height(rc_item->bottom - rc_item->top);
+        text_rc.bottom = rc_btn->bottom - SC(2);
+        if (text_rc.bottom - text_rc.top < SC(7)) {
+            text_rc.top = rc_item->top;
+            text_rc.bottom = rc_item->bottom;
+        }
+    }
     HFONT label_font =
-        toolbar_label_font(dc, btn_text, rc_btn->right - rc_btn->left, rc_item->bottom - rc_item->top, lines);
+        toolbar_label_font(dc, btn_text, rc_btn->right - rc_btn->left, text_rc.bottom - text_rc.top, lines);
     if (!label_font)
         label_font = hg_g_toolbar_btn_font;
     if (!label_font)
@@ -350,7 +373,6 @@ static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, c
      * button rather than above or below its middle. */
     UINT format = (lines > 1) ? (DT_CENTER | DT_VCENTER | DT_EDITCONTROL | DT_WORDBREAK)
                               : (DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    RECT text_rc = *rc_item;
     draw_outlined_text(dc, stacked, lstrlenW(stacked), &text_rc, format, HG_COLOR_TEXT_DEFAULT,
                        HG_COLOR_BG_DEFAULT);
     SelectObject(dc, old_font);
@@ -796,7 +818,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         } else {
             hg_hilite_hide();
         }
-        /* Dir, Set and Opt carry lists of their own, opened by pointing at
+        /* Dir, Set and A/V carry lists of their own, opened by pointing at
          * them - the same gesture, the same box, placed the same way clear of
          * the button. */
         int list_button = -1;
