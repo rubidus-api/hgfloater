@@ -72,3 +72,5 @@ cloudflare*.env
 /*_host
 /scripts/sot-check.sh
 /scripts/readme-topline.sh
+/scripts/claim.sh
+/scripts/install-hook.sh
