@@ -29,7 +29,8 @@ static inline int hg_calc_scale(int x)
  * HG_GRID_MIN_COLS: the snap width, the columns a width holds and the columns
  * a row count asks for all floor there. */
 #define HG_GRID_MIN_COLS 6
-/* The grid's buttons are two lines (owner's request, 2026-10-17): the first
+/* Grouped, the grid's buttons are two lines (owner's request, 2026-10-17; the
+ * separated default since 2026-11-08 passes no break): the first
  * HG_GRID_BUTTON_BREAK in reading order - A/V Vol Mon Alp, the ones that are
  * read and turned - then a break, then the rest, Dir Set Clip Note Cmd D R M X. */
 #define HG_GRID_BUTTON_BREAK 4
@@ -123,9 +124,17 @@ typedef struct HgGrid {
     int button_first;   /* the cell of the leftmost button, which is the last by index */
     int line;           /* the buttons on the first line; the rest are on the second */
     int button_second;  /* the cell of the second line's leftmost button */
+    int separator_tasks;   /* separated: the cell between the tasks and the run, or -1 */
+    int separator_buttons; /* separated: the cell between the shortcuts and the buttons, or -1 */
 } HgGrid;
 
 enum { HG_GRID_TASK = 0, HG_GRID_BUTTON = 1 };
+/* The `grouped` argument. SEPARATED is the shared layout with a separator cell
+ * between neighbouring kinds (owner's request, 2026-11-08): the tasks from the
+ * first cell, then a gap, then separator, shortcuts, separator, buttons ending
+ * in the last cell. A separator is an empty cell to every query but
+ * hg_calc_grid_is_separator: nothing is in it and the arrows step over it. */
+enum { HG_GRID_SHARED = 0, HG_GRID_GROUPED = 1, HG_GRID_SEPARATED = 2 };
 enum { HG_GRID_LEFT = 0, HG_GRID_RIGHT, HG_GRID_UP, HG_GRID_DOWN };
 
 /* The rows that many items need at that many columns. Never less than 1. */
@@ -138,6 +147,8 @@ int hg_calc_grid_cols_for_rows(int target_rows, int tasks, int shortcuts, int bu
  * only the grid's own buttons; `header` more come before them by index. */
 void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int buttons, int line, int header,
                   int grouped, HgGrid *out);
+/* Nonzero when the cell is one of a separated grid's separators. */
+int hg_calc_grid_is_separator(const HgGrid *grid, int cell);
 /* An item's cell, or -1. type is HG_GRID_TASK with the task's index, or
  * HG_GRID_BUTTON with a button's index - the header's first (cells + index),
  * then the grid's - and, past the last button, a shortcut's

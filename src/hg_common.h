@@ -148,9 +148,9 @@
 #define HG_MAX_AUDIO_DEVICES 16
 #define HG_NUM_BASIC_ICONS 13
 
-/* The buttons, in index order. On the grid the highest index is leftmost, in
- * two lines (HG_GRID_BUTTON_BREAK): A/V Vol Mon Alp, then Dir Set Clip Note Cmd
- * D R M X, index 0 - X - in the bottom-right corner. (D R M X sat in the strip
+/* The buttons, in index order. On the grid the highest index is leftmost, one
+ * run (or, grouped, two lines - HG_GRID_BUTTON_BREAK): A/V Vol Mon Alp, then
+ * Dir Set Clip Note Cmd D R M X, index 0 - X - in the bottom-right corner. (D R M X sat in the strip
  * beside the status line from 2026-10-14 to 2026-11-07.) Where the lines sit is
  * the grid's business: see HgGrid in hg_calc.h.
  *
@@ -267,6 +267,10 @@
 #define HG_TIMER_HIGHLIGHT 1001
 #define HG_TIMER_HOVER_CHECK 1002
 #define HG_TIMER_FLOATER_BLINK 1004
+/* Fast check that the floater is still above a taskbar it overlaps; armed only
+ * while it overlaps one (hg_floater_keep_above_taskbar). */
+#define HG_TIMER_FLOATER_TASKBAR 1005
+#define HG_FLOATER_TASKBAR_CHECK_MS 200
 /* One shot, a moment after a theme broadcast: see hg_theme_settle_later(). */
 #define HG_TIMER_THEME_SETTLE 1003
 #define HG_HIGHLIGHT_TICKS 6

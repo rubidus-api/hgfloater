@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **The taskbox grid has no line breaks.** Your windows fill from the top-left
+  corner, and the shortcuts and all thirteen buttons are one run ending in the
+  bottom-right corner, `X` there, with empty cells between - so the buttons
+  stay put however many windows are open. A hatched cell marks the border
+  between the windows and the shortcuts, and between the shortcuts and the
+  buttons. **Windows, Shortcuts, Buttons by Row** still gives each kind rows of
+  its own; it is now off by default and kept under a new key,
+  `[taskbox] rows_by_group` (the old `group_rows` is no longer read).
+- **The floater can sit on the taskbar, and stays above it there.** Dragging no
+  longer stops at the work area's edge, and a floater on the taskbar puts
+  itself back on top within a fifth of a second whenever the taskbar is
+  clicked. It keeps its place across a restart and after the taskbox folds.
+
 ## [v0.17.23] - 2026-11-07
 
 ### Added

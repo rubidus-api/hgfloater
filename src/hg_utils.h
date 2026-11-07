@@ -262,6 +262,8 @@ void hg_document_set_page_alpha(int page, BYTE alpha);
 void hg_document_apply_page_alpha(HWND hwnd, int page);
 BOOL hg_step_alpha_value(BYTE *alpha, int delta);
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect);
+/* The rect of one grid cell; empty for a cell outside the grid. */
+void get_toolbar_cell_rect(const HgGrid *grid, int cell_index, int icon_size, RECT *out_rect);
 typedef enum HgToolbarTextMode {
     HG_TOOLBAR_TEXT_FOCUS = 0,
     HG_TOOLBAR_TEXT_TOOLTIP = 1

@@ -279,8 +279,11 @@ void hide_taskbox(HWND hwnd)
             SecureZeroMemory(&mi, sizeof(mi));
             mi.cbSize = sizeof(mi);
             RECT work = {0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)};
+            /* The whole monitor, not its work area: the floater may sit on the
+             * taskbar (R1.5), and the work area would pull it off at every
+             * collapse. The taskbox itself stays in the work area. */
             if (GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi))
-                work = mi.rcWork;
+                work = mi.rcMonitor;
 
             HgBox home = {hg_g_floater_home_rect.left, hg_g_floater_home_rect.top,
                           hg_g_floater_home_rect.left + fw, hg_g_floater_home_rect.top + fh};
@@ -322,6 +325,7 @@ void hide_taskbox(HWND hwnd)
         hg_floater_refresh_surface();
         if (take_foreground)
             SetForegroundWindow(hg_g_floater_wnd);
+        hg_floater_keep_above_taskbar(hg_g_floater_wnd);
         save_floater_geometry_config(fx, fy, fw, fh);
         hg_g_floater_home_valid = FALSE;
     }

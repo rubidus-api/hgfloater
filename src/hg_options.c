@@ -166,7 +166,7 @@ BOOL hg_option_set(int number, BOOL value, const WCHAR **out_message)
         break;
     case HG_OPTION_GROUP_ROWS:
         hg_g_taskbox_group_rows = value;
-        WritePrivateProfileStringW(L"taskbox", L"group_rows", value ? L"1" : L"0", hg_g_config_path);
+        WritePrivateProfileStringW(L"taskbox", L"rows_by_group", value ? L"1" : L"0", hg_g_config_path);
         hg_taskbox_grid_changed();
         if (out_message)
             *out_message = value ? L"Taskbox: windows, shortcuts and buttons each start a row"
@@ -229,8 +229,12 @@ void hg_options_load(void)
         (GetPrivateProfileIntW(L"taskbox", L"open_on_hover", 0, hg_g_config_path) != 0);
     hg_g_window_outline = (GetPrivateProfileIntW(L"taskbox", L"window_outline", 1, hg_g_config_path) != 0);
     hg_g_tabbox_on_hover = (GetPrivateProfileIntW(L"taskbox", L"tab_box", 1, hg_g_config_path) != 0);
-    /* On unless the file says otherwise, and written back so the key is there
-     * to be found. */
-    hg_g_taskbox_group_rows = (GetPrivateProfileIntW(L"taskbox", L"group_rows", 1, hg_g_config_path) != 0);
-    WritePrivateProfileStringW(L"taskbox", L"group_rows", hg_g_taskbox_group_rows ? L"1" : L"0", hg_g_config_path);
+    /* Off unless the file says otherwise, and written back so the key is there
+     * to be found. Until 2026-11-08 this was [taskbox] group_rows, on by
+     * default and written back on every start - so every file has group_rows=1
+     * in it, and reading that would keep the rows the owner asked to be rid
+     * of. The new key starts from the new default and the old one is removed. */
+    hg_g_taskbox_group_rows = (GetPrivateProfileIntW(L"taskbox", L"rows_by_group", 0, hg_g_config_path) != 0);
+    WritePrivateProfileStringW(L"taskbox", L"rows_by_group", hg_g_taskbox_group_rows ? L"1" : L"0", hg_g_config_path);
+    WritePrivateProfileStringW(L"taskbox", L"group_rows", NULL, hg_g_config_path);
 }

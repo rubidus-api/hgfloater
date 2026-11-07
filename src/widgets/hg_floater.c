@@ -869,6 +869,66 @@ void hg_floater_clock_changed(void)
     InvalidateRect(hwnd, NULL, TRUE);
 }
 
+/* A visible taskbar window - the primary one or one of the other monitors' -
+ * that overlaps rc. Explorer restarting gives them new handles, so they are
+ * looked up each time rather than kept. */
+static BOOL floater_taskbar_overlapping(const RECT *rc, HWND *out_bars, int max_bars, int *out_count)
+{
+    static const WCHAR *const classes[] = {L"Shell_TrayWnd", L"Shell_SecondaryTrayWnd"};
+    int count = 0;
+    for (int c = 0; c < (int)HG_ARRAYSIZE(classes); ++c) {
+        HWND bar = NULL;
+        while ((bar = FindWindowExW(NULL, bar, classes[c], NULL)) != NULL) {
+            RECT bar_rc, overlap;
+            if (!IsWindowVisible(bar) || !GetWindowRect(bar, &bar_rc))
+                continue;
+            if (!IntersectRect(&overlap, rc, &bar_rc))
+                continue;
+            if (count < max_bars)
+                out_bars[count++] = bar;
+        }
+    }
+    *out_count = count;
+    return count > 0;
+}
+
+void hg_floater_keep_above_taskbar(HWND hwnd)
+{
+    if (!hwnd || !IsWindow(hwnd))
+        return;
+    HWND bars[8];
+    int count = 0;
+    RECT rc;
+    BOOL on_bar = IsWindowVisible(hwnd) && GetWindowRect(hwnd, &rc) &&
+                  floater_taskbar_overlapping(&rc, bars, (int)HG_ARRAYSIZE(bars), &count);
+    if (!on_bar) {
+        KillTimer(hwnd, HG_TIMER_FLOATER_TASKBAR);
+        return;
+    }
+    SetTimer(hwnd, HG_TIMER_FLOATER_TASKBAR, HG_FLOATER_TASKBAR_CHECK_MS, NULL);
+
+    /* Raised only when a taskbar is actually above it: walking up the z-order
+     * from the floater crosses only the topmost windows over it, a short walk,
+     * and a SetWindowPos every tick would send the floater position messages
+     * five times a second for nothing. The walk is bounded in case the chain
+     * changes under it. */
+    BOOL below = FALSE;
+    HWND above = hwnd;
+    for (int steps = 0; steps < 512 && !below; ++steps) {
+        above = GetWindow(above, GW_HWNDPREV);
+        if (!above)
+            break;
+        for (int i = 0; i < count; ++i) {
+            if (above == bars[i]) {
+                below = TRUE;
+                break;
+            }
+        }
+    }
+    if (below)
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+}
+
 static LRESULT floater_controller_on_create(HWND hwnd)
 {
     hg_g_shellhook_msg = RegisterWindowMessageW(L"SHELLHOOK");
@@ -1355,6 +1415,7 @@ static LRESULT floater_controller_on_destroy(HWND hwnd)
     DeregisterShellHookWindow(hwnd);
     KillTimer(hwnd, HG_TIMER_FLOATER_CLOCK);
     KillTimer(hwnd, HG_TIMER_FLOATER_BLINK);
+    KillTimer(hwnd, HG_TIMER_FLOATER_TASKBAR);
     KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
     if (hg_g_about_wnd && IsWindow(hg_g_about_wnd)) {
         DestroyWindow(hg_g_about_wnd);
@@ -1531,6 +1592,7 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 /* Placing the floater is not a click: it must neither toggle
                  * the taskbox nor drop out of the mode being worked in. */
                 move_drag_active = FALSE;
+                hg_floater_keep_above_taskbar(hwnd);
                 return 0;
             }
             if (font_drag_active) {
@@ -1579,7 +1641,14 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         return 0;
     }
     case WM_TIMER: {
+        if (w_param == HG_TIMER_FLOATER_TASKBAR) {
+            hg_floater_keep_above_taskbar(hwnd);
+            return 0;
+        }
         if (w_param == HG_TIMER_FLOATER_CLOCK) {
+            /* Once a second whether or not the floater moved: a taskbar can
+             * come to it too - moved, resized, or shown from auto-hide. */
+            hg_floater_keep_above_taskbar(hwnd);
             /* On the floater's clock rather than the taskbox's refresh: that one
              * only runs while the taskbox is visible, and the taskbox is hidden
              * most of the time. This timer runs for the life of the program,
@@ -1757,6 +1826,10 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                 if (found && hg_g_toolbar_wnd) {
                     InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
                 }
+            } else if (w_param == HSHELL_WINDOWACTIVATED || w_param == HSHELL_RUDEAPPACTIVATED) {
+                /* Activation can put the taskbar over the floater; answer it
+                 * now rather than at the next timer tick. */
+                hg_floater_keep_above_taskbar(hwnd);
             } else if (w_param == HSHELL_WINDOWCREATED || w_param == HSHELL_WINDOWDESTROYED ||
                        w_param == HSHELL_WINDOWREPLACED) {
                 if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {

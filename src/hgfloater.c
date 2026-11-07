@@ -299,19 +299,21 @@ void ensure_window_visible(HWND hwnd, const WCHAR *section)
     mi.cbSize = sizeof(mi);
     if (GetMonitorInfoW(monitor_handle, &mi)) {
         /* 가장 가까운 모니터의 작업 영역(Work Area) 안으로 클램프. 절대 (0,0)으로
-         * 스냅하면 음수 좌표 멀티모니터 배치에서 주 모니터로 점프해 버린다. */
+         * 스냅하면 음수 좌표 멀티모니터 배치에서 주 모니터로 점프해 버린다.
+         * floater 만은 모니터 전체: 작업 표시줄 위에도 놓일 수 있다(R1.5). */
+        const RECT *area = (hwnd == hg_g_floater_wnd) ? &mi.rcMonitor : &mi.rcWork;
         int w = rc.right - rc.left;
         int h = rc.bottom - rc.top;
         int x = rc.left;
         int y = rc.top;
-        if (x + w > mi.rcWork.right)
-            x = mi.rcWork.right - w;
-        if (y + h > mi.rcWork.bottom)
-            y = mi.rcWork.bottom - h;
-        if (x < mi.rcWork.left)
-            x = mi.rcWork.left;
-        if (y < mi.rcWork.top)
-            y = mi.rcWork.top;
+        if (x + w > area->right)
+            x = area->right - w;
+        if (y + h > area->bottom)
+            y = area->bottom - h;
+        if (x < area->left)
+            x = area->left;
+        if (y < area->top)
+            y = area->top;
         if (x != rc.left || y != rc.top) {
             SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
             if (section)
@@ -351,12 +353,17 @@ static void place_floater_for_startup(int *x, int *y, int w, int h)
     home_mi.cbSize = sizeof(home_mi);
     BOOL visible = home_monitor && GetMonitorInfoW(home_monitor, &home_mi);
     if (!visible)
-        home_mi.rcWork = cursor_mi.rcWork;
+        home_mi.rcMonitor = cursor_mi.rcMonitor;
 
+    /* Whole monitors, not work areas: the floater may sit on the taskbar
+     * (R1.5), and one left there stays there. A floater lost off every monitor
+     * is still centred - on the monitor, which is near enough the work area's
+     * centre. */
     HgBox home = {home_rc.left, home_rc.top, home_rc.right, home_rc.bottom};
-    HgBox home_work = {home_mi.rcWork.left, home_mi.rcWork.top, home_mi.rcWork.right, home_mi.rcWork.bottom};
-    HgBox cursor_work = {cursor_mi.rcWork.left, cursor_mi.rcWork.top, cursor_mi.rcWork.right,
-                         cursor_mi.rcWork.bottom};
+    HgBox home_work = {home_mi.rcMonitor.left, home_mi.rcMonitor.top, home_mi.rcMonitor.right,
+                       home_mi.rcMonitor.bottom};
+    HgBox cursor_work = {cursor_mi.rcMonitor.left, cursor_mi.rcMonitor.top, cursor_mi.rcMonitor.right,
+                         cursor_mi.rcMonitor.bottom};
     HgBox placed = hg_calc_startup_place(home, visible, home_work, cursor_work);
     if (placed.left != *x || placed.top != *y) {
         *x = placed.left;

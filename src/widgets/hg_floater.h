@@ -25,5 +25,11 @@ void update_floater_font_size(int delta);
 /* That size outright, for anything that knows what it wants. */
 void hg_set_floater_font_size(int size);
 void update_floater_alpha(int delta);
+/* The floater may sit on a taskbar (owner's request, 2026-11-08, R1.5), and
+ * there it stays above it: the taskbar is topmost too and climbs over the
+ * floater whenever it is clicked. This puts the floater back on top when a
+ * taskbar it overlaps is above it, and keeps a fast timer running exactly as
+ * long as it overlaps one. Cheap; call it whenever the floater moves or shows. */
+void hg_floater_keep_above_taskbar(HWND hwnd);
 
 #endif /* HG_FLOATER_H */

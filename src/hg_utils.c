@@ -1262,6 +1262,14 @@ int hg_toolbar_grid_shortcuts(void)
 /* Every button is in the grid; the strip above it is the status line alone. */
 #define HG_TOOLBAR_GRID_BUTTONS HG_NUM_BASIC_ICONS
 
+/* Grouped, each kind has rows of its own and the buttons break into their two
+ * lines. Otherwise (the default since 2026-11-08, owner's request) nothing
+ * breaks: the tasks from the top-left, the shortcuts and the buttons as one run
+ * ending in the bottom-right corner, a gap between, and a separator cell
+ * between each pair of neighbouring kinds. */
+#define HG_TOOLBAR_GRID_LINE (hg_g_taskbox_group_rows ? HG_GRID_BUTTON_BREAK : 0)
+#define HG_TOOLBAR_GRID_MODE (hg_g_taskbox_group_rows ? HG_GRID_GROUPED : HG_GRID_SEPARATED)
+
 int hg_toolbar_grid_item_count(void)
 {
     int count = hg_g_window_count + hg_toolbar_grid_shortcuts() + HG_TOOLBAR_GRID_BUTTONS;
@@ -1271,13 +1279,13 @@ int hg_toolbar_grid_item_count(void)
 int hg_toolbar_rows_for_cols(int cols)
 {
     return hg_calc_grid_rows(cols, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_TOOLBAR_GRID_BUTTONS,
-                             HG_GRID_BUTTON_BREAK, hg_g_taskbox_group_rows);
+                             HG_TOOLBAR_GRID_LINE, HG_TOOLBAR_GRID_MODE);
 }
 
 int hg_toolbar_cols_for_rows(int target_rows)
 {
     return hg_calc_grid_cols_for_rows(target_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(),
-                                      HG_TOOLBAR_GRID_BUTTONS, HG_GRID_BUTTON_BREAK, hg_g_taskbox_group_rows);
+                                      HG_TOOLBAR_GRID_BUTTONS, HG_TOOLBAR_GRID_LINE, HG_TOOLBAR_GRID_MODE);
 }
 
 int hg_toolbar_header_height(int icon_size)
@@ -1324,7 +1332,7 @@ void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)
         visible_rows = 1;
 
     hg_calc_grid(cols, visible_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_TOOLBAR_GRID_BUTTONS,
-                 HG_GRID_BUTTON_BREAK, 0, hg_g_taskbox_group_rows, out);
+                 HG_TOOLBAR_GRID_LINE, 0, HG_TOOLBAR_GRID_MODE, out);
 }
 
 /* item_type 0 is a task icon. item_type 1 is a function button, or - past the
@@ -1340,12 +1348,19 @@ void get_toolbar_item_rect(int item_type, int item_index, int width, int height,
 
     HgGrid grid;
     hg_toolbar_grid(width, height, icon_size, &grid);
-    int cell_index = hg_calc_grid_cell(&grid, item_type, item_index);
-    if (cell_index < 0 || cell_index >= grid.cells)
+    get_toolbar_cell_rect(&grid, hg_calc_grid_cell(&grid, item_type, item_index), icon_size, out_rect);
+}
+
+void get_toolbar_cell_rect(const HgGrid *grid, int cell_index, int icon_size, RECT *out_rect)
+{
+    if (!out_rect)
+        return;
+    SetRectEmpty(out_rect);
+    if (!grid || grid->cols <= 0 || cell_index < 0 || cell_index >= grid->cells)
         return;
 
-    int row = cell_index / grid.cols;
-    int col = cell_index % grid.cols;
+    int row = cell_index / grid->cols;
+    int col = cell_index % grid->cols;
 
     out_rect->left = SC(10) + col * (icon_size + SC(15));
     out_rect->top = hg_toolbar_header_height(icon_size) + SC(10) + row * (icon_size + SC(10));

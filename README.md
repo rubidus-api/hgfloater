@@ -204,9 +204,14 @@ if it hangs off the edge, it is pulled back inside.
   its way elsewhere. The click above keeps working from anywhere in every mode.
   **Open the Taskbox on Hover** in the [`Set` list](#62-the-set-button) is
   the same switch, on and off; which part answers is the settings window's.
-- **Left drag** — moves the floater anywhere on any monitor. A press and
+- **Left drag** — moves the floater anywhere on any monitor, the taskbar
+  included. A press and
   release without moving is a click and toggles the taskbox; a few pixels of
-  travel makes it a drag instead. `Alt + drag` does the same and is the one to
+  travel makes it a drag instead. **Parked on the taskbar, it stays above
+  it**: the taskbar climbs over other windows whenever it is clicked, and the
+  floater puts itself back on top straight away (within a fifth of a second),
+  so it can live there like one more part of the taskbar. Its place is kept
+  across restarts, and the dashboard it opens still opens above the taskbar. `Alt + drag` does the same and is the one to
   use with **Open the Taskbox on Hover** switched on, since the dashboard opens
   under the pointer before an ordinary drag can start.
 - **Alt + Wheel** — opacity.
@@ -513,30 +518,29 @@ the line always has room.
 
 ### 5.3 Shape and size
 
-**The grid is three groups, each starting a row of its own:** your windows,
-then your shortcuts, then the buttons. A group that is longer than a row wraps
-onto the next, so with twelve columns thirteen windows take two rows and the
-shortcuts still begin on a fresh one. A group with nothing in it takes no row.
-The buttons are two lines, each starting a row of its own: `A/V` `Vol` `Mon`
-`Alp` - the ones that are read and turned - and under them `Dir` `Set` `Clip`
-`Note` `Cmd`. When the taskbox is taller than it needs to be, the spare rows fall above
-the buttons.
+**The grid has no breaks:** your windows fill from the top-left corner, and
+your shortcuts and the thirteen buttons are one run that ends in the
+bottom-right corner - `A/V` `Vol` `Mon` `Alp` `Dir` `Set` `Clip` `Note` `Cmd`
+`D` `R` `M` `X`, `X` in the corner, and the shortcuts to the left of `A/V`, the
+first one nearest. Whatever room is left over is empty cells between the two,
+so the buttons are always in the same place however many windows are open. A
+**hatched cell** separates each kind from the next: one before the shortcuts,
+one between the shortcuts and the buttons. It is not a button; nothing happens
+when it is clicked.
 
-The arrow keys walk all three: `Right` off the last window lands on the first
-shortcut, off the last shortcut on the first button, and `Up` and `Down` step
-between the groups without stopping in the empty cells. `Up` from the top row
-goes to the button in the strip above it (`D` from anything left of the four),
-`Left` and `Right` walk the four, and `Down` comes back. What a shortcut
-answers to is in [Shortcuts on the grid](#65-shortcuts-on-the-grid).
+The arrow keys walk them all: `Right` off the last window lands on the last
+shortcut, off the first shortcut on `A/V`, and neither the empty cells nor the
+hatched ones cost a key. What a shortcut answers to is in
+[Shortcuts on the grid](#65-shortcuts-on-the-grid).
 
-This is the default. **Windows, Shortcuts, Buttons by Row** in the `Set` list
-or the [settings window](#71-the-settings-window) switches it off
-(`[taskbox] group_rows=0`, or `write option grouprows off`): everything then
-shares rows. The windows fill from the first cell, and the shortcuts and the
-buttons end in the bottom-right corner: `Dir` `Set` `Clip` `Note` `Cmd` on the
-last row, ending in the corner with `Cmd`, and the shortcuts and `A/V` `Vol`
-`Mon` `Alp` one run ending at the row above - the shortcuts to the left of
-`A/V`.
+**Windows, Shortcuts, Buttons by Row** in the `Set` list or the
+[settings window](#71-the-settings-window) gives each kind rows of its own
+instead (`[taskbox] rows_by_group=1`, or `write option grouprows on`): your
+windows, then your shortcuts on a fresh row, then the buttons in two lines -
+`A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd` `D` `R` `M` `X` -
+each ending at the right edge. That was the default until v0.17.23, under the
+key `group_rows`; that key is no longer read, so an older settings file starts
+in the new layout.
 
 - **Drag any border** to change the grid: the taskbox snaps to whole columns, so
   no half icon is ever left hanging.
@@ -1417,7 +1421,7 @@ every wheel notch.
 | `date_format` | The date line's format (`[floater]` only, default `"%a, %b %-d"`) |
 | `blink` | `1` changes the colour of the hours and minutes every half second (`[floater]` only, default `0`) |
 | `open_on_hover` | `1` lets the pointer open the taskbox from the floater (`[taskbox]` only, default `0`) |
-| `group_rows` | `1` starts a new row for the shortcuts and another for the buttons; `0` lets everything share rows, the shortcuts beside the buttons (`[taskbox]` only, default `1`) |
+| `rows_by_group` | `1` starts a new row for the shortcuts and another for the buttons; `0` lets everything share rows with a hatched cell between the kinds, the buttons ending in the bottom-right corner (`[taskbox]` only, default `0`) |
 | `hover_region` | Which part of the clock answers when it is on: `minutes`, `hours` or `both` (`[taskbox]` only, default `minutes`) |
 | `show_tabs` | `1` gives a tabbed application's tabs their own task icons (`[taskbox]` only, default `0`) |
 | `tab_classes` | Extra window classes to look for tabs in, `;`-separated (`[taskbox]` only) |

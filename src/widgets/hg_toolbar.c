@@ -112,6 +112,32 @@ static COLORREF toolbar_button_outline_color(void)
     return RGB(r, g, b);
 }
 
+/* A separator cell: diagonal lines in the outline colour, scaled with the
+ * display so they stay a mark at any DPI. Clipped to the cell. */
+static void toolbar_draw_separator(HDC hdc, const RECT *rc)
+{
+    int width = SC(2);
+    if (width < 1)
+        width = 1;
+    int step = SC(7);
+    if (step < 4)
+        step = 4;
+    HPEN pen = CreatePen(PS_SOLID, width, toolbar_button_outline_color());
+    if (!pen)
+        return;
+    int saved = SaveDC(hdc);
+    IntersectClipRect(hdc, rc->left, rc->top, rc->right, rc->bottom);
+    HGDIOBJ old_pen = SelectObject(hdc, pen);
+    int h = rc->bottom - rc->top;
+    for (int x = rc->left - h; x < rc->right; x += step) {
+        MoveToEx(hdc, x, rc->bottom, NULL);
+        LineTo(hdc, x + h, rc->top);
+    }
+    SelectObject(hdc, old_pen);
+    RestoreDC(hdc, saved);
+    DeleteObject(pen);
+}
+
 static void toolbar_draw_button_outline(HDC hdc, const RECT *rc)
 {
     HBRUSH brush = hg_cached_solid_brush(toolbar_button_outline_color());
@@ -679,6 +705,25 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     WCHAR badge[8];
                     if (hg_toolbar_builtin_badge_text(i, badge, HG_ARRAYSIZE(badge)))
                         toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
+                }
+
+                /* The separators between the kinds (separated grid only):
+                 * hatched, with no plate and no edge, so they read as a mark
+                 * between buttons and never as one more button. Holes of the
+                 * colour key between the lines let the desktop through, the
+                 * same as the rest of this window. */
+                {
+                    HgGrid grid;
+                    hg_toolbar_grid(rc.right, rc.bottom, icon_size, &grid);
+                    int separators[2] = {grid.separator_tasks, grid.separator_buttons};
+                    for (int n = 0; n < 2; ++n) {
+                        RECT rc_sep;
+                        get_toolbar_cell_rect(&grid, separators[n], icon_size, &rc_sep);
+                        if (IsRectEmpty(&rc_sep))
+                            continue;
+                        InflateRect(&rc_sep, SC(4), SC(4));
+                        toolbar_draw_separator(mem_dc, &rc_sep);
+                    }
                 }
 
                 if (drag_state->is_dragging && drag_state->source_index != -1 &&
