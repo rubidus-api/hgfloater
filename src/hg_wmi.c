@@ -640,14 +640,48 @@ static void hg_hp_copy(WCHAR *out, size_t cch, const WCHAR *in)
         lstrcpynW(out, in, (int)cch);
 }
 
-HRESULT hg_hpbios_read(const WCHAR *name, HgHpSetting *out)
+/* The one row a query returns, or NULL - also when it returns two, because
+ * then which one was meant is not known. */
+static IWbemClassObject *hg_hp_only_instance(IWbemServices *services, const WCHAR *wql, BOOL *out_ambiguous)
 {
-    if (!name || !out)
+    *out_ambiguous = FALSE;
+    BSTR language = SysAllocString(L"WQL");
+    BSTR query = SysAllocString(wql);
+    IEnumWbemClassObject *rows = NULL;
+    HRESULT hr = (language && query)
+                     ? services->lpVtbl->ExecQuery(services, language, query,
+                                                   WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &rows)
+                     : E_OUTOFMEMORY;
+    if (language)
+        SysFreeString(language);
+    if (query)
+        SysFreeString(query);
+    if (FAILED(hr) || !rows)
+        return NULL;
+
+    IWbemClassObject *found[2] = {NULL, NULL};
+    ULONG returned = 0;
+    if (FAILED(rows->lpVtbl->Next(rows, HG_HP_TIMEOUT_MS, 2, found, &returned)))
+        returned = 0;
+    HG_RELEASE_COM(rows);
+    if (returned == 1)
+        return found[0];
+    if (returned > 1)
+        *out_ambiguous = TRUE;
+    for (ULONG i = 0; i < returned && i < 2; ++i)
+        HG_RELEASE_COM(found[i]);
+    return NULL;
+}
+
+HRESULT hg_hpbios_read(const WCHAR *name_like, HgHpSetting *out)
+{
+    if (!name_like || !out)
         return E_INVALIDARG;
     ZeroMemory(out, sizeof(*out));
 
     WCHAR wql[160];
-    if (FAILED(StringCchPrintfW(wql, HG_ARRAYSIZE(wql), L"SELECT * FROM HP_BIOSEnumeration WHERE Name='%s'", name)))
+    if (FAILED(StringCchPrintfW(wql, HG_ARRAYSIZE(wql), L"SELECT * FROM HP_BIOSEnumeration WHERE Name LIKE '%s'",
+                                name_like)))
         return E_INVALIDARG;
 
     IWbemServices *services = hg_hp_open();
@@ -655,16 +689,20 @@ HRESULT hg_hpbios_read(const WCHAR *name, HgHpSetting *out)
         return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 
     HRESULT hr = E_FAIL;
-    IWbemClassObject *row = hg_wmi_first_instance_within(services, wql, HG_HP_TIMEOUT_MS);
+    BOOL ambiguous = FALSE;
+    IWbemClassObject *row = hg_hp_only_instance(services, wql, &ambiguous);
     if (row) {
-        VARIANT current, values, read_only;
+        VARIANT name, current, values, read_only;
+        VariantInit(&name);
         VariantInit(&current);
         VariantInit(&values);
         VariantInit(&read_only);
 
-        if (SUCCEEDED(row->lpVtbl->Get(row, L"CurrentValue", 0, &current, NULL, NULL)) && V_VT(&current) == VT_BSTR &&
+        if (SUCCEEDED(row->lpVtbl->Get(row, L"Name", 0, &name, NULL, NULL)) && V_VT(&name) == VT_BSTR &&
+            SUCCEEDED(row->lpVtbl->Get(row, L"CurrentValue", 0, &current, NULL, NULL)) && V_VT(&current) == VT_BSTR &&
             SUCCEEDED(row->lpVtbl->Get(row, L"PossibleValues", 0, &values, NULL, NULL)) &&
             V_VT(&values) == (VT_ARRAY | VT_BSTR) && V_ARRAY(&values)) {
+            hg_hp_copy(out->name, HG_ARRAYSIZE(out->name), V_BSTR(&name));
             hg_hp_copy(out->current, HG_ARRAYSIZE(out->current), V_BSTR(&current));
 
             LONG lo = 0, hi = -1;
@@ -688,12 +726,13 @@ HRESULT hg_hpbios_read(const WCHAR *name, HgHpSetting *out)
             out->read_only = flag != 0;
             hr = S_OK;
         }
+        VariantClear(&name);
         VariantClear(&current);
         VariantClear(&values);
         VariantClear(&read_only);
         HG_RELEASE_COM(row);
     } else {
-        hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        hr = HRESULT_FROM_WIN32(ambiguous ? ERROR_AMBIGUOUS_SYSTEM_DEVICE : ERROR_NOT_FOUND);
     }
     HG_RELEASE_COM(services);
     return hr;

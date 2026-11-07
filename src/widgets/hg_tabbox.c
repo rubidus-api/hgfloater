@@ -83,10 +83,11 @@ typedef struct HgControlRow {
     const WCHAR *label; /* NULL: ask the table that owns the id */
 } HgControlRow;
 
-/* The pin, the three doors, and every option this build knows - available or
- * not. Sized for all of them at once so the list cannot quietly lose its
- * tail. */
-static HgControlRow s_control_rows[8 + 16];
+/* Settings Window and the pin, the eight doors (HP Fn Keys among them on an HP
+ * machine), and every option this build knows - available or not. Sized for
+ * all of them at once with room for options to come, so the list cannot
+ * quietly lose its tail. */
+static HgControlRow s_control_rows[2 + 8 + 16];
 static int s_control_row_count = 0;
 
 /* The options menu, as rows. Built from the menu itself every time the list is

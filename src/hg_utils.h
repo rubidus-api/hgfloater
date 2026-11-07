@@ -121,13 +121,15 @@ int hg_thermal_enumerate(HgThermalZone *out, int max);
 #define HG_HP_VALUES_MAX 8
 #define HG_HP_PASSWORD_MAX 64
 typedef struct HgHpSetting {
+    WCHAR name[HG_HP_VALUE_MAX]; /* as the firmware spells it: what a write must use */
     WCHAR current[HG_HP_VALUE_MAX];
     WCHAR values[HG_HP_VALUES_MAX][HG_HP_VALUE_MAX];
     int value_count;
     BOOL read_only;
 } HgHpSetting;
 BOOL hg_hpbios_machine_is_hp(void); /* the registry's SystemManufacturer, read once */
-HRESULT hg_hpbios_read(const WCHAR *name, HgHpSetting *out);
+/* name_like is a WQL LIKE pattern; exactly one setting must match it. */
+HRESULT hg_hpbios_read(const WCHAR *name_like, HgHpSetting *out);
 HRESULT hg_hpbios_password_is_set(BOOL *out_set);
 HRESULT hg_hpbios_write(const WCHAR *name, const WCHAR *value, const WCHAR *password, unsigned long *out_return);
 /* TRUE when the display hangs off an internal connector (eDP, LVDS, or the

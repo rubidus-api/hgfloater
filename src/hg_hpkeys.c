@@ -27,6 +27,10 @@
 #include <shellapi.h>
 #include <strsafe.h>
 
+/* "Action Key Mode" on the Pavilion Aero 13 this was written for; HP has also
+ * spelled it "Action Keys Mode". The pattern takes either, the read insists on
+ * exactly one match, and every write uses the name as the firmware read it. */
+#define HG_HP_SETTING_LIKE L"Action Key% Mode"
 #define HG_HP_SETTING L"Action Key Mode"
 #define HG_HP_CLI_SWITCH L"--hp-fnkeys"
 #define HG_HP_TITLE L"HP Fn Keys"
@@ -40,7 +44,7 @@ typedef struct HgHpMode {
 
 static HRESULT hpkeys_read(HgHpMode *mode)
 {
-    HRESULT hr = hg_hpbios_read(HG_HP_SETTING, &mode->setting);
+    HRESULT hr = hg_hpbios_read(HG_HP_SETTING_LIKE, &mode->setting);
     if (FAILED(hr))
         return hr;
     const wchar_t *values[HG_HP_VALUES_MAX];
@@ -83,7 +87,7 @@ static void hpkeys_say_unsupported(HWND owner, const HgHpMode *mode)
     StringCchPrintfW(text, HG_ARRAYSIZE(text),
                      L"This machine's BIOS does not let \"%s\" be switched from Windows%s.\r\n\r\n"
                      L"Current value: %s",
-                     HG_HP_SETTING, mode->setting.read_only ? L" (it is read-only)" : L" (its values are not on/off)",
+                     mode->setting.name, mode->setting.read_only ? L" (it is read-only)" : L" (its values are not on/off)",
                      mode->setting.current);
     hpkeys_say(owner, text, MB_ICONWARNING);
 }
@@ -96,7 +100,7 @@ static BOOL hpkeys_confirm(HWND owner, const HgHpMode *mode, int current, BOOL e
                      L"Now: %s\r\n(BIOS \"%s\" = %s)\r\n\r\n"
                      L"Switch to - %s\r\n\r\n"
                      L"It takes effect after a restart.%s",
-                     hpkeys_describe(current), HG_HP_SETTING, mode->setting.current, hpkeys_describe(!current),
+                     hpkeys_describe(current), mode->setting.name, mode->setting.current, hpkeys_describe(!current),
                      elevating ? L" Windows will ask for administrator permission." : L"");
     return MessageBoxW(owner, text, HG_HP_TITLE, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2 | MB_SETFOREGROUND) ==
            IDYES;
@@ -368,7 +372,7 @@ static int hpkeys_elevated(const WCHAR *direction)
             break;
         }
         unsigned long answer = (unsigned long)-1;
-        hr = hg_hpbios_write(HG_HP_SETTING, target, ask ? password : NULL, &answer);
+        hr = hg_hpbios_write(mode.setting.name, target, ask ? password : NULL, &answer);
         SecureZeroMemory(password, sizeof(password));
         if (FAILED(hr)) {
             WCHAR text[256];
