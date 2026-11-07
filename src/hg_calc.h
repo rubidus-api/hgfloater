@@ -76,7 +76,9 @@ HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
  * `visible` is zero when `home` touches no monitor at all; it is then centred
  * in `cursor_work`. On another monitor it keeps its place in proportion to the
  * free room, so a floater docked to a right edge lands on the right edge.
- * Either way, and on the same monitor, it ends inside `cursor_work`. */
+ * Either way, and on the same monitor, it ends inside `cursor_work` - whatever
+ * box the caller passes: the floater passes whole monitors (R1.5), so a
+ * place on the taskbar is kept. */
 HgBox hg_calc_startup_place(HgBox home, int visible, HgBox home_work, HgBox cursor_work);
 
 /* The taskbox grid: which cell holds what.

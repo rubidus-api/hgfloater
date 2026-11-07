@@ -1268,7 +1268,7 @@ creation time of day goes there too, since the file name only carries the day.
 
 | Key | Action |
 | :--- | :--- |
-| `Win + Alt + Space` | Show or hide the taskbox. If a window has drifted off screen, it is pulled back into the nearest monitor's work area. The taskbox flashes its outline three times when a key summons it — a click does not, since the pointer is already there. |
+| `Win + Alt + Space` | Show or hide the taskbox. If a window has drifted off screen, it is pulled back into the nearest monitor's work area (the floater: into the monitor, since it may sit on the taskbar). The taskbox flashes its outline three times when a key summons it — a click does not, since the pointer is already there. |
 | `Ctrl + ,` | The [settings window](#71-the-settings-window) — options, values, and every key on this page. |
 
 The keys that run a **function** can be changed, in six windows: `system` (the
