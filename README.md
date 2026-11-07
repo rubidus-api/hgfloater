@@ -148,6 +148,11 @@ the pair stays where you left it.
 The floater is the resting state: a compact translucent panel that stays on top
 of other windows.
 
+**It starts on the monitor under the pointer.** If its saved place is on another
+monitor, it moves to the same spot on yours; if that place is on no monitor at
+all (one that has since been unplugged), it appears in the middle of your screen;
+if it hangs off the edge, it is pulled back inside.
+
 **What it shows**
 
 - **Clock and date**, refreshed every second, sized proportionally to the
@@ -293,9 +298,9 @@ and nothing else; it holds no keyboard hook and never has.
 
 ## 5. The Taskbox
 
-The taskbox is a grid of icons under a strip that holds the status line and,
-in the top-right corner, the `D` `R` `M` `X` buttons; the rest of the built-in
-buttons are in the grid.
+The taskbox is a grid of icons under the status line, which runs its whole
+width. The built-in buttons are in the grid, ending in the bottom-right corner
+with `X`.
 
 ### 5.1 Running windows and shortcuts
 
@@ -542,10 +547,9 @@ last row, ending in the corner with `Cmd`, and the shortcuts and `A/V` `Vol`
 
 ## 6. The Toolbar
 
-Thirteen built-in buttons. Four sit in the top-right corner, beside the status
-line, `X` flush against the corner: `D` `R` `M` `X`. The other nine are in the
-same grid as the icons, in two lines from the left: `A/V` `Vol` `Mon` `Alp`,
-then `Dir` `Set` `Clip` `Note` `Cmd`. Each carries a short word rather than a single capital, three of
+Thirteen built-in buttons, in the same grid as the icons, in two lines that end
+at the right edge: `A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd`
+`D` `R` `M` `X`, with `X` in the bottom-right corner. Each carries a short word rather than a single capital, three of
 them open a box instead of doing something outright, and three —
 `Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
 
@@ -1298,6 +1302,8 @@ a chord.
 | `Insert` | Create a note, from any row |
 | `K` | Archive the selected note, or restore it |
 | `Delete` | Delete the selected note (to the Recycle Bin) |
+| `Alt + Arrows` | Move the list window |
+| `Ctrl + Arrows` | Resize the list window |
 | `Esc`, `Ctrl + W` | Close the list |
 
 ### Inside a note editor

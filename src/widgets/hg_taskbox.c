@@ -742,16 +742,11 @@ void update_layout(HWND hwnd)
         }
     }
 
-    /* The status line sits in the header strip's left part, over the toolbar
-     * (which clips it out - WS_CLIPSIBLINGS), against the frame's top and left
-     * edges, and ends a plate's gap short of the header buttons so the two
-     * never overlap. Its own height, top-aligned: the strip is as tall as the
-     * taller of the two. */
-    int edit_width = exact_tb_width - hg_toolbar_header_buttons_width(icon_size) - hg_toolbar_header_gap();
-    if (edit_width < 1)
-        edit_width = 1;
+    /* The status line is the header strip, the toolbar's whole width, over the
+     * toolbar (which clips it out - WS_CLIPSIBLINGS) against the frame's top
+     * and left edges. */
     MoveWindow(hg_g_toolbar_wnd, border, border, exact_tb_width, req_toolbar_height, TRUE);
-    SetWindowPos(hg_g_edit_msg_wnd, HWND_TOP, border, border, edit_width, edit_height, SWP_NOACTIVATE);
+    SetWindowPos(hg_g_edit_msg_wnd, HWND_TOP, border, border, exact_tb_width, edit_height, SWP_NOACTIVATE);
     update_toolbar_tooltips(hg_g_toolbar_wnd);
 }
 

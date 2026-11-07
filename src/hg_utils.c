@@ -1015,9 +1015,8 @@ int hg_toolbar_grid_shortcuts(void)
     return hg_g_shortcut_count;
 }
 
-/* The buttons in the grid itself; the first HG_GRID_HEADER_BUTTONS are in the
- * strip above it. */
-#define HG_TOOLBAR_GRID_BUTTONS (HG_NUM_BASIC_ICONS - HG_GRID_HEADER_BUTTONS)
+/* Every button is in the grid; the strip above it is the status line alone. */
+#define HG_TOOLBAR_GRID_BUTTONS HG_NUM_BASIC_ICONS
 
 int hg_toolbar_grid_item_count(void)
 {
@@ -1053,18 +1052,8 @@ int hg_toolbar_header_height(int icon_size)
         cached_generation = hg_g_font_generation;
         cached_scale = hg_g_scale_factor;
     }
-    int button_h = icon_size + SC(8); /* the plate: the icon and SC(4) round it */
-    return (cached_edit_h > button_h) ? cached_edit_h : button_h;
-}
-
-int hg_toolbar_header_buttons_width(int icon_size)
-{
-    return HG_GRID_HEADER_BUTTONS * (icon_size + SC(15)) - SC(7);
-}
-
-int hg_toolbar_header_gap(void)
-{
-    return SC(7); /* the same gap as between two plates */
+    (void)icon_size;
+    return cached_edit_h;
 }
 
 int hg_toolbar_height_for_rows(int rows, int icon_size)
@@ -1091,7 +1080,7 @@ void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)
         visible_rows = 1;
 
     hg_calc_grid(cols, visible_rows, hg_g_window_count, hg_toolbar_grid_shortcuts(), HG_TOOLBAR_GRID_BUTTONS,
-                 HG_GRID_BUTTON_BREAK, HG_GRID_HEADER_BUTTONS, hg_g_taskbox_group_rows, out);
+                 HG_GRID_BUTTON_BREAK, 0, hg_g_taskbox_group_rows, out);
 }
 
 /* item_type 0 is a task icon. item_type 1 is a function button, or - past the
@@ -1104,17 +1093,6 @@ void get_toolbar_item_rect(int item_type, int item_index, int width, int height,
     SetRectEmpty(out_rect);
     if (width <= 0)
         return;
-
-    /* A header button: in the strip, its plate against the top edge and, for
-     * the first, against the right one; the rest leftwards at the grid's
-     * pitch. */
-    if (item_type == 1 && item_index >= 0 && item_index < HG_GRID_HEADER_BUTTONS) {
-        out_rect->right = width - SC(4) - item_index * (icon_size + SC(15));
-        out_rect->left = out_rect->right - icon_size;
-        out_rect->top = SC(4);
-        out_rect->bottom = out_rect->top + icon_size;
-        return;
-    }
 
     HgGrid grid;
     hg_toolbar_grid(width, height, icon_size, &grid);

@@ -300,14 +300,9 @@ int hg_toolbar_grid_item_count(void); /* everything on the grid (not the header)
 int hg_toolbar_rows_for_cols(int cols);
 int hg_toolbar_cols_for_rows(int target_rows);
 void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out);
-/* The strip at the top of the toolbar: the status line on the left and the
- * header buttons flush right, both against the window's top edge. As tall as
- * the taller of the two, so neither is cut and the grid starts under both. */
+/* The strip at the top of the toolbar: the status line, the whole width,
+ * against the window's top edge. The grid starts under it. */
 int hg_toolbar_header_height(int icon_size);
-/* The header buttons' width, from the strip's right edge to the left edge of
- * the leftmost one's plate, and the gap the status line keeps from it. */
-int hg_toolbar_header_buttons_width(int icon_size);
-int hg_toolbar_header_gap(void);
 /* The toolbar's height for that many grid rows, header included; the taskbox
  * is this plus its border top and bottom. */
 int hg_toolbar_height_for_rows(int rows, int icon_size);

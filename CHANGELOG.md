@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- **`D` `R` `M` `X` are back in the grid**, at the end of the buttons' second
+  line, `X` in the bottom-right corner, and the status line runs the taskbox's
+  whole width again. Both lines of buttons now end at the right edge:
+  `A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd` `D` `R` `M` `X`.
+- **The floater starts on the monitor under the pointer.** A saved place on
+  another monitor moves to the same spot on that one, a place on no monitor is
+  centred on it, and a place hanging off it is pulled inside.
+
+### Added
+- **`Alt + Arrows` move the note list and `Ctrl + Arrows` resize it**, as they
+  do the clipboard history.
+
 ## [v0.17.21] - 2026-10-17
 
 ### Changed

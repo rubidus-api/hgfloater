@@ -329,6 +329,42 @@ void ensure_window_visible(HWND hwnd, const WCHAR *section)
 
 
 
+/* The floater starts on the monitor under the pointer: a saved place on
+ * another monitor, or on none (a monitor unplugged since), would leave it where
+ * the reader is not looking. hg_calc_startup_place has the rules. Runs before
+ * the window exists, so the DPI picked next is the target monitor's. */
+static void place_floater_for_startup(int *x, int *y, int w, int h)
+{
+    POINT cursor;
+    if (!GetCursorPos(&cursor))
+        return;
+    MONITORINFO cursor_mi;
+    SecureZeroMemory(&cursor_mi, sizeof(cursor_mi));
+    cursor_mi.cbSize = sizeof(cursor_mi);
+    if (!GetMonitorInfoW(MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST), &cursor_mi))
+        return;
+
+    RECT home_rc = {*x, *y, *x + w, *y + h};
+    HMONITOR home_monitor = MonitorFromRect(&home_rc, MONITOR_DEFAULTTONULL);
+    MONITORINFO home_mi;
+    SecureZeroMemory(&home_mi, sizeof(home_mi));
+    home_mi.cbSize = sizeof(home_mi);
+    BOOL visible = home_monitor && GetMonitorInfoW(home_monitor, &home_mi);
+    if (!visible)
+        home_mi.rcWork = cursor_mi.rcWork;
+
+    HgBox home = {home_rc.left, home_rc.top, home_rc.right, home_rc.bottom};
+    HgBox home_work = {home_mi.rcWork.left, home_mi.rcWork.top, home_mi.rcWork.right, home_mi.rcWork.bottom};
+    HgBox cursor_work = {cursor_mi.rcWork.left, cursor_mi.rcWork.top, cursor_mi.rcWork.right,
+                         cursor_mi.rcWork.bottom};
+    HgBox placed = hg_calc_startup_place(home, visible, home_work, cursor_work);
+    if (placed.left != *x || placed.top != *y) {
+        *x = placed.left;
+        *y = placed.top;
+        save_window_geometry_config(L"floater", *x, *y, w, h);
+    }
+}
+
 /* 증분 업데이트: 순서 고정 및 스마트 리프레시 */
 
 /* taskbar_proc removed */
@@ -410,6 +446,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
     load_config(L"floater", &fx, &fy, &fw, &fh, 100, 100, SC(80), SC(55));
     load_config(L"taskbox", &tx, &ty, &tw, &th, 200, 200, SC(HG_WINDOW_WIDTH), SC(HG_WINDOW_HEIGHT));
 
+    place_floater_for_startup(&fx, &fy, fw, fh);
+
     /* Refine the startup scale from the monitor the floater will appear on; the
      * primary-monitor value above only seeded the config defaults. */
     POINT floater_origin = {fx, fy};
@@ -438,6 +476,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         exit_code = 1;
         goto cleanup_finish;
     }
+
+    /* The size the layout settled on can differ from the saved one. */
+    ensure_window_visible(hg_g_floater_wnd, L"floater");
 
     register_global_hotkey(hg_g_floater_wnd, TRUE);
 

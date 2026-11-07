@@ -118,6 +118,49 @@ HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work)
     return moved;
 }
 
+static int hg_calc_box_same(HgBox a, HgBox b)
+{
+    return a.left == b.left && a.top == b.top && a.right == b.right && a.bottom == b.bottom;
+}
+
+/* One axis of the move to another monitor: the share of the free room left of
+ * (or above) the window on the old monitor is kept on the new one. */
+static int hg_calc_map_axis(int pos, int size, int from_lo, int from_hi, int to_lo, int to_hi)
+{
+    long long from_room = (long long)(from_hi - from_lo) - size;
+    long long to_room = (long long)(to_hi - to_lo) - size;
+    if (from_room <= 0 || to_room <= 0)
+        return to_lo;
+    long long offset = (long long)pos - from_lo;
+    if (offset < 0)
+        offset = 0;
+    if (offset > from_room)
+        offset = from_room;
+    return to_lo + (int)((offset * to_room + from_room / 2) / from_room);
+}
+
+HgBox hg_calc_startup_place(HgBox home, int visible, HgBox home_work, HgBox cursor_work)
+{
+    int w = home.right - home.left;
+    int h = home.bottom - home.top;
+    int x = home.left;
+    int y = home.top;
+
+    if (!visible) {
+        x = cursor_work.left + ((cursor_work.right - cursor_work.left) - w) / 2;
+        y = cursor_work.top + ((cursor_work.bottom - cursor_work.top) - h) / 2;
+    } else if (!hg_calc_box_same(home_work, cursor_work)) {
+        x = hg_calc_map_axis(home.left, w, home_work.left, home_work.right, cursor_work.left, cursor_work.right);
+        y = hg_calc_map_axis(home.top, h, home_work.top, home_work.bottom, cursor_work.top, cursor_work.bottom);
+    }
+
+    /* Clamped into the pointer's work area in every case: a zero offset turns
+     * the follow-move into a plain clamp. */
+    HgBox from = {0, 0, 0, 0};
+    HgBox placed = {x, y, x + w, y + h};
+    return hg_calc_follow_move(placed, from, from, cursor_work);
+}
+
 /* Hand-rolled so the unit stays free of both Win32 and the CRT: the taskbox
  * clock is the only formatted text here and its shape is fixed. */
 static int hg_write_padded(wchar_t *out, int pos, int value, int digits)
@@ -259,12 +302,15 @@ void hg_calc_grid(int cols, int visible_rows, int tasks, int shortcuts, int butt
     int second = buttons - first;
     out->line = first;
     /* Grouped, the shortcuts start the row after the tasks and each line of
-     * buttons starts a row of its own. Otherwise the second line ends in the
-     * last cell, and the shortcuts and the first line are one run that ends
-     * at the row above it. */
+     * buttons has rows of its own, ending at their right edge: the second line
+     * ends in the last cell, so X is in the corner (owner's request,
+     * 2026-11-07). Otherwise the second line ends in the last cell too, and
+     * the shortcuts and the first line are one run that ends at the row above
+     * it. */
     if (grouped) {
-        out->button_first = (rows - hg_grid_rows_of(first, cols) - hg_grid_rows_of(second, cols)) * cols;
-        out->button_second = out->button_first + hg_grid_rows_of(first, cols) * cols;
+        int lines_start = (rows - hg_grid_rows_of(first, cols) - hg_grid_rows_of(second, cols)) * cols;
+        out->button_first = lines_start + hg_grid_rows_of(first, cols) * cols - first;
+        out->button_second = out->cells - second;
     } else {
         out->button_second = out->cells - second;
         int run_end = (second > 0) ? (out->button_second / cols) * cols : out->cells;

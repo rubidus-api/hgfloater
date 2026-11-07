@@ -23,16 +23,15 @@ static inline int hg_calc_scale(int x)
     return hg_calc_scale_by(hg_g_scale_factor, x);
 }
 
-/* The taskbox's top strip holds the status line and, flush right, the first
- * HG_GRID_HEADER_BUTTONS function buttons. Below HG_GRID_MIN_COLS columns the
- * line beside them would have no room, so the grid is never narrower: the
- * snap width, the columns a width holds and the columns a row count asks for
- * all floor there. */
-#define HG_GRID_HEADER_BUTTONS 4
-#define HG_GRID_MIN_COLS (HG_GRID_HEADER_BUTTONS + 2)
+/* The taskbox's top strip is the status line, the whole width (owner's
+ * request, 2026-11-07: D R M X, which shared it from 2026-10-14, are back at
+ * the end of the grid's buttons). The grid is never narrower than
+ * HG_GRID_MIN_COLS: the snap width, the columns a width holds and the columns
+ * a row count asks for all floor there. */
+#define HG_GRID_MIN_COLS 6
 /* The grid's buttons are two lines (owner's request, 2026-10-17): the first
  * HG_GRID_BUTTON_BREAK in reading order - A/V Vol Mon Alp, the ones that are
- * read and turned - then a break, then the rest, Dir Set Clip Note C. */
+ * read and turned - then a break, then the rest, Dir Set Clip Note Cmd D R M X. */
 #define HG_GRID_BUTTON_BREAK 4
 
 int hg_clamp_alpha(int alpha);
@@ -70,16 +69,26 @@ HgRelocateDirection hg_calc_relocation(HgBox target, HgBox occupied, HgBox work,
  * inside `work`. Collapsing uses it so the floater follows every taskbox move. */
 HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
 
+/* Where the floater starts (owner's request, 2026-11-07): on the monitor under
+ * the pointer. `home` is its saved place, `home_work` the work area of the
+ * monitor it mostly sits on, `cursor_work` that of the pointer's monitor.
+ * `visible` is zero when `home` touches no monitor at all; it is then centred
+ * in `cursor_work`. On another monitor it keeps its place in proportion to the
+ * free room, so a floater docked to a right edge lands on the right edge.
+ * Either way, and on the same monitor, it ends inside `cursor_work`. */
+HgBox hg_calc_startup_place(HgBox home, int visible, HgBox home_work, HgBox cursor_work);
+
 /* The taskbox grid: which cell holds what.
  *
  * Three kinds of item share it - task icons, shortcut icons, and the function
  * buttons. Tasks fill from the first cell.
  *
  * Grouped, each kind starts on a row of its own: the tasks' rows, then the
- * shortcuts' rows, then the buttons' rows, each flowing left to right and
- * wrapping when it is longer than a row. The buttons take the last rows of the
- * grid and read in their on-screen order - the highest index first - so the
- * last row holds whatever did not fit on the one before, from its left edge.
+ * shortcuts' rows, then the buttons' rows. Tasks and shortcuts flow left to
+ * right from a row's left edge. The buttons take the last rows of the grid,
+ * read in their on-screen order - the highest index first - and end at the
+ * right edge: the lowest index is in the bottom-right corner, and a line
+ * longer than a row starts part way along its first row.
  *
  * Not grouped, everything shares rows: the tasks from the first cell, and one
  * run that ends in the last cell - the shortcuts and then the buttons, the
@@ -88,12 +97,13 @@ HgBox hg_calc_follow_move(HgBox home, HgBox from, HgBox to, HgBox work);
  *
  * `line` (when above 0 and below the button count) breaks the buttons in two:
  * that many, in reading order, then the rest on a row of their own. Grouped,
- * both lines start at a row's left edge. Not grouped, the second line ends in
+ * both lines end at a row's right edge. Not grouped, the second line ends in
  * the bottom-right corner, the cells left of it on its first row stay empty,
  * and the run of shortcuts and the first line ends at the row above it.
  *
- * The first `header` buttons are not in the grid at all: they sit in the strip
- * above it, the first of them flush right and the rest leftwards from it. They
+ * The first `header` buttons are not in the grid at all: they sit in a strip
+ * above it, the first of them flush right and the rest leftwards from it. The
+ * taskbox passes none since 2026-11-07; the rule stays for the strip's sake. They
  * have cells of their own past the grid's - `cells + slot` - so the arrows can
  * reach them: Up from the top row goes to the header button above that column
  * (or the nearest one), Down from the header comes back.

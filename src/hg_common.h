@@ -148,13 +148,11 @@
 #define HG_MAX_AUDIO_DEVICES 16
 #define HG_NUM_BASIC_ICONS 13
 
-/* The buttons, in index order. The first HG_GRID_HEADER_BUTTONS (hg_calc.h)
- * are in the strip at the top of the taskbox, beside the status line, index 0
- * flush right: it reads D R M X, X in the corner. The rest are the row in the grid, where the
- * highest index is leftmost, in two lines (HG_GRID_BUTTON_BREAK): A/V Vol Mon
- * Alp, then Dir Set Clip Note C.
- * (Where the row sits - flowing from the left of rows of its own, or ending in
- * the bottom-right cell - is the grid's business: see HgGrid in hg_calc.h.)
+/* The buttons, in index order. On the grid the highest index is leftmost, in
+ * two lines (HG_GRID_BUTTON_BREAK): A/V Vol Mon Alp, then Dir Set Clip Note Cmd
+ * D R M X, index 0 - X - in the bottom-right corner. (D R M X sat in the strip
+ * beside the status line from 2026-10-14 to 2026-11-07.) Where the lines sit is
+ * the grid's business: see HgGrid in hg_calc.h.
  *
  * Vol, Mon and Alp are on the row itself. They spent v0.17.13 and v0.17.14 in
  * a box behind an Ico button; a reading that has to be opened to be seen was

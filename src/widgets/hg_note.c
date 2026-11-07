@@ -1794,11 +1794,47 @@ static int note_list_row_at(HWND list, LPARAM l_param)
     return (int)LOWORD(hit);
 }
 
+/* Ctrl+arrows resize the note list and Alt+arrows move it (owner's request,
+ * 2026-11-07), as they do the clipboard window. Fixed keys, not bindings: the
+ * arrows are the list's own, and only the modifier says the frame is meant. */
+static BOOL note_list_frame_key(HWND wnd, UINT msg, WPARAM w_param)
+{
+    if (msg != WM_KEYDOWN && msg != WM_SYSKEYDOWN)
+        return FALSE;
+    BOOL is_ctrl = (GetKeyState(VK_CONTROL) < 0);
+    BOOL is_alt = (GetKeyState(VK_MENU) < 0) || (msg == WM_SYSKEYDOWN);
+    if (is_ctrl == is_alt)
+        return FALSE; /* neither, or both: not one of these */
+
+    int step = SCW(hg_window_scale(wnd), 20);
+    int dx = 0, dy = 0;
+    if (w_param == VK_LEFT)
+        dx = -step;
+    else if (w_param == VK_RIGHT)
+        dx = step;
+    else if (w_param == VK_UP)
+        dy = -step;
+    else if (w_param == VK_DOWN)
+        dy = step;
+    if (!dx && !dy)
+        return FALSE;
+
+    if (is_alt)
+        move_window_by_offset(wnd, dx, dy);
+    else
+        resize_window_by_offset(wnd, dx, dy);
+    note_list_save_geometry(wnd);
+    return TRUE;
+}
+
 static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
                                                 UINT_PTR subclass_id, DWORD_PTR ref_data)
 {
     (void)subclass_id;
     (void)ref_data;
+    /* Before the list box sees them: Ctrl+Up and Ctrl+Down move its caret. */
+    if (note_list_frame_key(GetParent(hwnd), msg, w_param))
+        return 0;
     /* The list box would swallow the keys the window above it owns, so
      * whatever the note list has bound goes up. Reading the binding rather
      * than a list of five constants is what lets a rebound key keep working:
@@ -1879,9 +1915,16 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         }
         break;
 
+    case WM_SYSKEYDOWN:
+        if (note_list_frame_key(hwnd, msg, w_param))
+            return 0;
+        break;
+
     case WM_KEYDOWN: {
         /* Reached when the focus is on the window rather than on the list; the
          * list's own subclass sends the same key here. */
+        if (note_list_frame_key(hwnd, msg, w_param))
+            return 0;
         HgKeyActionInfo action;
         if (hg_key_action_info(hg_key_lookup_now(HG_KEYCTX_NOTE, (UINT)w_param), &action)) {
             if (wcscmp(action.name, L"open") == 0)
