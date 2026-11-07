@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **`HP Fn Keys...` in the `Set` list, on HP laptops.** It switches the BIOS
+  setting *Action Key Mode* either way: action keys first (brightness, volume
+  and the rest on their own, F1-F12 with Fn) or function keys first (F1-F12 on
+  their own). It says which way the keys are now and asks before changing
+  anything; Windows then asks for administrator permission, and the program
+  asks for the BIOS setup password if the machine has one. The change takes
+  effect after a restart, which is offered, not forced. On other machines the
+  row is not there.
+
 ## [v0.17.24] - 2026-11-08
 
 ### Changed

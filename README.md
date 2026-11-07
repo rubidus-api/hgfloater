@@ -620,6 +620,7 @@ The rows are grouped by what a row **is**, top to bottom:
 | **Lock Screen (Power Off)** | Locks the session and turns the displays off. |
 | **Change Password...** | Opens Windows' sign-in options, where *Password* changes the current account's password (a Microsoft account's is changed online from there). |
 | **Screen Saver...** | Opens Windows' Screen Saver Settings: the saver, how many minutes it waits, and whether coming back asks for the sign-in screen. |
+| **HP Fn Keys...** | HP laptops only. Switches the BIOS setting *Action Key Mode*: action keys first (brightness, volume and the rest on their own, F1–F12 with **Fn**) or function keys first (F1–F12 on their own). It tells you which way the keys are now and asks first; Windows asks for administrator permission, and the program asks for the BIOS setup password if one is set — the password is not saved anywhere. The keys switch after a restart, which it offers. |
 | **About...** | The About window, with this manual in it — what `F1` opens. |
 | **(off in this build)** | Last: the ones this build cannot switch. Listed rather than hidden, and out of the way of the ones that work. |
 

@@ -10,6 +10,7 @@
 #include "hg_options.h"
 #include "hg_clock.h"
 #include "hg_keys.h"
+#include "hg_hpkeys.h"
 
 /* =========================================================================
  * 창 클래스 등록 기능 (Window Class Registration)
@@ -401,6 +402,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
     co_hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     com_initialized = SUCCEEDED(co_hr);
+
+    /* The elevated half of HP Fn Keys: it does its one job and exits, before
+     * the mutex, so it is never mistaken for a second instance. */
+    {
+        int hp_exit = hg_hpkeys_cli(cmd_line);
+        if (hp_exit >= 0) {
+            exit_code = hp_exit;
+            goto cleanup_finish;
+        }
+    }
 
     /* 단일 인스턴스 실행 보장 (Mutex 사용) */
     mutex = CreateMutexW(NULL, TRUE, HG_SINGLE_INSTANCE_MUTEX_NAME);

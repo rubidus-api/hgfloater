@@ -517,3 +517,42 @@ int get_items_per_row(int width, int icon_size)
     int n = (width - icon_size - SC(20)) / denom + 1;
     return (n > HG_GRID_MIN_COLS) ? n : HG_GRID_MIN_COLS;
 }
+
+/* ASCII case folding is enough: the words matched are English, and a value in
+ * any other script simply does not match. */
+static int hg_hp_word_is(const wchar_t *value, const wchar_t *word)
+{
+    while (*value == L' ' || *value == L'\t')
+        ++value;
+    for (; *word; ++value, ++word) {
+        wchar_t a = *value;
+        wchar_t b = *word;
+        if (a >= L'A' && a <= L'Z')
+            a = (wchar_t)(a - L'A' + L'a');
+        if (b >= L'A' && b <= L'Z')
+            b = (wchar_t)(b - L'A' + L'a');
+        if (a != b)
+            return 0;
+    }
+    while (*value == L' ' || *value == L'\t')
+        ++value;
+    return *value == 0;
+}
+
+int hg_calc_hp_mode_value(const wchar_t *const *values, int count, int on)
+{
+    int found = -1;
+    for (int i = 0; values && i < count; ++i) {
+        const wchar_t *v = values[i];
+        if (!v)
+            continue;
+        int match = on ? (hg_hp_word_is(v, L"enable") || hg_hp_word_is(v, L"enabled"))
+                       : (hg_hp_word_is(v, L"disable") || hg_hp_word_is(v, L"disabled"));
+        if (!match)
+            continue;
+        if (found >= 0)
+            return -1; /* two spellings of one state: which one the firmware wants is not known */
+        found = i;
+    }
+    return found;
+}

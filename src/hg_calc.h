@@ -169,4 +169,11 @@ int hg_calc_grid_move(const HgGrid *grid, int cell, int direction);
  * fits; returns the character count written (0 when it does not fit). */
 int hg_calc_format_clock(wchar_t *out, int cch, int year, int month, int day, int dow, int hour, int minute);
 
+/* HP's BIOS setting "Action Key Mode": which of the firmware's PossibleValues
+ * means on (`on` nonzero: Enable or Enabled) or off (Disable or Disabled).
+ * Case and surrounding spaces are ignored, nothing else is: the value written
+ * back is the firmware's own string, never a spelling guessed here. Returns the
+ * index of the one match, or -1 when there is none or more than one. */
+int hg_calc_hp_mode_value(const wchar_t *const *values, int count, int on);
+
 #endif /* HG_CALC_H */

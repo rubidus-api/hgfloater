@@ -10,6 +10,7 @@
 #include "../hg_caphook.h"
 #include "../hg_config.h"
 #include "../hg_clock.h"
+#include "../hg_hpkeys.h"
 
 /* Forward declaration for show_about_window which is in hgfloater.c (or widgets/hg_about.c when created) */
 void show_about_window(void);
@@ -1392,6 +1393,8 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
             /* The classic Screen Saver Settings dialog: the saver, its Wait
              * minutes and whether resuming shows the sign-in screen. */
             ShellExecuteW(NULL, L"open", L"control.exe", L"desk.cpl,,@screensaver", NULL, SW_SHOWNORMAL);
+        } else if (cmd == HG_IDM_HP_FNKEYS) {
+            hg_hpkeys_command(hwnd);
         } else if (cmd == HG_IDM_ABOUT) {
             show_about_window();
         } else if (cmd == HG_IDM_RESET_ALL) {

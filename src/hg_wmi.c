@@ -1,4 +1,5 @@
-/* The root\WMI clients, sharing one connection.
+/* The root\WMI clients, sharing one connection - and, at the end, HP's BIOS
+ * settings in root\HP\InstrumentedBIOS, which have a connection of their own.
  *
  * Two unrelated things this app needs live in the same namespace, and a COM
  * activation each would be wasteful, so they sit together behind one cached
@@ -42,7 +43,7 @@ static const GUID HG_IID_IWbemLocator = {
  * session that lost the service recover by reconnecting on the next call. */
 static IWbemServices *s_services = NULL;
 
-static IWbemServices *hg_wmi_open(void)
+static IWbemServices *hg_wmi_connect(const WCHAR *ns_path, DWORD authn_level)
 {
     IWbemLocator *locator = NULL;
     if (FAILED(CoCreateInstance(&HG_CLSID_WbemLocator, NULL, CLSCTX_INPROC_SERVER, &HG_IID_IWbemLocator,
@@ -51,7 +52,7 @@ static IWbemServices *hg_wmi_open(void)
         return NULL;
     }
 
-    BSTR ns = SysAllocString(L"ROOT\\WMI");
+    BSTR ns = SysAllocString(ns_path);
     IWbemServices *services = NULL;
     HRESULT hr = ns ? locator->lpVtbl->ConnectServer(locator, ns, NULL, NULL, NULL, 0, NULL, NULL, &services)
                     : E_OUTOFMEMORY;
@@ -65,11 +66,16 @@ static IWbemServices *hg_wmi_open(void)
     /* WMI rejects calls on a proxy left at the default security settings; this
      * is the blanket its own documentation asks every client to set. */
     if (FAILED(CoSetProxyBlanket((IUnknown *)services, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
-                                 RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE))) {
+                                 authn_level, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE))) {
         HG_RELEASE_COM(services);
         return NULL;
     }
     return services;
+}
+
+static IWbemServices *hg_wmi_open(void)
+{
+    return hg_wmi_connect(L"ROOT\\WMI", RPC_C_AUTHN_LEVEL_CALL);
 }
 
 static void hg_wmi_drop(void)
@@ -95,7 +101,14 @@ void hg_backlight_shutdown(void)
 /* First instance of a class, or NULL. There is one integrated panel on the
  * machines this path exists for; a second would need its InstanceName matched
  * against the display, which is recorded as a limitation rather than guessed at. */
+static IWbemClassObject *hg_wmi_first_instance_within(IWbemServices *services, const WCHAR *wql, LONG timeout_ms);
+
 static IWbemClassObject *hg_wmi_first_instance(IWbemServices *services, const WCHAR *wql)
+{
+    return hg_wmi_first_instance_within(services, wql, HG_WMI_TIMEOUT_MS);
+}
+
+static IWbemClassObject *hg_wmi_first_instance_within(IWbemServices *services, const WCHAR *wql, LONG timeout_ms)
 {
     BSTR language = SysAllocString(L"WQL");
     BSTR query = SysAllocString(wql);
@@ -114,7 +127,7 @@ static IWbemClassObject *hg_wmi_first_instance(IWbemServices *services, const WC
 
     IWbemClassObject *object = NULL;
     ULONG returned = 0;
-    if (FAILED(rows->lpVtbl->Next(rows, HG_WMI_TIMEOUT_MS, 1, &object, &returned)) || returned != 1) {
+    if (FAILED(rows->lpVtbl->Next(rows, timeout_ms, 1, &object, &returned)) || returned != 1) {
         object = NULL;
     }
     HG_RELEASE_COM(rows);
@@ -596,4 +609,224 @@ BOOL hg_backlight_set(int percent)
     if (!ok)
         hg_wmi_drop();
     return ok;
+}
+
+/* ------------------------------------------------------------ HP BIOS settings */
+
+/* HP's instrumented BIOS: every firmware setting is an instance of
+ * HP_BIOSSetting's subclasses, read like any WMI row, and written through the
+ * one HP_BIOSSettingInterface instance's SetBIOSSetting. Writing needs an
+ * elevated process; whether reading does depends on the machine, which is why
+ * every caller is ready for either. None of this runs on a timer: it is called
+ * when the user asks, so it may wait longer than the root\WMI readers above,
+ * and it opens its connection each time rather than keeping one.
+ *
+ * The connection asks for packet privacy because a BIOS password travels over
+ * it. */
+#define HG_HP_BIOS_NAMESPACE L"ROOT\\HP\\InstrumentedBIOS"
+#define HG_HP_TIMEOUT_MS 10000
+
+static IWbemServices *hg_hp_open(void)
+{
+    return hg_wmi_connect(HG_HP_BIOS_NAMESPACE, RPC_C_AUTHN_LEVEL_PKT_PRIVACY);
+}
+
+static void hg_hp_copy(WCHAR *out, size_t cch, const WCHAR *in)
+{
+    if (!out || cch == 0)
+        return;
+    out[0] = 0;
+    if (in)
+        lstrcpynW(out, in, (int)cch);
+}
+
+HRESULT hg_hpbios_read(const WCHAR *name, HgHpSetting *out)
+{
+    if (!name || !out)
+        return E_INVALIDARG;
+    ZeroMemory(out, sizeof(*out));
+
+    WCHAR wql[160];
+    if (FAILED(StringCchPrintfW(wql, HG_ARRAYSIZE(wql), L"SELECT * FROM HP_BIOSEnumeration WHERE Name='%s'", name)))
+        return E_INVALIDARG;
+
+    IWbemServices *services = hg_hp_open();
+    if (!services)
+        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+
+    HRESULT hr = E_FAIL;
+    IWbemClassObject *row = hg_wmi_first_instance_within(services, wql, HG_HP_TIMEOUT_MS);
+    if (row) {
+        VARIANT current, values, read_only;
+        VariantInit(&current);
+        VariantInit(&values);
+        VariantInit(&read_only);
+
+        if (SUCCEEDED(row->lpVtbl->Get(row, L"CurrentValue", 0, &current, NULL, NULL)) && V_VT(&current) == VT_BSTR &&
+            SUCCEEDED(row->lpVtbl->Get(row, L"PossibleValues", 0, &values, NULL, NULL)) &&
+            V_VT(&values) == (VT_ARRAY | VT_BSTR) && V_ARRAY(&values)) {
+            hg_hp_copy(out->current, HG_ARRAYSIZE(out->current), V_BSTR(&current));
+
+            LONG lo = 0, hi = -1;
+            SafeArrayGetLBound(V_ARRAY(&values), 1, &lo);
+            SafeArrayGetUBound(V_ARRAY(&values), 1, &hi);
+            for (LONG i = lo; i <= hi && out->value_count < HG_HP_VALUES_MAX; ++i) {
+                BSTR item = NULL;
+                if (SUCCEEDED(SafeArrayGetElement(V_ARRAY(&values), &i, &item)) && item) {
+                    hg_hp_copy(out->values[out->value_count], HG_HP_VALUE_MAX, item);
+                    ++out->value_count;
+                }
+                if (item)
+                    SysFreeString(item);
+            }
+
+            /* A setting the firmware will not let be changed says so here; an
+             * unreadable flag is treated as read-only, never as writable. */
+            int flag = 1;
+            if (SUCCEEDED(row->lpVtbl->Get(row, L"IsReadOnly", 0, &read_only, NULL, NULL)))
+                hg_variant_to_int(&read_only, &flag);
+            out->read_only = flag != 0;
+            hr = S_OK;
+        }
+        VariantClear(&current);
+        VariantClear(&values);
+        VariantClear(&read_only);
+        HG_RELEASE_COM(row);
+    } else {
+        hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    }
+    HG_RELEASE_COM(services);
+    return hr;
+}
+
+HRESULT hg_hpbios_password_is_set(BOOL *out_set)
+{
+    if (!out_set)
+        return E_INVALIDARG;
+    *out_set = FALSE;
+
+    IWbemServices *services = hg_hp_open();
+    if (!services)
+        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+
+    HRESULT hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    IWbemClassObject *row =
+        hg_wmi_first_instance_within(services, L"SELECT IsSet FROM HP_BIOSPassword WHERE Name='Setup Password'",
+                                     HG_HP_TIMEOUT_MS);
+    if (row) {
+        VARIANT is_set;
+        VariantInit(&is_set);
+        int flag = 0;
+        if (SUCCEEDED(row->lpVtbl->Get(row, L"IsSet", 0, &is_set, NULL, NULL)) && hg_variant_to_int(&is_set, &flag)) {
+            *out_set = flag != 0;
+            hr = S_OK;
+        }
+        VariantClear(&is_set);
+        HG_RELEASE_COM(row);
+    }
+    HG_RELEASE_COM(services);
+    return hr;
+}
+
+static HRESULT hg_hp_put_string(IWbemClassObject *object, const WCHAR *name, const WCHAR *value)
+{
+    VARIANT v;
+    VariantInit(&v);
+    V_VT(&v) = VT_BSTR;
+    V_BSTR(&v) = SysAllocString(value);
+    if (!V_BSTR(&v))
+        return E_OUTOFMEMORY;
+    HRESULT hr = object->lpVtbl->Put(object, name, 0, &v, 0);
+    /* The password passes through here too: wipe this copy before it is freed. */
+    SecureZeroMemory(V_BSTR(&v), SysStringByteLen(V_BSTR(&v)));
+    VariantClear(&v);
+    return hr;
+}
+
+HRESULT hg_hpbios_write(const WCHAR *name, const WCHAR *value, const WCHAR *password, unsigned long *out_return)
+{
+    if (!name || !value || !out_return)
+        return E_INVALIDARG;
+    *out_return = (unsigned long)-1;
+
+    /* HP takes the password as "<utf-16/>" and the password itself; with no
+     * password set, the prefix alone. */
+    WCHAR secret[HG_HP_PASSWORD_MAX + 16];
+    if (FAILED(StringCchPrintfW(secret, HG_ARRAYSIZE(secret), L"<utf-16/>%s", password ? password : L"")))
+        return E_INVALIDARG;
+
+    IWbemServices *services = hg_hp_open();
+    if (!services) {
+        SecureZeroMemory(secret, sizeof(secret));
+        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+    }
+
+    HRESULT hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    IWbemClassObject *instance =
+        hg_wmi_first_instance_within(services, L"SELECT * FROM HP_BIOSSettingInterface", HG_HP_TIMEOUT_MS);
+    if (instance) {
+        VARIANT path;
+        VariantInit(&path);
+        IWbemClassObject *definition = NULL;
+        IWbemClassObject *in_signature = NULL;
+        IWbemClassObject *arguments = NULL;
+        IWbemClassObject *result = NULL;
+        BSTR class_name = SysAllocString(L"HP_BIOSSettingInterface");
+        BSTR method = SysAllocString(L"SetBIOSSetting");
+
+        hr = E_FAIL;
+        if (class_name && method &&
+            SUCCEEDED(instance->lpVtbl->Get(instance, L"__RELPATH", 0, &path, NULL, NULL)) && V_VT(&path) == VT_BSTR &&
+            SUCCEEDED(services->lpVtbl->GetObject(services, class_name, 0, NULL, &definition, NULL)) && definition &&
+            SUCCEEDED(definition->lpVtbl->GetMethod(definition, L"SetBIOSSetting", 0, &in_signature, NULL)) &&
+            in_signature && SUCCEEDED(in_signature->lpVtbl->SpawnInstance(in_signature, 0, &arguments)) && arguments &&
+            SUCCEEDED(hg_hp_put_string(arguments, L"Name", name)) &&
+            SUCCEEDED(hg_hp_put_string(arguments, L"Value", value)) &&
+            SUCCEEDED(hg_hp_put_string(arguments, L"Password", secret))) {
+            hr = services->lpVtbl->ExecMethod(services, V_BSTR(&path), method, 0, NULL, arguments, &result, NULL);
+            if (SUCCEEDED(hr)) {
+                VARIANT ret;
+                VariantInit(&ret);
+                int code = -1;
+                if (result && SUCCEEDED(result->lpVtbl->Get(result, L"Return", 0, &ret, NULL, NULL)) &&
+                    hg_variant_to_int(&ret, &code))
+                    *out_return = (unsigned long)code;
+                else
+                    hr = E_UNEXPECTED;
+                VariantClear(&ret);
+            }
+        }
+
+        HG_RELEASE_COM(result);
+        HG_RELEASE_COM(arguments);
+        HG_RELEASE_COM(in_signature);
+        HG_RELEASE_COM(definition);
+        if (method)
+            SysFreeString(method);
+        if (class_name)
+            SysFreeString(class_name);
+        VariantClear(&path);
+        HG_RELEASE_COM(instance);
+    }
+    SecureZeroMemory(secret, sizeof(secret));
+    HG_RELEASE_COM(services);
+    return hr;
+}
+
+BOOL hg_hpbios_machine_is_hp(void)
+{
+    static int cached = -1;
+    if (cached < 0) {
+        WCHAR maker[128] = {0};
+        DWORD size = sizeof(maker);
+        cached = 0;
+        if (RegGetValueW(HKEY_LOCAL_MACHINE, L"HARDWARE\\DESCRIPTION\\System\\BIOS", L"SystemManufacturer",
+                         RRF_RT_REG_SZ, NULL, maker, &size) == ERROR_SUCCESS) {
+            maker[HG_ARRAYSIZE(maker) - 1] = 0;
+            /* "HP" today, "Hewlett-Packard" on older machines. */
+            cached = (_wcsnicmp(maker, L"HP", 2) == 0 && (maker[2] == 0 || maker[2] == L' ')) ||
+                     _wcsnicmp(maker, L"Hewlett", 7) == 0;
+        }
+    }
+    return cached != 0;
 }

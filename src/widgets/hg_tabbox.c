@@ -176,8 +176,15 @@ static void tabbox_build_control_rows(void)
         {HG_ROW_COMMAND, HG_IDM_SCREEN_SAVER, L"Screen Saver..."},
         {HG_ROW_COMMAND, HG_IDM_ABOUT, L"About..."},
     };
-    for (size_t i = 0; i < HG_ARRAYSIZE(commands); ++i)
+    for (size_t i = 0; i < HG_ARRAYSIZE(commands); ++i) {
+        /* HP Fn Keys goes before About, and only on an HP machine: it is a
+         * BIOS setting nothing else has (owner's decision, 2026-11-08). */
+        if (commands[i].id == HG_IDM_ABOUT && hg_hpbios_machine_is_hp()) {
+            HgControlRow hp = {HG_ROW_COMMAND, HG_IDM_HP_FNKEYS, L"HP Fn Keys..."};
+            tabbox_add_control_row(hp);
+        }
         tabbox_add_control_row(commands[i]);
+    }
 
     /* And last, the ones this build cannot switch. They are still listed: a
      * feature that vanishes leaves the reader wondering whether they imagined
