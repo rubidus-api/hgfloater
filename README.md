@@ -961,7 +961,7 @@ About are all rows of the [`Set` button's list](#62-the-set-button).
 ### 7.1 The settings window
 
 **Settings Window...** in the `Set` list, `Ctrl + ,` from the floater or the
-taskbox, or `settings` in the command box. One list, in five parts:
+taskbox, or `settings` in the command box. One list, in six parts:
 
 - **Options** — the switches above. `Enter` or `Space` flips the selected one.
 - **Floater Clock** — five rows for [the clock](#41-the-clock-and-the-date):
@@ -999,7 +999,15 @@ taskbox, or `settings` in the command box. One list, in five parts:
   choosing.
 - **Values** — the numbers: opacity, text sizes, icon size, how many clipboard
   entries to keep, how many command lines to remember. `Left` and `Right` change
-  the selected one, by five for a percentage and by one otherwise.
+  the selected one, by five for a percentage and by one otherwise. The command
+  box, the notes (every editor and the note list together) and the clipboard
+  window each have an opacity of their own: `commandbox-alpha`, `note-alpha`,
+  `clip-alpha`. At 100% a note or clipboard window is not translucent at all.
+- **Window Colours** — the text and the background of the notes, the clipboard
+  window and the command box, six rows. `Enter` opens Windows' colour chooser
+  and `R` hands the colour back to the theme, which is where every one of them
+  starts. Each row wears a swatch of the colour the window shows. With Windows'
+  high contrast on, its colours win over these.
 - **Keys** — **window, function, keys**, which is how they are stored. A heading
   names the window, each row under it is a function, and **each chord is its own
   row** beneath the function it runs. On a function row, `Enter` waits for a
@@ -1426,6 +1434,7 @@ replaced by the default at the next start.
 | Key | Meaning |
 | :--- | :--- |
 | `max` | The most clips the history keeps, 1–64 (default `16`) |
+| `alpha` | Opacity of the clipboard window, 76–255 (default `255`, not translucent) |
 
 Only the number lives here. The clips themselves are never written to disk.
 
@@ -1455,7 +1464,7 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
   — the dark palette. These are the **widget** colors: the floater, the taskbox
   and the toolbar. The document windows take their page colors from the system
-  theme instead and have no keys here.
+  theme instead, unless the keys below give them their own.
 - `focus_bg` — the keyboard/mouse focus highlight.
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
@@ -1463,6 +1472,10 @@ Every accent color as `RRGGBB` hex, for example `FFD228`:
   plates behind `Alp`, `Mon` and `Vol`.
 - `clock_blink` — the colour the clock's hours and minutes change to when
   `[floater] blink` is on.
+- `note_text`, `note_bg`, `clip_text`, `clip_bg`, `commandbox_text`,
+  `commandbox_bg` — the document windows' own colours, set in the settings
+  window's **Window Colours**. `theme` (or no line at all) follows the system
+  theme, as the other document windows do.
 
 ### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 
@@ -1497,6 +1510,7 @@ before v0.14.0 carries over into `[keys.system]`, and is then no longer used.
 | `sort_active`, `sort_archived` | Which column each half of the list is sorted by |
 | `sort_active_desc`, `sort_archived_desc` | `1` for newest or Z first |
 | `list_x`, `list_y`, `list_w`, `list_h` | Where the note list window sits |
+| `alpha` | Opacity of every note editor and the note list, 76–255 (default `255`, not translucent) |
 
 Notes themselves keep a `note/note.ini` beside their `.txt` files, but only for
 what is about a note rather than about the program: whether it is archived, when

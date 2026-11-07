@@ -344,22 +344,226 @@ BOOL hg_is_document_window(HWND hwnd)
            lstrcmpiW(class_name, HG_CLASS_SETTINGS) == 0 || lstrcmpiW(class_name, HG_CLASS_ABOUT) == 0;
 }
 
+/* --------------------------------------------------- pages of their own (R1.4)
+ *
+ * The reader's colours for the note page, the clipboard and the command box,
+ * and the opacity of the first two. Kept here, beside the theme they override,
+ * so that every place that asks for a document colour gets one answer. */
+typedef struct HgPageColors {
+    BOOL set[2]; /* HG_DOC_COLOR_TEXT, HG_DOC_COLOR_BG */
+    COLORREF color[2];
+} HgPageColors;
+
+static HgPageColors s_page_colors[HG_DOC_PAGE_COUNT];
+static BYTE s_page_alpha[HG_DOC_PAGE_COUNT] = {255, 255, 255, 255};
+
+/* The config keys: [colors] <prefix>_text / <prefix>_bg, [<section>] alpha. */
+static const WCHAR *const s_page_key_prefix[HG_DOC_PAGE_COUNT] = {NULL, L"note", L"clip", L"commandbox"};
+static const WCHAR *const s_page_alpha_section[HG_DOC_PAGE_COUNT] = {NULL, L"note", L"clipboard", NULL};
+static const WCHAR *const s_page_names[HG_DOC_PAGE_COUNT] = {L"Other", L"Note", L"Clipboard", L"Command Box"};
+
+static BOOL hg_page_valid(int page)
+{
+    return page > HG_DOC_PAGE_OTHER && page < HG_DOC_PAGE_COUNT;
+}
+
+const WCHAR *hg_document_page_name(int page)
+{
+    return (page >= 0 && page < HG_DOC_PAGE_COUNT) ? s_page_names[page] : L"";
+}
+
+static void hg_page_color_key(int page, int which, WCHAR *key, size_t cch)
+{
+    hellgates_wsprintf(key, cch, L"%ls_%ls", s_page_key_prefix[page], which == HG_DOC_COLOR_BG ? L"bg" : L"text");
+}
+
+/* RRGGBB, as every other colour in [colors] is written. Anything else -
+ * nothing, "theme", a typo - leaves the page on the theme. */
+static BOOL hg_parse_rrggbb(const WCHAR *text, COLORREF *out)
+{
+    unsigned value = 0;
+    int digits = 0;
+    for (; text[digits]; ++digits) {
+        WCHAR c = text[digits];
+        unsigned d;
+        if (c >= L'0' && c <= L'9')
+            d = (unsigned)(c - L'0');
+        else if (c >= L'A' && c <= L'F')
+            d = (unsigned)(c - L'A' + 10);
+        else if (c >= L'a' && c <= L'f')
+            d = (unsigned)(c - L'a' + 10);
+        else
+            return FALSE;
+        if (digits >= 6)
+            return FALSE;
+        value = (value << 4) | d;
+    }
+    if (digits != 6)
+        return FALSE;
+    *out = RGB((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF);
+    return TRUE;
+}
+
+void hg_document_pages_load(void)
+{
+    for (int page = HG_DOC_PAGE_OTHER + 1; page < HG_DOC_PAGE_COUNT; ++page) {
+        for (int which = 0; which < 2; ++which) {
+            WCHAR key[32];
+            WCHAR text[16] = {0};
+            hg_page_color_key(page, which, key, HG_ARRAYSIZE(key));
+            GetPrivateProfileStringW(L"colors", key, L"", text, (DWORD)HG_ARRAYSIZE(text), hg_g_config_path);
+            s_page_colors[page].set[which] = hg_parse_rrggbb(text, &s_page_colors[page].color[which]);
+        }
+        if (s_page_alpha_section[page]) {
+            int alpha = (int)GetPrivateProfileIntW(s_page_alpha_section[page], L"alpha", 255, hg_g_config_path);
+            s_page_alpha[page] = (BYTE)hg_clamp_alpha(alpha);
+        }
+    }
+}
+
+BOOL hg_document_page_color(int page, int which, COLORREF *out)
+{
+    if (!hg_page_valid(page) || which < 0 || which > 1 || !s_page_colors[page].set[which])
+        return FALSE;
+    if (out)
+        *out = s_page_colors[page].color[which];
+    return TRUE;
+}
+
+static void hg_page_windows_apply(int page, BOOL colors, BOOL alpha);
+
+void hg_document_set_page_color(int page, int which, BOOL set, COLORREF color)
+{
+    if (!hg_page_valid(page) || which < 0 || which > 1)
+        return;
+    s_page_colors[page].set[which] = set;
+    s_page_colors[page].color[which] = color & 0x00FFFFFFu;
+
+    WCHAR key[32];
+    WCHAR text[16];
+    hg_page_color_key(page, which, key, HG_ARRAYSIZE(key));
+    if (set)
+        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%02X%02X%02X", GetRValue(color), GetGValue(color),
+                           GetBValue(color));
+    else
+        StringCchCopyW(text, HG_ARRAYSIZE(text), L"theme");
+    WritePrivateProfileStringW(L"colors", key, text, hg_g_config_path);
+    hg_page_windows_apply(page, TRUE, FALSE);
+}
+
+BYTE hg_document_page_alpha(int page)
+{
+    if (page == HG_DOC_PAGE_COMMANDBOX)
+        return hg_g_commandbox_alpha;
+    return hg_page_valid(page) ? s_page_alpha[page] : 255;
+}
+
+void hg_document_set_page_alpha(int page, BYTE alpha)
+{
+    if (!hg_page_valid(page) || !s_page_alpha_section[page])
+        return;
+    s_page_alpha[page] = (BYTE)hg_clamp_alpha(alpha);
+
+    WCHAR text[16];
+    hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%u", (UINT)s_page_alpha[page]);
+    WritePrivateProfileStringW(s_page_alpha_section[page], L"alpha", text, hg_g_config_path);
+    hg_page_windows_apply(page, FALSE, TRUE);
+}
+
+void hg_document_apply_page_alpha(HWND hwnd, int page)
+{
+    if (!hwnd || !IsWindow(hwnd) || !hg_page_valid(page) || !s_page_alpha_section[page])
+        return;
+    /* Fully opaque, the window is not layered at all: a layered RichEdit or
+     * list box costs a redirection surface for nothing a reader can see. */
+    BYTE alpha = s_page_alpha[page];
+    LONG_PTR ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    if (alpha >= 255) {
+        if (ex & WS_EX_LAYERED) {
+            /* A style changed this way is cached until the frame is told, and
+             * a shown window can stay composited as layered - or unpainted -
+             * until something repaints all of it. */
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex & ~(LONG_PTR)WS_EX_LAYERED);
+            SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+        }
+        return;
+    }
+    if (!(ex & WS_EX_LAYERED))
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | WS_EX_LAYERED);
+    SetLayeredWindowAttributes(hwnd, 0, alpha, LWA_ALPHA);
+}
+
+static int hg_page_of_class(const WCHAR *class_name)
+{
+    if (lstrcmpiW(class_name, HG_CLASS_NOTE_EDIT) == 0 || lstrcmpiW(class_name, HG_CLASS_NOTE_LIST) == 0)
+        return HG_DOC_PAGE_NOTE;
+    if (lstrcmpiW(class_name, HG_CLASS_CLIP) == 0)
+        return HG_DOC_PAGE_CLIP;
+    if (lstrcmpiW(class_name, HG_CLASS_COMMANDBOX) == 0)
+        return HG_DOC_PAGE_COMMANDBOX;
+    return HG_DOC_PAGE_OTHER;
+}
+
+typedef struct HgPageApply {
+    int page;
+    BOOL colors;
+    BOOL alpha;
+} HgPageApply;
+
+static BOOL CALLBACK hg_page_apply_proc(HWND hwnd, LPARAM l_param)
+{
+    const HgPageApply *apply = (const HgPageApply *)l_param;
+    WCHAR class_name[64];
+    if (GetClassNameW(hwnd, class_name, (int)HG_ARRAYSIZE(class_name)) <= 0 ||
+        hg_page_of_class(class_name) != apply->page)
+        return TRUE;
+    if (apply->alpha)
+        hg_document_apply_page_alpha(hwnd, apply->page);
+    if (apply->colors) {
+        /* Each window already knows how to take a theme change - the caption,
+         * and for a note the RichEdit's colours, which it does not ask for -
+         * so a changed colour is handed to it as one. */
+        SendMessageW(hwnd, WM_SETTINGCHANGE, 0, (LPARAM)L"ImmersiveColorSet");
+        RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+    }
+    return TRUE;
+}
+
+static void hg_page_windows_apply(int page, BOOL colors, BOOL alpha)
+{
+    HgPageApply apply = {page, colors, alpha};
+    EnumThreadWindows(GetCurrentThreadId(), hg_page_apply_proc, (LPARAM)&apply);
+}
+
 /* What the theme says a page of text should look like, with no inversion. High
  * contrast is the one case that is not ours to decide: the user has named the
  * exact colors, and a fixed pair would override the setting that exists to be
  * obeyed. */
 HgDocumentColors hg_document_colors(void)
 {
+    return hg_document_colors_for(HG_DOC_PAGE_OTHER);
+}
+
+HgDocumentColors hg_document_colors_for(int page)
+{
     if (hg_g_is_high_contrast) {
         HgDocumentColors hc = {GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT)};
         return hc;
     }
+    HgDocumentColors doc = {HG_DOC_LIGHT_BG, HG_DOC_LIGHT_TEXT};
     if (hg_g_is_dark_mode) {
-        HgDocumentColors dark = {HG_DOC_DARK_BG, HG_DOC_DARK_TEXT};
-        return dark;
+        doc.bg = HG_DOC_DARK_BG;
+        doc.text = HG_DOC_DARK_TEXT;
     }
-    HgDocumentColors light = {HG_DOC_LIGHT_BG, HG_DOC_LIGHT_TEXT};
-    return light;
+    if (hg_page_valid(page)) {
+        if (s_page_colors[page].set[HG_DOC_COLOR_BG])
+            doc.bg = s_page_colors[page].color[HG_DOC_COLOR_BG];
+        if (s_page_colors[page].set[HG_DOC_COLOR_TEXT])
+            doc.text = s_page_colors[page].color[HG_DOC_COLOR_TEXT];
+    }
+    return doc;
 }
 
 /* A small input field, one step off the page so that it still reads as a place
@@ -367,9 +571,29 @@ HgDocumentColors hg_document_colors(void)
  * the field is told apart by the caret and the focus rectangle the user chose. */
 HgDocumentColors hg_document_field_colors(void)
 {
-    HgDocumentColors field = hg_document_colors();
+    return hg_document_field_colors_for(HG_DOC_PAGE_OTHER);
+}
+
+/* One channel a twelfth of the way from the page towards its text. */
+static BYTE hg_field_mix(BYTE bg, BYTE text)
+{
+    return (BYTE)(((int)bg * 11 + (int)text) / 12);
+}
+
+HgDocumentColors hg_document_field_colors_for(int page)
+{
+    HgDocumentColors field = hg_document_colors_for(page);
     if (hg_g_is_high_contrast)
         return field;
+    if (hg_page_valid(page) && s_page_colors[page].set[HG_DOC_COLOR_BG]) {
+        /* A background of the reader's own: the field is a shade of it rather
+         * than the theme's white or near-black, which could be anything
+         * against it. */
+        field.bg = RGB(hg_field_mix(GetRValue(field.bg), GetRValue(field.text)),
+                       hg_field_mix(GetGValue(field.bg), GetGValue(field.text)),
+                       hg_field_mix(GetBValue(field.bg), GetBValue(field.text)));
+        return field;
+    }
     field.bg = hg_g_is_dark_mode ? HG_DOC_DARK_FIELD_BG : HG_DOC_LIGHT_FIELD_BG;
     return field;
 }
@@ -396,16 +620,31 @@ LRESULT hg_on_ctlcolor_field(HDC hdc)
     return hg_on_ctlcolor_pair(hdc, hg_document_field_colors());
 }
 
+LRESULT hg_on_ctlcolor_document_for(HDC hdc, int page)
+{
+    return hg_on_ctlcolor_pair(hdc, hg_document_colors_for(page));
+}
+
+LRESULT hg_on_ctlcolor_field_for(HDC hdc, int page)
+{
+    return hg_on_ctlcolor_pair(hdc, hg_document_field_colors_for(page));
+}
+
 /* A document window's own client area, behind and around its controls. Painted
  * here rather than through the class brush because the class brush is the
  * widget colour shared with the floater, and because a brush the class holds
  * is a handle that a theme change can delete underneath it. */
 void hg_document_paint_background(HWND hwnd, HDC hdc)
 {
+    hg_document_paint_background_for(hwnd, hdc, HG_DOC_PAGE_OTHER);
+}
+
+void hg_document_paint_background_for(HWND hwnd, HDC hdc, int page)
+{
     if (!hwnd || !hdc)
         return;
 
-    HBRUSH brush = hg_cached_solid_brush(hg_document_colors().bg);
+    HBRUSH brush = hg_cached_solid_brush(hg_document_colors_for(page).bg);
     if (!brush)
         return;
 
@@ -419,10 +658,15 @@ void hg_document_paint_background(HWND hwnd, HDC hdc)
  * note under a black caption - which reads as two windows stuck together. */
 void hg_apply_dwm_attributes_document(HWND hwnd)
 {
+    hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_OTHER);
+}
+
+void hg_apply_dwm_attributes_document_for(HWND hwnd, int page)
+{
     if (!hwnd || !IsWindow(hwnd))
         return;
 
-    HgDocumentColors doc = hg_document_colors();
+    HgDocumentColors doc = hg_document_colors_for(page);
     BOOL use_immersive_dark_mode = hg_g_is_dark_mode && !hg_g_is_high_contrast;
     DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &use_immersive_dark_mode,
                           sizeof(use_immersive_dark_mode));
@@ -492,7 +736,7 @@ void refresh_theme_surfaces(HWND hwnd)
         hg_apply_dwm_attributes_document(hg_g_about_wnd);
     }
     if (hg_g_commandbox_wnd && hg_g_commandbox_wnd != hwnd) {
-        hg_apply_dwm_attributes_document(hg_g_commandbox_wnd);
+        hg_apply_dwm_attributes_document_for(hg_g_commandbox_wnd, HG_DOC_PAGE_COMMANDBOX);
     }
 
     hg_flush_solid_brush_cache();

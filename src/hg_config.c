@@ -568,6 +568,11 @@ void hg_config_reset_all(HWND hwnd)
 
     (void)hwnd;
     reset_colors_config();
+    for (int page = HG_DOC_PAGE_OTHER + 1; page < HG_DOC_PAGE_COUNT; ++page) {
+        hg_document_set_page_color(page, HG_DOC_COLOR_TEXT, FALSE, 0); /* back to the theme */
+        hg_document_set_page_color(page, HG_DOC_COLOR_BG, FALSE, 0);
+        hg_document_set_page_alpha(page, 255); /* the command box is reset below, by its own value */
+    }
     hg_clock_reset_all(); /* formats, hover region and blink; the floater is laid out again below */
     refresh_theme_surfaces(hg_g_taskbox_wnd);
     hg_g_floater_alpha = 204;

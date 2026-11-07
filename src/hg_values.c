@@ -39,6 +39,8 @@ enum {
     HG_VALUE_FLOATER_ALPHA,
     HG_VALUE_TASKBOX_ALPHA,
     HG_VALUE_COMMANDBOX_ALPHA,
+    HG_VALUE_NOTE_ALPHA,
+    HG_VALUE_CLIP_ALPHA,
     HG_VALUE_NOTE_FONT,
     HG_VALUE_CLIP_FONT,
     HG_VALUE_UI_FONT,
@@ -55,6 +57,8 @@ static const HgValueInfo hg_values[] = {
     {L"floater-alpha", L"%", 30, 100, L"floater opacity"},
     {L"taskbox-alpha", L"%", 30, 100, L"taskbox opacity"},
     {L"commandbox-alpha", L"%", 30, 100, L"command box opacity"},
+    {L"note-alpha", L"%", 30, 100, L"note opacity - every editor and the note list"},
+    {L"clip-alpha", L"%", 30, 100, L"clipboard window opacity"},
     {L"note-font", L"pt", 8, 72, L"note text size, shared by the list and every editor"},
     {L"clip-font", L"pt", 8, 72, L"clipboard text size"},
     {L"ui-font", L"pt", 8, 72, L"interface text size - buttons, lists, the status line"},
@@ -96,6 +100,12 @@ BOOL hg_value_get(int number, int *out)
         return TRUE;
     case HG_VALUE_COMMANDBOX_ALPHA:
         *out = alpha_to_percent(hg_g_commandbox_alpha);
+        return TRUE;
+    case HG_VALUE_NOTE_ALPHA:
+        *out = alpha_to_percent(hg_document_page_alpha(HG_DOC_PAGE_NOTE));
+        return TRUE;
+    case HG_VALUE_CLIP_ALPHA:
+        *out = alpha_to_percent(hg_document_page_alpha(HG_DOC_PAGE_CLIP));
         return TRUE;
     case HG_VALUE_NOTE_FONT:
         *out = hg_note_font_size();
@@ -159,6 +169,12 @@ BOOL hg_value_set(int number, int value, BOOL *out_persisted)
         if (hg_g_commandbox_wnd && IsWindow(hg_g_commandbox_wnd))
             SetLayeredWindowAttributes(hg_g_commandbox_wnd, 0, hg_g_commandbox_alpha, LWA_ALPHA);
         save_commandbox_alpha_config();
+        break;
+    case HG_VALUE_NOTE_ALPHA:
+        hg_document_set_page_alpha(HG_DOC_PAGE_NOTE, percent_to_alpha(value)); /* applies and saves */
+        break;
+    case HG_VALUE_CLIP_ALPHA:
+        hg_document_set_page_alpha(HG_DOC_PAGE_CLIP, percent_to_alpha(value));
         break;
     case HG_VALUE_NOTE_FONT:
         hg_note_set_font_size(value); /* note.ini */

@@ -535,7 +535,7 @@ void show_commandbox_window()
     if (hg_g_commandbox_wnd) {
         /* A document window: it paints its own page-coloured background rather
          * than taking the widget brush off the class. */
-        hg_apply_dwm_attributes_document(hg_g_commandbox_wnd);
+        hg_apply_dwm_attributes_document_for(hg_g_commandbox_wnd, HG_DOC_PAGE_COMMANDBOX);
         SetLayeredWindowAttributes(hg_g_commandbox_wnd, 0, hg_g_commandbox_alpha, LWA_ALPHA);
 
         /* No WS_EX_CLIENTEDGE below: the sunken edge is what the mode border
@@ -842,13 +842,13 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     }
 
     case WM_ERASEBKGND:
-        hg_document_paint_background(hwnd, (HDC)w_param);
+        hg_document_paint_background_for(hwnd, (HDC)w_param, HG_DOC_PAGE_COMMANDBOX);
         return 1;
 
     case WM_SETTINGCHANGE:
         if (should_refresh_theme_on_setting_change(l_param)) {
             update_theme_colors();
-            hg_apply_dwm_attributes_document(hwnd);
+            hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_COMMANDBOX);
             InvalidateRect(hwnd, NULL, TRUE);
         }
         return 0;
@@ -860,8 +860,8 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
     case WM_CTLCOLORLISTBOX: {
         HWND child = (HWND)l_param;
         if (child && child == hg_g_commandbox_in_wnd)
-            return hg_on_ctlcolor_field((HDC)w_param);
-        return hg_on_ctlcolor_document((HDC)w_param);
+            return hg_on_ctlcolor_field_for((HDC)w_param, HG_DOC_PAGE_COMMANDBOX);
+        return hg_on_ctlcolor_document_for((HDC)w_param, HG_DOC_PAGE_COMMANDBOX);
     }
 
     case WM_CLOSE:

@@ -354,7 +354,7 @@ static void note_edit_apply_theme(HWND edit)
     if (!edit || !s_richedit_ready)
         return;
 
-    HgDocumentColors doc = hg_document_colors();
+    HgDocumentColors doc = hg_document_colors_for(HG_DOC_PAGE_NOTE);
     SendMessageW(edit, EM_SETBKGNDCOLOR, 0, (LPARAM)doc.bg);
 
     CHARFORMAT2W cf;
@@ -373,7 +373,7 @@ static void note_editor_apply_theme(HWND hwnd)
     if (!hwnd || !IsWindow(hwnd))
         return;
 
-    hg_apply_dwm_attributes_document(hwnd);
+    hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_NOTE);
     HWND edit = GetDlgItem(hwnd, HG_NOTE_EDIT_ID);
     note_edit_apply_theme(edit);
     InvalidateRect(hwnd, NULL, TRUE);
@@ -1346,7 +1346,8 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         /* No hg_apply_class_background here: the class brush is the widget
          * colour shared with the floater, and this window paints its own
          * document background in WM_ERASEBKGND. */
-        hg_apply_dwm_attributes_document(hwnd);
+        hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_NOTE);
+        hg_document_apply_page_alpha(hwnd, HG_DOC_PAGE_NOTE);
         /* No WS_EX_CLIENTEDGE. The sunken edge drew a frame around the text
          * that only made sense when the control's background differed from the
          * window's; now that they are the same colour it was a line around
@@ -1441,7 +1442,7 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         break;
 
     case WM_ERASEBKGND:
-        hg_document_paint_background(hwnd, (HDC)w_param);
+        hg_document_paint_background_for(hwnd, (HDC)w_param, HG_DOC_PAGE_NOTE);
         return 1;
 
     /* The system theme can change while a note is open, and RichEdit does not
@@ -1459,7 +1460,7 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
         /* Only reached on the EDIT fallback; RichEdit is coloured explicitly. */
-        return hg_on_ctlcolor_document((HDC)w_param);
+        return hg_on_ctlcolor_document_for((HDC)w_param, HG_DOC_PAGE_NOTE);
 
     case WM_DPICHANGED: {
         hg_apply_dpi_suggested_rect(hwnd, l_param);
@@ -1882,7 +1883,8 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_CREATE: {
         /* A document window, coloured like the notes it lists: see the editor's
          * WM_CREATE for why the class brush is left alone. */
-        hg_apply_dwm_attributes_document(hwnd);
+        hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_NOTE);
+        hg_document_apply_page_alpha(hwnd, HG_DOC_PAGE_NOTE);
         HWND list = CreateWindowExW(0, L"LISTBOX", NULL,
                                     WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOTIFY | LBS_HASSTRINGS, 0, 0, 0, 0,
                                     hwnd, (HMENU)HG_NOTE_LIST_ID, GetModuleHandle(NULL), NULL);
@@ -1960,13 +1962,13 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         break;
 
     case WM_ERASEBKGND:
-        hg_document_paint_background(hwnd, (HDC)w_param);
+        hg_document_paint_background_for(hwnd, (HDC)w_param, HG_DOC_PAGE_NOTE);
         return 1;
 
     case WM_SETTINGCHANGE:
         if (should_refresh_theme_on_setting_change(l_param)) {
             update_theme_colors();
-            hg_apply_dwm_attributes_document(hwnd);
+            hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_NOTE);
             InvalidateRect(hwnd, NULL, TRUE);
         }
         return 0;
@@ -1974,7 +1976,7 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
     case WM_CTLCOLORLISTBOX:
-        return hg_on_ctlcolor_document((HDC)w_param);
+        return hg_on_ctlcolor_document_for((HDC)w_param, HG_DOC_PAGE_NOTE);
 
     case WM_DPICHANGED:
         hg_apply_dpi_suggested_rect(hwnd, l_param);

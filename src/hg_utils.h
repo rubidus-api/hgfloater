@@ -228,6 +228,38 @@ LRESULT hg_on_ctlcolor_document(HDC hdc);
 LRESULT hg_on_ctlcolor_field(HDC hdc);
 void hg_document_paint_background(HWND hwnd, HDC hdc);
 void hg_apply_dwm_attributes_document(HWND hwnd);
+
+/* Pages: the document windows whose colours and opacity the reader can set
+ * (owner's request, 2026-11-07, R1.4). The note editors and the note list are
+ * one page. A colour never set follows the theme, and high contrast always
+ * wins. HG_DOC_PAGE_OTHER (About, the settings window) is the theme alone. */
+enum {
+    HG_DOC_PAGE_OTHER = 0,
+    HG_DOC_PAGE_NOTE,
+    HG_DOC_PAGE_CLIP,
+    HG_DOC_PAGE_COMMANDBOX,
+    HG_DOC_PAGE_COUNT
+};
+enum { HG_DOC_COLOR_TEXT = 0, HG_DOC_COLOR_BG = 1 };
+HgDocumentColors hg_document_colors_for(int page);
+HgDocumentColors hg_document_field_colors_for(int page);
+LRESULT hg_on_ctlcolor_document_for(HDC hdc, int page);
+LRESULT hg_on_ctlcolor_field_for(HDC hdc, int page);
+void hg_document_paint_background_for(HWND hwnd, HDC hdc, int page);
+void hg_apply_dwm_attributes_document_for(HWND hwnd, int page);
+const WCHAR *hg_document_page_name(int page);
+/* The colour the reader set, if any: FALSE means the page follows the theme. */
+BOOL hg_document_page_color(int page, int which, COLORREF *out);
+/* Set (or, with set FALSE, return to the theme), save, and repaint the page's
+ * windows. */
+void hg_document_set_page_color(int page, int which, BOOL set, COLORREF color);
+void hg_document_pages_load(void);
+/* Opacity: the note page and the clipboard. The command box keeps its own
+ * (hg_g_commandbox_alpha). Applies to every open window of the page. */
+BYTE hg_document_page_alpha(int page);
+void hg_document_set_page_alpha(int page, BYTE alpha);
+/* One window of the page, as it is created. */
+void hg_document_apply_page_alpha(HWND hwnd, int page);
 BOOL hg_step_alpha_value(BYTE *alpha, int delta);
 void get_toolbar_item_rect(int item_type, int item_index, int width, int height, int icon_size, RECT *out_rect);
 typedef enum HgToolbarTextMode {

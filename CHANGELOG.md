@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+- **The notes, the clipboard window and the command box can be translucent**,
+  each by its own amount: `note-alpha` (every editor and the note list) and
+  `clip-alpha` join `commandbox-alpha` among the settings window's values.
+  At 100% a note or clipboard window is not layered at all.
+- **Their text and background colours can be chosen**, per window, in a new
+  **Window Colours** part of the settings window, with Windows' colour
+  chooser. `R` on a row returns that colour to the theme, where they all start.
+  High contrast still wins.
+
 ## [v0.17.22] - 2026-11-07
 
 ### Changed

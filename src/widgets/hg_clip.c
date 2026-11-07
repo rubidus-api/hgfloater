@@ -772,7 +772,8 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
     case WM_CREATE: {
         /* A document window: the page follows the system theme rather than the
          * widgets' inversion of it, and paints its own background. */
-        hg_apply_dwm_attributes_document(hwnd);
+        hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_CLIP);
+        hg_document_apply_page_alpha(hwnd, HG_DOC_PAGE_CLIP);
         HINSTANCE instance = GetModuleHandleW(NULL);
 
         /* No WS_EX_CLIENTEDGE on any of the three. The list is the page and
@@ -863,13 +864,13 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
         break;
 
     case WM_ERASEBKGND:
-        hg_document_paint_background(hwnd, (HDC)w_param);
+        hg_document_paint_background_for(hwnd, (HDC)w_param, HG_DOC_PAGE_CLIP);
         return 1;
 
     case WM_SETTINGCHANGE:
         if (should_refresh_theme_on_setting_change(l_param)) {
             update_theme_colors();
-            hg_apply_dwm_attributes_document(hwnd);
+            hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_CLIP);
             InvalidateRect(hwnd, NULL, TRUE);
         }
         return 0;
@@ -881,8 +882,8 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
         HWND child = (HWND)l_param;
         int id = child ? GetDlgCtrlID(child) : 0;
         if (id == HG_CLIP_SEARCH_ID || id == HG_CLIP_MAX_ID)
-            return hg_on_ctlcolor_field((HDC)w_param);
-        return hg_on_ctlcolor_document((HDC)w_param);
+            return hg_on_ctlcolor_field_for((HDC)w_param, HG_DOC_PAGE_CLIP);
+        return hg_on_ctlcolor_document_for((HDC)w_param, HG_DOC_PAGE_CLIP);
     }
 
     case WM_DPICHANGED:

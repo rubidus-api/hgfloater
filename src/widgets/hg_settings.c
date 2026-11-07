@@ -37,7 +37,8 @@ enum {
     HG_ROW_FONT, /* one of the three families */
     HG_ROW_KEY,  /* a function */
     HG_ROW_CHORD, /* one of that function's chords */
-    HG_ROW_CLOCK  /* one of the floater clock's settings, below */
+    HG_ROW_CLOCK, /* one of the floater clock's settings, below */
+    HG_ROW_COLOR  /* a window's text or background colour (settings_color_row) */
 };
 
 /* The floater clock's rows. Not rows of the options or the values table because
@@ -77,7 +78,7 @@ typedef struct HgSettingsRow {
     int index;  /* HG_ROW_CHORD: which of the action's chords */
 } HgSettingsRow;
 
-#define HG_SETTINGS_MAX_ROWS 256
+#define HG_SETTINGS_MAX_ROWS 384
 
 static HWND s_settings_wnd = NULL;
 static BYTE s_settings_alpha = 255;
@@ -173,7 +174,7 @@ static void settings_release_row_font(void)
 static BOOL settings_row_is_actionable(int kind)
 {
     return kind == HG_ROW_OPTION || kind == HG_ROW_VALUE || kind == HG_ROW_FONT || kind == HG_ROW_KEY ||
-           kind == HG_ROW_CHORD || kind == HG_ROW_CLOCK;
+           kind == HG_ROW_CHORD || kind == HG_ROW_CLOCK || kind == HG_ROW_COLOR;
 }
 
 static void settings_apply_font(HWND hwnd)
@@ -412,6 +413,50 @@ static void settings_fill_clock(HWND list)
         settings_add_row(list, HG_ROW_HEADING, 0, help[i]);
 }
 
+/* WINDOW COLOURS (owner's request, 2026-11-07, R1.4): a text and a background
+ * row for each page. The row number holds both: page and which colour. */
+static int settings_color_row_number(int page, int which)
+{
+    return (page - 1) * 2 + which + 1;
+}
+
+static void settings_color_row(int number, int *page, int *which)
+{
+    *page = (number - 1) / 2 + 1;
+    *which = (number - 1) % 2;
+}
+
+/* The colour the row stands for as the window shows it now: the reader's, or
+ * the theme's when none is set. */
+static COLORREF settings_color_row_effective(int number)
+{
+    int page, which;
+    settings_color_row(number, &page, &which);
+    HgDocumentColors now = hg_document_colors_for(page);
+    return (which == HG_DOC_COLOR_BG) ? now.bg : now.text;
+}
+
+static void settings_fill_colors(HWND list)
+{
+    WCHAR line[256];
+    WCHAR label[64];
+    settings_add_row(list, HG_ROW_HEADING, 0, L"");
+    settings_add_row(list, HG_ROW_HEADING, 0, L"WINDOW COLOURS");
+    for (int page = HG_DOC_PAGE_OTHER + 1; page < HG_DOC_PAGE_COUNT; ++page) {
+        for (int which = HG_DOC_COLOR_TEXT; which <= HG_DOC_COLOR_BG; ++which) {
+            COLORREF color;
+            StringCchPrintfW(label, HG_ARRAYSIZE(label), L"%ls %ls", hg_document_page_name(page),
+                             (which == HG_DOC_COLOR_BG) ? L"Background" : L"Text");
+            if (hg_document_page_color(page, which, &color))
+                StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls #%02X%02X%02X", label, GetRValue(color),
+                                 GetGValue(color), GetBValue(color));
+            else
+                StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls theme", label);
+            settings_add_row(list, HG_ROW_COLOR, settings_color_row_number(page, which), line);
+        }
+    }
+}
+
 static void settings_fill(HWND hwnd)
 {
     HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
@@ -464,6 +509,8 @@ static void settings_fill(HWND hwnd)
                          info.min, info.max);
         settings_add_row(list, HG_ROW_VALUE, i, line);
     }
+
+    settings_fill_colors(list);
 
     /* Window, function, keys - the headings are the windows, so the three
      * levels read down the page in the order they are spoken. */
@@ -568,6 +615,11 @@ static void settings_describe(HWND hwnd)
         break;
     case HG_ROW_CHORD:
         settings_say(hwnd, L"Del removes this key.  Enter replaces it with the next one you press.");
+        break;
+    case HG_ROW_COLOR:
+        settings_say(hwnd, hg_g_is_high_contrast
+                               ? L"Enter picks the colour, R follows the theme.  High contrast is on: its colours win."
+                               : L"Enter picks the colour.  R follows the theme again.");
         break;
     case HG_ROW_CLOCK:
         switch (row.number) {
@@ -806,6 +858,42 @@ static BOOL settings_choose_blink_color(HWND hwnd)
         return FALSE; /* cancelled, or the dialog would not open */
 
     hg_clock_set_blink_color(cc.rgbResult);
+    return TRUE;
+}
+
+/* A WINDOW COLOURS row: Enter or Space opens Windows' colour chooser seeded with
+ * the colour the window shows now; R hands the colour back to the theme. */
+static BOOL settings_color_row_command(HWND hwnd, int number, UINT vk)
+{
+    static COLORREF s_custom[16];
+    int page, which;
+    settings_color_row(number, &page, &which);
+    WCHAR message[200];
+
+    if (vk == 'R') {
+        hg_document_set_page_color(page, which, FALSE, 0);
+        settings_fill(hwnd);
+        StringCchPrintfW(message, HG_ARRAYSIZE(message), L"%ls %ls: follows the theme.", hg_document_page_name(page),
+                         (which == HG_DOC_COLOR_BG) ? L"background" : L"text");
+        settings_say(hwnd, message);
+        return TRUE;
+    }
+    if (vk != VK_RETURN && vk != VK_SPACE)
+        return FALSE;
+
+    CHOOSECOLORW cc;
+    SecureZeroMemory(&cc, sizeof(cc));
+    cc.lStructSize = sizeof(cc);
+    cc.hwndOwner = hwnd;
+    cc.rgbResult = settings_color_row_effective(number);
+    cc.lpCustColors = s_custom;
+    cc.Flags = CC_RGBINIT | CC_FULLOPEN | CC_ANYCOLOR;
+    if (!ChooseColorW(&cc))
+        return TRUE; /* cancelled: nothing changes */
+
+    hg_document_set_page_color(page, which, TRUE, cc.rgbResult);
+    settings_fill(hwnd);
+    settings_describe(hwnd);
     return TRUE;
 }
 
@@ -1095,6 +1183,10 @@ static BOOL settings_list_key(HWND parent, UINT vk)
         if (settings_clock_row_command(parent, row.number, vk))
             return TRUE;
         break;
+    case HG_ROW_COLOR:
+        if (settings_color_row_command(parent, row.number, vk))
+            return TRUE;
+        break;
     default:
         break;
     }
@@ -1267,6 +1359,10 @@ static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM 
                 settings_clock_row_command(parent, row.number, VK_RETURN);
                 return 0;
             }
+            if (row.kind == HG_ROW_COLOR) {
+                settings_color_row_command(parent, row.number, VK_RETURN);
+                return 0;
+            }
             if (row.kind == HG_ROW_KEY || row.kind == HG_ROW_CHORD) {
                 if (row.kind == HG_ROW_KEY)
                     settings_key_row_command(parent, row.number, VK_RETURN);
@@ -1378,12 +1474,14 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         DrawTextW(dis->hDC, text, -1, &text_rc, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
 
         /* The colour row shows its colour, in the indent, as well as naming it. */
-        if (kind == HG_ROW_CLOCK && s_rows[index].number == HG_CLOCK_ROW_BLINK_COLOR) {
+        BOOL blink_row = (kind == HG_ROW_CLOCK && s_rows[index].number == HG_CLOCK_ROW_BLINK_COLOR);
+        if (blink_row || kind == HG_ROW_COLOR) {
             int inset = (dis->rcItem.bottom - dis->rcItem.top) / 5;
             int side = (dis->rcItem.bottom - dis->rcItem.top) - inset * 2;
             RECT swatch = {dis->rcItem.left + 2, dis->rcItem.top + inset, dis->rcItem.left + 2 + side,
                            dis->rcItem.bottom - inset};
-            HBRUSH swatch_brush = hg_cached_solid_brush(hg_clock_blink_color());
+            HBRUSH swatch_brush = hg_cached_solid_brush(
+                blink_row ? hg_clock_blink_color() : settings_color_row_effective(s_rows[index].number));
             if (swatch_brush && side > 0) {
                 FillRect(dis->hDC, &swatch, swatch_brush);
                 FrameRect(dis->hDC, &swatch, (HBRUSH)GetStockObject(GRAY_BRUSH));

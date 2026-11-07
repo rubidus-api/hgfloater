@@ -408,6 +408,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
 
     init_paths();
     load_colors_config();
+    hg_document_pages_load(); /* the note, clipboard and command box colours and opacity */
     init_color_scheme();
     update_theme_colors();
 

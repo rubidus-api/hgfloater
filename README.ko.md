@@ -817,7 +817,7 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 ### 7.1 설정 창
 
 `Set` 목록의 **Settings Window...**, 플로터나 태스크박스에서 `Ctrl + ,`, 또는 커맨드
-박스의 `settings` 로 엽니다. 한 목록이 다섯 부분으로 나뉩니다.
+박스의 `settings` 로 엽니다. 한 목록이 여섯 부분으로 나뉩니다.
 
 - **Options** — 위의 스위치들입니다. `Enter` 나 `Space` 로 선택한 항목을 뒤집습니다.
 - **Floater Clock** — [시계](#41-시계와-날짜)에 관한 다섯 줄입니다.
@@ -851,7 +851,13 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
   대화상자에서 고른 **크기도 함께 적용**됩니다. 고른 글꼴에 따라 인터페이스 크기, 커맨드
   박스 크기, 노트·클립보드 크기가 바뀝니다.
 - **Values** — 숫자입니다. 투명도, 각종 글자 크기, 아이콘 크기, 클립보드 보관 개수, 명령
-  기록 개수. `Left`·`Right` 로 바꾸며, 퍼센트는 5씩, 나머지는 1씩 움직입니다.
+  기록 개수. `Left`·`Right` 로 바꾸며, 퍼센트는 5씩, 나머지는 1씩 움직입니다. 커맨드 박스,
+  노트(모든 편집 창과 노트 목록), 클립보드 창은 각자 투명도를 가집니다: `commandbox-alpha`,
+  `note-alpha`, `clip-alpha`. 100% 인 노트·클립보드 창은 아예 반투명이 아닙니다.
+- **Window Colours** — 노트, 클립보드 창, 커맨드 박스의 글자색과 배경색, 여섯 줄입니다.
+  `Enter` 로 Windows 색 선택 창을 열고, `R` 로 그 색을 테마에 돌려줍니다. 처음에는 모두
+  테마를 따릅니다. 각 줄 앞에 그 창이 지금 보여 주는 색이 칠해집니다. Windows 고대비가
+  켜져 있으면 고대비 색이 이 설정보다 우선합니다.
 - **Keys** — **창 · 기능 · 기능키**, 저장되는 모양 그대로입니다. 제목 줄이 창이고, 그
   아래 각 줄이 기능이며, **조합키는 각각 한 줄씩** 그 기능 밑에 들어갑니다. 기능 줄에서는
   `Enter` 로 조합키를 추가하고, `Del` 로 그 기능의 키를 전부 지우며, `R` 로 기본값을
@@ -1243,6 +1249,12 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 
 자체 `x`, `y`, `w`, `h`, `alpha`, `font_size`, `font_name`을 가집니다.
 
+### `[clipboard]`
+
+| 키 | 의미 |
+| :--- | :--- |
+| `alpha` | 클립보드 창의 투명도, 76~255 (기본 `255`, 반투명 아님) |
+
 ### `[etc]`
 
 | 키 | 의미 |
@@ -1255,12 +1267,15 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
   — 다크 팔레트. **위젯**(플로터·태스크박스·툴바)의 색입니다. 문서 창의 지면 색은
-  시스템 테마에서 가져오므로 여기에 해당하는 항목이 없습니다
+  시스템 테마에서 가져옵니다. 아래 키로 따로 정한 창은 예외입니다
 - `focus_bg` — 키보드/마우스 포커스 강조
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — 플로터 상태 막대
 - `value_alpha_low`/`value_alpha_high`, `value_brightness_low`/`value_brightness_high`,
   `value_volume_low`/`value_volume_high` — `Alp`·`Mon`·`Vol` 판 색
 - `clock_blink` — `[floater] blink` 가 켜져 있을 때 시계의 시와 분이 바뀌는 색
+- `note_text`, `note_bg`, `clip_text`, `clip_bg`, `commandbox_text`, `commandbox_bg` — 문서 창들
+  자신의 색. 설정 창의 **Window Colours** 에서 고릅니다. `theme`(또는 줄이 없음)이면 다른
+  문서 창처럼 시스템 테마를 따릅니다
 
 ### `[keys.system]`, `[keys.widget]`, `[keys.floater]`, `[keys.taskbox]`, `[keys.commandbox]`, `[keys.note]`, `[keys.clipboard]`
 
@@ -1294,6 +1309,7 @@ clipboard =
 | `sort_active`, `sort_archived` | 목록의 각 절이 어떤 기준으로 정렬되는지 |
 | `sort_active_desc`, `sort_archived_desc` | `1` 이면 최신·Z 가 먼저 |
 | `list_x`, `list_y`, `list_w`, `list_h` | 노트 목록 창의 자리 |
+| `alpha` | 모든 노트 편집 창과 노트 목록의 투명도, 76~255 (기본 `255`, 반투명 아님) |
 
 노트 폴더에는 `note/note.ini` 가 그대로 남지만, 거기 들어가는 것은 프로그램이 아니라
 **노트에 관한 것**뿐입니다: 보관 여부, 만든 시각, 그리고 각 노트 편집 창의 자리. 그 파일은
