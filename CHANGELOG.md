@@ -6,7 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.17.25] - 2026-11-08
+
 ### Added
+- **`Bak REC`: move a voice recorder's recordings off it.** While a USB voice
+  recorder is plugged in - a USB drive with its recordings in a `RECORDED`
+  folder - a `Bak`/`REC` button appears left of `A/V`. It asks for a folder
+  (the one you chose last time is already filled in, `...` picks another) and
+  moves the `.WAV` and `.MP3` recordings there: each is copied, checked for
+  size, and only then deleted from the recorder; a name already taken gets
+  ` (1)`. The button shows the percent done while it works, clicking it then
+  offers to stop, and quitting asks first. Finding the recorder costs almost
+  nothing: Windows announces drives coming and going, and otherwise the drive
+  letters are compared once a minute. New key: `[recorder] backup_folder`.
+  Not yet tried with a real recorder.
 - **`HP Fn Keys...` in the `Set` list, on HP laptops.** It switches the BIOS
   setting *Action Key Mode* either way: action keys first (brightness, volume
   and the rest on their own, F1-F12 with Fn) or function keys first (F1-F12 on
@@ -14,7 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   anything; Windows then asks for administrator permission, and the program
   asks for the BIOS setup password if the machine has one. The change takes
   effect after a restart, which is offered, not forced. On other machines the
-  row is not there.
+  row is not there. Not yet tried on an HP machine: only the non-HP path has
+  been run.
 
 ## [v0.17.24] - 2026-11-08
 

@@ -146,7 +146,9 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-#define HG_NUM_BASIC_ICONS 13
+/* Thirteen buttons always, and BakREC (index 13) while a recorder is plugged
+ * in: the id space is fourteen, the grid holds hg_toolbar_grid_buttons(). */
+#define HG_NUM_BASIC_ICONS 14
 
 /* The buttons, in index order. On the grid the highest index is leftmost, one
  * run (or, grouped, two lines - HG_GRID_BUTTON_BREAK): A/V Vol Mon Alp, then
@@ -175,10 +177,15 @@
 #define HG_TOOL_ICON_MONITOR 10
 #define HG_TOOL_ICON_VOLUME 11
 #define HG_TOOL_ICON_MENU 12
+/* Recorder backup (R1.8): on the grid only while a recorder is plugged in,
+ * the highest index, so the leftmost button - left of A/V. */
+#define HG_TOOL_ICON_RECBAK 13
 
 /* A shortcut's button id: past the row, so activate_toolbar_item can tell the
- * two apart. A shortcut is an item of the grid (type 1) under this id. */
-#define HG_SHORTCUT_BUTTON_ID(s_idx) (HG_NUM_BASIC_ICONS + (s_idx))
+ * two apart. A shortcut is an item of the grid (type 1) under this id. The row
+ * is one longer while BakREC is on it, so this is asked, not fixed. */
+int hg_toolbar_grid_buttons(void);
+#define HG_SHORTCUT_BUTTON_ID(s_idx) (hg_toolbar_grid_buttons() + (s_idx))
 
 /* The one button that is not on the row: the pin, a row of the Set box. It
  * keeps an id of its own because everything that knows what a button is called
@@ -214,6 +221,7 @@
 #define HG_IDM_CHANGE_PASSWORD 225
 #define HG_IDM_SCREEN_SAVER 226
 #define HG_IDM_HP_FNKEYS 227
+#define HG_IDM_RECBAK 228
 
 #define HG_COPYDATA_COMMAND_LINE 0x4847434CU
 

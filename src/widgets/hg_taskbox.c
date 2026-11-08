@@ -345,12 +345,14 @@ static BOOL taskbox_toolbar_button_screen_rect(int index, RECT *out)
 {
     if (!out || !hg_g_toolbar_wnd || !IsWindow(hg_g_toolbar_wnd))
         return FALSE;
-    if (index < 0 || index >= HG_NUM_BASIC_ICONS)
+    if (index < 0 || index >= hg_toolbar_grid_buttons())
         return FALSE;
 
     RECT rc;
     GetClientRect(hg_g_toolbar_wnd, &rc);
     get_toolbar_item_rect(1, index, rc.right, rc.bottom, taskbox_toolbar_icon_size(), out);
+    if (IsRectEmpty(out))
+        return FALSE;
     InflateRect(out, SC(4), SC(4));
     MapWindowPoints(hg_g_toolbar_wnd, NULL, (POINT *)out, 2);
     return TRUE;
@@ -476,6 +478,13 @@ void activate_toolbar_item(int index)
         if (hg_g_floater_wnd)
             PostMessageW(hg_g_floater_wnd, WM_COMMAND, HG_IDM_CLOSE_APP, 0);
         break;
+    case HG_TOOLBAR_CLICK_RECORDER_BACKUP:
+        /* Posted, so the folder box runs from the floater's own loop and not
+         * inside this click, with the toolbar's capture and hover state still
+         * mid-flight. */
+        if (hg_g_floater_wnd)
+            PostMessageW(hg_g_floater_wnd, WM_COMMAND, HG_IDM_RECBAK, 0);
+        break;
     case HG_TOOLBAR_CLICK_TOGGLE_DESKTOP: {
         static BOOL is_desktop_shown = FALSE;
         is_desktop_shown = !is_desktop_shown;
@@ -521,8 +530,8 @@ void activate_toolbar_item(int index)
         break;
     }
 
-    if (index >= HG_NUM_BASIC_ICONS) {
-        int s_idx = index - HG_NUM_BASIC_ICONS;
+    if (index >= HG_SHORTCUT_BUTTON_ID(0)) {
+        int s_idx = index - HG_SHORTCUT_BUTTON_ID(0);
         if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
             /* One path for every way a shortcut is launched - a click in the
              * the grid, Space on it, Shift and its letter, Run in its menu - so
@@ -579,7 +588,7 @@ void update_focus_message(int override_type, int override_index)
             append_message(hg_g_window_items[index].title);
         }
     } else if (type == 1) {
-        if (index >= 0 && index < HG_NUM_BASIC_ICONS) {
+        if (index >= 0 && index < hg_toolbar_grid_buttons()) {
             const WCHAR *focus_text = hg_toolbar_builtin_focus_text(index);
             /* Vol, Mon and Alp lead with their reading, so arriving on one says
              * where it stands before saying what it does; the reading is first
@@ -621,6 +630,16 @@ void hg_taskbox_grid_changed(void)
         if (hg_g_toolbar_wnd)
             InvalidateRect(hg_g_toolbar_wnd, NULL, TRUE);
     }
+}
+
+void hg_taskbox_buttons_changed(void)
+{
+    /* BakREC came or went: it is the last button, and every shortcut's id is
+     * one more or one less than it was. A focus on either would now name a
+     * different item, or none. */
+    if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index >= HG_TOOL_ICON_RECBAK)
+        reset_taskbox_focus();
+    hg_taskbox_grid_changed();
 }
 
 /* Shared by interactive resize and WM_EXITSIZEMOVE: pick the column count that
@@ -869,7 +888,7 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
  * and the reader would have no idea which of the two the arrows now belong to. */
 static void taskbox_choose_toolbar_button(int index)
 {
-    if (index < 0 || index >= HG_NUM_BASIC_ICONS)
+    if (index < 0 || index >= hg_toolbar_grid_buttons())
         return;
 
     hg_taskbox_focus.area = 1;

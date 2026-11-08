@@ -11,6 +11,7 @@
 #include "../hg_config.h"
 #include "../hg_clock.h"
 #include "../hg_hpkeys.h"
+#include "../hg_recbak.h"
 
 /* Forward declaration for show_about_window which is in hgfloater.c (or widgets/hg_about.c when created) */
 void show_about_window(void);
@@ -943,6 +944,7 @@ static LRESULT floater_controller_on_create(HWND hwnd)
     update_floater_layout(hwnd);
     SetTimer(hwnd, HG_TIMER_FLOATER_CLOCK, 1000, NULL);
     floater_apply_blink_timer(hwnd);
+    hg_recbak_poll(TRUE); /* a recorder already plugged in at start */
     return 0;
 }
 
@@ -1373,7 +1375,12 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                    floater_dispatch_volume_command(cmd) || floater_dispatch_option_command(cmd);
     if (!handled) {
         if (cmd == HG_IDM_CLOSE_APP) {
-            DestroyWindow(hwnd);
+            /* X, Ctrl+Q, Alt+F4 and --exit all come here: a recorder move in
+             * flight is asked about first. */
+            if (hg_recbak_confirm_quit(hwnd))
+                DestroyWindow(hwnd);
+        } else if (cmd == HG_IDM_RECBAK) {
+            hg_recbak_click(hwnd);
         } else if (cmd == HG_IDM_MUTE) {
             set_system_mute(!get_system_mute());
             floater_refresh_volume_ui();
@@ -1444,6 +1451,15 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     static BOOL font_drag_active = FALSE;
     static BOOL move_drag_active = FALSE;
     switch (msg) {
+    case WM_DEVICECHANGE:
+        hg_recbak_on_device_change(w_param, l_param);
+        return TRUE;
+    case HG_MSG_RECBAK_PROGRESS:
+        hg_recbak_on_progress();
+        return 0;
+    case HG_MSG_RECBAK_DONE:
+        hg_recbak_on_done(hwnd);
+        return 0;
     case WM_DISPLAYCHANGE: {
         update_monitor_enum();
         /* Recover widgets stranded on a removed or rearranged display. */
@@ -1657,6 +1673,8 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
              * most of the time. This timer runs for the life of the program,
              * which is what a watchdog needs. It throttles itself. */
             hg_caphook_watchdog();
+            /* Nothing but a counter on most ticks: see hg_recbak.c. */
+            hg_recbak_poll(FALSE);
 
             /* Compared as text, not as fields: what has to trigger a layout
              * is the lines reading differently, and which fields that depends

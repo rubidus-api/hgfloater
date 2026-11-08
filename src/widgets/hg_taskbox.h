@@ -131,6 +131,9 @@ void reset_taskbox_focus(void);
  * focus back onto an item if it was left on one that is gone, size the window
  * for the new number of rows, repaint. */
 void hg_taskbox_grid_changed(void);
+/* The same, when the number of buttons changed (a recorder came or went, so
+ * BakREC did): a focus on BakREC or on any shortcut is put back as well. */
+void hg_taskbox_buttons_changed(void);
 int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type, int *out_index);
 
 #endif /* HG_TASKBOX_H */

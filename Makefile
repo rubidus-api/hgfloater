@@ -55,6 +55,7 @@ SRC := \
 	src/hg_display.c \
 	src/hg_wmi.c \
 	src/hg_hpkeys.c \
+	src/hg_recbak.c \
 	src/hg_shell.c \
 	src/hg_sysinfo.c \
 	src/hg_config.c \

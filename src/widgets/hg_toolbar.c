@@ -244,7 +244,7 @@ int get_item_at_pt(POINT pt, int width, int height, int icon_size, int *out_type
     }
     /* The buttons, and after them the shortcuts. One that has no cell comes
      * back as an empty rect and is skipped. */
-    int total_buttons = HG_NUM_BASIC_ICONS + hg_toolbar_grid_shortcuts();
+    int total_buttons = hg_toolbar_grid_buttons() + hg_toolbar_grid_shortcuts();
     for (int i = 0; i < total_buttons; i++) {
         RECT rc_item, rc_btn;
         get_toolbar_item_rect(1, i, width, height, icon_size, &rc_item);
@@ -621,10 +621,12 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                  * wears its label, because they are the same promise: press
                  * this and that happens. */
                 // Draw hg_g_shortcuts (type 1)
-                int total_buttons = HG_NUM_BASIC_ICONS;
+                int total_buttons = hg_toolbar_grid_buttons();
                 for (int i = 0; i < total_buttons; i++) {
                     RECT rc_item, rc_btn;
                     get_toolbar_item_rect(1, i, rc.right, rc.bottom, icon_size, &rc_item);
+                    if (IsRectEmpty(&rc_item))
+                        continue;
                     rc_btn = rc_item;
                     InflateRect(&rc_btn, SC(4), SC(4));
 

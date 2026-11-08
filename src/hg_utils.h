@@ -302,6 +302,7 @@ typedef enum HgToolbarClickRole {
     HG_TOOLBAR_CLICK_OPEN_DIRS,     /* the folder list, in the shared box */
     HG_TOOLBAR_CLICK_OPEN_CONTROLS, /* opacity, pin, and the doors to the settings */
     HG_TOOLBAR_CLICK_OPEN_SCALE_MENU, /* the scaling ladder for the screen this window is on */
+    HG_TOOLBAR_CLICK_RECORDER_BACKUP, /* BakREC: move the recorder's recordings to a folder */
 } HgToolbarClickRole;
 typedef enum HgToolbarDragRole {
     HG_TOOLBAR_DRAG_NONE = 0,
@@ -380,5 +381,13 @@ int hg_get_memory_percent(void);
  * Manager reads. FALSE when no adapter reports one, which is common.
  * See docs/rfc/RFC-2026-07-temperature.md. */
 BOOL hg_get_gpu_temperature(int *out_celsius);
+
+/* An in-memory dialog template, for the small boxes that have no entry in the
+ * resource script (the HP BIOS password, the recorder backup folder). The
+ * text goes after a DLGTEMPLATE's menu and class words, an item after that;
+ * `atom` is the predefined class: 0x0080 button, 0x0081 edit, 0x0082 static. */
+WORD *hg_dlg_put_text(WORD *p, const WCHAR *text);
+WORD *hg_dlg_put_item(WORD *p, DWORD style, short x, short y, short cx, short cy, WORD id, WORD atom,
+                      const WCHAR *text);
 
 #endif /* HG_UTILS_H */

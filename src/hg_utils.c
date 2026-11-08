@@ -1,5 +1,6 @@
 #include "hg_utils.h"
 #include "hg_keys.h" /* the tooltips say which chord reaches a button */
+#include "hg_recbak.h" /* BakREC is a button only while a recorder is in */
 #include <knownfolders.h>
 
 static void refresh_system_accent_color(void)
@@ -1058,6 +1059,13 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
     {HG_TOOL_ICON_ALPHA, L"Alp", L"Taskbox opacity - wheel to set", L"Taskbox opacity - wheel to set",
      HG_TOOLBAR_VALUE_ALPHA, HG_TOOLBAR_CLICK_NONE, HG_TOOLBAR_DRAG_NONE},
 
+    /* Only while a recorder is plugged in (hg_recbak). Six letters, so the
+     * label splitter stacks it as Bak over REC; while the move runs the word
+     * is the percent done instead (hg_toolbar_builtin_label). */
+    {HG_TOOL_ICON_RECBAK, L"BakREC", L"Move the recorder's recordings to a folder",
+     L"Move the recorder's recordings to a folder", HG_TOOLBAR_VALUE_NONE, HG_TOOLBAR_CLICK_RECORDER_BACKUP,
+     HG_TOOLBAR_DRAG_NONE},
+
     /* Off the row, in the Set box. It keeps its descriptor because the box
      * draws its row from it: one table still says what every button is called
      * and what it does. */
@@ -1065,7 +1073,7 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
-/* Thirteen on the row, and the pin in the Set box. Stated rather than derived,
+/* Fourteen on the row (BakREC only while a recorder is in), and the pin in the Set box. Stated rather than derived,
  * so adding a descriptor without deciding where it belongs does not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
@@ -1074,6 +1082,10 @@ enum {
 
 static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)
 {
+    /* Without a recorder BakREC is not a button, and its index is the first
+     * shortcut's id: nothing may answer for it as a button then. */
+    if (index == HG_TOOL_ICON_RECBAK && !hg_recbak_present())
+        return NULL;
     for (size_t i = 0; i < HG_ARRAYSIZE(hg_toolbar_builtin_descriptors); ++i) {
         if (hg_toolbar_builtin_descriptors[i].index == index)
             return &hg_toolbar_builtin_descriptors[i];
@@ -1083,6 +1095,8 @@ static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index
 
 const WCHAR *hg_toolbar_builtin_label(int index)
 {
+    if (index == HG_TOOL_ICON_RECBAK && hg_recbak_busy_label())
+        return hg_recbak_busy_label();
     const HgToolbarBuiltinDescriptor *desc = hg_toolbar_builtin_descriptor(index);
     return desc ? desc->label : L"?";
 }
@@ -1259,15 +1273,21 @@ int hg_toolbar_grid_shortcuts(void)
     return hg_g_shortcut_count;
 }
 
+int hg_toolbar_grid_buttons(void)
+{
+    return hg_recbak_present() ? HG_NUM_BASIC_ICONS : HG_NUM_BASIC_ICONS - 1;
+}
+
 /* Every button is in the grid; the strip above it is the status line alone. */
-#define HG_TOOLBAR_GRID_BUTTONS HG_NUM_BASIC_ICONS
+#define HG_TOOLBAR_GRID_BUTTONS hg_toolbar_grid_buttons()
 
 /* Grouped, each kind has rows of its own and the buttons break into their two
  * lines. Otherwise (the default since 2026-11-08, owner's request) nothing
  * breaks: the tasks from the top-left, the shortcuts and the buttons as one run
  * ending in the bottom-right corner, a gap between, and a separator cell
  * between each pair of neighbouring kinds. */
-#define HG_TOOLBAR_GRID_LINE (hg_g_taskbox_group_rows ? HG_GRID_BUTTON_BREAK : 0)
+#define HG_TOOLBAR_GRID_LINE                                                                                      \
+    (hg_g_taskbox_group_rows ? HG_GRID_BUTTON_BREAK + (HG_TOOLBAR_GRID_BUTTONS - (HG_NUM_BASIC_ICONS - 1)) : 0)
 #define HG_TOOLBAR_GRID_MODE (hg_g_taskbox_group_rows ? HG_GRID_GROUPED : HG_GRID_SEPARATED)
 
 int hg_toolbar_grid_item_count(void)
@@ -1393,7 +1413,7 @@ void update_toolbar_tooltips(HWND hwnd)
         icon_size = SC(16);
 
     int total_tasks = hg_g_window_count;
-    int total_buttons = HG_NUM_BASIC_ICONS;
+    int total_buttons = hg_toolbar_grid_buttons();
     int id_counter = 0;
 
     for (int i = 0; i < total_tasks; i++) {
@@ -1577,4 +1597,32 @@ BOOL hg_readonly_edit_common(HWND hwnd, UINT msg, WPARAM w_param)
         return FALSE; /* default focus processing still applies */
     }
     return readonly_edit_handle_ime_messages(hwnd, msg, w_param);
+}
+
+WORD *hg_dlg_put_text(WORD *p, const WCHAR *text)
+{
+    do {
+        *p++ = (WORD)*text;
+    } while (*text++);
+    return p;
+}
+
+WORD *hg_dlg_put_item(WORD *p, DWORD style, short x, short y, short cx, short cy, WORD id, WORD atom,
+                      const WCHAR *text)
+{
+    p = (WORD *)(((ULONG_PTR)p + 3) & ~(ULONG_PTR)3); /* items are DWORD aligned */
+    DLGITEMTEMPLATE *item = (DLGITEMTEMPLATE *)p;
+    item->style = style | WS_CHILD | WS_VISIBLE;
+    item->dwExtendedStyle = 0;
+    item->x = x;
+    item->y = y;
+    item->cx = cx;
+    item->cy = cy;
+    item->id = id;
+    p = (WORD *)(item + 1);
+    *p++ = 0xFFFF;
+    *p++ = atom;
+    p = hg_dlg_put_text(p, text);
+    *p++ = 0; /* no creation data */
+    return p;
 }

@@ -205,40 +205,6 @@ static INT_PTR CALLBACK hpkeys_password_proc(HWND dlg, UINT msg, WPARAM wparam, 
     return FALSE;
 }
 
-/* An in-memory dialog template: no resource script entry for one small box. */
-static WORD *hpkeys_put_text(WORD *p, const WCHAR *text)
-{
-    do {
-        *p++ = (WORD)*text;
-    } while (*text++);
-    return p;
-}
-
-static WORD *hpkeys_align(WORD *p)
-{
-    return (WORD *)(((ULONG_PTR)p + 3) & ~(ULONG_PTR)3);
-}
-
-static WORD *hpkeys_put_item(WORD *p, DWORD style, short x, short y, short cx, short cy, WORD id, WORD atom,
-                             const WCHAR *text)
-{
-    p = hpkeys_align(p);
-    DLGITEMTEMPLATE *item = (DLGITEMTEMPLATE *)p;
-    item->style = style | WS_CHILD | WS_VISIBLE;
-    item->dwExtendedStyle = 0;
-    item->x = x;
-    item->y = y;
-    item->cx = cx;
-    item->cy = cy;
-    item->id = id;
-    p = (WORD *)(item + 1);
-    *p++ = 0xFFFF;
-    *p++ = atom;
-    p = hpkeys_put_text(p, text);
-    *p++ = 0; /* no creation data */
-    return p;
-}
-
 static BOOL hpkeys_ask_password(const WCHAR *prompt, WCHAR *buffer, int capacity)
 {
     DWORD storage[512];
@@ -254,14 +220,14 @@ static BOOL hpkeys_ask_password(const WCHAR *prompt, WCHAR *buffer, int capacity
     WORD *p = (WORD *)(tmpl + 1);
     *p++ = 0; /* no menu */
     *p++ = 0; /* the standard dialog class */
-    p = hpkeys_put_text(p, L"HP BIOS Password");
+    p = hg_dlg_put_text(p, L"HP BIOS Password");
     *p++ = 9;
-    p = hpkeys_put_text(p, L"Segoe UI");
-    p = hpkeys_put_item(p, SS_LEFT, 8, 8, 214, 34, HG_HP_ID_PROMPT, 0x0082, L"");
-    p = hpkeys_put_item(p, ES_PASSWORD | ES_AUTOHSCROLL | WS_BORDER | WS_TABSTOP, 8, 44, 214, 13, HG_HP_ID_EDIT,
+    p = hg_dlg_put_text(p, L"Segoe UI");
+    p = hg_dlg_put_item(p, SS_LEFT, 8, 8, 214, 34, HG_HP_ID_PROMPT, 0x0082, L"");
+    p = hg_dlg_put_item(p, ES_PASSWORD | ES_AUTOHSCROLL | WS_BORDER | WS_TABSTOP, 8, 44, 214, 13, HG_HP_ID_EDIT,
                         0x0081, L"");
-    p = hpkeys_put_item(p, BS_DEFPUSHBUTTON | WS_TABSTOP, 118, 64, 50, 14, IDOK, 0x0080, L"OK");
-    hpkeys_put_item(p, BS_PUSHBUTTON | WS_TABSTOP, 172, 64, 50, 14, IDCANCEL, 0x0080, L"Cancel");
+    p = hg_dlg_put_item(p, BS_DEFPUSHBUTTON | WS_TABSTOP, 118, 64, 50, 14, IDOK, 0x0080, L"OK");
+    hg_dlg_put_item(p, BS_PUSHBUTTON | WS_TABSTOP, 172, 64, 50, 14, IDCANCEL, 0x0080, L"Cancel");
 
     HgHpPasswordAsk ask = {prompt, buffer, capacity};
     buffer[0] = 0;

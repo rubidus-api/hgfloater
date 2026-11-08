@@ -332,7 +332,7 @@ static HMENU taskbox_create_shortcut_context_menu(int cur_index)
 
     /* Shortcuts: Run only (remove Focus) */
     AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_RUN, L"Run (&R)");
-    if (cur_index >= HG_NUM_BASIC_ICONS) {
+    if (cur_index >= HG_SHORTCUT_BUTTON_ID(0)) {
         AppendMenuW(h_menu, MF_STRING, HG_IDM_SHORTCUT_OPEN_DIR, L"Open File Location (&O)");
     }
     return h_menu;
@@ -343,7 +343,7 @@ static void taskbox_dispatch_shortcut_menu_command(UINT cmd, int cur_index)
     if (cmd == HG_IDM_SHORTCUT_RUN) {
         activate_toolbar_item(cur_index);
     } else if (cmd == HG_IDM_SHORTCUT_OPEN_DIR) {
-        int s_idx = cur_index - HG_NUM_BASIC_ICONS;
+        int s_idx = cur_index - HG_SHORTCUT_BUTTON_ID(0);
         if (s_idx >= 0 && s_idx < hg_g_shortcut_count) {
             PIDLIST_ABSOLUTE pidl = ILCreateFromPathW(hg_g_shortcuts[s_idx].path);
             if (pidl) {

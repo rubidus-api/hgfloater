@@ -553,7 +553,9 @@ in the new layout.
 
 Thirteen built-in buttons, in the same grid as the icons, in two lines that end
 at the right edge: `A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd`
-`D` `R` `M` `X`, with `X` in the bottom-right corner. Each carries a short word rather than a single capital, three of
+`D` `R` `M` `X`, with `X` in the bottom-right corner - and a fourteenth,
+[`Bak REC`](#66-bakrec-moving-a-recorders-recordings), left of `A/V` while a
+voice recorder is plugged in. Each carries a short word rather than a single capital, three of
 them open a box instead of doing something outright, and three —
 `Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
 
@@ -583,6 +585,7 @@ built, so a key you rebind is the key the tooltip shows.
 | **`Mon`** Monitor | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
 | **`Alp`** Opacity | — | **Wheel** sets the taskbox's opacity. |
 | **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
+| **`Bak REC`** Recorder backup | Only while a USB voice recorder is plugged in. Moves its recordings to a folder; see [BakREC](#66-bakrec-moving-a-recorders-recordings). | — |
 
 ### 6.1 The Dir button
 
@@ -928,6 +931,30 @@ that opened a second copy of icons already on screen had nothing left to do.
 The icon the keyboard is on is **ringed** in the focus colour; the tooltip and
 the status line name the program. A shortcut that points at a folder is not
 here: it is a row of the [`Dir` list](#61-the-dir-button).
+
+### 6.6 BakREC: moving a recorder's recordings
+
+**Plug in the USB voice recorder and a `Bak`/`REC` button appears** at the left
+end of the buttons; unplug it and the button goes. The recorder is the kind
+that shows up as a USB drive and keeps its recordings (`.WAV`, `.MP3`) in a
+`RECORDED` folder at its root. Any USB drive with that folder counts.
+
+Click it and a small box asks where to: type or paste a folder, or pick one with
+**`...`**, then **OK**. The folder you chose last time is already in the box. A
+folder that does not exist yet is made. The recordings are then **moved** - each
+is copied, the copy's size is checked against the original, and only then is the
+original deleted from the recorder. A name already in the folder gets ` (1)`,
+` (2)` ... rather than being overwritten.
+
+While it runs the button shows the **percent done** instead of its name, and the
+rest of the program works as usual. Clicking the button then offers to stop.
+Quitting HGFloater during a move asks first; if you go ahead, the move stops,
+and the recording that was being copied stays on the recorder. A box says how
+it went when it ends.
+
+Watching for the recorder costs next to nothing: Windows tells every program
+when a drive arrives or leaves, and the button checks then; besides that it
+only compares the list of drive letters once a minute.
 
 ## 7. The A/V List
 
@@ -1454,6 +1481,12 @@ Its own `x`, `y`, `w`, `h`, `alpha`, `font_size`, and `font_name`, plus:
 Both this and `[clipboard] max` have no control anywhere in the interface, so
 HGFloater writes them into `config.ini` on first run with a comment block
 explaining them. The lines and the clips themselves are never written to disk.
+
+### `[recorder]`
+
+| Key | Meaning |
+| :--- | :--- |
+| `backup_folder` | The folder [BakREC](#66-bakrec-moving-a-recorders-recordings) moved the recordings to last time, offered again in its box |
 
 ### `[etc]`
 
