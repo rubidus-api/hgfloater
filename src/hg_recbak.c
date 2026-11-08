@@ -11,12 +11,12 @@
  *
  * Load: nothing runs while nothing changes. Windows broadcasts a volume
  * arriving or leaving to every top-level window (WM_DEVICECHANGE with
- * DBT_DEVTYP_VOLUME); that marks the next clock tick to look. Once a minute
+ * DBT_DEVTYP_VOLUME); that has the next few clock ticks look. Once a minute
  * the tick compares GetLogicalDrives with the mask last looked at, as a
  * fallback for an announcement that never came, and looks only if it differs.
  *
- * The move: a worker thread copies each recording with CopyFileExW, compares
- * the sizes, and deletes the original only then. It stops at the first
+ * The move: a worker thread copies each recording with CopyFileExW to a .part
+ * name, compares the sizes, renames it, and deletes the original only then. It stops at the first
  * failure. The percent done (bytes) is the button's word while it runs. */
 #define COBJMACROS /* the IFileOpenDialog_* call macros */
 #include "hg_recbak.h"
@@ -35,6 +35,10 @@
 #define RECBAK_KEY L"backup_folder"
 #define RECBAK_PATH_CCH 1024
 #define RECBAK_POLL_TICKS 60 /* the floater's clock ticks once a second */
+/* After a volume arrives, look on this many ticks until the recorder is seen:
+ * a slow device can be announced before its RECORDED folder can be read, and
+ * the drive mask would then match and keep the minute check from looking. */
+#define RECBAK_ARRIVAL_TICKS 5
 
 #define RECBAK_ID_PROMPT 100
 #define RECBAK_ID_EDIT 101
@@ -43,7 +47,7 @@
 static WCHAR s_drive;            /* the recorder's drive letter, or 0 */
 static DWORD s_mask_seen;        /* GetLogicalDrives when the drives were last looked at */
 static BOOL s_scanned;           /* s_mask_seen is valid */
-static BOOL s_look_next_tick;    /* WM_DEVICECHANGE said a volume came or went */
+static int s_look_ticks;         /* ticks left to look on after WM_DEVICECHANGE */
 static int s_ticks;
 
 static HANDLE s_thread;
@@ -146,8 +150,8 @@ void hg_recbak_poll(BOOL force)
     if (s_busy)
         return; /* the drive in use stays the drive until the move is over */
     if (!force) {
-        if (s_look_next_tick) {
-            s_look_next_tick = FALSE;
+        if (s_look_ticks > 0) {
+            --s_look_ticks;
         } else {
             if (++s_ticks < RECBAK_POLL_TICKS)
                 return;
@@ -163,6 +167,8 @@ void hg_recbak_poll(BOOL force)
     s_scanned = TRUE;
     BOOL was = (s_drive != 0);
     s_drive = letter;
+    if (letter)
+        s_look_ticks = 0;
     if (was != (letter != 0))
         hg_taskbox_buttons_changed();
 }
@@ -173,7 +179,8 @@ void hg_recbak_on_device_change(WPARAM w_param, LPARAM l_param)
         return;
     const DEV_BROADCAST_HDR *hdr = (const DEV_BROADCAST_HDR *)l_param;
     if (hdr && hdr->dbch_devicetype == DBT_DEVTYP_VOLUME)
-        s_look_next_tick = TRUE; /* a second later: the new volume has its files by then */
+        s_look_ticks = RECBAK_ARRIVAL_TICKS; /* from the next tick: a removal is seen at once, an arrival
+                                                when its folder can be read */
 }
 
 /* ------------------------------------------------------------ the move */
@@ -284,31 +291,50 @@ static DWORD WINAPI recbak_worker(LPVOID param)
             job->cancelled = TRUE;
             break;
         }
-        WCHAR src[MAX_PATH + 32], dst[RECBAK_PATH_CCH];
+        WCHAR src[MAX_PATH + 32], dst[RECBAK_PATH_CCH], part[RECBAK_PATH_CCH];
         StringCchPrintfW(src, HG_ARRAYSIZE(src), L"%ls\\%ls", folder, files[i].name);
         StringCchCopyW(job->error_file, MAX_PATH, files[i].name);
-        if (!recbak_target(job->dest, files[i].name, dst, HG_ARRAYSIZE(dst))) {
-            job->error = ERROR_FILE_EXISTS;
+        size_t dn = wcslen(job->dest);
+        /* Copied under a .part name and renamed when whole, so a copy cut off
+         * by a crash or a power cut never sits there under the real name. */
+        if (FAILED(StringCchPrintfW(part, HG_ARRAYSIZE(part), L"%ls%ls%ls.part", job->dest,
+                                    (dn && job->dest[dn - 1] == L'\\') ? L"" : L"\\", files[i].name))) {
+            job->error = ERROR_FILENAME_EXCED_RANGE;
             break;
         }
-        if (!CopyFileExW(src, dst, recbak_copy_progress, job, (LPBOOL)&s_cancel, COPY_FILE_FAIL_IF_EXISTS)) {
+        if (!CopyFileExW(src, part, recbak_copy_progress, job, (LPBOOL)&s_cancel, 0)) {
             DWORD e = GetLastError();
             if (e == ERROR_REQUEST_ABORTED || s_cancel)
                 job->cancelled = TRUE; /* CopyFileExW removed the partial copy */
             else
                 job->error = e;
+            DeleteFileW(part);
             break;
         }
         /* The original goes only when the copy is all there. */
         WIN32_FILE_ATTRIBUTE_DATA a_src, a_dst;
         if (!GetFileAttributesExW(src, GetFileExInfoStandard, &a_src) ||
-            !GetFileAttributesExW(dst, GetFileExInfoStandard, &a_dst)) {
+            !GetFileAttributesExW(part, GetFileExInfoStandard, &a_dst)) {
             job->error = GetLastError();
+            DeleteFileW(part);
             break;
         }
         if (a_src.nFileSizeHigh != a_dst.nFileSizeHigh || a_src.nFileSizeLow != a_dst.nFileSizeLow) {
-            DeleteFileW(dst);
+            DeleteFileW(part);
             job->error = ERROR_CRC;
+            break;
+        }
+        /* A copy keeps the original's attributes; the copy is the user's now. */
+        if (a_dst.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+            SetFileAttributesW(part, a_dst.dwFileAttributes & ~(DWORD)FILE_ATTRIBUTE_READONLY);
+        if (!recbak_target(job->dest, files[i].name, dst, HG_ARRAYSIZE(dst))) {
+            DeleteFileW(part);
+            job->error = ERROR_FILE_EXISTS;
+            break;
+        }
+        if (!MoveFileExW(part, dst, MOVEFILE_WRITE_THROUGH)) {
+            job->error = GetLastError();
+            DeleteFileW(part);
             break;
         }
         if (a_src.dwFileAttributes & FILE_ATTRIBUTE_READONLY)

@@ -28,7 +28,7 @@ const WCHAR *hg_recbak_busy_label(void);
 
 /* `force`: look at the drives now (at start, and before the folder box).
  * Otherwise this is the floater's once-a-second clock tick: it looks on the
- * tick after a WM_DEVICECHANGE volume message, and every sixtieth tick only if
+ * few ticks after a WM_DEVICECHANGE volume message (until the recorder is seen), and every sixtieth tick only if
  * GetLogicalDrives differs from the mask last looked at. A change of presence
  * re-lays the taskbox grid. */
 void hg_recbak_poll(BOOL force);
