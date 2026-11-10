@@ -44,9 +44,12 @@ static const short g_move[] = {GOP_LINE, 2, 32, 61, 90, 61,     GOP_LINE, 2, 61,
                                GOP_LINE, 3, 51, 42, 61, 32, 71, 42, GOP_LINE, 3, 51, 80, 61, 90, 71, 80,
                                GOP_END};
 
-/* R - resize: the corner grip a window's edge has. */
-static const short g_resize[] = {GOP_LINE, 2, 88, 30, 30, 88, GOP_LINE, 2, 88, 52, 52, 88,
-                                 GOP_LINE, 2, 88, 74, 74, 88, GOP_END};
+/* R - resize: a window's frame with a smaller one filled in its bottom-left
+ * corner (the owner's design, 2026-11-10). The frame is the one icon that
+ * crosses the top-left quadrant: R has no key, so no badge sits there; if one
+ * is ever bound, the badge covers only that corner of the frame. */
+static const short g_resize[] = {GOP_LOOP, 4, 12, 12, 90, 12, 90, 90, 12, 90,
+                                 GOP_FILL, 4, 12, 50, 50, 50, 50, 90, 12, 90, GOP_END};
 
 /* D - show the desktop: a screen, and an arrow taking the windows down. */
 static const short g_desktop[] = {GOP_LOOP, 4, 16, 52, 90, 52, 90, 78, 16, 78,
@@ -57,12 +60,10 @@ static const short g_desktop[] = {GOP_LOOP, 4, 16, 52, 90, 52, 90, 78, 16, 78,
 /* Cmd - the command box: a prompt. */
 static const short g_command[] = {GOP_LINE, 3, 18, 54, 40, 71, 18, 88, GOP_LINE, 2, 50, 88, 84, 88, GOP_END};
 
-/* Note - a page with lines, and a pencil. */
-static const short g_note[] = {GOP_LOOP, 5, 52, 14, 78, 14, 90, 26, 90, 88, 52, 88,
-                               GOP_LINE, 3, 78, 14, 78, 26, 90, 26,
-                               GOP_LINE, 2, 60, 42, 82, 42, GOP_LINE, 2, 60, 56, 82, 56, GOP_LINE, 2, 60, 70, 76, 70,
-                               GOP_FILL, 4, 14, 88, 18, 76, 36, 58, 44, 66, GOP_LINE, 2, 44, 66, 24, 86,
-                               GOP_LINE, 2, 24, 86, 14, 88, GOP_END};
+/* Note - a pen writing a line: a filled pen body from the top-right down to its
+ * nib, and the line it has written. Kept unlike Clip's page on purpose. */
+static const short g_note[] = {GOP_FILL, 5, 82, 18, 90, 26, 60, 56, 42, 66, 52, 48,
+                               GOP_LINE, 2, 14, 86, 64, 86, GOP_END};
 
 /* Clip - a clipboard, and the sheet behind it: the history. */
 static const short g_clip[] = {GOP_LOOP, 4, 52, 22, 90, 22, 90, 90, 52, 90,
@@ -90,16 +91,12 @@ static const short g_alpha[] = {GOP_LOOP, 4, 14, 50, 64, 50, 64, 90, 14, 90,
                                 GOP_LOOP, 4, 50, 18, 90, 18, 90, 64, 50, 64,
                                 GOP_FILL, 4, 50, 50, 64, 50, 64, 64, 50, 64, GOP_END};
 
-/* Mon - brightness: the sun. */
-static const short g_monitor[] = {GOP_ARC, 63, 63, 13, 0, 0,
-                                  GOP_LINE, 2, 84, 63, 92, 63,
-                                  GOP_LINE, 2, 78, 48, 84, 42,
-                                  GOP_LINE, 2, 63, 42, 63, 34,
-                                  GOP_LINE, 2, 48, 48, 42, 42,
-                                  GOP_LINE, 2, 42, 63, 34, 63,
-                                  GOP_LINE, 2, 48, 78, 42, 84,
-                                  GOP_LINE, 2, 63, 84, 63, 92,
-                                  GOP_LINE, 2, 78, 78, 84, 84, GOP_END};
+/* Mon - brightness: a lit bulb - filled, on its neck and screw base, with
+ * rays. (A sun read as a gear at the guest's size, a hanging lamp as an arrow.) */
+static const short g_monitor[] = {GOP_DOT, 64, 42, 13, GOP_FILL, 4, 56, 52, 72, 52, 70, 64, 58, 64,
+                                  GOP_LINE, 2, 58, 74, 70, 74, GOP_LINE, 2, 60, 84, 68, 84,
+                                  GOP_LINE, 2, 64, 18, 64, 12, GOP_LINE, 2, 84, 30, 89, 26,
+                                  GOP_LINE, 2, 86, 46, 92, 48, GOP_LINE, 2, 42, 56, 36, 60, GOP_END};
 
 /* Vol - volume: a speaker and its waves. */
 static const short g_volume[] = {GOP_FILL, 6, 14, 60, 26, 60, 40, 50, 40, 86, 26, 76, 14, 76,

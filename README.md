@@ -574,17 +574,17 @@ built, so a key you rebind is the key the tooltip shows.
 
 | Button — icon | Click | Drag / Wheel |
 | :--- | :--- | :--- |
-| **`R`** Resize — a corner grip | — | **Drag** resizes the taskbox grid. |
+| **`R`** Resize — a square frame, its bottom-left corner filled | — | **Drag** resizes the taskbox grid. |
 | **`M`** Move — arrows four ways | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
 | **`X`** Exit — the power symbol | Quits HGFloater. | — |
 | **`D`** Desktop — a screen, an arrow down | Minimizes every window; click again to restore. | — |
 | **`Cmd`** Command — a prompt `>_` | Opens the [Command Box](#8-the-command-box). | — |
-| **`Note`** Note — a page and a pencil | Opens the [note list](#10-notes). | — |
+| **`Note`** Note — a pen and the line it wrote | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard — a clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
 | **`Set`** Settings — three sliders | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
 | **`A/V`** Audio / Video — a speaker and a screen | Opens the [A/V list](#7-the-av-list) — output device, screens, scaling, brightness — **directly under the button**. | — |
 | **`Vol`** Volume — a speaker and its waves | Mutes and unmutes. Right-click: which output device plays. See [the reading buttons](#64-vol-mon-and-alp). | **Wheel** sets the volume. |
-| **`Mon`** Monitor — the sun | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
+| **`Mon`** Monitor — a lit bulb | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
 | **`Alp`** Opacity — two overlapping sheets | — | **Wheel** sets the taskbox's opacity. |
 | **`Dir`** Folders — a folder | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
 | **`Bak REC`** Recorder backup — an arrow into a tray, the record dot | Only while a USB voice recorder is plugged in. Moves its recordings to a folder; see [BakREC](#66-bakrec-moving-a-recorders-recordings). | — |

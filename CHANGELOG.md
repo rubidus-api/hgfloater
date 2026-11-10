@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **Three button icons redrawn.** `Mon` is a lit bulb (the sun read as a
+  gear), `R` is a square frame with its bottom-left corner filled, and `Note`
+  is a pen and the line it wrote, so it no longer looks like `Clip`.
+
 ## [v0.17.26] - 2026-11-10
 
 ### Changed
