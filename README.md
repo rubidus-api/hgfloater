@@ -563,7 +563,9 @@ which). Three of them open a box instead of doing something outright, and three 
 **The icons are drawn, not stored**: each is a few strokes, drawn fresh at the
 size the taskbox's icons have, so they stay sharp however large the font makes
 them. Every icon **leaves the top-left quarter of its button empty** — that is
-where a button's key badge goes (below) — and is drawn in the other three. While
+where a button's key badge goes (below) — and is drawn in the other three.
+`R`, which has no key, is the one exception: a small window in that corner
+growing toward the far one. While
 BakREC moves recordings its icon gives way to the percent done.
 
 **A button's tooltip names its key.** Hovering `Cmd` reads
@@ -574,7 +576,7 @@ built, so a key you rebind is the key the tooltip shows.
 
 | Button — icon | Click | Drag / Wheel |
 | :--- | :--- | :--- |
-| **`R`** Resize — a square frame, its bottom-left corner filled | — | **Drag** resizes the taskbox grid. |
+| **`R`** Resize — a frame, its top-left corner filled, an arrow to the far corner | — | **Drag** resizes the taskbox grid. |
 | **`M`** Move — arrows four ways | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
 | **`X`** Exit — the power symbol | Quits HGFloater. | — |
 | **`D`** Desktop — a screen, an arrow down | Minimizes every window; click again to restore. | — |

@@ -44,12 +44,14 @@ static const short g_move[] = {GOP_LINE, 2, 32, 61, 90, 61,     GOP_LINE, 2, 61,
                                GOP_LINE, 3, 51, 42, 61, 32, 71, 42, GOP_LINE, 3, 51, 80, 61, 90, 71, 80,
                                GOP_END};
 
-/* R - resize: a window's frame with a smaller one filled in its bottom-left
- * corner (the owner's design, 2026-11-10). The frame is the one icon that
- * crosses the top-left quadrant: R has no key, so no badge sits there; if one
- * is ever bound, the badge covers only that corner of the frame. */
+/* R - resize: a small window filled in the top-left corner of a large frame,
+ * and an arrow from it to the far corner - the window grows that way (the
+ * owner's design, 2026-11-10). This one alone uses the top-left quadrant, on
+ * the owner's choice: R has no key, so no badge sits there; were one bound,
+ * it would land on the filled corner and hide nothing else. */
 static const short g_resize[] = {GOP_LOOP, 4, 12, 12, 90, 12, 90, 90, 12, 90,
-                                 GOP_FILL, 4, 12, 50, 50, 50, 50, 90, 12, 90, GOP_END};
+                                 GOP_FILL, 4, 12, 12, 46, 12, 46, 46, 12, 46,
+                                 GOP_LINE, 2, 58, 58, 78, 78, GOP_LINE, 3, 66, 78, 78, 78, 78, 66, GOP_END};
 
 /* D - show the desktop: a screen, and an arrow taking the windows down. */
 static const short g_desktop[] = {GOP_LOOP, 4, 16, 52, 90, 52, 90, 78, 16, 78,

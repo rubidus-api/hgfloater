@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **`R`'s icon turned a quarter clockwise**: the filled corner is now the
+  top-left one, with an arrow to the bottom-right - a small window growing
+  the way the drag grows the taskbox.
+
 ## [v0.17.27] - 2026-11-10
 
 ### Changed
