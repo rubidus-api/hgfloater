@@ -555,14 +555,16 @@ Thirteen built-in buttons, in the same grid as the icons, in two lines that end
 at the right edge: `A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd`
 `D` `R` `M` `X`, with `X` in the bottom-right corner - and a fourteenth,
 [`Bak REC`](#66-bakrec-moving-a-recorders-recordings), left of `A/V` while a
-voice recorder is plugged in. Each carries a short word rather than a single capital, three of
-them open a box instead of doing something outright, and three —
-`Vol`, `Mon` and `Alp` — show a reading by the colour behind the word.
+voice recorder is plugged in. The names are what the tooltips and the status
+line call them; on the button itself each has **an icon** (the table below says
+which). Three of them open a box instead of doing something outright, and three —
+`Vol`, `Mon` and `Alp` — show a reading by the colour behind the icon.
 
-The word is **fitted to the button**: up to three letters it stays on one line,
-and four to six letters are stacked on two, at a size the button can hold. The
-alternative — shrinking a long word until it fits across — ends at a size nobody
-can read.
+**The icons are drawn, not stored**: each is a few strokes, drawn fresh at the
+size the taskbox's icons have, so they stay sharp however large the font makes
+them. Every icon **leaves the top-left quarter of its button empty** — that is
+where a button's key badge goes (below) — and is drawn in the other three. While
+BakREC moves recordings its icon gives way to the percent done.
 
 **A button's tooltip names its key.** Hovering `Cmd` reads
 `Command Box  (C, Ctrl+E)`; a button that no chord reaches says only what it
@@ -570,22 +572,22 @@ does.
 The chords come from the [key table](#13-configuration-file) as the tooltip is
 built, so a key you rebind is the key the tooltip shows.
 
-| Button | Click | Drag / Wheel |
+| Button — icon | Click | Drag / Wheel |
 | :--- | :--- | :--- |
-| **`R`** Resize | — | **Drag** resizes the taskbox grid. |
-| **`M`** Move | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
-| **`X`** Exit | Quits HGFloater. | — |
-| **`D`** Desktop | Minimizes every window; click again to restore. | — |
-| **`Cmd`** Command | Opens the [Command Box](#8-the-command-box). | — |
-| **`Note`** Note | Opens the [note list](#10-notes). | — |
-| **`Clip`** Clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
-| **`Set`** Settings | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
-| **`A/V`** Audio / Video | Opens the [A/V list](#7-the-av-list) — output device, screens, scaling, brightness — **directly under the button**. | — |
-| **`Vol`** Volume | Mutes and unmutes. Right-click: which output device plays. See [the reading buttons](#64-vol-mon-and-alp). | **Wheel** sets the volume. |
-| **`Mon`** Monitor | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
-| **`Alp`** Opacity | — | **Wheel** sets the taskbox's opacity. |
-| **`Dir`** Folders | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
-| **`Bak REC`** Recorder backup | Only while a USB voice recorder is plugged in. Moves its recordings to a folder; see [BakREC](#66-bakrec-moving-a-recorders-recordings). | — |
+| **`R`** Resize — a corner grip | — | **Drag** resizes the taskbox grid. |
+| **`M`** Move — arrows four ways | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
+| **`X`** Exit — the power symbol | Quits HGFloater. | — |
+| **`D`** Desktop — a screen, an arrow down | Minimizes every window; click again to restore. | — |
+| **`Cmd`** Command — a prompt `>_` | Opens the [Command Box](#8-the-command-box). | — |
+| **`Note`** Note — a page and a pencil | Opens the [note list](#10-notes). | — |
+| **`Clip`** Clipboard — a clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
+| **`Set`** Settings — three sliders | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
+| **`A/V`** Audio / Video — a speaker and a screen | Opens the [A/V list](#7-the-av-list) — output device, screens, scaling, brightness — **directly under the button**. | — |
+| **`Vol`** Volume — a speaker and its waves | Mutes and unmutes. Right-click: which output device plays. See [the reading buttons](#64-vol-mon-and-alp). | **Wheel** sets the volume. |
+| **`Mon`** Monitor — the sun | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
+| **`Alp`** Opacity — two overlapping sheets | — | **Wheel** sets the taskbox's opacity. |
+| **`Dir`** Folders — a folder | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
+| **`Bak REC`** Recorder backup — an arrow into a tray, the record dot | Only while a USB voice recorder is plugged in. Moves its recordings to a folder; see [BakREC](#66-bakrec-moving-a-recorders-recordings). | — |
 
 ### 6.1 The Dir button
 
@@ -844,7 +846,7 @@ HGFloater empties the history.**
 
 **Three buttons on the row carry a reading: `Vol`, `Mon` and `Alp`.** They sit
 together between `Dir` and `A/V`, drawn like every other button except for one
-thing — **the colour behind each word is the value.** A loud machine gives `Vol`
+thing — **the colour behind each icon is the value.** A loud machine gives `Vol`
 a deep plate, a dim screen gives `Mon` a pale one, a see-through taskbox gives
 `Alp` a pale one. The three can be read at a glance, without opening anything.
 
@@ -934,7 +936,7 @@ here: it is a row of the [`Dir` list](#61-the-dir-button).
 
 ### 6.6 BakREC: moving a recorder's recordings
 
-**Plug in the USB voice recorder and a `Bak`/`REC` button appears** at the left
+**Plug in the USB voice recorder and a BakREC button appears** at the left
 end of the buttons; unplug it and the button goes. The recorder is the kind
 that shows up as a USB drive and keeps its recordings (`.WAV`, `.MP3`) in a
 `RECORDED` folder at its root. Any USB drive with that folder counts.
@@ -946,7 +948,7 @@ is copied, the copy's size is checked against the original, and only then is the
 original deleted from the recorder. A name already in the folder gets ` (1)`,
 ` (2)` ... rather than being overwritten.
 
-While it runs the button shows the **percent done** instead of its name, and the
+While it runs the button shows the **percent done** instead of its icon, and the
 rest of the program works as usual. Clicking the button then offers to stop.
 Quitting HGFloater during a move asks first; if you go ahead, the move stops,
 and the recording that was being copied stays on the recorder. A box says how

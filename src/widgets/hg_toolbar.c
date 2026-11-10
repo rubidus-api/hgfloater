@@ -1,6 +1,8 @@
 /* Taskbox toolbar controller: painting, hit testing, mouse and wheel handling. */
 #include "hg_taskbox_internal.h"
 #include "../hg_utils.h"
+#include "../hg_glyph.h"
+#include "../hg_recbak.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
 #include "../hg_tabs.h"
@@ -700,7 +702,13 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         toolbar_draw_state_border(mem_dc, &rc_btn);
                     }
 
-                    toolbar_draw_builtin_label(mem_dc, i, &rc_item, &rc_btn);
+                    /* The icon (R1.9); the word only where there is no icon,
+                     * and for BakREC while it moves - the percent is a reading,
+                     * and a reading is a number. */
+                    if (hg_glyph_has(i) && !(i == HG_TOOL_ICON_RECBAK && hg_recbak_busy()))
+                        hg_glyph_draw(mem_dc, i, &rc_item, HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
+                    else
+                        toolbar_draw_builtin_label(mem_dc, i, &rc_item, &rc_btn);
 
                     /* And its key in the corner, over the label, for the
                      * buttons a chord reaches. */

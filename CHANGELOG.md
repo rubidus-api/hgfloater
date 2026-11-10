@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **The function buttons show icons instead of words.** `R`, `M`, `X`, `D`,
+  `Cmd`, `Note`, `Clip`, `Set`, `A/V`, `Vol`, `Mon`, `Alp`, `Dir` and `Bak REC`
+  each have a small drawn icon - a corner grip, arrows four ways, the power
+  symbol, and so on (the README's toolbar table lists them). The icons are
+  strokes drawn at the size the taskbox's icons have, not stored pictures, so
+  they stay sharp however large the font makes them; the outer edge is hard
+  and the inside smoothed, which keeps them clean over the see-through
+  taskbox. Every icon leaves the top-left quarter of its button free for the
+  key badge. The names stay in the tooltips and the status line, and BakREC
+  still shows the percent done while it moves recordings.
+
 ## [v0.17.25] - 2026-11-08
 
 ### Added

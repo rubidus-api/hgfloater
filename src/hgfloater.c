@@ -11,6 +11,7 @@
 #include "hg_clock.h"
 #include "hg_keys.h"
 #include "hg_hpkeys.h"
+#include "hg_glyph.h"
 
 /* =========================================================================
  * 창 클래스 등록 기능 (Window Class Registration)
@@ -624,6 +625,7 @@ cleanup_finish:
     release_font_handle(&hg_g_floater_time_font, FALSE);
     release_font_handle(&hg_g_floater_date_font, FALSE);
     release_font_handle(&hg_g_toolbar_btn_font, FALSE);
+    hg_glyph_release();
     release_brush_handle(&hg_g_main_bg_brush);
     release_brush_handle(&hg_g_edit_bg_brush);
     release_brush_handle(&hg_g_hbr_highlight);
