@@ -12,6 +12,7 @@
 #include "../hg_clock.h"
 #include "../hg_hpkeys.h"
 #include "../hg_recbak.h"
+#include "../hg_recdev.h"
 
 /* Forward declaration for show_about_window which is in hgfloater.c (or widgets/hg_about.c when created) */
 void show_about_window(void);
@@ -894,6 +895,24 @@ static BOOL floater_taskbar_overlapping(const RECT *rc, HWND *out_bars, int max_
     return count > 0;
 }
 
+void hg_floater_flash(int ticks)
+{
+    /* The same blink HG_MSG_SHOW_TASKBOX gives, on whichever of the two is on
+     * screen: the floater hides while the taskbox is open. */
+    if (hg_g_floater_wnd) {
+        hg_g_floater_highlight_ticks = ticks;
+        if (!SetTimer(hg_g_floater_wnd, HG_TIMER_HIGHLIGHT, 100, NULL))
+            hg_g_floater_highlight_ticks = 0;
+        InvalidateRect(hg_g_floater_wnd, NULL, FALSE);
+    }
+    if (hg_g_taskbox_wnd && IsWindowVisible(hg_g_taskbox_wnd)) {
+        hg_g_taskbox_highlight_ticks = ticks;
+        if (!SetTimer(hg_g_taskbox_wnd, HG_TIMER_HIGHLIGHT, 100, NULL))
+            hg_g_taskbox_highlight_ticks = 0;
+        hg_taskbox_invalidate(FALSE);
+    }
+}
+
 void hg_floater_keep_above_taskbar(HWND hwnd)
 {
     if (!hwnd || !IsWindow(hwnd))
@@ -1381,6 +1400,12 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
                 DestroyWindow(hwnd);
         } else if (cmd == HG_IDM_RECBAK) {
             hg_recbak_click(hwnd);
+        } else if (cmd == HG_IDM_RECBAK_CLOCK) {
+            if (!hg_recbak_busy())
+                hg_recdev_set_clock(hwnd, hg_recbak_drive());
+        } else if (cmd == HG_IDM_RECBAK_SETTINGS) {
+            if (!hg_recbak_busy())
+                hg_recdev_settings(hwnd, hg_recbak_drive());
         } else if (cmd == HG_IDM_MUTE) {
             set_system_mute(!get_system_mute());
             floater_refresh_volume_ui();
@@ -1459,6 +1484,9 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
         return 0;
     case HG_MSG_RECBAK_DONE:
         hg_recbak_on_done(hwnd);
+        return 0;
+    case HG_MSG_RECCLOCK_DONE:
+        hg_recdev_on_clock_done(hwnd, (DWORD)w_param);
         return 0;
     case WM_DISPLAYCHANGE: {
         update_monitor_enum();

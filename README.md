@@ -589,7 +589,7 @@ built, so a key you rebind is the key the tooltip shows.
 | **`Mon`** Monitor — a lit bulb | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
 | **`Alp`** Opacity — two overlapping sheets | — | **Wheel** sets the taskbox's opacity. |
 | **`Dir`** Folders — a folder | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
-| **`Bak REC`** Recorder backup — an arrow into a tray, the record dot | Only while a USB voice recorder is plugged in. Moves its recordings to a folder; see [BakREC](#66-bakrec-moving-a-recorders-recordings). | — |
+| **`Bak REC`** Recorder backup — an arrow into a tray, the record dot | Only while a USB voice recorder is plugged in. Moves its recordings to a folder; right-click to set the recorder's clock or edit its settings. See [BakREC](#66-bakrec-moving-a-recorders-recordings). | — |
 
 ### 6.1 The Dir button
 
@@ -959,6 +959,25 @@ it went when it ends.
 Watching for the recorder costs next to nothing: Windows tells every program
 when a drive arrives or leaves, and the button checks then; besides that it
 only compares the list of drive letters once a minute.
+
+**Right-click BakREC** for its menu: **Move Recordings...** (the same as a
+click), **Set Recorder Clock to Now** and **Recorder Settings...**. The last two
+are for the Sanno recorder (USB vendor id `10D6`); on any other drive they do
+nothing but say so.
+
+- **Set Recorder Clock to Now** sends the recorder this computer's time, with
+  the command the recorder's own time-setting tool uses. Windows lets only an
+  administrator send it, so unless HGFloater already runs as one, Windows asks
+  for permission (UAC); a second copy of HGFloater then sets the clock and exits
+  at once. The HGFloater you are using never gets those rights. When the clock
+  is set the floater (or the open taskbox) **flashes**; when it is not, a box
+  says why.
+- **Recorder Settings...** opens the recorder's settings file
+  (`Seo&0h.txt` at the root of its drive) as a form: voice activation, bit rate,
+  gain, file splitting, the date and time in the file (**Now** fills in this
+  computer's), and the timed recording. **Save** writes the changes into the
+  file, keeping everything else in it exactly as it was; **Cancel** leaves it
+  alone. A recorder without the file gets the standard one when you save.
 
 ## 7. The A/V List
 

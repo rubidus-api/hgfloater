@@ -31,5 +31,8 @@ void update_floater_alpha(int delta);
  * taskbar it overlaps is above it, and keeps a fast timer running exactly as
  * long as it overlaps one. Cheap; call it whenever the floater moves or shows. */
 void hg_floater_keep_above_taskbar(HWND hwnd);
+/* Flashes the floater, and the taskbox if it is open, `ticks` half-flashes of
+ * 100 ms in the flash colour - the sign that something worked. */
+void hg_floater_flash(int ticks);
 
 #endif /* HG_FLOATER_H */

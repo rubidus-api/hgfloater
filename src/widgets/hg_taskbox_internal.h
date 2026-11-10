@@ -35,6 +35,8 @@ void toolbar_controller_show_shortcut_context_menu(HWND hwnd, int cur_index, int
  * right-click handler can pick between them without a special case for shape. */
 void toolbar_controller_show_audio_device_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
 void toolbar_controller_show_topology_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
+/* BakREC's: move the recordings, set the recorder's clock, its settings. */
+void toolbar_controller_show_recorder_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
 void toolbar_controller_show_scale_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param);
 
 #endif /* HG_TASKBOX_INTERNAL_H */

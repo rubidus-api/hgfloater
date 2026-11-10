@@ -1,5 +1,6 @@
 /* Taskbox menu construction and command dispatch. */
 #include "hg_taskbox_internal.h"
+#include "../hg_recbak.h"
 #include "../hg_utils.h"
 #include "../hg_config.h"
 #include "../hg_globals.h"
@@ -488,6 +489,28 @@ void toolbar_controller_show_audio_device_menu(HWND hwnd, int cur_index, int ico
 void toolbar_controller_show_topology_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
 {
     toolbar_controller_track_builtin_menu(hwnd, taskbox_create_topology_menu(), cur_index, icon_size, l_param);
+}
+
+static HMENU taskbox_create_recorder_menu(void)
+{
+    HMENU h_menu = CreatePopupMenu();
+    if (!h_menu)
+        return NULL;
+    /* While the move runs the recorder is left to it: the first entry is the
+     * way to stop it, and the other two wait. */
+    BOOL busy = hg_recbak_busy();
+    AppendMenuW(h_menu, MF_STRING, HG_IDM_RECBAK, busy ? L"Stop the Move... (&M)" : L"Move Recordings... (&M)");
+    AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(h_menu, MF_STRING | (busy ? MF_GRAYED : 0), HG_IDM_RECBAK_CLOCK,
+                L"Set Recorder Clock to Now (&T)");
+    AppendMenuW(h_menu, MF_STRING | (busy ? MF_GRAYED : 0), HG_IDM_RECBAK_SETTINGS, L"Recorder Settings... (&S)");
+    SetMenuDefaultItem(h_menu, HG_IDM_RECBAK, FALSE);
+    return h_menu;
+}
+
+void toolbar_controller_show_recorder_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)
+{
+    toolbar_controller_track_builtin_menu(hwnd, taskbox_create_recorder_menu(), cur_index, icon_size, l_param);
 }
 
 void toolbar_controller_show_scale_menu(HWND hwnd, int cur_index, int icon_size, LPARAM l_param)

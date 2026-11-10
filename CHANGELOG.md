@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **BakREC's right-click menu: set the recorder's clock, edit its settings.**
+  *Set Recorder Clock to Now* sends the Sanno recorder this computer's time;
+  Windows asks for administrator permission for that one command, which a
+  second copy of HGFloater carries out and exits, so the running program never
+  holds the rights. The floater flashes when the clock is set, and a box says
+  why when it is not. *Recorder Settings...* edits the recorder's `Seo&0h.txt`
+  as a form with Save and Cancel, changing only the values. Both act only on a
+  USB device with the recorder's vendor id (`10D6`).
+
 ### Changed
 - **`R`'s icon turned a quarter clockwise**: the filled corner is now the
   top-left one, with an arrow to the bottom-right - a small window growing

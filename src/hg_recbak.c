@@ -3,7 +3,8 @@
  * The recorder: a USB voice recorder (the Sanno kind, an Actions Semiconductor
  * chip) whose drive has its recordings in \RECORDED, named
  * R<YYYYMMDD>-<HHMMSS>.WAV. Windows mounts it as an ordinary drive, so
- * everything here goes through the file system; nothing talks to the device.
+ * everything here goes through the file system; nothing here talks to the
+ * device (its clock and settings file are hg_recdev.c's, R1.10).
  *
  * A drive counts as the recorder when it is on the USB bus (the storage
  * property query, which needs no rights and no SetupAPI) and has a RECORDED
@@ -81,6 +82,11 @@ BOOL hg_recbak_present(void)
 BOOL hg_recbak_busy(void)
 {
     return s_busy;
+}
+
+WCHAR hg_recbak_drive(void)
+{
+    return s_drive;
 }
 
 const WCHAR *hg_recbak_busy_label(void)

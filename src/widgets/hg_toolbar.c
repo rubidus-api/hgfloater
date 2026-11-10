@@ -1261,6 +1261,10 @@ BOOL hg_toolbar_builtin_context_menu(int index, BOOL at_pointer)
         toolbar_controller_show_topology_menu(owner, index, icon_size, where);
         return TRUE;
     }
+    if (index == HG_TOOL_ICON_RECBAK && hg_recbak_present()) {
+        toolbar_controller_show_recorder_menu(owner, index, icon_size, where);
+        return TRUE;
+    }
     return FALSE;
 }
 

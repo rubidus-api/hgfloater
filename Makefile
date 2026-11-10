@@ -45,7 +45,7 @@ DEBUG_FLAGS   := -g -O0 -DDEBUG
 WIN_FLAGS := -mwindows -municode -static
 LIBS := -lgdi32 -luser32 -lcomctl32 -ldwmapi -ladvapi32 -lshell32 -lole32 -loleaut32 \
         -luuid -lpsapi -lpdh -luuid -loleaut32 -lpathcch -lshlwapi -lshcore -lpropsys -limm32 \
-        -lcomdlg32
+        -lcomdlg32 -lsetupapi -lcfgmgr32
 
 SRC := \
 	src/hgfloater.c \
@@ -55,7 +55,7 @@ SRC := \
 	src/hg_display.c \
 	src/hg_wmi.c \
 	src/hg_hpkeys.c \
-	src/hg_recbak.c \
+	src/hg_recbak.c src/hg_recdev.c \
 	src/hg_glyph.c \
 	src/hg_shell.c \
 	src/hg_sysinfo.c \

@@ -222,6 +222,8 @@ int hg_toolbar_grid_buttons(void);
 #define HG_IDM_SCREEN_SAVER 226
 #define HG_IDM_HP_FNKEYS 227
 #define HG_IDM_RECBAK 228
+#define HG_IDM_RECBAK_CLOCK 229
+#define HG_IDM_RECBAK_SETTINGS 230
 
 #define HG_COPYDATA_COMMAND_LINE 0x4847434CU
 

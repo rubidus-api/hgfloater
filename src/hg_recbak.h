@@ -25,6 +25,8 @@ BOOL hg_recbak_present(void);
 BOOL hg_recbak_busy(void);
 /* The button's word while the move runs ("42%"), else NULL. */
 const WCHAR *hg_recbak_busy_label(void);
+/* The recorder's drive letter, or 0 when none is plugged in. */
+WCHAR hg_recbak_drive(void);
 
 /* `force`: look at the drives now (at start, and before the folder box).
  * Otherwise this is the floater's once-a-second clock tick: it looks on the

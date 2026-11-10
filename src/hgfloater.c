@@ -11,6 +11,7 @@
 #include "hg_clock.h"
 #include "hg_keys.h"
 #include "hg_hpkeys.h"
+#include "hg_recdev.h"
 #include "hg_glyph.h"
 
 /* =========================================================================
@@ -410,6 +411,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, LPWSTR cmd_line
         int hp_exit = hg_hpkeys_cli(cmd_line);
         if (hp_exit >= 0) {
             exit_code = hp_exit;
+            goto cleanup_finish;
+        }
+        /* The same for the recorder's clock: the elevated copy sets it and
+         * exits, so the running program never holds the rights. */
+        int clock_exit = hg_recdev_cli(cmd_line);
+        if (clock_exit >= 0) {
+            exit_code = clock_exit;
             goto cleanup_finish;
         }
     }
