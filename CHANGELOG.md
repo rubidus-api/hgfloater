@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.17.28] - 2026-11-11
+
 ### Added
 - **BakREC's right-click menu: set the recorder's clock, edit its settings.**
   *Set Recorder Clock to Now* sends the Sanno recorder this computer's time;

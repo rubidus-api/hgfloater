@@ -1,17 +1,17 @@
-[한국어](README.ko.md) | **English** — **HGFloater v0.17.27** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.27/hgfloater.exe)
+[한국어](README.ko.md) | **English** — **HGFloater v0.17.28** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.28/hgfloater.exe)
 
 # HGFloater
 
-**v0.17.27** — built 2026-11-10
+**v0.17.28** — built 2026-11-11
 
-**[Download hgfloater.exe — v0.17.27, 750 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.17.28, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 750 KB** that needs no installer and no runtime, so
+single **executable of about 770 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
