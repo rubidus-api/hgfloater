@@ -578,7 +578,7 @@ built, so a key you rebind is the key the tooltip shows.
 | :--- | :--- | :--- |
 | **`R`** Resize — a frame, its top-left corner filled, an arrow to the far corner | — | **Drag** resizes the taskbox grid. |
 | **`M`** Move — arrows four ways | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
-| **`X`** Exit — the power symbol | Quits HGFloater. | — |
+| **`X`** Exit — a cross | Quits HGFloater. | — |
 | **`D`** Desktop — a screen, an arrow down | Minimizes every window; click again to restore. | — |
 | **`Cmd`** Command — a prompt `>_` | Opens the [Command Box](#8-the-command-box). | — |
 | **`Note`** Note — a pen and the line it wrote | Opens the [note list](#10-notes). | — |

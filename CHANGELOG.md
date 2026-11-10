@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.17.29] - 2026-11-11
+
+### Changed
+- **`X`'s icon is a plain cross** instead of the power symbol.
+
 ## [v0.17.28] - 2026-11-11
 
 ### Added

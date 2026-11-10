@@ -35,8 +35,8 @@ enum { GOP_END = 0, GOP_LINE, GOP_LOOP, GOP_FILL, GOP_ARC, GOP_DOT };
  *                        90 = up); a0 == a1 is the whole circle
  * GOP_DOT cx cy r      filled circle */
 
-/* X - quit: the power symbol. */
-static const short g_close[] = {GOP_ARC, 66, 62, 24, 120, 60, GOP_LINE, 2, 66, 28, 66, 58, GOP_END};
+/* X - quit: a plain cross (owner, 2026-11-11). */
+static const short g_close[] = {GOP_LINE, 2, 50, 42, 90, 82, GOP_LINE, 2, 90, 42, 50, 82, GOP_END};
 
 /* M - move: arrows four ways. */
 static const short g_move[] = {GOP_LINE, 2, 32, 61, 90, 61,     GOP_LINE, 2, 61, 32, 61, 90,
