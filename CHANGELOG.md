@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.17.26] - 2026-11-10
+
 ### Changed
 - **The function buttons show icons instead of words.** `R`, `M`, `X`, `D`,
   `Cmd`, `Note`, `Clip`, `Set`, `A/V`, `Vol`, `Mon`, `Alp`, `Dir` and `Bak REC`
