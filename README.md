@@ -1,10 +1,10 @@
-[한국어](README.ko.md) | **English** — **HGFloater v0.17.28** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.28/hgfloater.exe)
+[한국어](README.ko.md) | **English** — **HGFloater v0.17.29** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.29/hgfloater.exe)
 
 # HGFloater
 
-**v0.17.28** — built 2026-11-11
+**v0.17.29** — built 2026-11-11
 
-**[Download hgfloater.exe — v0.17.28, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.17.29, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
