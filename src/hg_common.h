@@ -296,11 +296,23 @@ int hg_toolbar_grid_buttons(void);
 #define HG_FLOATER_MIN_FONT_SIZE 12
 #define HG_FLOATER_MAX_FONT_SIZE 96
 
-#define HG_THEME_CUSTOM_BG RGB(20, 20, 20)
-#define HG_THEME_CUSTOM_BORDER RGB(160, 160, 160)
-#define HG_THEME_CUSTOM_TEXT RGB(255, 255, 255)
-#define HG_THEME_CUSTOM_FLASH RGB(180, 130, 240)
-#define HG_THEME_CUSTOM_SELECTED RGB(80, 80, 80)
+/* The widget colours are norma_ui's inanis palette (owner, 2026-11-12):
+ * bg = bg, border = line-strong, text = fg, flash = honey, selected = bg3.
+ * The custom palette - what a light Windows gets, by the inversion in
+ * update_theme_colors - is inanis dark; the light scheme is inanis light. */
+#define HG_THEME_CUSTOM_BG RGB(0x1B, 0x18, 0x22)       /* vulcan */
+#define HG_THEME_CUSTOM_BORDER RGB(0x72, 0x63, 0x93)   /* deluge */
+#define HG_THEME_CUSTOM_TEXT RGB(0xE6, 0xE1, 0xEE)     /* selago */
+#define HG_THEME_CUSTOM_FLASH RGB(0xF2, 0xB0, 0x4A)    /* casablanca (honey) */
+#define HG_THEME_CUSTOM_SELECTED RGB(0x33, 0x2C, 0x40) /* blackcurrant */
+#define HG_THEME_LIGHT_BG RGB(0xF8, 0xF6, 0xFB)        /* whisper */
+#define HG_THEME_LIGHT_BORDER RGB(0x93, 0x7F, 0xB0)    /* purple_mountains_majesty */
+#define HG_THEME_LIGHT_TEXT RGB(0x22, 0x1E, 0x2C)      /* bastille */
+#define HG_THEME_LIGHT_FLASH RGB(0xF2, 0xB0, 0x4A)     /* casablanca (honey) */
+#define HG_THEME_LIGHT_SELECTED RGB(0xE0, 0xD8, 0xEC)  /* snuff */
+/* The keyboard focus: accent2, a 2-px ring (N-I6). One config value, so the
+ * light scheme swaps in its own accent2 while the value is the default. */
+#define HG_THEME_LIGHT_FOCUS RGB(0x96, 0x53, 0x0F) /* hawaiian_tan */
 
 /* Document colors: the surfaces you read and type in, as opposed to the
  * widgets you press. The widget scheme deliberately inverts the system theme
@@ -324,7 +336,7 @@ int hg_toolbar_grid_buttons(void);
 /* Default accent colors. The runtime values live in hg_globals and every one
  * of them can be overridden from config.ini's [colors] section (RRGGBB hex);
  * see load_colors_config(). */
-#define HG_COLOR_FOCUS_BG_DEFAULT RGB(255, 210, 40)
+#define HG_COLOR_FOCUS_BG_DEFAULT RGB(0xD4, 0x88, 0x3B) /* brandy_punch, inanis dark accent2 */
 #define HG_COLOR_STAT_CPU_DEFAULT RGB(220, 70, 70)
 #define HG_COLOR_STAT_MEM_DEFAULT RGB(80, 130, 230)
 #define HG_COLOR_STAT_BAT_DEFAULT RGB(80, 190, 100)

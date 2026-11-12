@@ -21,13 +21,13 @@ void init_color_scheme(void)
 {
     hg_g_color_scheme_dark = hg_g_custom_palette; /* configurable via [colors] */
 
-    /* GetSysColor values do not follow app dark mode, so they form the light scheme. */
+    /* inanis light (norma_ui), for a dark Windows by the inversion below. */
     hg_g_color_scheme_light = (color_scheme_t){
-        .bg = GetSysColor(COLOR_WINDOW),
-        .border = GetSysColor(COLOR_WINDOWFRAME),
-        .text = GetSysColor(COLOR_WINDOWTEXT),
-        .flash = GetSysColor(COLOR_HOTLIGHT),
-        .selected = GetSysColor(COLOR_HIGHLIGHT),
+        .bg = HG_THEME_LIGHT_BG,
+        .border = HG_THEME_LIGHT_BORDER,
+        .text = HG_THEME_LIGHT_TEXT,
+        .flash = HG_THEME_LIGHT_FLASH,
+        .selected = HG_THEME_LIGHT_SELECTED,
     };
 }
 
@@ -57,10 +57,6 @@ void update_theme_colors()
         hg_g_is_dark_mode = 1;
 
     init_color_scheme();
-
-    if (!hg_g_is_high_contrast && hg_g_has_system_accent_color) {
-        hg_g_color_scheme_light.flash = hg_g_system_accent_color;
-    }
 
     if (hg_g_is_high_contrast) {
         hg_g_color_scheme_selected = (color_scheme_t){

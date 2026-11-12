@@ -11,6 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   mitred corners instead of round ones.
 - **The status line's edge is flat**: a one-pixel line instead of the sunken 3D bevel; its size and the
   room round the text are unchanged.
+- **The widget colours are the inanis palette** of the workspace's design guide (norma_ui): a violet-tinted
+  dark box with honey for the flash, and an inanis light box on a dark Windows instead of the system colours.
+  A `config.ini` still holding the old defaults takes the new ones; colours changed by hand are kept.
+- **The buttons are drawn flat**: a faint one-pixel frame with square corner brackets instead of the thick
+  accent-coloured frame, no 3D bevel on hover or press, and the keyboard focus is a 2-pixel ring in the
+  focus colour (now `D4883B`) instead of a yellow fill.
 
 ## [v0.17.29] - 2026-11-11
 

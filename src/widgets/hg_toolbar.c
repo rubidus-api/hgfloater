@@ -69,49 +69,61 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
     return toolbar_invert_color(base_color);
 }
 
-/* The line round a function button or a shortcut.
+/* The line round a function button or a shortcut: norma_ui's box (N-D6) -
+ * a one-pixel frame in the faint colour (the scheme's `selected`, inanis bg3,
+ * which stands for `line`) and a square bracket on each corner in the
+ * scheme's border colour (line-strong), three thick (scaled, never under
+ * three pixels) with arms of eight. Flat: no bevel, no shadow (N-D7).
  *
- * It was one white pixel, which is invisible against a light desktop and barely
- * there against a busy one - and this window is transparent, so "the
- * background" is whatever the reader happens to have behind it. Two things fix
- * that: the accent colour Windows is already using, so the frame belongs to the
- * desktop it sits on rather than fighting it, and enough thickness to survive a
- * photograph as a wallpaper.
- *
- * The accent is pulled toward the middle of the range first. A very light
- * accent vanishes on white and a very dark one vanishes on black, and this
- * frame has to hold on both: the taskbox is see-through and its buttons have no
- * plate of their own. Mid-tones are the only colours that do. */
+ * It used to be a 2-px frame in the Windows accent; the brackets now carry the
+ * edge, the strong colour being the one that holds against the desktop that
+ * shows through this window. */
 static COLORREF toolbar_button_outline_color(void)
 {
-    COLORREF base = hg_g_has_system_accent_color ? hg_g_system_accent_color : RGB(0, 120, 215);
+    return HG_COLOR_BG_TOOLBAR;
+}
 
-    int r = GetRValue(base);
-    int g = GetGValue(base);
-    int b = GetBValue(base);
+static void toolbar_draw_brackets(HDC hdc, const RECT *rc, COLORREF color)
+{
+    HBRUSH brush = hg_cached_solid_brush(color);
+    if (!brush)
+        return;
+    int t = SC(3);
+    if (t < 3)
+        t = 3;
+    int arm = SC(8);
+    int w = rc->right - rc->left, h = rc->bottom - rc->top;
+    if (arm > w / 2)
+        arm = w / 2;
+    if (arm > h / 2)
+        arm = h / 2;
+    if (t > arm)
+        t = arm;
+    if (t <= 0)
+        return;
+    RECT r;
+    /* top-left */
+    SetRect(&r, rc->left, rc->top, rc->left + arm, rc->top + t), FillRect(hdc, &r, brush);
+    SetRect(&r, rc->left, rc->top, rc->left + t, rc->top + arm), FillRect(hdc, &r, brush);
+    /* top-right */
+    SetRect(&r, rc->right - arm, rc->top, rc->right, rc->top + t), FillRect(hdc, &r, brush);
+    SetRect(&r, rc->right - t, rc->top, rc->right, rc->top + arm), FillRect(hdc, &r, brush);
+    /* bottom-left */
+    SetRect(&r, rc->left, rc->bottom - t, rc->left + arm, rc->bottom), FillRect(hdc, &r, brush);
+    SetRect(&r, rc->left, rc->bottom - arm, rc->left + t, rc->bottom), FillRect(hdc, &r, brush);
+    /* bottom-right */
+    SetRect(&r, rc->right - arm, rc->bottom - t, rc->right, rc->bottom), FillRect(hdc, &r, brush);
+    SetRect(&r, rc->right - t, rc->bottom - arm, rc->right, rc->bottom), FillRect(hdc, &r, brush);
+}
 
-    /* Rec. 601 luma: near enough for "is this going to disappear". */
-    int luma = (r * 299 + g * 587 + b * 114) / 1000;
-
-    if (luma > 190) {
-        /* Too pale for a white desktop: darken toward the colour's own hue. */
-        r = r * 190 / (luma ? luma : 1);
-        g = g * 190 / (luma ? luma : 1);
-        b = b * 190 / (luma ? luma : 1);
-    } else if (luma < 70) {
-        /* Too dark for a black desktop: lift it the same way. */
-        r = r + (255 - r) * (70 - luma) / 255;
-        g = g + (255 - g) * (70 - luma) / 255;
-        b = b + (255 - b) * (70 - luma) / 255;
-    }
-
-    if (r > 255)
-        r = 255;
-    if (g > 255)
-        g = 255;
-    if (b > 255)
-        b = 255;
-    return RGB(r, g, b);
+/* The keyboard focus colour: accent2 (N-I6). `focus_bg` is one value for both
+ * schemes; while it is the default the light scheme takes its own accent2,
+ * the dark one being too pale on a light box. */
+static COLORREF toolbar_focus_color(void)
+{
+    if (hg_g_color_focus_bg == HG_COLOR_FOCUS_BG_DEFAULT && !hg_g_is_high_contrast && hg_g_is_dark_mode)
+        return HG_THEME_LIGHT_FOCUS;
+    return hg_g_color_focus_bg;
 }
 
 /* A separator cell: diagonal lines in the outline colour, scaled with the
@@ -142,21 +154,10 @@ static void toolbar_draw_separator(HDC hdc, const RECT *rc)
 
 static void toolbar_draw_button_outline(HDC hdc, const RECT *rc)
 {
-    HBRUSH brush = hg_cached_solid_brush(toolbar_button_outline_color());
-    if (!brush)
-        return;
-
-    int thickness = SC(2);
-    if (thickness < 2)
-        thickness = 2;
-
-    RECT edge = *rc;
-    for (int i = 0; i < thickness; ++i) {
-        FrameRect(hdc, &edge, brush);
-        InflateRect(&edge, -1, -1);
-        if (edge.left >= edge.right || edge.top >= edge.bottom)
-            break;
-    }
+    HBRUSH faint = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+    if (faint)
+        FrameRect(hdc, rc, faint);
+    toolbar_draw_brackets(hdc, rc, toolbar_button_outline_color());
 }
 
 static void toolbar_draw_state_border(HDC hdc, const RECT *rc)
@@ -411,7 +412,7 @@ static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, c
  * is the thing to see) and for Vol, Mon and Alp (the plate is the reading). */
 static void toolbar_draw_focus_ring(HDC dc, const RECT *rc_btn)
 {
-    HBRUSH ring = hg_cached_solid_brush(hg_g_color_focus_bg);
+    HBRUSH ring = hg_cached_solid_brush(toolbar_focus_color());
     if (!ring)
         return;
     int thickness = SC(2);
@@ -422,6 +423,7 @@ static void toolbar_draw_focus_ring(HDC dc, const RECT *rc_btn)
         FrameRect(dc, &edge, ring);
         InflateRect(&edge, -1, -1);
     }
+    toolbar_draw_brackets(dc, rc_btn, toolbar_focus_color()); /* N-D6: focus turns the brackets accent2 */
 }
 
 /* A shortcut on the grid. No plate -
@@ -441,7 +443,6 @@ void hg_toolbar_paint_shortcut_cell(HDC dc, int s_idx, const RECT *rc_item, int 
         HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
         if (hbr)
             FillRect(dc, &rc_btn, hbr);
-        DrawEdge(dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
     }
 
     if (selected) {
@@ -548,16 +549,16 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
                         }
-                        DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
-                    } else if ((hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) ||
-                               (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx)) {
-                        BOOL focused = (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx);
-                        HBRUSH hbr = hg_cached_solid_brush(focused ? hg_g_color_focus_bg : HG_COLOR_BG_SELECTED);
+                    } else if (hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) {
+                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
                         }
-                        DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                     }
+                    /* Flat fills only (N-D7); the keyboard focus is the accent2
+                     * ring (N-I6), over whatever fill is there. */
+                    if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx)
+                        toolbar_draw_focus_ring(mem_dc, &rc_btn);
                     if (hg_g_window_items[r_idx].icon) {
                         DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size,
                                    icon_size, 0, NULL, DI_NORMAL);
@@ -659,27 +660,16 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                                 FillRect(mem_dc, &rc_btn, hbr);
                             }
                         }
-                        DrawEdge(mem_dc, &rc_btn, EDGE_SUNKEN, BF_RECT);
-                    } else if ((hovered_type == 1 && hovered_index == i) ||
-                               (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)) {
-                        BOOL focused = (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i);
+                    } else if (hovered_type == 1 && hovered_index == i) {
                         /* Vol, Mon and Alp are never filled over: their plate
                          * is the reading, and the moment it is pointed at is
-                         * the moment it is being turned. Hover leaves it as it
-                         * is; the focus is a ring, drawn after the outline
-                         * below so the outline does not cover it. */
-                        if (focused && !keep_value_bg) {
-                            HBRUSH hbr = hg_cached_solid_brush(hg_g_color_focus_bg);
-                            if (hbr) {
-                                FillRect(mem_dc, &rc_btn, hbr);
-                            }
-                        } else if (!focused && !keep_value_bg) {
+                         * the moment it is being turned. */
+                        if (!keep_value_bg) {
                             HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
                             if (hbr) {
                                 FillRect(mem_dc, &rc_btn, hbr);
                             }
                         }
-                        DrawEdge(mem_dc, &rc_btn, BDR_RAISEDINNER, BF_RECT);
                     }
 
                     /* One line around every button in this half of the grid -
@@ -693,8 +683,10 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                      * the line still frames it - and before the state border,
                      * which is a louder mark and should win where both apply. */
                     toolbar_draw_button_outline(mem_dc, &rc_btn);
-                    if (keep_value_bg && hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i &&
-                        !(pressed_type == 1 && pressed_index == i))
+                    /* The focus: the accent2 ring and brackets on every button
+                     * (N-I6, N-D6), a fill on none - flat, and the plates of
+                     * Vol, Mon and Alp stay readable under it. */
+                    if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)
                         toolbar_draw_focus_ring(mem_dc, &rc_btn);
 
                     if ((i == HG_TOOL_ICON_VOLUME && get_system_mute()) ||
@@ -745,7 +737,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     if (hbr) {
                         FillRect(mem_dc, &drag_rc, hbr);
                     }
-                    DrawEdge(mem_dc, &drag_rc, BDR_RAISEDINNER, BF_RECT);
+                    toolbar_draw_brackets(mem_dc, &drag_rc, toolbar_button_outline_color());
                     if (hg_g_window_items[drag_state->source_index].icon) {
                         DrawIconEx(mem_dc, cx, cy, hg_g_window_items[drag_state->source_index].icon, icon_size, icon_size,
                                    0, NULL, DI_NORMAL);
@@ -851,7 +843,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         state->hovered_type = cur_type;
         state->hovered_index = cur_index;
         if (cur_type != -1 && cur_index != -1) {
-            /* Hovering moves the focus too, so the yellow focus highlight
+            /* Hovering moves the focus too, so the focus ring
              * follows the mouse as well as the keyboard. */
             hg_taskbox_focus.area = cur_type;
             hg_taskbox_focus.index = cur_index;

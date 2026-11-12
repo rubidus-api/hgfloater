@@ -1193,7 +1193,7 @@ static void cmd_show_theme(void)
     cmd_printf(L"in use      bg=#%02X%02X%02X  text=#%02X%02X%02X  border=#%02X%02X%02X", GetRValue(s->bg),
                GetGValue(s->bg), GetBValue(s->bg), GetRValue(s->text), GetGValue(s->text), GetBValue(s->text),
                GetRValue(s->border), GetGValue(s->border), GetBValue(s->border));
-    cmd_printf(L"light       bg=#%02X%02X%02X   (GetSysColor COLOR_WINDOW)", GetRValue(hg_g_color_scheme_light.bg),
+    cmd_printf(L"light       bg=#%02X%02X%02X   (inanis light)  ", GetRValue(hg_g_color_scheme_light.bg),
                GetGValue(hg_g_color_scheme_light.bg), GetBValue(hg_g_color_scheme_light.bg));
     cmd_printf(L"custom      bg=#%02X%02X%02X   ([colors] in config.ini)", GetRValue(hg_g_color_scheme_dark.bg),
                GetGValue(hg_g_color_scheme_dark.bg), GetBValue(hg_g_color_scheme_dark.bg));

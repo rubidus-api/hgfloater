@@ -661,7 +661,7 @@ int taskbox_cols_from_height(int window_height, int icon_size, int border, int t
 /* The status line's edge, flat (owner, 2026-11-12): the control keeps
  * WS_EX_CLIENTEDGE, so its size and the room round the text stay what they
  * were, but the sunken bevel in that edge is painted over - a one-pixel line in
- * the selection colour, the cells' own frame colour, and inside it the
+ * the scheme's border colour (norma_ui line-strong), and inside it the
  * line's background, flash colour included while the taskbox flashes. */
 static void edit_paint_flat_edge(HWND hwnd)
 {
@@ -677,7 +677,7 @@ static void edit_paint_flat_edge(HWND hwnd)
     ExcludeClipRect(dc, cr.left, cr.top, cr.right, cr.bottom);
     BOOL flashing = hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0);
     HBRUSH inside = hg_cached_solid_brush(flashing ? HG_COLOR_BG_FLASH : HG_COLOR_BG_DEFAULT);
-    HBRUSH line = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+    HBRUSH line = hg_cached_solid_brush(HG_COLOR_BG_TOOLBAR); /* line-strong: a field's edge (N-C3) */
     if (inside)
         FillRect(dc, &wr, inside);
     if (line)

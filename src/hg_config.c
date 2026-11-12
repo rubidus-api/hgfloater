@@ -274,6 +274,28 @@ void hg_config_save_color(const WCHAR *key, COLORREF color)
     save_color_value(key, color);
 }
 
+/* The defaults before the inanis palette (2026-11-12). Every value is written
+ * back when it is read, so each config.ini holds the old defaults verbatim;
+ * one that still does was never chosen, and takes the new default. A colour
+ * changed by hand is kept. */
+static const struct {
+    const WCHAR *key;
+    COLORREF old;
+} s_color_old_defaults[] = {
+    {L"scheme_bg", RGB(20, 20, 20)},       {L"scheme_border", RGB(160, 160, 160)},
+    {L"scheme_text", RGB(255, 255, 255)},  {L"scheme_flash", RGB(180, 130, 240)},
+    {L"scheme_selected", RGB(80, 80, 80)}, {L"focus_bg", RGB(255, 210, 40)},
+};
+
+static COLORREF color_upgrade_default(const WCHAR *key, COLORREF color, COLORREF def)
+{
+    for (size_t i = 0; i < HG_ARRAYSIZE(s_color_old_defaults); ++i) {
+        if (lstrcmpW(key, s_color_old_defaults[i].key) == 0 && color == s_color_old_defaults[i].old)
+            return def;
+    }
+    return color;
+}
+
 static COLORREF load_color_value(const WCHAR *key, COLORREF def)
 {
     WCHAR buf[16] = {0};
@@ -289,6 +311,7 @@ static COLORREF load_color_value(const WCHAR *key, COLORREF def)
             color = RGB((value >> 16) & 0xFFu, (value >> 8) & 0xFFu, value & 0xFFu);
         }
     }
+    color = color_upgrade_default(key, color, def);
     save_color_value(key, color);
     return color;
 }

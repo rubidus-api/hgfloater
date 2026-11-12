@@ -1312,12 +1312,15 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
 
 ### `[colors]`
 
-모든 강조 색을 `RRGGBB` 16진수(예: `FFD228`)로 지정합니다.
+모든 강조 색을 `RRGGBB` 16진수(예: `D4883B`)로 지정합니다. 기본값은 작업공간 디자인
+가이드의 inanis 배색입니다(다크: 바탕 `1B1822`, 글자 `E6E1EE`, 테두리 `726393`, 깜빡임
+`F2B04A`, 눌림 `332C40`, 초점 `D4883B`). 예전 기본값이 그대로 적힌 `config.ini` 는 새
+기본값을 따르고, 직접 바꾼 색은 그대로 둡니다.
 
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
-  — 다크 팔레트. **위젯**(플로터·태스크박스·툴바)의 색입니다. 문서 창의 지면 색은
+  — 다크 팔레트(다크 Windows 에서는 고정된 inanis 밝은 팔레트를 씁니다). **위젯**(플로터·태스크박스·툴바)의 색입니다. 문서 창의 지면 색은
   시스템 테마에서 가져옵니다. 아래 키로 따로 정한 창은 예외입니다
-- `focus_bg` — 키보드/마우스 포커스 강조
+- `focus_bg` — 키보드 초점 고리(기본값일 때 밝은 팔레트는 더 짙은 `96530F` 를 씁니다)
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — 플로터 상태 막대
 - `value_alpha_low`/`value_alpha_high`, `value_brightness_low`/`value_brightness_high`,
   `value_volume_low`/`value_volume_high` — `Alp`·`Mon`·`Vol` 판 색

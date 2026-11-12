@@ -1520,13 +1520,19 @@ explaining them. The lines and the clips themselves are never written to disk.
 
 ### `[colors]`
 
-Every accent color as `RRGGBB` hex, for example `FFD228`:
+Every accent color as `RRGGBB` hex, for example `D4883B`. The defaults are the
+inanis palette of the workspace's design guide (dark: background `1B1822`, text
+`E6E1EE`, edges `726393`, flash `F2B04A`, pressed `332C40`; focus `D4883B`). A
+`config.ini` still holding the old defaults takes the new ones; a color you
+changed yourself is kept:
 
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
-  — the dark palette. These are the **widget** colors: the floater, the taskbox
+  — the dark palette (a dark Windows gets the light inanis palette, which is
+  fixed). These are the **widget** colors: the floater, the taskbox
   and the toolbar. The document windows take their page colors from the system
   theme instead, unless the keys below give them their own.
-- `focus_bg` — the keyboard/mouse focus highlight.
+- `focus_bg` — the keyboard focus ring (while it is the default, the light
+  palette uses its own darker `96530F`).
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
   `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
