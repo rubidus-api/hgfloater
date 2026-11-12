@@ -658,6 +658,33 @@ int taskbox_cols_from_height(int window_height, int icon_size, int border, int t
     return hg_toolbar_cols_for_rows(target_rows);
 }
 
+/* The status line's edge, flat (owner, 2026-11-12): the control keeps
+ * WS_EX_CLIENTEDGE, so its size and the room round the text stay what they
+ * were, but the sunken bevel in that edge is painted over - a one-pixel line in
+ * the selection colour, the cells' own frame colour, and inside it the
+ * line's background, flash colour included while the taskbox flashes. */
+static void edit_paint_flat_edge(HWND hwnd)
+{
+    RECT wr, cr;
+    if (!GetWindowRect(hwnd, &wr) || !GetClientRect(hwnd, &cr))
+        return;
+    MapWindowPoints(hwnd, NULL, (POINT *)&cr, 2);
+    OffsetRect(&cr, -wr.left, -wr.top);
+    OffsetRect(&wr, -wr.left, -wr.top);
+    HDC dc = GetWindowDC(hwnd);
+    if (!dc)
+        return;
+    ExcludeClipRect(dc, cr.left, cr.top, cr.right, cr.bottom);
+    BOOL flashing = hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0);
+    HBRUSH inside = hg_cached_solid_brush(flashing ? HG_COLOR_BG_FLASH : HG_COLOR_BG_DEFAULT);
+    HBRUSH line = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+    if (inside)
+        FillRect(dc, &wr, inside);
+    if (line)
+        FrameRect(dc, &wr, line);
+    ReleaseDC(hwnd, dc);
+}
+
 LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR mid_subclass,
                                     DWORD_PTR dw_ref_data)
 {
@@ -665,6 +692,9 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
         return 0;
     }
     switch (msg) {
+    case WM_NCPAINT:
+        edit_paint_flat_edge(hwnd);
+        return 0;
     case WM_LBUTTONDOWN: {
         ReleaseCapture();
         SendMessageW(GetParent(hwnd), WM_SYSCOMMAND, SC_MOVE | 0x0002, 0);
@@ -1428,6 +1458,8 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 KillTimer(hwnd, HG_TIMER_HIGHLIGHT);
             }
             hg_taskbox_invalidate(FALSE); /* the toolbar and the status line flash too */
+            if (hg_g_edit_msg_wnd) /* and the status line's edge, which is not client area */
+                RedrawWindow(hg_g_edit_msg_wnd, NULL, NULL, RDW_FRAME | RDW_INVALIDATE);
         } else if (w_param == HG_TIMER_HOVER_CHECK) {
             /* The one place that watches the pointer on a clock, so the one
              * place that can notice it has started moving again. */

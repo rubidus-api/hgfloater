@@ -1339,7 +1339,8 @@ void hg_taskbox_invalidate(BOOL erase)
 {
     if (!hg_g_taskbox_wnd || !IsWindow(hg_g_taskbox_wnd))
         return;
-    RedrawWindow(hg_g_taskbox_wnd, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN | (erase ? RDW_ERASE : 0));
+    /* RDW_FRAME for the status line, whose flat edge is non-client paint. */
+    RedrawWindow(hg_g_taskbox_wnd, NULL, NULL, RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN | (erase ? RDW_ERASE : 0));
 }
 
 void hg_toolbar_grid(int width, int height, int icon_size, HgGrid *out)

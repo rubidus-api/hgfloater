@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **The button icons are sharper**: thinner strokes (6% of the icon instead of 8.5%) with square ends and
+  mitred corners instead of round ones.
+- **The status line's edge is flat**: a one-pixel line instead of the sunken 3D bevel; its size and the
+  room round the text are unchanged.
+
 ## [v0.17.29] - 2026-11-11
 
 ### Changed

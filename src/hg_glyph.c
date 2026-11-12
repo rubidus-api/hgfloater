@@ -136,14 +136,16 @@ BOOL hg_glyph_has(int index)
     return glyph_table(index) != NULL;
 }
 
-/* The pen: round ends and joins, so a stroke's band is the same width all the
- * way round its corners. */
+/* The pen: square ends and mitred joins, so a stroke ends and turns on a
+ * corner rather than a curve (owner, 2026-11-12: sharp, not rounded). The
+ * band's pen is the same kind, only wider, so its mitre runs parallel to the
+ * icon's and the outline stays even round a corner too. */
 static HPEN glyph_pen(int width, COLORREF color)
 {
     LOGBRUSH lb = {BS_SOLID, color, 0};
     if (width < 1)
         width = 1;
-    return ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_ROUND | PS_JOIN_ROUND, (DWORD)width, &lb, 0, NULL);
+    return ExtCreatePen(PS_GEOMETRIC | PS_SOLID | PS_ENDCAP_SQUARE | PS_JOIN_MITER, (DWORD)width, &lb, 0, NULL);
 }
 
 /* One pass over a table: point u maps to ox + u * k. The pen and the fill
@@ -200,12 +202,12 @@ static void glyph_emit(HDC dc, const short *op, double ox, double oy, double k, 
     }
 }
 
-/* The stroke width in pixels for an icon `size` across: thin enough to keep
- * the shapes apart, never under one and a half. */
+/* The stroke width in pixels for an icon `size` across: thin, a line drawing
+ * rather than a marker one (owner, 2026-11-12), never under one and a quarter. */
 static double glyph_stroke(int size)
 {
-    double w = size * 0.085;
-    return (w < 1.5) ? 1.5 : w;
+    double w = size * 0.06;
+    return (w < 1.25) ? 1.25 : w;
 }
 
 static int s_mask_size = 0;
