@@ -313,6 +313,11 @@ int hg_toolbar_grid_buttons(void);
 /* The keyboard focus: accent2, a 2-px ring (N-I6). One config value, so the
  * light scheme swaps in its own accent2 while the value is the default. */
 #define HG_THEME_LIGHT_FOCUS RGB(0x96, 0x53, 0x0F) /* hawaiian_tan */
+/* select: a chosen row's fill, under the scheme's own text colour. */
+#define HG_THEME_DARK_SELECT RGB(0x4A, 0x40, 0x63)  /* mulled_wine */
+#define HG_THEME_LIGHT_SELECT RGB(0xD0, 0xC5, 0xE0) /* prelude */
+/* honey: "this one" - the window highlight, the current item. */
+#define HG_THEME_HONEY RGB(0xF2, 0xB0, 0x4A) /* casablanca */
 
 /* Document colors: the surfaces you read and type in, as opposed to the
  * widgets you press. The widget scheme deliberately inverts the system theme
@@ -320,18 +325,18 @@ int hg_toolbar_grid_buttons(void);
  * update_theme_colors), which is right for a control and wrong for a page of
  * text - a note on a dark desktop should not be a white sheet. These follow
  * the system theme directly instead. */
-#define HG_DOC_LIGHT_BG RGB(240, 240, 240)
-#define HG_DOC_LIGHT_TEXT RGB(0, 0, 0)
-#define HG_DOC_DARK_BG RGB(0, 0, 0)
-#define HG_DOC_DARK_TEXT RGB(255, 255, 255)
+#define HG_DOC_LIGHT_BG RGB(0xF8, 0xF6, 0xFB)   /* inanis light bg, whisper */
+#define HG_DOC_LIGHT_TEXT RGB(0x22, 0x1E, 0x2C) /* bastille */
+#define HG_DOC_DARK_BG RGB(0x1B, 0x18, 0x22)    /* inanis dark bg, vulcan */
+#define HG_DOC_DARK_TEXT RGB(0xE6, 0xE1, 0xEE)  /* selago */
 
 /* Small input fields - a search box, a number box, the command line - are the
  * one place the document colour cannot simply be repeated. The content control
  * fills its window, so losing its outline costs nothing; a small field painted
  * exactly like the window behind it and with no outline is a place to type
  * that gives no sign of being one. One step off the page is that sign. */
-#define HG_DOC_LIGHT_FIELD_BG RGB(255, 255, 255)
-#define HG_DOC_DARK_FIELD_BG RGB(26, 26, 26)
+#define HG_DOC_LIGHT_FIELD_BG RGB(0xEE, 0xEA, 0xF4) /* inanis bg2, magnolia - no pure white (N-C4) */
+#define HG_DOC_DARK_FIELD_BG RGB(0x23, 0x1F, 0x2C)  /* inanis bg2, baltic_sea */
 
 /* Default accent colors. The runtime values live in hg_globals and every one
  * of them can be overridden from config.ini's [colors] section (RRGGBB hex);

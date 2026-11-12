@@ -967,7 +967,7 @@ static LRESULT floater_controller_on_create(HWND hwnd)
     return 0;
 }
 
-/* The panel itself: the black surround, the coloured plate, and the border.
+/* The panel itself: the plate and its edge.
  *
  * Painted before anything can go wrong and separately from the content,
  * because a floater that has drawn nothing is not blank on screen - it is a
@@ -984,31 +984,17 @@ static void floater_paint_plate(HDC dc, const RECT *rc)
 
     FillRect(dc, rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
-    int pen_width = SC(HG_BORDER_THICKNESS);
-    RECT draw_rc = *rc;
-    InflateRect(&draw_rc, -pen_width / 2, -pen_width / 2);
+    int band = SC(HG_BORDER_THICKNESS);
 
     /* Cached, so the plate cannot be lost to a failed CreateSolidBrush under
      * GDI pressure - which was one way to end up with a black rectangle where
      * the widget should be. */
     HBRUSH bg_brush = hg_cached_solid_brush(bg_color);
-    HPEN border_pen = CreatePen(PS_SOLID, pen_width, HG_COLOR_BG_TOOLBAR);
-
-    if (bg_brush && border_pen) {
-        HBRUSH old_brush = (HBRUSH)SelectObject(dc, bg_brush);
-        HPEN old_pen = (HPEN)SelectObject(dc, border_pen);
-        Rectangle(dc, draw_rc.left, draw_rc.top, draw_rc.right, draw_rc.bottom);
-        if (old_brush)
-            SelectObject(dc, old_brush);
-        if (old_pen)
-            SelectObject(dc, old_pen);
-    } else if (bg_brush) {
-        /* No border rather than no widget. */
-        FillRect(dc, &draw_rc, bg_brush);
-    }
-
-    if (border_pen)
-        DeleteObject(border_pen);
+    if (bg_brush)
+        FillRect(dc, rc, bg_brush);
+    /* The edge: norma_ui's box (N-D6), a faint band and corner brackets, as
+     * the taskbox. */
+    hg_paint_box_frame(dc, rc, band, FALSE);
 }
 
 static LRESULT floater_controller_on_paint(HWND hwnd)

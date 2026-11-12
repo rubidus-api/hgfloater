@@ -85,45 +85,12 @@ static COLORREF toolbar_button_outline_color(void)
 
 static void toolbar_draw_brackets(HDC hdc, const RECT *rc, COLORREF color)
 {
-    HBRUSH brush = hg_cached_solid_brush(color);
-    if (!brush)
-        return;
-    int t = SC(3);
-    if (t < 3)
-        t = 3;
-    int arm = SC(8);
-    int w = rc->right - rc->left, h = rc->bottom - rc->top;
-    if (arm > w / 2)
-        arm = w / 2;
-    if (arm > h / 2)
-        arm = h / 2;
-    if (t > arm)
-        t = arm;
-    if (t <= 0)
-        return;
-    RECT r;
-    /* top-left */
-    SetRect(&r, rc->left, rc->top, rc->left + arm, rc->top + t), FillRect(hdc, &r, brush);
-    SetRect(&r, rc->left, rc->top, rc->left + t, rc->top + arm), FillRect(hdc, &r, brush);
-    /* top-right */
-    SetRect(&r, rc->right - arm, rc->top, rc->right, rc->top + t), FillRect(hdc, &r, brush);
-    SetRect(&r, rc->right - t, rc->top, rc->right, rc->top + arm), FillRect(hdc, &r, brush);
-    /* bottom-left */
-    SetRect(&r, rc->left, rc->bottom - t, rc->left + arm, rc->bottom), FillRect(hdc, &r, brush);
-    SetRect(&r, rc->left, rc->bottom - arm, rc->left + t, rc->bottom), FillRect(hdc, &r, brush);
-    /* bottom-right */
-    SetRect(&r, rc->right - arm, rc->bottom - t, rc->right, rc->bottom), FillRect(hdc, &r, brush);
-    SetRect(&r, rc->right - t, rc->bottom - arm, rc->right, rc->bottom), FillRect(hdc, &r, brush);
+    hg_paint_brackets(hdc, rc, color);
 }
 
-/* The keyboard focus colour: accent2 (N-I6). `focus_bg` is one value for both
- * schemes; while it is the default the light scheme takes its own accent2,
- * the dark one being too pale on a light box. */
 static COLORREF toolbar_focus_color(void)
 {
-    if (hg_g_color_focus_bg == HG_COLOR_FOCUS_BG_DEFAULT && !hg_g_is_high_contrast && hg_g_is_dark_mode)
-        return HG_THEME_LIGHT_FOCUS;
-    return hg_g_color_focus_bg;
+    return hg_ui_focus_color();
 }
 
 /* A separator cell: diagonal lines in the outline colour, scaled with the

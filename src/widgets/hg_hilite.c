@@ -40,12 +40,9 @@ static BOOL s_class_ready = FALSE;
 
 static COLORREF hilite_color(void)
 {
-    /* The accent is what the rest of the program uses to mean "this one", and
-     * on a high-contrast desktop the system's own highlight is the only colour
-     * that is guaranteed to be visible. */
-    if (!hg_g_is_high_contrast && hg_g_has_system_accent_color)
-        return hg_g_system_accent_color;
-    return GetSysColor(COLOR_HIGHLIGHT);
+    /* norma_ui honey is "this one" (N-C2); on a high-contrast desktop the
+     * system's own highlight is the only colour guaranteed to be visible. */
+    return hg_ui_honey();
 }
 
 static LRESULT CALLBACK hilite_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)

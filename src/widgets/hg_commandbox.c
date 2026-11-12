@@ -717,8 +717,7 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
                 double ws = hg_window_scale(hwnd);
                 int thickness = SCW(ws, 3);
                 InflateRect(&rc, thickness, thickness);
-                COLORREF color = hg_g_has_system_accent_color ? hg_g_system_accent_color
-                                                              : GetSysColor(COLOR_HIGHLIGHT);
+                COLORREF color = hg_ui_doc_focus_color(); /* accent2 of the page's theme (N-I6) */
                 HBRUSH brush = CreateSolidBrush(color);
                 if (brush) {
                     for (int i = 0; i < thickness; ++i) {

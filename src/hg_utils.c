@@ -76,6 +76,80 @@ void update_theme_colors()
     }
 }
 
+COLORREF hg_ui_focus_color(void)
+{
+    if (hg_g_is_high_contrast)
+        return GetSysColor(COLOR_HIGHLIGHT);
+    if (hg_g_color_focus_bg == HG_COLOR_FOCUS_BG_DEFAULT && hg_g_is_dark_mode)
+        return HG_THEME_LIGHT_FOCUS;
+    return hg_g_color_focus_bg;
+}
+
+COLORREF hg_ui_doc_focus_color(void)
+{
+    if (hg_g_is_high_contrast)
+        return GetSysColor(COLOR_HIGHLIGHT);
+    return hg_g_is_dark_mode ? HG_COLOR_FOCUS_BG_DEFAULT : HG_THEME_LIGHT_FOCUS;
+}
+
+COLORREF hg_ui_select_color(void)
+{
+    if (hg_g_is_high_contrast)
+        return GetSysColor(COLOR_HIGHLIGHT);
+    return hg_g_is_dark_mode ? HG_THEME_LIGHT_SELECT : HG_THEME_DARK_SELECT;
+}
+
+COLORREF hg_ui_honey(void)
+{
+    return hg_g_is_high_contrast ? GetSysColor(COLOR_HIGHLIGHT) : HG_THEME_HONEY;
+}
+
+void hg_paint_brackets(HDC dc, const RECT *rc, COLORREF color)
+{
+    HBRUSH brush = hg_cached_solid_brush(color);
+    if (!dc || !rc || !brush)
+        return;
+    int t = SC(3);
+    if (t < 3)
+        t = 3;
+    int arm = SC(8);
+    int w = rc->right - rc->left, h = rc->bottom - rc->top;
+    if (arm > w / 2)
+        arm = w / 2;
+    if (arm > h / 2)
+        arm = h / 2;
+    if (t > arm)
+        t = arm;
+    if (t <= 0)
+        return;
+    RECT r[8] = {
+        {rc->left, rc->top, rc->left + arm, rc->top + t},           {rc->left, rc->top, rc->left + t, rc->top + arm},
+        {rc->right - arm, rc->top, rc->right, rc->top + t},         {rc->right - t, rc->top, rc->right, rc->top + arm},
+        {rc->left, rc->bottom - t, rc->left + arm, rc->bottom},     {rc->left, rc->bottom - arm, rc->left + t, rc->bottom},
+        {rc->right - arm, rc->bottom - t, rc->right, rc->bottom},   {rc->right - t, rc->bottom - arm, rc->right, rc->bottom},
+    };
+    for (int i = 0; i < 8; ++i)
+        FillRect(dc, &r[i], brush);
+}
+
+void hg_paint_box_frame(HDC dc, const RECT *rc, int thickness, BOOL focused)
+{
+    if (!dc || !rc || thickness <= 0)
+        return;
+    HBRUSH faint = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+    if (faint) {
+        RECT band[4] = {
+            {rc->left, rc->top, rc->right, rc->top + thickness},
+            {rc->left, rc->bottom - thickness, rc->right, rc->bottom},
+            {rc->left, rc->top + thickness, rc->left + thickness, rc->bottom - thickness},
+            {rc->right - thickness, rc->top + thickness, rc->right, rc->bottom - thickness},
+        };
+        for (int i = 0; i < 4; ++i)
+            FillRect(dc, &band[i], faint);
+    }
+    hg_paint_brackets(dc, rc, focused ? hg_ui_focus_color() : HG_COLOR_BG_TOOLBAR);
+}
+
 BOOL should_refresh_theme_on_setting_change(LPARAM l_param)
 {
     const WCHAR *setting = (const WCHAR *)l_param;

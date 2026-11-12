@@ -417,22 +417,12 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             /* Draw border like taskbox/floater */
             HWND fg = GetForegroundWindow();
             BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
-            COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
-            HBRUSH border_brush = CreateSolidBrush(border_color);
-            if (border_brush) {
-                RECT rc_top = {0, 0, rc.right, border};
-                RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
-                RECT rc_left = {0, border, border, rc.bottom - border};
-                RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
+            HBRUSH faint = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+            if (faint) {
                 RECT rc_edit_bg = {0, border, rc.right, border + edit_height};
-
-                FillRect(mem_dc, &rc_top, border_brush);
-                FillRect(mem_dc, &rc_bottom, border_brush);
-                FillRect(mem_dc, &rc_left, border_brush);
-                FillRect(mem_dc, &rc_right, border_brush);
-                FillRect(mem_dc, &rc_edit_bg, border_brush);
-                DeleteObject(border_brush);
+                FillRect(mem_dc, &rc_edit_bg, faint);
             }
+            hg_paint_box_frame(mem_dc, &rc, border, is_focused); /* N-D6, as the taskbox */
 
             BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);
 

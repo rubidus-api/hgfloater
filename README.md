@@ -1,10 +1,10 @@
-[한국어](README.ko.md) | **English** — **HGFloater v0.17.29** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.29/hgfloater.exe)
+[한국어](README.ko.md) | **English** — **HGFloater v0.17.30** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.30/hgfloater.exe)
 
 # HGFloater
 
-**v0.17.29** — built 2026-11-11
+**v0.17.30** — built 2026-11-13
 
-**[Download hgfloater.exe — v0.17.29, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.17.30, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
@@ -82,9 +82,11 @@ Design principles worth knowing before you use it:
   re-colors everything immediately. The **widgets** invert it on purpose - a
   control has to stand out against the desktop behind it - while the **document
   windows** (notes, note list, clipboard history, command box, About) follow it
-  directly: light grey page with black text on a light theme, black page with
-  white text on a dark one. Under high contrast both defer to the colors you
-  chose there.
+  directly: a pale violet-white page with near-black text on a light theme, a
+  deep violet-black page with soft white text on a dark one. Every color is
+  from the inanis palette of the workspace's design guide, and the boxes wear
+  square corner brackets in place of a heavy frame. Under high contrast both
+  defer to the colors you chose there.
 
 ## 2. Install and First Run
 

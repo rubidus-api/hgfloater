@@ -1,10 +1,10 @@
-**한국어** | [English](README.md) — **HGFloater v0.17.29** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.29/hgfloater.exe)
+**한국어** | [English](README.md) — **HGFloater v0.17.30** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.30/hgfloater.exe)
 
 # HGFloater
 
-**v0.17.29** — 빌드 2026-11-11
+**v0.17.30** — 빌드 2026-11-13
 
-**[hgfloater.exe 내려받기 — v0.17.29, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
+**[hgfloater.exe 내려받기 — v0.17.30, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 클릭하면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인
@@ -72,8 +72,9 @@ HGFloater의 목표는 하나입니다. 기본 작업 표시줄보다 빠르게 
 - **시스템 테마를 따릅니다.** 윈도우의 라이트/다크 모드를 바꾸면 즉시 색이 바뀝니다.
   **위젯**은 일부러 테마를 뒤집습니다 — 조작하는 물건은 뒤에 깔린 바탕화면과 구분되어야
   하니까요. 반면 **문서 창들**(메모, 메모 목록, 클립보드 히스토리, 커맨드 박스, About)은
-  테마를 그대로 따릅니다: 라이트 테마에서는 밝은 회색 바탕에 검은 글씨, 다크 테마에서는
-  검은 바탕에 흰 글씨입니다. 고대비 모드에서는 양쪽 모두 사용자가 지정하신 색을 씁니다.
+  테마를 그대로 따릅니다: 라이트 테마에서는 보랏빛 도는 흰 바탕에 짙은 글씨, 다크 테마에서는
+  보랏빛 도는 검은 바탕에 옅은 글씨입니다. 모든 색은 작업공간 디자인 가이드의 inanis 배색이고,
+  상자에는 두꺼운 테두리 대신 네 귀퉁이에 ㄱ자 꺽쇠를 둡니다. 고대비 모드에서는 양쪽 모두 사용자가 지정하신 색을 씁니다.
 
 ## 2. 설치와 첫 실행
 

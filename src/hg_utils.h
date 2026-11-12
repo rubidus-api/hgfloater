@@ -199,6 +199,18 @@ void release_shortcut_item_icon(ShortcutItem *item);
 void release_font_handle(HFONT *font, BOOL preserve_stock);
 void release_brush_handle(HBRUSH *brush);
 HBRUSH hg_cached_solid_brush(COLORREF color);
+/* norma_ui colours outside the five-field scheme (see SPEC "Theme"). The
+ * widget ones follow the widget scheme (inverted against Windows), the
+ * document one the document colours (Windows' own theme). */
+COLORREF hg_ui_focus_color(void);     /* accent2, widgets; `focus_bg` while it is not the default */
+COLORREF hg_ui_doc_focus_color(void); /* accent2, document windows */
+COLORREF hg_ui_select_color(void);    /* select: a chosen row's fill, widgets */
+COLORREF hg_ui_honey(void);           /* honey: "this one" */
+/* norma_ui's box edge (N-D6): the band `rc`..`thickness` in in the faint colour
+ * (`selected`), and square brackets on the four corners in line-strong, or in
+ * accent2 when `focused`. */
+void hg_paint_box_frame(HDC dc, const RECT *rc, int thickness, BOOL focused);
+void hg_paint_brackets(HDC dc, const RECT *rc, COLORREF color);
 void hg_flush_solid_brush_cache(void);
 void release_bstr(BSTR *value);
 #define HG_RELEASE_COM(interface_ptr)         \

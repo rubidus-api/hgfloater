@@ -1262,8 +1262,7 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         /* An entered box says so with a frame, because the keys it answers
          * change the moment it is entered. */
         if (s_focused) {
-            HBRUSH frame = CreateSolidBrush(hg_g_has_system_accent_color ? hg_g_system_accent_color
-                                                                        : GetSysColor(COLOR_HIGHLIGHT));
+            HBRUSH frame = CreateSolidBrush(hg_ui_focus_color()); /* accent2 (N-I6) */
             if (frame) {
                 RECT edge = rc;
                 for (int i = 0; i < SCW(ws, 2); ++i) {
@@ -1281,14 +1280,14 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                 /* Filled, and the text inverted over it. A row the arrows are
                  * standing on has to be findable at a glance, or the arrows are
                  * moving something the reader cannot see. */
-                HBRUSH sel = CreateSolidBrush(hg_g_has_system_accent_color ? hg_g_system_accent_color
-                                                                           : GetSysColor(COLOR_HIGHLIGHT));
+                HBRUSH sel = CreateSolidBrush(hg_ui_select_color()); /* norma_ui select */
                 if (sel) {
                     FillRect(dc, &row, sel);
                     DeleteObject(sel);
                 }
             }
-            SetTextColor(dc, selected ? GetSysColor(COLOR_HIGHLIGHTTEXT) : hg_g_color_scheme_selected.text);
+            SetTextColor(dc, (selected && hg_g_is_high_contrast) ? GetSysColor(COLOR_HIGHLIGHTTEXT)
+                                                                : hg_g_color_scheme_selected.text);
 
             WCHAR line[HG_MAX_STR + 8];
             WCHAR label = tabbox_label_for(i);

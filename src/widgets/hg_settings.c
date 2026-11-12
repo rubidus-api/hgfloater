@@ -1448,8 +1448,9 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
             bg = hg_g_color_scheme_selected.text;
             fg = hg_g_color_scheme_selected.bg;
         } else if (focused) {
-            bg = hg_g_has_system_accent_color ? hg_g_system_accent_color : GetSysColor(COLOR_HIGHLIGHT);
-            fg = GetSysColor(COLOR_HIGHLIGHTTEXT);
+            bg = hg_ui_select_color(); /* norma_ui select, under the scheme's text */
+            if (hg_g_is_high_contrast)
+                fg = GetSysColor(COLOR_HIGHLIGHTTEXT);
         }
 
         HBRUSH brush = CreateSolidBrush(bg);

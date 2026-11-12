@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.17.30] - 2026-11-13
+
 ### Changed
 - **The button icons are sharper**: thinner strokes (6% of the icon instead of 8.5%) with square ends and
   mitred corners instead of round ones.
@@ -17,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **The buttons are drawn flat**: a faint one-pixel frame with square corner brackets instead of the thick
   accent-coloured frame, no 3D bevel on hover or press, and the keyboard focus is a 2-pixel ring in the
   focus colour (now `D4883B`) instead of a yellow fill.
+- **The other windows follow suit**: the tab box, the settings window, the command box and the window
+  highlight no longer use the Windows accent colour; the taskbox, the floater and the monitor widget wear
+  the same corner brackets on a faint frame; and the document windows (notes, clipboard, About) default to
+  the inanis page colours instead of pure white or black.
 
 ## [v0.17.29] - 2026-11-11
 

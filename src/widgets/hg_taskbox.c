@@ -893,20 +893,10 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     int border = SC(HG_BORDER_THICKNESS);
     HWND fg = GetForegroundWindow();
     BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
-    COLORREF border_color = is_focused ? HG_COLOR_BORDER_SELECTED : HG_COLOR_BG_TOOLBAR;
-    HBRUSH hbr_border = hg_cached_solid_brush(border_color);
-    if (hbr_border) {
-        /* 상하좌우 사각형으로 채우기 */
-        RECT rc_top = {0, 0, rc.right, border};
-        RECT rc_bottom = {0, rc.bottom - border, rc.right, rc.bottom};
-        RECT rc_left = {0, border, border, rc.bottom - border};
-        RECT rc_right = {rc.right - border, border, rc.right, rc.bottom - border};
-
-        FillRect(hdc, &rc_top, hbr_border);
-        FillRect(hdc, &rc_bottom, hbr_border);
-        FillRect(hdc, &rc_left, hbr_border);
-        FillRect(hdc, &rc_right, hbr_border);
-    }
+    /* norma_ui's box (N-D6): the band stays (it is what the mouse sizes by, so
+     * it cannot be the colour key), faint, with the corner brackets carrying
+     * the edge - accent2 while the taskbox has the keyboard. */
+    hg_paint_box_frame(hdc, &rc, border, is_focused);
     EndPaint(hwnd, &ps);
     return 0;
 }
