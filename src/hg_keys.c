@@ -83,8 +83,8 @@ static const HgKeyActionRow hg_key_actions[] = {
     /* -- the note list */
     {HG_KEYCTX_NOTE, L"open", NULL, L"Open the selected note", L"on +Add Note, make one", L"Enter", 0, FALSE},
     {HG_KEYCTX_NOTE, L"newnote", L"new-note", L"New note", L"from any row", L"Insert", 0, FALSE},
-    {HG_KEYCTX_NOTE, L"archive", NULL, L"Archive or restore", L"", L"K", 0, FALSE},
-    {HG_KEYCTX_NOTE, L"delete", NULL, L"Delete the selected note", L"to the Recycle Bin", L"Delete", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"archive", NULL, L"Archive or restore", L"the checked notes, else the selected one", L"K", 0, FALSE},
+    {HG_KEYCTX_NOTE, L"delete", NULL, L"Delete the checked notes", L"else the selected one; to the Recycle Bin", L"Delete", 0, FALSE},
     {HG_KEYCTX_NOTE, L"close", NULL, L"Close the list", L"", L"Esc, Ctrl+W", 0, FALSE},
 
     /* -- the clipboard history */

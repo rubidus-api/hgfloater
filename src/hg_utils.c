@@ -99,6 +99,20 @@ COLORREF hg_ui_select_color(void)
     return hg_g_is_dark_mode ? HG_THEME_LIGHT_SELECT : HG_THEME_DARK_SELECT;
 }
 
+COLORREF hg_ui_doc_select_color(void)
+{
+    if (hg_g_is_high_contrast)
+        return GetSysColor(COLOR_HIGHLIGHT);
+    return hg_g_is_dark_mode ? HG_THEME_DARK_SELECT : HG_THEME_LIGHT_SELECT;
+}
+
+COLORREF hg_ui_doc_line_strong(void)
+{
+    if (hg_g_is_high_contrast)
+        return GetSysColor(COLOR_WINDOWTEXT);
+    return hg_g_is_dark_mode ? HG_THEME_CUSTOM_BORDER : HG_THEME_LIGHT_BORDER;
+}
+
 COLORREF hg_ui_honey(void)
 {
     return hg_g_is_high_contrast ? GetSysColor(COLOR_HIGHLIGHT) : HG_THEME_HONEY;

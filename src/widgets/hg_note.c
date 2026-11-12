@@ -21,6 +21,15 @@
 #define HG_NOTE_SAVE_DELAY_MS 2000 /* how long a change rests before it is written */
 #define HG_NOTE_EDIT_ID 100
 #define HG_NOTE_LIST_ID 101
+/* The list's top row (R1.11): a check-all box, four buttons and the search box,
+ * left to right in this order, which is also the order the arrows walk. */
+#define HG_NOTE_CHECKALL_ID 102
+#define HG_NOTE_ADD_ID 103
+#define HG_NOTE_DEL_ID 104
+#define HG_NOTE_SEARCHBTN_ID 105
+#define HG_NOTE_ARC_ID 106
+#define HG_NOTE_SEARCH_ID 107
+#define HG_NOTE_SEARCH_CCH 256
 #define HG_NOTE_TIMER_SAVE 1
 #define HG_NOTE_MSG_REFILL (WM_APP + 0) /* an editor closed; its row needs redrawing */
 #define HG_NOTE_MSG_ADD (WM_APP + 1)    /* the action row was clicked */
@@ -82,6 +91,7 @@ typedef struct HgNote {
     WCHAR title[HG_NOTE_TITLE_CCH];
     WCHAR *text; /* the whole note, title line included; never NULL once used */
     BOOL archived;
+    BOOL checked; /* the row's box in the list; not saved, a selection for Del and Arc */
     BOOL dirty;
     /* The editor holds newer text than note->text. Set by every keystroke,
      * cleared by note_editor_sync: extracting the whole document per EN_CHANGE
@@ -113,6 +123,9 @@ static void note_editor_apply_archived(HgNote *note);
 /* Defined with the editor; the flush path consumes note->text and has to pull
  * what the editor holds first. */
 static void note_editor_sync(HgNote *note);
+static BOOL note_list_frame_key(HWND wnd, UINT msg, WPARAM w_param);
+static void note_list_apply_fonts(HWND hwnd);
+static void note_list_focus_list(HWND hwnd);
 
 static void note_directory(WCHAR *out, size_t out_cch)
 {
@@ -439,7 +452,7 @@ static void note_relayout(HWND wnd, int child_id)
 static void note_refresh_fonts(void)
 {
     if (s_note_list_wnd && IsWindow(s_note_list_wnd)) {
-        note_apply_font(s_note_list_wnd, HG_NOTE_LIST_ID, &s_list_font);
+        note_list_apply_fonts(s_note_list_wnd);
         note_relayout(s_note_list_wnd, HG_NOTE_LIST_ID);
         /* Row height follows the font, so how many rows fit has changed. Setting
          * the selection to where it already is scrolls it back into view rather
@@ -1499,14 +1512,42 @@ LRESULT CALLBACK note_edit_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
 
 /* --------------------------------------------------------------- list window */
 
-static void note_list_add_section(HWND list, int section, BOOL show_heading)
+/* The search (R1.11): plain strings, no patterns. Spaces split the query into
+ * words, and a note is shown only when every word is somewhere in it - title or
+ * body, case ignored - so "milk eggs" finds the note with both, in any order. An
+ * empty query matches everything. */
+static BOOL note_matches_query(const HgNote *note, const WCHAR *query)
+{
+    if (!query)
+        return TRUE;
+    const WCHAR *p = query;
+    for (;;) {
+        while (*p && iswspace(*p))
+            ++p;
+        if (!*p)
+            return TRUE;
+        WCHAR word[HG_NOTE_SEARCH_CCH];
+        size_t n = 0;
+        while (*p && !iswspace(*p)) {
+            if (n + 1 < HG_ARRAYSIZE(word))
+                word[n++] = *p;
+            ++p;
+        }
+        word[n] = L'\0';
+        if (!StrStrIW(note->title, word) && !(note->text && StrStrIW(note->text, word)))
+            return FALSE;
+    }
+}
+
+static void note_list_add_section(HWND list, int section, BOOL show_heading, const WCHAR *query)
 {
     int order[HG_MAX_NOTES];
     int count = 0;
     BOOL want_archived = (section == HG_NOTE_SECTION_ARCHIVED);
 
     for (int i = 0; i < s_note_count; ++i) {
-        if (s_notes[i].used && (s_notes[i].archived ? TRUE : FALSE) == want_archived)
+        if (s_notes[i].used && (s_notes[i].archived ? TRUE : FALSE) == want_archived &&
+            note_matches_query(&s_notes[i], query))
             order[count++] = i;
     }
     s_sort_in_use = s_sort[section];
@@ -1547,6 +1588,22 @@ static void note_list_fill(HWND hwnd)
         return;
 
     int selected = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
+
+    /* An open editor may hold newer text than the note does; the search reads
+     * the note, so it is brought up to date first. */
+    WCHAR query[HG_NOTE_SEARCH_CCH];
+    query[0] = L'\0';
+    HWND search = GetDlgItem(hwnd, HG_NOTE_SEARCH_ID);
+    if (search)
+        GetWindowTextW(search, query, (int)HG_ARRAYSIZE(query));
+    if (query[0]) {
+        for (int i = 0; i < s_note_count; ++i) {
+            if (s_notes[i].used)
+                note_editor_sync(&s_notes[i]);
+        }
+    }
+
+    SendMessageW(list, WM_SETREDRAW, FALSE, 0);
     SendMessageW(list, LB_RESETCONTENT, 0, 0);
 
     /* The action comes first and is never a note, so making one needs no
@@ -1566,8 +1623,8 @@ static void note_list_fill(HWND hwnd)
     }
 
     /* Notes being written stay on top; archived ones settle underneath. */
-    note_list_add_section(list, HG_NOTE_SECTION_ACTIVE, show_headings);
-    note_list_add_section(list, HG_NOTE_SECTION_ARCHIVED, show_headings);
+    note_list_add_section(list, HG_NOTE_SECTION_ACTIVE, show_headings, query);
+    note_list_add_section(list, HG_NOTE_SECTION_ARCHIVED, show_headings, query);
 
     int last_row = (int)SendMessageW(list, LB_GETCOUNT, 0, 0) - 1;
     if (selected < 0)
@@ -1576,6 +1633,11 @@ static void note_list_fill(HWND hwnd)
         selected = last_row;
     if (selected >= 0)
         SendMessageW(list, LB_SETCURSEL, (WPARAM)selected, 0);
+    SendMessageW(list, WM_SETREDRAW, TRUE, 0);
+    InvalidateRect(list, NULL, TRUE);
+    HWND all = GetDlgItem(hwnd, HG_NOTE_CHECKALL_ID);
+    if (all)
+        InvalidateRect(all, NULL, FALSE); /* what it shows depends on the rows */
 }
 
 static int note_list_item(HWND list, int row)
@@ -1627,6 +1689,7 @@ void show_note_list_window(void)
         note_list_fill(s_note_list_wnd);
         ShowWindow(s_note_list_wnd, SW_SHOWNORMAL);
         hg_force_foreground(s_note_list_wnd);
+        note_list_focus_list(s_note_list_wnd);
         return;
     }
 
@@ -1659,6 +1722,7 @@ void show_note_list_window(void)
     ensure_window_visible(s_note_list_wnd, NULL);
     ShowWindow(s_note_list_wnd, SW_SHOWNORMAL);
     hg_force_foreground(s_note_list_wnd);
+    note_list_focus_list(s_note_list_wnd);
 }
 
 /* Enter on the action row makes a note; on a note row it opens one; on a
@@ -1697,6 +1761,462 @@ static void note_list_toggle_archived(HWND hwnd, int index)
     if (index < 0 || index >= s_note_count)
         return;
     note_toggle_archived(&s_notes[index]);
+}
+
+/* ----------------------------------------------- top row and checked notes */
+
+static const int s_head_ids[] = {HG_NOTE_CHECKALL_ID, HG_NOTE_ADD_ID, HG_NOTE_DEL_ID,
+                                 HG_NOTE_SEARCHBTN_ID, HG_NOTE_ARC_ID, HG_NOTE_SEARCH_ID};
+static int s_head_last = HG_NOTE_ADD_ID; /* where Up from the list lands: the control last left */
+
+/* The notes on the list's rows right now, in row order. A note the search has
+ * hidden is not one of them, so nothing aimed at "the checked notes" can reach
+ * a note the reader cannot see. */
+static int note_list_visible(HWND hwnd, int *out, int max)
+{
+    HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
+    int rows = list ? (int)SendMessageW(list, LB_GETCOUNT, 0, 0) : 0;
+    int count = 0;
+    for (int row = 0; row < rows && count < max; ++row) {
+        int item = note_list_item(list, row);
+        if (item >= 0 && item < s_note_count && s_notes[item].used)
+            out[count++] = item;
+    }
+    return count;
+}
+
+/* 0 none of the visible notes checked, 1 some, 2 all (and at least one). */
+static int note_list_check_state(HWND hwnd)
+{
+    int order[HG_MAX_NOTES];
+    int count = note_list_visible(hwnd, order, HG_MAX_NOTES);
+    int checked = 0;
+    for (int i = 0; i < count; ++i)
+        checked += s_notes[order[i]].checked ? 1 : 0;
+    if (checked == 0)
+        return 0;
+    return (checked == count) ? 2 : 1;
+}
+
+/* The check-all box: every click flips between all checked and none - all
+ * visible notes checked clears them, anything less checks them all. */
+static void note_list_check_all(HWND hwnd)
+{
+    int order[HG_MAX_NOTES];
+    int count = note_list_visible(hwnd, order, HG_MAX_NOTES);
+    BOOL to = (note_list_check_state(hwnd) != 2);
+    for (int i = 0; i < count; ++i)
+        s_notes[order[i]].checked = to;
+    InvalidateRect(GetDlgItem(hwnd, HG_NOTE_LIST_ID), NULL, FALSE);
+    InvalidateRect(GetDlgItem(hwnd, HG_NOTE_CHECKALL_ID), NULL, FALSE);
+}
+
+static void note_list_toggle_checked(HWND hwnd, int row)
+{
+    HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
+    int item = note_list_item(list, row);
+    if (item < 0 || item >= s_note_count || !s_notes[item].used)
+        return;
+    s_notes[item].checked = !s_notes[item].checked;
+    RECT rc;
+    if (SendMessageW(list, LB_GETITEMRECT, (WPARAM)row, (LPARAM)&rc) != LB_ERR)
+        InvalidateRect(list, &rc, FALSE);
+    InvalidateRect(GetDlgItem(hwnd, HG_NOTE_CHECKALL_ID), NULL, FALSE);
+}
+
+/* What Del and Arc act on: the checked visible notes, or - with none checked -
+ * the note the selection is on, the same one the Delete and K keys take. */
+static int note_list_targets(HWND hwnd, int *out, int max)
+{
+    int order[HG_MAX_NOTES];
+    int count = note_list_visible(hwnd, order, HG_MAX_NOTES);
+    int n = 0;
+    for (int i = 0; i < count && n < max; ++i) {
+        if (s_notes[order[i]].checked)
+            out[n++] = order[i];
+    }
+    if (n == 0) {
+        int sel = note_list_selected(hwnd);
+        if (sel >= 0 && max > 0)
+            out[n++] = sel;
+    }
+    return n;
+}
+
+/* Del: to the Recycle Bin, as the Delete key - no question asked, because the
+ * bin is the undo. */
+static void note_list_delete_targets(HWND hwnd)
+{
+    int targets[HG_MAX_NOTES];
+    int n = note_list_targets(hwnd, targets, HG_MAX_NOTES);
+    for (int i = 0; i < n; ++i) {
+        if (s_notes[targets[i]].used)
+            note_delete(&s_notes[targets[i]]);
+    }
+    note_list_fill(hwnd);
+}
+
+/* Arc: if any of them is still being written, they are all archived; when
+ * every one is archived already, they are all restored. One press, one
+ * direction - a mixed set never ends up swapped half each way. */
+static void note_list_archive_targets(HWND hwnd)
+{
+    int targets[HG_MAX_NOTES];
+    int n = note_list_targets(hwnd, targets, HG_MAX_NOTES);
+    BOOL any_active = FALSE;
+    for (int i = 0; i < n; ++i)
+        any_active |= !s_notes[targets[i]].archived;
+    for (int i = 0; i < n; ++i) {
+        HgNote *note = &s_notes[targets[i]];
+        if (note->used && (note->archived ? TRUE : FALSE) != any_active) { /* the state to reach: any_active */
+            note->archived = !note->archived;
+            note_save_archived_flag(note);
+            note_editor_apply_archived(note);
+        }
+    }
+    note_list_fill(hwnd);
+}
+
+/* ---- painting: plain boxes in the page's colours (norma_ui, flat) */
+
+static int note_check_box_size(HWND hwnd, int row_h)
+{
+    double ws = hg_window_scale(hwnd);
+    int box = SCW(ws, 14);
+    if (box > row_h - SCW(ws, 4))
+        box = row_h - SCW(ws, 4);
+    return (box < 6) ? 6 : box;
+}
+
+/* The width of the boxes' column at the start of every row; the text of every
+ * row, notes or not, starts after it so the titles line up. */
+static int note_check_column(HWND hwnd, int row_h)
+{
+    double ws = hg_window_scale(hwnd);
+    return SCW(ws, 4) + note_check_box_size(hwnd, row_h) + SCW(ws, 6);
+}
+
+/* state 0 empty, 1 a dash (some), 2 a tick */
+static void note_draw_check_box(HDC dc, HWND hwnd, const RECT *box, int state, COLORREF text)
+{
+    HBRUSH edge = hg_cached_solid_brush(hg_ui_doc_line_strong());
+    if (edge)
+        FrameRect(dc, box, edge);
+    if (state == 0)
+        return;
+    double ws = hg_window_scale(hwnd);
+    int pw = SCW(ws, 2);
+    HPEN pen = CreatePen(PS_SOLID, (pw < 1) ? 1 : pw, text);
+    if (!pen)
+        return;
+    HGDIOBJ old = SelectObject(dc, pen);
+    int w = box->right - box->left, h = box->bottom - box->top;
+    if (state == 1) {
+        MoveToEx(dc, box->left + w / 4, box->top + h / 2, NULL);
+        LineTo(dc, box->right - w / 4, box->top + h / 2);
+    } else {
+        POINT pts[3] = {{box->left + w / 5, box->top + h / 2},
+                        {box->left + w * 2 / 5, box->bottom - h / 4},
+                        {box->right - w / 5, box->top + h / 4}};
+        Polyline(dc, pts, 3);
+    }
+    SelectObject(dc, old);
+    DeleteObject(pen);
+}
+
+static void note_draw_focus_ring(HDC dc, HWND hwnd, const RECT *rc)
+{
+    HBRUSH ring = hg_cached_solid_brush(hg_ui_doc_focus_color());
+    if (!ring)
+        return;
+    int t = SCW(hg_window_scale(hwnd), 2);
+    if (t < 2)
+        t = 2;
+    RECT edge = *rc;
+    for (int i = 0; i < t && edge.left < edge.right && edge.top < edge.bottom; ++i) {
+        FrameRect(dc, &edge, ring);
+        InflateRect(&edge, -1, -1);
+    }
+}
+
+static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
+{
+    HDC dc = dis->hDC;
+    RECT rc = dis->rcItem;
+    HgDocumentColors page = hg_document_colors_for(HG_DOC_PAGE_NOTE);
+    BOOL selected = (dis->itemState & ODS_SELECTED) != 0;
+    HBRUSH fill = hg_cached_solid_brush(selected ? hg_ui_doc_select_color() : page.bg);
+    if (fill)
+        FillRect(dc, &rc, fill);
+    if (dis->itemID == (UINT)-1)
+        return;
+
+    int row_h = rc.bottom - rc.top;
+    int item = (int)dis->itemData;
+    if (item >= 0 && item < s_note_count && s_notes[item].used) {
+        int box = note_check_box_size(hwnd, row_h);
+        int x = rc.left + SCW(hg_window_scale(hwnd), 4);
+        int y = rc.top + (row_h - box) / 2;
+        RECT rb = {x, y, x + box, y + box};
+        note_draw_check_box(dc, hwnd, &rb, s_notes[item].checked ? 2 : 0, page.text);
+    }
+
+    WCHAR text[HG_NOTE_TITLE_CCH + 48];
+    text[0] = L'\0';
+    if (SendMessageW(dis->hwndItem, LB_GETTEXTLEN, dis->itemID, 0) < (LRESULT)HG_ARRAYSIZE(text))
+        SendMessageW(dis->hwndItem, LB_GETTEXT, dis->itemID, (LPARAM)text);
+    RECT rt = rc;
+    rt.left += note_check_column(hwnd, row_h);
+    SetBkMode(dc, TRANSPARENT);
+    SetTextColor(dc, page.text);
+    DrawTextW(dc, text, -1, &rt, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
+
+    if ((dis->itemState & ODS_FOCUS) && GetFocus() == dis->hwndItem)
+        note_draw_focus_ring(dc, hwnd, &rc);
+}
+
+static void note_draw_head_button(HWND hwnd, const DRAWITEMSTRUCT *dis)
+{
+    HDC dc = dis->hDC;
+    RECT rc = dis->rcItem;
+    HgDocumentColors field = hg_document_field_colors_for(HG_DOC_PAGE_NOTE);
+    BOOL pressed = (dis->itemState & ODS_SELECTED) != 0;
+    HBRUSH fill = hg_cached_solid_brush(pressed ? hg_ui_doc_select_color() : field.bg);
+    if (fill)
+        FillRect(dc, &rc, fill);
+    HBRUSH edge = hg_cached_solid_brush(hg_ui_doc_line_strong());
+    if (edge)
+        FrameRect(dc, &rc, edge);
+
+    if (dis->CtlID == HG_NOTE_CHECKALL_ID) {
+        int side = rc.bottom - rc.top;
+        int box = note_check_box_size(hwnd, side);
+        int x = rc.left + (rc.right - rc.left - box) / 2, y = rc.top + (side - box) / 2;
+        RECT rb = {x, y, x + box, y + box};
+        note_draw_check_box(dc, hwnd, &rb, note_list_check_state(hwnd), field.text);
+    } else {
+        WCHAR text[32];
+        GetWindowTextW(dis->hwndItem, text, (int)HG_ARRAYSIZE(text));
+        HFONT old = s_list_font ? (HFONT)SelectObject(dc, s_list_font) : NULL;
+        SetBkMode(dc, TRANSPARENT);
+        SetTextColor(dc, field.text);
+        DrawTextW(dc, text, -1, &rc, DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_NOPREFIX);
+        if (old)
+            SelectObject(dc, old);
+    }
+    if (dis->itemState & ODS_FOCUS)
+        note_draw_focus_ring(dc, hwnd, &rc);
+}
+
+/* The row height the font asks for. */
+static int note_list_row_height(HWND hwnd)
+{
+    int h = 16;
+    HDC dc = GetDC(hwnd);
+    if (dc) {
+        HFONT old = s_list_font ? (HFONT)SelectObject(dc, s_list_font) : NULL;
+        TEXTMETRICW tm;
+        if (GetTextMetricsW(dc, &tm))
+            h = tm.tmHeight;
+        if (old)
+            SelectObject(dc, old);
+        ReleaseDC(hwnd, dc);
+    }
+    return h + SCW(hg_window_scale(hwnd), 4);
+}
+
+/* The list's font, given to the top row too, and the rows re-measured. */
+static void note_list_apply_fonts(HWND hwnd)
+{
+    note_apply_font(hwnd, HG_NOTE_LIST_ID, &s_list_font);
+    for (size_t i = 0; i < HG_ARRAYSIZE(s_head_ids); ++i) {
+        HWND child = GetDlgItem(hwnd, s_head_ids[i]);
+        if (child)
+            SendMessageW(child, WM_SETFONT, (WPARAM)s_list_font, TRUE);
+    }
+    HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
+    if (list)
+        SendMessageW(list, LB_SETITEMHEIGHT, 0, (LPARAM)note_list_row_height(hwnd));
+}
+
+/* The top row: the box square, each button as wide as its word, the search box
+ * the rest; the list under it. */
+static void note_list_layout(HWND hwnd, int width, int height)
+{
+    double ws = hg_window_scale(hwnd);
+    int pad = SCW(ws, 6);
+    int gap = SCW(ws, 4);
+    int row_h = note_list_row_height(hwnd) + SCW(ws, 4);
+    int x = pad;
+
+    HDC dc = GetDC(hwnd);
+    HFONT old = (dc && s_list_font) ? (HFONT)SelectObject(dc, s_list_font) : NULL;
+    for (size_t i = 0; i < HG_ARRAYSIZE(s_head_ids); ++i) {
+        HWND child = GetDlgItem(hwnd, s_head_ids[i]);
+        if (!child)
+            continue;
+        int w = row_h;
+        if (s_head_ids[i] == HG_NOTE_SEARCH_ID) {
+            w = width - pad - x - 1;
+            if (w < SCW(ws, 40))
+                w = SCW(ws, 40);
+            /* inset a pixel: its one-pixel edge is drawn round it by the window */
+            MoveWindow(child, x + 1, pad + 1, w - 1, row_h - 2, TRUE);
+            continue;
+        }
+        if (s_head_ids[i] != HG_NOTE_CHECKALL_ID && dc) {
+            WCHAR text[32];
+            GetWindowTextW(child, text, (int)HG_ARRAYSIZE(text));
+            SIZE sz = {0, 0};
+            GetTextExtentPoint32W(dc, text, lstrlenW(text), &sz);
+            w = sz.cx + SCW(ws, 16);
+        }
+        MoveWindow(child, x, pad, w, row_h, TRUE);
+        x += w + gap;
+    }
+    if (old)
+        SelectObject(dc, old);
+    if (dc)
+        ReleaseDC(hwnd, dc);
+
+    HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
+    if (list) {
+        int top = pad + row_h + gap;
+        int w = width - pad * 2;
+        int h = height - top - pad;
+        MoveWindow(list, pad, top, (w > 0) ? w : 0, (h > 0) ? h : 0, TRUE);
+    }
+}
+
+/* The search box's edge: a field's line-strong, the accent2 ring while it has
+ * the keyboard - painted by the window, because an EDIT draws no flat edge. */
+static void note_list_paint_search_edge(HWND hwnd, HDC dc)
+{
+    HWND search = GetDlgItem(hwnd, HG_NOTE_SEARCH_ID);
+    if (!search)
+        return;
+    RECT rc;
+    GetWindowRect(search, &rc);
+    MapWindowPoints(NULL, hwnd, (POINT *)&rc, 2);
+    InflateRect(&rc, 1, 1);
+    if (GetFocus() == search) {
+        RECT ring = rc;
+        int t = SCW(hg_window_scale(hwnd), 2);
+        InflateRect(&ring, t - 1, t - 1);
+        note_draw_focus_ring(dc, hwnd, &ring);
+    } else {
+        HBRUSH edge = hg_cached_solid_brush(hg_ui_doc_line_strong());
+        if (edge)
+            FrameRect(dc, &rc, edge);
+    }
+}
+
+static void note_list_focus_head(HWND hwnd, int id)
+{
+    HWND child = GetDlgItem(hwnd, id);
+    if (child)
+        SetFocus(child);
+}
+
+/* The next control along the top row, -1 when there is none that way. */
+static int note_head_step(int id, int dir)
+{
+    for (size_t i = 0; i < HG_ARRAYSIZE(s_head_ids); ++i) {
+        if (s_head_ids[i] == id) {
+            int j = (int)i + dir;
+            if (j < 0 || j >= (int)HG_ARRAYSIZE(s_head_ids))
+                return -1;
+            return s_head_ids[j];
+        }
+    }
+    return -1;
+}
+
+static void note_list_focus_list(HWND hwnd)
+{
+    HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
+    if (!list)
+        return;
+    if (SendMessageW(list, LB_GETCURSEL, 0, 0) < 0 && SendMessageW(list, LB_GETCOUNT, 0, 0) > 0)
+        SendMessageW(list, LB_SETCURSEL, 0, 0);
+    SetFocus(list);
+}
+
+/* Up, Down, Left and Right between the rows and the top row (owner, R1.11):
+ * the list's Up from its first row goes to the top row, the top row's Down
+ * comes back, and Left and Right walk the top row. */
+static LRESULT CALLBACK note_head_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
+                                                UINT_PTR subclass_id, DWORD_PTR ref_data)
+{
+    (void)subclass_id;
+    (void)ref_data;
+    HWND parent = GetParent(hwnd);
+    if (note_list_frame_key(parent, msg, w_param))
+        return 0;
+    int id = GetDlgCtrlID(hwnd);
+    BOOL is_search = (id == HG_NOTE_SEARCH_ID);
+
+    if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS) {
+        if (msg == WM_SETFOCUS)
+            s_head_last = id;
+        if (is_search) {
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            MapWindowPoints(NULL, parent, (POINT *)&rc, 2);
+            InflateRect(&rc, SCW(hg_window_scale(parent), 3), SCW(hg_window_scale(parent), 3));
+            InvalidateRect(parent, &rc, TRUE);
+        }
+    }
+
+    if (msg == WM_KEYDOWN) {
+        UINT vk = (UINT)w_param;
+        if (vk == VK_DOWN) {
+            note_list_focus_list(parent);
+            return 0;
+        }
+        if (is_search) {
+            DWORD start = 0, end = 0;
+            SendMessageW(hwnd, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+            if (vk == VK_LEFT && start == 0 && end == 0) {
+                note_list_focus_head(parent, note_head_step(id, -1));
+                return 0;
+            }
+            if (vk == VK_RETURN) {
+                note_list_focus_list(parent);
+                return 0;
+            }
+            /* Only closing belongs to the box: K and Delete are letters and
+             * keys of the text here, not the list's archive and delete. */
+            HgKeyActionInfo action;
+            if (hg_key_action_info(hg_key_lookup_now(HG_KEYCTX_NOTE, vk), &action) &&
+                wcscmp(action.name, L"close") == 0) {
+                PostMessageW(parent, WM_CLOSE, 0, 0);
+                return 0;
+            }
+            return DefSubclassProc(hwnd, msg, w_param, l_param);
+        }
+        if (vk == VK_LEFT || vk == VK_RIGHT) {
+            int next = note_head_step(id, (vk == VK_LEFT) ? -1 : 1);
+            if (next >= 0)
+                note_list_focus_head(parent, next);
+            return 0;
+        }
+        if (vk == VK_RETURN) {
+            SendMessageW(hwnd, BM_CLICK, 0, 0);
+            return 0;
+        }
+        if (vk != VK_SPACE && hg_key_lookup_now(HG_KEYCTX_NOTE, vk)) {
+            SendMessageW(parent, WM_KEYDOWN, w_param, l_param);
+            return 0;
+        }
+    }
+    if (is_search && msg == WM_CHAR && (w_param == L'\r' || w_param == 27))
+        return 0; /* no beep for the Enter and Esc handled above */
+    if (msg == WM_MOUSEWHEEL && (GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL)) {
+        SendMessageW(parent, msg, w_param, l_param);
+        return 0;
+    }
+    return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
 /* ------------------------------------------------------------ context menu */
@@ -1846,6 +2366,35 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         return 0;
     }
 
+    /* Up from the first row goes to the top row; Space checks the note the
+     * selection is on (R1.11). Space is the list box's own type-ahead too, so
+     * its WM_CHAR is swallowed. */
+    if (msg == WM_KEYDOWN && w_param == VK_UP && SendMessageW(hwnd, LB_GETCURSEL, 0, 0) <= 0) {
+        note_list_focus_head(GetParent(hwnd), s_head_last);
+        return 0;
+    }
+    if (msg == WM_KEYDOWN && w_param == VK_SPACE) {
+        note_list_toggle_checked(GetParent(hwnd), (int)SendMessageW(hwnd, LB_GETCURSEL, 0, 0));
+        return 0;
+    }
+    if (msg == WM_CHAR && w_param == L' ')
+        return 0;
+
+    /* A click on a row's box checks it, and does nothing else: the row is
+     * selected, never opened, however fast the clicks come. */
+    if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK) {
+        int row = note_list_row_at(hwnd, l_param);
+        int item = note_list_item(hwnd, row);
+        RECT rc;
+        if (item >= 0 && SendMessageW(hwnd, LB_GETITEMRECT, (WPARAM)row, (LPARAM)&rc) != LB_ERR &&
+            GET_X_LPARAM(l_param) < rc.left + note_check_column(GetParent(hwnd), rc.bottom - rc.top)) {
+            SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)row, 0);
+            SetFocus(hwnd);
+            note_list_toggle_checked(GetParent(hwnd), row);
+            return 0;
+        }
+    }
+
     /* The action row reads as a button, so it answers a single click rather than
      * the double click a note needs. Both button messages are swallowed so a
      * quick second click cannot make a second note. */
@@ -1885,26 +2434,60 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
          * WM_CREATE for why the class brush is left alone. */
         hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_NOTE);
         hg_document_apply_page_alpha(hwnd, HG_DOC_PAGE_NOTE);
+        /* Owner-drawn for the box at the start of each note's row (R1.11). */
         HWND list = CreateWindowExW(0, L"LISTBOX", NULL,
-                                    WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOTIFY | LBS_HASSTRINGS, 0, 0, 0, 0,
-                                    hwnd, (HMENU)HG_NOTE_LIST_ID, GetModuleHandle(NULL), NULL);
+                                    WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY | LBS_HASSTRINGS |
+                                        LBS_OWNERDRAWFIXED | LBS_NOINTEGRALHEIGHT,
+                                    0, 0, 0, 0, hwnd, (HMENU)HG_NOTE_LIST_ID, GetModuleHandle(NULL), NULL);
         if (list)
             SetWindowSubclass(list, note_list_subclass_proc, 1, 0);
-        note_apply_font(hwnd, HG_NOTE_LIST_ID, &s_list_font);
+        /* The top row: plain boxes with a word in each (owner, 2026-11-13). */
+        static const struct {
+            int id;
+            const WCHAR *text;
+        } heads[] = {{HG_NOTE_CHECKALL_ID, L""},     {HG_NOTE_ADD_ID, L"Add"}, {HG_NOTE_DEL_ID, L"Del"},
+                     {HG_NOTE_SEARCHBTN_ID, L"Search"}, {HG_NOTE_ARC_ID, L"Arc"}};
+        for (size_t i = 0; i < HG_ARRAYSIZE(heads); ++i) {
+            HWND b = CreateWindowExW(0, L"BUTTON", heads[i].text, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+                                     0, 0, 0, 0, hwnd, (HMENU)(INT_PTR)heads[i].id, GetModuleHandle(NULL), NULL);
+            if (b)
+                SetWindowSubclass(b, note_head_subclass_proc, 1, 0);
+        }
+        HWND search = CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
+                                      0, 0, 0, 0, hwnd, (HMENU)HG_NOTE_SEARCH_ID, GetModuleHandle(NULL), NULL);
+        if (search) {
+            SendMessageW(search, EM_SETLIMITTEXT, HG_NOTE_SEARCH_CCH - 1, 0);
+            SendMessageW(search, EM_SETCUEBANNER, TRUE, (LPARAM)L"words, all of them");
+            SetWindowSubclass(search, note_head_subclass_proc, 1, 0);
+        }
+        note_list_apply_fonts(hwnd);
         return 0;
     }
 
-    case WM_SIZE: {
-        HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
-        if (list) {
-            double ws = hg_window_scale(hwnd);
-            int pad = SCW(ws, 6);
-            int w = (int)LOWORD(l_param) - pad * 2;
-            int h = (int)HIWORD(l_param) - pad * 2;
-            MoveWindow(list, pad, pad, (w > 0) ? w : 0, (h > 0) ? h : 0, TRUE);
+    case WM_MEASUREITEM: {
+        MEASUREITEMSTRUCT *mis = (MEASUREITEMSTRUCT *)l_param;
+        if (mis && mis->CtlID == HG_NOTE_LIST_ID) {
+            mis->itemHeight = (UINT)note_list_row_height(hwnd);
+            return TRUE;
         }
-        return 0;
+        break;
     }
+
+    case WM_DRAWITEM: {
+        const DRAWITEMSTRUCT *dis = (const DRAWITEMSTRUCT *)l_param;
+        if (!dis)
+            break;
+        if (dis->CtlID == HG_NOTE_LIST_ID)
+            note_draw_list_row(hwnd, dis);
+        else
+            note_draw_head_button(hwnd, dis);
+        return TRUE;
+    }
+
+    case WM_SIZE:
+        note_list_layout(hwnd, (int)LOWORD(l_param), (int)HIWORD(l_param));
+        InvalidateRect(hwnd, NULL, TRUE);
+        return 0;
 
     case WM_EXITSIZEMOVE:
         note_list_save_geometry(hwnd);
@@ -1914,6 +2497,35 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         if (LOWORD(w_param) == HG_NOTE_LIST_ID && HIWORD(w_param) == LBN_DBLCLK) {
             note_list_open_selected(hwnd);
             return 0;
+        }
+        if (LOWORD(w_param) == HG_NOTE_SEARCH_ID && HIWORD(w_param) == EN_CHANGE) {
+            note_list_fill(hwnd); /* as the words are typed */
+            return 0;
+        }
+        if (HIWORD(w_param) == BN_CLICKED) {
+            switch (LOWORD(w_param)) {
+            case HG_NOTE_CHECKALL_ID:
+                note_list_check_all(hwnd);
+                return 0;
+            case HG_NOTE_ADD_ID:
+                note_list_create(hwnd);
+                return 0;
+            case HG_NOTE_DEL_ID:
+                note_list_delete_targets(hwnd);
+                return 0;
+            case HG_NOTE_SEARCHBTN_ID: {
+                HWND search = GetDlgItem(hwnd, HG_NOTE_SEARCH_ID);
+                if (search) {
+                    SetFocus(search);
+                    SendMessageW(search, EM_SETSEL, 0, -1);
+                }
+                note_list_fill(hwnd);
+                return 0;
+            }
+            case HG_NOTE_ARC_ID:
+                note_list_archive_targets(hwnd);
+                return 0;
+            }
         }
         break;
 
@@ -1933,10 +2545,12 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
                 note_list_open_selected(hwnd);
             else if (wcscmp(action.name, L"newnote") == 0)
                 note_list_create(hwnd);
+            /* The keys do what the Del and Arc buttons do: the checked notes,
+             * or the selected one when none is checked. */
             else if (wcscmp(action.name, L"delete") == 0)
-                note_list_delete(hwnd, note_list_selected(hwnd));
+                note_list_delete_targets(hwnd);
             else if (wcscmp(action.name, L"archive") == 0)
-                note_list_toggle_archived(hwnd, note_list_selected(hwnd));
+                note_list_archive_targets(hwnd);
             else if (wcscmp(action.name, L"close") == 0)
                 ShowWindow(hwnd, SW_HIDE);
             else
@@ -1963,24 +2577,28 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
 
     case WM_ERASEBKGND:
         hg_document_paint_background_for(hwnd, (HDC)w_param, HG_DOC_PAGE_NOTE);
+        note_list_paint_search_edge(hwnd, (HDC)w_param);
         return 1;
 
     case WM_SETTINGCHANGE:
         if (should_refresh_theme_on_setting_change(l_param)) {
             update_theme_colors();
             hg_apply_dwm_attributes_document_for(hwnd, HG_DOC_PAGE_NOTE);
-            InvalidateRect(hwnd, NULL, TRUE);
+            RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
         }
         return 0;
 
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLOREDIT:
     case WM_CTLCOLORLISTBOX:
+        if ((HWND)l_param == GetDlgItem(hwnd, HG_NOTE_SEARCH_ID))
+            return hg_on_ctlcolor_field_for((HDC)w_param, HG_DOC_PAGE_NOTE);
         return hg_on_ctlcolor_document_for((HDC)w_param, HG_DOC_PAGE_NOTE);
 
     case WM_DPICHANGED:
         hg_apply_dpi_suggested_rect(hwnd, l_param);
-        note_apply_font(hwnd, HG_NOTE_LIST_ID, &s_list_font);
+        note_list_apply_fonts(hwnd);
+        note_relayout(hwnd, HG_NOTE_LIST_ID);
         return 0;
 
     case WM_CLOSE:

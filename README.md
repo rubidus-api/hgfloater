@@ -1235,8 +1235,26 @@ outside HGFloater. **The first line is the title**; everything after it is the
 body. Notes live in `%USERPROFILE%\.HellGates\hgfloater\note\` and are named
 `note-<id>-YYYYMMDD.txt`, where the date is the day the note was created.
 
-**The list** starts with **`+Add Note`** and then shows one note per row:
-creation date, last-modified date, and title.
+**Across the top** of the list is a row of plain boxes: a **check box**, then
+**`Add`**, **`Del`**, **`Search`** and **`Arc`**, then the search box.
+
+- The **check box** checks every note on the list, and the next click clears
+  them all again.
+- **`Add`** writes a new note. **`Del`** deletes the checked notes, and
+  **`Arc`** archives them - or restores them, when every one of them is
+  archived already. With nothing checked, both act on the selected note.
+- **`Search`** puts the keyboard in the search box. The list narrows as you
+  type: spaces split what you type into words, and a note stays only if
+  **every** word is somewhere in its title or body, in any order and any case.
+  The words are plain text, not patterns.
+
+**The list** starts with **`+Add Note`** and then shows one note per row: a
+check box, creation date, last-modified date, and title. Click the box, or
+press `Space`, to check a note.
+
+The arrow keys move between the rows and the top row: `Up` from the first row
+goes up to the buttons, `Left` and `Right` walk along them into the search
+box, and `Down` comes back to the list.
 
 `+Add Note` is the row the list opens on, so `N` then `Enter` writes a new note
 without a key to remember. It answers a single click, unlike the note rows, and
@@ -1251,8 +1269,9 @@ archived - until then the list is just notes, and a label would be noise.
 | `Enter` on `+Add Note`, or one click on it | Create a note and open it. |
 | `Enter`, double click | Open the note in its own editor window. |
 | `Insert` | Create a note and open it, from any row. |
-| `K` | Archive the selected note, or restore it. |
-| `Delete` | Delete the selected note. |
+| `Space`, a click on the box | Check the note, or uncheck it. |
+| `K` | Archive the checked notes (or the selected one), or restore them. |
+| `Delete` | Delete the checked notes (or the selected one). |
 | `Esc`, `Ctrl + W` | Close the list. |
 
 **Right-click a note** (or a heading) for that half of the list:
@@ -1365,8 +1384,10 @@ a chord.
 | `Enter` on `+Add Note` | Create a note and open it |
 | `Enter` on a note | Open it in its own editor |
 | `Insert` | Create a note, from any row |
-| `K` | Archive the selected note, or restore it |
-| `Delete` | Delete the selected note (to the Recycle Bin) |
+| `Space` | Check the selected note, or uncheck it |
+| `K` | Archive the checked notes (or the selected one), or restore them |
+| `Delete` | Delete the checked notes, or the selected one (to the Recycle Bin) |
+| `Up` on the first row, `Down` from the top row | Between the list and its top row of buttons |
 | `Alt + Arrows` | Move the list window |
 | `Ctrl + Arrows` | Resize the list window |
 | `Esc`, `Ctrl + W` | Close the list |

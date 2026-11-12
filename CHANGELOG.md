@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **The note list has a top row**: a check box that checks every note (and clears them on the next click),
+  then `Add`, `Del`, `Search` and `Arc` as plain boxes with the word in each, then a search box. Every note
+  row starts with a check box; `Del` and `Arc` (and the `Delete` and `K` keys) act on the checked notes, or
+  on the selected one when none is checked.
+- **Searching the notes**: the list narrows as you type; spaces split the words, and a note stays only if
+  it holds every one of them, in its title or body.
+- **The arrow keys reach the top row**: `Up` from the first row goes to the buttons, `Left` and `Right`
+  walk them, `Down` comes back.
+
 ## [v0.17.30] - 2026-11-13
 
 ### Changed

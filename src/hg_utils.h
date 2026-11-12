@@ -206,6 +206,8 @@ COLORREF hg_ui_focus_color(void);     /* accent2, widgets; `focus_bg` while it i
 COLORREF hg_ui_doc_focus_color(void); /* accent2, document windows */
 COLORREF hg_ui_select_color(void);    /* select: a chosen row's fill, widgets */
 COLORREF hg_ui_honey(void);           /* honey: "this one" */
+COLORREF hg_ui_doc_select_color(void); /* select, document windows */
+COLORREF hg_ui_doc_line_strong(void);  /* line-strong, document windows: a field's or a box's edge */
 /* norma_ui's box edge (N-D6): the band `rc`..`thickness` in in the faint colour
  * (`selected`), and square brackets on the four corners in line-strong, or in
  * accent2 when `focused`. */
