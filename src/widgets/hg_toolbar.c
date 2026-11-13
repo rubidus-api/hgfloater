@@ -736,7 +736,7 @@ static LRESULT toolbar_controller_on_mouse_move(HWND hwnd, ToolbarControllerStat
         GetCursorPos(&cur_mouse);
         int dw = cur_mouse.x - state->start_mouse.x;
         int dh = cur_mouse.y - state->start_mouse.y;
-        int border = SC(HG_BORDER_THICKNESS);
+        int border = hg_box_band();
 
         int total_items = hg_toolbar_grid_item_count();
 
@@ -873,7 +873,7 @@ static LRESULT toolbar_controller_on_lbutton_up(HWND hwnd, ToolbarControllerStat
         RECT rc;
         GetWindowRect(hg_g_taskbox_wnd, &rc);
         int icon_size = taskbox_toolbar_icon_size();
-        int border = SC(HG_BORDER_THICKNESS);
+        int border = hg_box_band();
         int tb_width = (rc.right - rc.left) - border * 2;
         int cols = get_items_per_row(tb_width, icon_size);
         int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);

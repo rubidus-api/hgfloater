@@ -984,7 +984,7 @@ static void floater_paint_plate(HDC dc, const RECT *rc)
 
     FillRect(dc, rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
-    int band = SC(HG_BORDER_THICKNESS);
+    int band = hg_box_band();
 
     /* Cached, so the plate cannot be lost to a failed CreateSolidBrush under
      * GDI pressure - which was one way to end up with a black rectangle where

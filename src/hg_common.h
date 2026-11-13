@@ -360,6 +360,8 @@ int hg_toolbar_grid_buttons(void);
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
+/* DWMWA_COLOR_NONE: no DWM border at all. */
+#define HG_DWMWA_COLOR_NONE ((COLORREF)0xFFFFFFFE)
 #ifndef DWMWA_BORDER_COLOR
 #define DWMWA_BORDER_COLOR 34
 #endif

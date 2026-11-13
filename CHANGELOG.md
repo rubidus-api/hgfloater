@@ -6,11 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.17.31] - 2026-11-13
+
 ### Changed
 - **The floater and the taskbox are filled boxes**: the scheme's background all the way across with a square
   bracket on each corner, instead of a faint band round the edge - and the taskbox no longer lets the desktop
   show through between its icons, so a click in a gap lands on the taskbox. Its opacity setting is unchanged.
 - **The status line has no edge**: its text sits straight on the box. The monitor window follows.
+- **The corner brackets are bigger and grow with the text**: as thick as the box's edge band (0.3 of the
+  status line's font height, never under 5 pixels) and 1.5 times that height long, so they follow the
+  display scale and `Ctrl` + wheel.
+- **No window border**: Windows 11 no longer draws its own line round the floater, the taskbox and the
+  monitor window.
+- **The note list is a grip list**: every row is a bar with a square grip on one end, alternating left and
+  right; the grip checks the note, a double click on the bar opens it.
 
 ### Added
 - **The note list has a top row**: a check box that checks every note (and clears them on the next click),

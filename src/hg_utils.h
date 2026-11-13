@@ -213,6 +213,7 @@ COLORREF hg_ui_doc_line_strong(void);  /* line-strong, document windows: a field
  * accent2 when `focused`. */
 void hg_paint_box_frame(HDC dc, const RECT *rc, int thickness, BOOL focused);
 void hg_paint_brackets(HDC dc, const RECT *rc, COLORREF color);
+int hg_box_band(void);
 void hg_flush_solid_brush_cache(void);
 void release_bstr(BSTR *value);
 #define HG_RELEASE_COM(interface_ptr)         \

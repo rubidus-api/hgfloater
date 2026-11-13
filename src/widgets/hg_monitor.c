@@ -144,8 +144,7 @@ static BOOL monitor_pt_to_screen_pt(HWND hwnd, int monitor_idx, POINT client_pt,
         return FALSE;
     RECT rc;
     GetClientRect(hwnd, &rc);
-    double ws = hg_window_scale(hwnd);
-    int border = SCW(ws, HG_BORDER_THICKNESS);
+    int border = hg_box_band();
     int edit_height = 0;
     HWND edit_wnd = GetDlgItem(hwnd, 104);
     if (edit_wnd) {
@@ -186,8 +185,7 @@ static BOOL screen_pt_to_monitor_pt(HWND hwnd, int monitor_idx, POINT screen_pt,
         return FALSE;
     RECT rc;
     GetClientRect(hwnd, &rc);
-    double ws = hg_window_scale(hwnd);
-    int border = SCW(ws, HG_BORDER_THICKNESS);
+    int border = hg_box_band();
     int edit_height = 0;
     HWND edit_wnd = GetDlgItem(hwnd, 104);
     if (edit_wnd) {
@@ -315,7 +313,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         }
         if (edit_wnd && hg_g_main_font) {
             double ws = hg_window_scale(hwnd);
-            int border = SCW(ws, HG_BORDER_THICKNESS);
+            int border = hg_box_band();
             int w = (int)LOWORD(l_param) - border * 2;
 
             int edit_height = hg_measure_edit_height(edit_wnd, hg_g_main_font, ws);
@@ -348,7 +346,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 FillRect(mem_dc, &rc, fill);
 
             double ws = hg_window_scale(hwnd);
-            int border = SCW(ws, HG_BORDER_THICKNESS);
+            int border = hg_box_band();
             int edit_height = 0;
             HWND edit_wnd = GetDlgItem(hwnd, 104);
             if (edit_wnd) {

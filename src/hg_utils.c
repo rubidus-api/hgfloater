@@ -118,15 +118,30 @@ COLORREF hg_ui_honey(void)
     return hg_g_is_high_contrast ? GetSysColor(COLOR_HIGHLIGHT) : HG_THEME_HONEY;
 }
 
-void hg_paint_brackets(HDC dc, const RECT *rc, COLORREF color)
+/* The box's em: the status line's font height, which already carries the
+ * DPI scale and follows Ctrl+wheel. */
+static int hg_box_em(void)
+{
+    int em = ABS(hg_g_edit_font_size);
+    return em > 0 ? em : SC(16);
+}
+
+/* The band round a widget box and the thickness of its corner brackets, one
+ * number (owner, 2026-11-13: brackets thicker and in proportion to the
+ * text): 0.3em, never under the old 5 px - which is what the default 16 px
+ * font gives, so the default layout is the one it always was. */
+int hg_box_band(void)
+{
+    int t = (hg_box_em() * 3 + 5) / 10;
+    int floor_px = SC(HG_BORDER_THICKNESS);
+    return t > floor_px ? t : floor_px;
+}
+
+static void paint_brackets_sized(HDC dc, const RECT *rc, COLORREF color, int t, int arm)
 {
     HBRUSH brush = hg_cached_solid_brush(color);
     if (!dc || !rc || !brush)
         return;
-    int t = SC(3);
-    if (t < 3)
-        t = 3;
-    int arm = SC(8);
     int w = rc->right - rc->left, h = rc->bottom - rc->top;
     if (arm > w / 2)
         arm = w / 2;
@@ -146,14 +161,26 @@ void hg_paint_brackets(HDC dc, const RECT *rc, COLORREF color)
         FillRect(dc, &r[i], brush);
 }
 
+/* A button's brackets: three thick (scaled, never under 3), arms of 8. */
+void hg_paint_brackets(HDC dc, const RECT *rc, COLORREF color)
+{
+    int t = SC(3);
+    if (t < 3)
+        t = 3;
+    paint_brackets_sized(dc, rc, color, t, SC(8));
+}
+
 /* norma_ui's box (N-D6) as the owner put it (2026-11-13): a filled rectangle
  * with a bracket on each corner and no line between them. The caller has
- * already filled the box; the band the mouse sizes by is that same fill. */
+ * already filled the box; the band the mouse sizes by is that same fill.
+ * The brackets are as thick as the band (hg_box_band) so no child window
+ * covers part of them, and their arms 1.5em long. */
 void hg_paint_box_frame(HDC dc, const RECT *rc, int thickness, BOOL focused)
 {
     if (!dc || !rc || thickness <= 0)
         return;
-    hg_paint_brackets(dc, rc, focused ? hg_ui_focus_color() : HG_COLOR_BG_TOOLBAR);
+    paint_brackets_sized(dc, rc, focused ? hg_ui_focus_color() : HG_COLOR_BG_TOOLBAR, thickness,
+                         (hg_box_em() * 3 + 1) / 2);
 }
 
 BOOL should_refresh_theme_on_setting_change(LPARAM l_param)
@@ -175,8 +202,10 @@ void apply_dwm_attributes(HWND hwnd)
     BOOL use_immersive_dark_mode = hg_g_is_dark_mode && !hg_g_is_high_contrast;
     DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &use_immersive_dark_mode,
                           sizeof(use_immersive_dark_mode));
-    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &hg_g_color_scheme_selected.border,
-                          sizeof(hg_g_color_scheme_selected.border));
+    /* No window border (owner, 2026-11-13): the corner brackets are the
+     * widget's whole edge, so Windows 11 draws no line of its own round it. */
+    COLORREF no_border = HG_DWMWA_COLOR_NONE;
+    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &no_border, sizeof(no_border));
     DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &hg_g_color_scheme_selected.bg,
                           sizeof(hg_g_color_scheme_selected.bg));
     DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &hg_g_color_scheme_selected.text,

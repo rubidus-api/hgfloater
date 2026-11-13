@@ -1888,12 +1888,76 @@ static int note_check_box_size(HWND hwnd, int row_h)
     return (box < 6) ? 6 : box;
 }
 
-/* The width of the boxes' column at the start of every row; the text of every
- * row, notes or not, starts after it so the titles line up. */
-static int note_check_column(HWND hwnd, int row_h)
+/* The list is a grip list (norma_ui N-D4, owner 2026-11-13): every row is a
+ * long bar with a square grip on one end, the grip on the left on even rows
+ * and on the right on odd ones. Grip and bar are one shape with one outline;
+ * the grip is the row's full height and the bar steps in above and below it.
+ * The bar takes the row's own action (a double click opens); the grip only
+ * picks the row - a click there checks it, as the box does. The check box is
+ * at the start of the bar, and every row's text starts at the same x whichever
+ * side its grip is on. (Rows are not dragged: the notes have no hand-kept
+ * order to move them in.) */
+typedef struct NoteGripRow {
+    RECT grip;
+    RECT bar;
+    BOOL grip_left;
+    int box_x; /* where the check box starts, the same on every row */
+    int text_x;
+} NoteGripRow;
+
+static void note_grip_row(HWND hwnd, const RECT *rc, int row, NoteGripRow *g)
 {
     double ws = hg_window_scale(hwnd);
-    return SCW(ws, 4) + note_check_box_size(hwnd, row_h) + SCW(ws, 6);
+    int m = SCW(ws, 4), gap = SCW(ws, 4), step = SCW(ws, 2);
+    int side = rc->bottom - rc->top;
+    int lcol_l = rc->left + m, lcol_r = lcol_l + side;
+    int rcol_r = rc->right - m, rcol_l = rcol_r - side;
+    if (rcol_l < lcol_r + gap)
+        rcol_l = lcol_r + gap;
+    g->grip_left = (row % 2) == 0;
+    if (g->grip_left) {
+        SetRect(&g->grip, lcol_l, rc->top, lcol_r, rc->bottom);
+        SetRect(&g->bar, lcol_r, rc->top + step, rcol_l - gap, rc->bottom - step);
+    } else {
+        SetRect(&g->grip, rcol_l, rc->top, rcol_r, rc->bottom);
+        SetRect(&g->bar, lcol_r + gap, rc->top + step, rcol_l, rc->bottom - step);
+    }
+    g->box_x = lcol_r + gap + SCW(ws, 4);
+    g->text_x = g->box_x + note_check_box_size(hwnd, side) + SCW(ws, 6);
+}
+
+/* Grip and bar as one outline: eight corners, no line between the two. */
+static void note_draw_grip_shape(HDC dc, HWND hwnd, const NoteGripRow *g, COLORREF fill, BOOL focused)
+{
+    int gl = g->grip.left, gr = g->grip.right - 1, gt = g->grip.top, gb = g->grip.bottom - 1;
+    int bl = g->bar.left, br = g->bar.right - 1, bt = g->bar.top, bb = g->bar.bottom - 1;
+    POINT pt[8];
+    if (g->grip_left) {
+        POINT p[8] = {{gl, gt}, {gr, gt}, {gr, bt}, {br, bt}, {br, bb}, {gr, bb}, {gr, gb}, {gl, gb}};
+        memcpy(pt, p, sizeof(pt));
+    } else {
+        POINT p[8] = {{bl, bt}, {gl, bt}, {gl, gt}, {gr, gt}, {gr, gb}, {gl, gb}, {gl, bb}, {bl, bb}};
+        memcpy(pt, p, sizeof(pt));
+    }
+    int pw = 1;
+    COLORREF line = hg_ui_doc_line_strong();
+    if (focused) {
+        pw = SCW(hg_window_scale(hwnd), 2);
+        if (pw < 2)
+            pw = 2;
+        line = hg_ui_doc_focus_color();
+    }
+    HPEN pen = CreatePen(PS_INSIDEFRAME, pw, line);
+    HBRUSH brush = hg_cached_solid_brush(fill);
+    HGDIOBJ old_pen = pen ? SelectObject(dc, pen) : NULL;
+    HGDIOBJ old_brush = brush ? SelectObject(dc, brush) : NULL;
+    Polygon(dc, pt, 8);
+    if (old_brush)
+        SelectObject(dc, old_brush);
+    if (old_pen)
+        SelectObject(dc, old_pen);
+    if (pen)
+        DeleteObject(pen);
 }
 
 /* state 0 empty, 1 a dash (some), 2 a tick */
@@ -1944,8 +2008,9 @@ static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
     HDC dc = dis->hDC;
     RECT rc = dis->rcItem;
     HgDocumentColors page = hg_document_colors_for(HG_DOC_PAGE_NOTE);
+    HgDocumentColors field = hg_document_field_colors_for(HG_DOC_PAGE_NOTE);
     BOOL selected = (dis->itemState & ODS_SELECTED) != 0;
-    HBRUSH fill = hg_cached_solid_brush(selected ? hg_ui_doc_select_color() : page.bg);
+    HBRUSH fill = hg_cached_solid_brush(page.bg);
     if (fill)
         FillRect(dc, &rc, fill);
     if (dis->itemID == (UINT)-1)
@@ -1953,12 +2018,24 @@ static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
 
     int row_h = rc.bottom - rc.top;
     int item = (int)dis->itemData;
+    BOOL heading = (item == HG_NOTE_ITEM_HEAD_ACTIVE || item == HG_NOTE_ITEM_HEAD_ARCHIVED);
+    BOOL focused = (dis->itemState & ODS_FOCUS) && GetFocus() == dis->hwndItem;
+    NoteGripRow g;
+    note_grip_row(hwnd, &rc, (int)dis->itemID, &g);
+    COLORREF ink = page.text;
+    if (!heading) {
+        note_draw_grip_shape(dc, hwnd, &g, selected ? hg_ui_doc_select_color() : field.bg, focused);
+        ink = field.text;
+    } else if (selected) {
+        HBRUSH sel = hg_cached_solid_brush(hg_ui_doc_select_color());
+        if (sel)
+            FillRect(dc, &rc, sel);
+    }
     if (item >= 0 && item < s_note_count && s_notes[item].used) {
         int box = note_check_box_size(hwnd, row_h);
-        int x = rc.left + SCW(hg_window_scale(hwnd), 4);
         int y = rc.top + (row_h - box) / 2;
-        RECT rb = {x, y, x + box, y + box};
-        note_draw_check_box(dc, hwnd, &rb, s_notes[item].checked ? 2 : 0, page.text);
+        RECT rb = {g.box_x, y, g.box_x + box, y + box};
+        note_draw_check_box(dc, hwnd, &rb, s_notes[item].checked ? 2 : 0, ink);
     }
 
     WCHAR text[HG_NOTE_TITLE_CCH + 48];
@@ -1966,12 +2043,14 @@ static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
     if (SendMessageW(dis->hwndItem, LB_GETTEXTLEN, dis->itemID, 0) < (LRESULT)HG_ARRAYSIZE(text))
         SendMessageW(dis->hwndItem, LB_GETTEXT, dis->itemID, (LPARAM)text);
     RECT rt = rc;
-    rt.left += note_check_column(hwnd, row_h);
+    rt.left = g.text_x;
+    if (!heading)
+        rt.right = g.bar.right - SCW(hg_window_scale(hwnd), 4);
     SetBkMode(dc, TRANSPARENT);
-    SetTextColor(dc, page.text);
+    SetTextColor(dc, ink);
     DrawTextW(dc, text, -1, &rt, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
 
-    if ((dis->itemState & ODS_FOCUS) && GetFocus() == dis->hwndItem)
+    if (heading && focused)
         note_draw_focus_ring(dc, hwnd, &rc);
 }
 
@@ -2022,7 +2101,7 @@ static int note_list_row_height(HWND hwnd)
             SelectObject(dc, old);
         ReleaseDC(hwnd, dc);
     }
-    return h + SCW(hg_window_scale(hwnd), 4);
+    return h + SCW(hg_window_scale(hwnd), 8); /* the bar steps in 2 above and below */
 }
 
 /* The list's font, given to the top row too, and the rows re-measured. */
@@ -2380,14 +2459,20 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
     if (msg == WM_CHAR && w_param == L' ')
         return 0;
 
-    /* A click on a row's box checks it, and does nothing else: the row is
-     * selected, never opened, however fast the clicks come. */
+    /* A click on a row's box or on its grip checks it, and does nothing else:
+     * the row is selected, never opened, however fast the clicks come. */
     if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK) {
         int row = note_list_row_at(hwnd, l_param);
         int item = note_list_item(hwnd, row);
         RECT rc;
-        if (item >= 0 && SendMessageW(hwnd, LB_GETITEMRECT, (WPARAM)row, (LPARAM)&rc) != LB_ERR &&
-            GET_X_LPARAM(l_param) < rc.left + note_check_column(GetParent(hwnd), rc.bottom - rc.top)) {
+        NoteGripRow g;
+        POINT at = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        BOOL on_pick = FALSE;
+        if (item >= 0 && SendMessageW(hwnd, LB_GETITEMRECT, (WPARAM)row, (LPARAM)&rc) != LB_ERR) {
+            note_grip_row(GetParent(hwnd), &rc, row, &g);
+            on_pick = PtInRect(&g.grip, at) || (at.x >= g.bar.left && at.x < g.text_x);
+        }
+        if (on_pick) {
             SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)row, 0);
             SetFocus(hwnd);
             note_list_toggle_checked(GetParent(hwnd), row);

@@ -32,7 +32,7 @@ void update_size(int delta)
     if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd)) {
         RECT rc;
         GetWindowRect(hg_g_taskbox_wnd, &rc);
-        int border = SC(HG_BORDER_THICKNESS);
+        int border = hg_box_band();
         int tb_width = (rc.right - rc.left) - border * 2;
         if (tb_width <= 0)
             tb_width = 1;
@@ -755,7 +755,7 @@ void update_layout(HWND hwnd)
     RECT rc;
     GetClientRect(hwnd, &rc);
     int width = rc.right;
-    int border = SC(HG_BORDER_THICKNESS);
+    int border = hg_box_band();
 
     int edit_height = hg_measure_edit_height(hg_g_edit_msg_wnd, hg_g_main_font, hg_g_scale_factor);
 
@@ -883,7 +883,7 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     }
 
     /* 외곽선 그리기 */
-    int border = SC(HG_BORDER_THICKNESS);
+    int border = hg_box_band();
     HWND fg = GetForegroundWindow();
     BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
     /* norma_ui's box (N-D6): the corner brackets are the whole edge - accent2
@@ -1012,7 +1012,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         } else if (w_param == VK_LEFT || w_param == 'A') {
             RECT rc;
             GetWindowRect(hwnd, &rc);
-            int border = SC(HG_BORDER_THICKNESS);
+            int border = hg_box_band();
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             int exact_tb_width = hg_snap_width_for_cols(cols, icon_size);
@@ -1030,7 +1030,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         } else if (w_param == VK_RIGHT || w_param == 'D') {
             RECT rc;
             GetWindowRect(hwnd, &rc);
-            int border = SC(HG_BORDER_THICKNESS);
+            int border = hg_box_band();
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             cols++;
@@ -1041,7 +1041,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         } else if (w_param == VK_UP || w_param == 'W') {
             RECT rc;
             GetWindowRect(hwnd, &rc);
-            int border = SC(HG_BORDER_THICKNESS);
+            int border = hg_box_band();
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             int total_items = hg_toolbar_grid_item_count();
@@ -1062,7 +1062,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
         } else if (w_param == VK_DOWN || w_param == 'S') {
             RECT rc;
             GetWindowRect(hwnd, &rc);
-            int border = SC(HG_BORDER_THICKNESS);
+            int border = hg_box_band();
             int tb_width = (rc.right - rc.left) - border * 2;
             int cols = get_items_per_row(tb_width, icon_size);
             int current_rows = hg_toolbar_rows_for_cols(cols);
@@ -1372,7 +1372,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                  (layout_state.sizemove_start_rect.bottom - layout_state.sizemove_start_rect.top);
 
         int icon_size = taskbox_toolbar_icon_size();
-        int border = SC(HG_BORDER_THICKNESS);
+        int border = hg_box_band();
 
         int total_items = hg_toolbar_grid_item_count();
 
@@ -1497,7 +1497,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         ScreenToClient(hwnd, &pt);
         RECT rc;
         GetClientRect(hwnd, &rc);
-        int border = SC(HG_BORDER_THICKNESS);
+        int border = hg_box_band();
 
         if (pt.x < border && pt.y < border)
             return HTTOPLEFT;

@@ -1,15 +1,15 @@
-**한국어** | [English](README.md) — **HGFloater v0.17.30** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.30/hgfloater.exe)
+**한국어** | [English](README.md) — **HGFloater v0.17.31** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.31/hgfloater.exe)
 
 # HGFloater
 
-**v0.17.30** — 빌드 2026-11-13
+**v0.17.31** — 빌드 2026-11-13
 
-**[hgfloater.exe 내려받기 — v0.17.30, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
+**[hgfloater.exe 내려받기 — v0.17.31, 780 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 클릭하면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인
 창 전환, 볼륨·밝기·투명도 조절, 명령 콘솔을 한 번의 조작으로 처리합니다. 순수 C와 Win32
-API만으로 작성되어 외부 의존성이 전혀 없습니다. 프로그램 전체가 **약 770 KB짜리 실행 파일
+API만으로 작성되어 외부 의존성이 전혀 없습니다. 프로그램 전체가 **약 780 KB짜리 실행 파일
 하나**이고 설치 과정도 런타임도 필요 없어서, 즉시 실행되며 작업을 방해하지 않습니다.
 
 > 이 문서는 영어판 [README.md](README.md)의 번역본입니다. 내용이 어긋날 경우 영어판이
@@ -1059,7 +1059,9 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
   패턴이 아니라 그냥 문자열입니다.
 
 **목록**은 맨 윗줄이 **`+Add Note`**이고, 그 아래로 한 줄에 노트 하나씩 체크박스, 생성일,
-최종 수정일, 제목 순으로 보여 줍니다. 박스를 클릭하거나 `Space`를 누르면 체크됩니다.
+최종 수정일, 제목 순으로 보여 줍니다. 줄마다 가로로 긴 막대 끝에 정사각형 손잡이가 붙어 있고,
+손잡이는 한 줄씩 왼쪽과 오른쪽을 번갈아 갑니다. 막대를 두 번 클릭하면 노트가 열리고, 박스나
+손잡이를 클릭하거나 `Space`를 누르면 체크됩니다.
 
 화살표 키로 목록과 맨 윗줄 사이를 오갑니다: 첫 줄에서 `Up`이면 버튼들로, `Left`·`Right`로
 버튼을 따라 검색칸까지, `Down`이면 목록으로 돌아옵니다.

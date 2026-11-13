@@ -670,7 +670,7 @@ void hg_config_reset_all(HWND hwnd)
 
         RECT rc = {0};
         GetWindowRect(hg_g_taskbox_wnd, &rc);
-        int border = SC(HG_BORDER_THICKNESS);
+        int border = hg_box_band();
         int tb_width = (rc.right - rc.left) - border * 2;
         if (tb_width <= 0)
             tb_width = 1;

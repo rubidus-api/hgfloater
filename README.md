@@ -1,17 +1,17 @@
-[한국어](README.ko.md) | **English** — **HGFloater v0.17.30** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.30/hgfloater.exe)
+[한국어](README.ko.md) | **English** — **HGFloater v0.17.31** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.31/hgfloater.exe)
 
 # HGFloater
 
-**v0.17.30** — built 2026-11-13
+**v0.17.31** — built 2026-11-13
 
-**[Download hgfloater.exe — v0.17.30, 770 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.17.31, 780 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 770 KB** that needs no installer and no runtime, so
+single **executable of about 780 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -1242,8 +1242,10 @@ body. Notes live in `%USERPROFILE%\.HellGates\hgfloater\note\` and are named
   The words are plain text, not patterns.
 
 **The list** starts with **`+Add Note`** and then shows one note per row: a
-check box, creation date, last-modified date, and title. Click the box, or
-press `Space`, to check a note.
+check box, creation date, last-modified date, and title. Each row is a long
+bar with a square grip on one end, the grips alternating left and right from
+row to row. Double-click the bar to open the note; click the box or the grip,
+or press `Space`, to check it.
 
 The arrow keys move between the rows and the top row: `Up` from the first row
 goes up to the buttons, `Left` and `Right` walk along them into the search
