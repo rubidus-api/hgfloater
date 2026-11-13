@@ -71,13 +71,10 @@ Design principles worth knowing before you use it:
   themselves.
 - **Keyboard and mouse are equal citizens.** Every action has both a pointer
   gesture and a key.
-- **The taskbox has no background of its own.** The desktop shows through
-  between the icons and behind the function buttons and shortcuts; only the
-  icons, their labels and the border are drawn. Each lettered function button
-  keeps **one white line** around it, because a button needs an edge to be a
-  button. A side effect worth knowing: clicks land on whatever is behind those
-  gaps, so drag the box by its `M` button rather than by the space between
-  icons.
+- **The floater and the taskbox are plain filled boxes** with a square
+  bracket on each corner and no line between them; the status line has no
+  frame of its own, its text sits on the box. How see-through the taskbox is
+  stays yours to set (`Alp`, `Alt` + wheel).
 - **It follows the system theme.** Switching Windows between light and dark mode
   re-colors everything immediately. The **widgets** invert it on purpose - a
   control has to stand out against the desktop behind it - while the **document
@@ -376,12 +373,8 @@ nobody can press is furniture.
 of the bare `C` that opens the command box.
 
 **Every button in that half of the grid is framed** — the function buttons, and
-the shortcuts alike — in **your Windows accent colour**, two pixels thick. The
-taskbox is see-through, so "the background" is whatever you have on your
-desktop; a one-pixel white line vanished against a light wallpaper and was hard
-to find against a busy one. The accent is nudged toward the middle of its range
-first, because a very pale accent disappears on white and a very dark one
-disappears on black, and this line has to hold on both.
+the shortcuts alike — with a faint one-pixel line and a square bracket on each
+corner; the button the keyboard is on gets a two-pixel ring in the focus colour.
 
 **The function buttons wear the same badge**, for the same reason: `Cmd` shows
 `C`, `Note` shows `N`, `Clip` shows `CL`, `A/V` shows `CO`, `X` shows `CQ`. The

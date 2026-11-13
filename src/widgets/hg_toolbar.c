@@ -441,10 +441,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
         if (hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer)) {
             HDC mem_dc = paint_buffer.dc;
 
-                /* The colour key, like the taskbox behind it: this child covers
-                 * nearly all of that window, so leaving it opaque would make
-                 * the transparency there visible only as a thin margin. */
-                COLORREF bg_color = HG_TRANSPARENT_KEY;
+                /* The taskbox's own fill (a filled box, 2026-11-13): this child
+                 * covers nearly all of that window and must match it. */
+                COLORREF bg_color = HG_COLOR_BG_DEFAULT;
                 if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
                     bg_color = HG_COLOR_BG_FLASH;
                 }
@@ -603,8 +602,8 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     COLORREF button_bg = toolbar_basic_icon_bg_color(i, bg_color);
                     BOOL keep_value_bg = hg_toolbar_builtin_has_value(i);
                     /* No plate behind a function button or a shortcut: the
-                     * desktop shows through, the same as everywhere else in
-                     * this window now. The three reading buttons keep theirs,
+                     * box's fill runs through, the same as everywhere else in
+                     * this window. The three reading buttons keep theirs,
                      * because for them the background is not decoration - it is
                      * the reading: Vol, Mon and Alp say the volume, the
                      * brightness and the opacity by how deep their colour is.
@@ -614,7 +613,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                      * the toolbar background, and the inverse of the colour key
                      * is very nearly white. */
                     if (!keep_value_bg)
-                        button_bg = HG_TRANSPARENT_KEY;
+                        button_bg = bg_color;
                     HBRUSH hbr_opp = hg_cached_solid_brush(button_bg);
                     if (hbr_opp) {
                         FillRect(mem_dc, &rc_btn, hbr_opp);
@@ -678,9 +677,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
 
                 /* The separators between the kinds (separated grid only):
                  * hatched, with no plate and no edge, so they read as a mark
-                 * between buttons and never as one more button. Holes of the
-                 * colour key between the lines let the desktop through, the
-                 * same as the rest of this window. */
+                 * between buttons and never as one more button. Between the
+                 * lines is the box's fill, the same as the rest of this
+                 * window. */
                 {
                     HgGrid grid;
                     hg_toolbar_grid(rc.right, rc.bottom, icon_size, &grid);

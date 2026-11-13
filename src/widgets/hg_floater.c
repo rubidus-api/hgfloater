@@ -992,8 +992,8 @@ static void floater_paint_plate(HDC dc, const RECT *rc)
     HBRUSH bg_brush = hg_cached_solid_brush(bg_color);
     if (bg_brush)
         FillRect(dc, rc, bg_brush);
-    /* The edge: norma_ui's box (N-D6), a faint band and corner brackets, as
-     * the taskbox. */
+    /* The edge: norma_ui's box (N-D6), the filled plate with a bracket on
+     * each corner, as the taskbox. */
     hg_paint_box_frame(dc, rc, band, FALSE);
 }
 

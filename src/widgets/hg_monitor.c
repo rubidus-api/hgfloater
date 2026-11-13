@@ -341,6 +341,11 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                 return 0;
             }
             HDC mem_dc = paint_buffer.dc;
+            /* A filled box, as the taskbox (N-D6): the band round the preview
+             * is this fill, with the brackets on its corners. */
+            HBRUSH fill = hg_cached_solid_brush(HG_COLOR_BG_DEFAULT);
+            if (fill)
+                FillRect(mem_dc, &rc, fill);
 
             double ws = hg_window_scale(hwnd);
             int border = SCW(ws, HG_BORDER_THICKNESS);
@@ -417,11 +422,6 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
             /* Draw border like taskbox/floater */
             HWND fg = GetForegroundWindow();
             BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
-            HBRUSH faint = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-            if (faint) {
-                RECT rc_edit_bg = {0, border, rc.right, border + edit_height};
-                FillRect(mem_dc, &rc_edit_bg, faint);
-            }
             hg_paint_box_frame(mem_dc, &rc, border, is_focused); /* N-D6, as the taskbox */
 
             BitBlt(hdc, 0, 0, rc.right, rc.bottom, mem_dc, 0, 0, SRCCOPY);

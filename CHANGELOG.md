@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **The floater and the taskbox are filled boxes**: the scheme's background all the way across with a square
+  bracket on each corner, instead of a faint band round the edge - and the taskbox no longer lets the desktop
+  show through between its icons, so a click in a gap lands on the taskbox. Its opacity setting is unchanged.
+- **The status line has no edge**: its text sits straight on the box. The monitor window follows.
+
 ### Added
 - **The note list has a top row**: a check box that checks every note (and clears them on the next click),
   then `Add`, `Del`, `Search` and `Arc` as plain boxes with the word in each, then a search box. Every note

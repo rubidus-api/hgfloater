@@ -146,21 +146,13 @@ void hg_paint_brackets(HDC dc, const RECT *rc, COLORREF color)
         FillRect(dc, &r[i], brush);
 }
 
+/* norma_ui's box (N-D6) as the owner put it (2026-11-13): a filled rectangle
+ * with a bracket on each corner and no line between them. The caller has
+ * already filled the box; the band the mouse sizes by is that same fill. */
 void hg_paint_box_frame(HDC dc, const RECT *rc, int thickness, BOOL focused)
 {
     if (!dc || !rc || thickness <= 0)
         return;
-    HBRUSH faint = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-    if (faint) {
-        RECT band[4] = {
-            {rc->left, rc->top, rc->right, rc->top + thickness},
-            {rc->left, rc->bottom - thickness, rc->right, rc->bottom},
-            {rc->left, rc->top + thickness, rc->left + thickness, rc->bottom - thickness},
-            {rc->right - thickness, rc->top + thickness, rc->right, rc->bottom - thickness},
-        };
-        for (int i = 0; i < 4; ++i)
-            FillRect(dc, &band[i], faint);
-    }
     hg_paint_brackets(dc, rc, focused ? hg_ui_focus_color() : HG_COLOR_BG_TOOLBAR);
 }
 

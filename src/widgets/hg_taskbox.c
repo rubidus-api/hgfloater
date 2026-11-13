@@ -658,11 +658,11 @@ int taskbox_cols_from_height(int window_height, int icon_size, int border, int t
     return hg_toolbar_cols_for_rows(target_rows);
 }
 
-/* The status line's edge, flat (owner, 2026-11-12): the control keeps
+/* The status line's edge (owner, 2026-11-12, 2026-11-13): the control keeps
  * WS_EX_CLIENTEDGE, so its size and the room round the text stay what they
- * were, but the sunken bevel in that edge is painted over - a one-pixel line in
- * the scheme's border colour (norma_ui line-strong), and inside it the
- * line's background, flash colour included while the taskbox flashes. */
+ * were, but the sunken bevel in that edge is painted over with the box's own
+ * background - no line - so the line reads as text on the box, flash colour
+ * included while the taskbox flashes. */
 static void edit_paint_flat_edge(HWND hwnd)
 {
     RECT wr, cr;
@@ -677,11 +677,8 @@ static void edit_paint_flat_edge(HWND hwnd)
     ExcludeClipRect(dc, cr.left, cr.top, cr.right, cr.bottom);
     BOOL flashing = hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0);
     HBRUSH inside = hg_cached_solid_brush(flashing ? HG_COLOR_BG_FLASH : HG_COLOR_BG_DEFAULT);
-    HBRUSH line = hg_cached_solid_brush(HG_COLOR_BG_TOOLBAR); /* line-strong: a field's edge (N-C3) */
     if (inside)
         FillRect(dc, &wr, inside);
-    if (line)
-        FrameRect(dc, &wr, line);
     ReleaseDC(hwnd, dc);
 }
 
@@ -868,19 +865,15 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     RECT rc;
     GetClientRect(hwnd, &rc);
 
-    /* The background is the colour key, so the desktop shows through it and
-     * only the icons, their labels and the border are drawn. The window is
-     * already layered with LWA_COLORKEY for exactly this colour, so this costs
-     * nothing but the choice of brush.
+    /* A filled box (owner, 2026-11-13, norma_ui N-D6): the scheme's
+     * background everywhere, corner brackets on top. It was the colour key
+     * from 2026-08-13 until then, the desktop showing through the gaps; the
+     * window keeps LWA_COLORKEY, which now matches nothing here, so the
+     * option's opacity (LWA_ALPHA) is the only see-through left - and the gaps
+     * take the mouse again.
      *
-     * What that gives up is the mouse in the gaps: colour-keyed pixels are
-     * click-through. The collapse-on-leave test survives it, because it asks
-     * GetCursorPos against the window rectangle rather than waiting for mouse
-     * messages - geometry, not events.
-     *
-     * The attention flash stays opaque. A flash you can see through is not a
-     * flash. */
-    COLORREF bg_color = HG_TRANSPARENT_KEY;
+     * The attention flash fills it as before. */
+    COLORREF bg_color = HG_COLOR_BG_DEFAULT;
     if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
         bg_color = HG_COLOR_BG_FLASH;
     }
@@ -893,9 +886,8 @@ static LRESULT taskbox_controller_on_paint(HWND hwnd)
     int border = SC(HG_BORDER_THICKNESS);
     HWND fg = GetForegroundWindow();
     BOOL is_focused = (fg == hwnd || IsChild(hwnd, fg));
-    /* norma_ui's box (N-D6): the band stays (it is what the mouse sizes by, so
-     * it cannot be the colour key), faint, with the corner brackets carrying
-     * the edge - accent2 while the taskbox has the keyboard. */
+    /* norma_ui's box (N-D6): the corner brackets are the whole edge - accent2
+     * while the taskbox has the keyboard. */
     hg_paint_box_frame(hdc, &rc, border, is_focused);
     EndPaint(hwnd, &ps);
     return 0;
