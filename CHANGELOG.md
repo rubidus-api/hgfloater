@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.17.32] - 2026-11-14
+
 ### Changed
 - **The separator between the kinds in the taskbox grid is one upright line** down the middle of its cell
   instead of diagonal hatching.
