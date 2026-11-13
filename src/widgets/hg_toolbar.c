@@ -93,30 +93,23 @@ static COLORREF toolbar_focus_color(void)
     return hg_ui_focus_color();
 }
 
-/* A separator cell: diagonal lines in the outline colour, scaled with the
- * display so they stay a mark at any DPI. Clipped to the cell. */
+/* A separator cell: one upright line down its middle, 60% of the cell's
+ * height, in the outline colour (owner's choice over the old hatching,
+ * 2026-11-13). Two pixels scaled with the display, never under one. */
 static void toolbar_draw_separator(HDC hdc, const RECT *rc)
 {
+    HBRUSH brush = hg_cached_solid_brush(toolbar_button_outline_color());
+    if (!brush)
+        return;
     int width = SC(2);
     if (width < 1)
         width = 1;
-    int step = SC(7);
-    if (step < 4)
-        step = 4;
-    HPEN pen = CreatePen(PS_SOLID, width, toolbar_button_outline_color());
-    if (!pen)
-        return;
-    int saved = SaveDC(hdc);
-    IntersectClipRect(hdc, rc->left, rc->top, rc->right, rc->bottom);
-    HGDIOBJ old_pen = SelectObject(hdc, pen);
     int h = rc->bottom - rc->top;
-    for (int x = rc->left - h; x < rc->right; x += step) {
-        MoveToEx(hdc, x, rc->bottom, NULL);
-        LineTo(hdc, x + h, rc->top);
-    }
-    SelectObject(hdc, old_pen);
-    RestoreDC(hdc, saved);
-    DeleteObject(pen);
+    int len = h * 3 / 5;
+    int x = rc->left + (rc->right - rc->left - width) / 2;
+    int y = rc->top + (h - len) / 2;
+    RECT line = {x, y, x + width, y + len};
+    FillRect(hdc, &line, brush);
 }
 
 static void toolbar_draw_button_outline(HDC hdc, const RECT *rc)
@@ -676,10 +669,8 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                 }
 
                 /* The separators between the kinds (separated grid only):
-                 * hatched, with no plate and no edge, so they read as a mark
-                 * between buttons and never as one more button. Between the
-                 * lines is the box's fill, the same as the rest of this
-                 * window. */
+                 * one upright line, with no plate and no edge, so they read
+                 * as a mark between buttons and never as one more button. */
                 {
                     HgGrid grid;
                     hg_toolbar_grid(rc.right, rc.bottom, icon_size, &grid);

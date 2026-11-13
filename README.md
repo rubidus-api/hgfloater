@@ -519,13 +519,13 @@ bottom-right corner - `A/V` `Vol` `Mon` `Alp` `Dir` `Set` `Clip` `Note` `Cmd`
 `D` `R` `M` `X`, `X` in the corner, and the shortcuts to the left of `A/V`, the
 first one nearest. Whatever room is left over is empty cells between the two,
 so the buttons are always in the same place however many windows are open. A
-**hatched cell** separates each kind from the next: one before the shortcuts,
+**separator cell**, one upright line down its middle, separates each kind from the next: one before the shortcuts,
 one between the shortcuts and the buttons. It is not a button; nothing happens
 when it is clicked.
 
 The arrow keys walk them all: `Right` off the last window lands on the last
 shortcut, off the first shortcut on `A/V`, and neither the empty cells nor the
-hatched ones cost a key. What a shortcut answers to is in
+separators cost a key. What a shortcut answers to is in
 [Shortcuts on the grid](#65-shortcuts-on-the-grid).
 
 **Windows, Shortcuts, Buttons by Row** in the `Set` list or the
@@ -1490,7 +1490,7 @@ every wheel notch.
 | `date_format` | The date line's format (`[floater]` only, default `"%a, %b %-d"`) |
 | `blink` | `1` changes the colour of the hours and minutes every half second (`[floater]` only, default `0`) |
 | `open_on_hover` | `1` lets the pointer open the taskbox from the floater (`[taskbox]` only, default `0`) |
-| `rows_by_group` | `1` starts a new row for the shortcuts and another for the buttons; `0` lets everything share rows with a hatched cell between the kinds, the buttons ending in the bottom-right corner (`[taskbox]` only, default `0`) |
+| `rows_by_group` | `1` starts a new row for the shortcuts and another for the buttons; `0` lets everything share rows with a separator cell (one upright line) between the kinds, the buttons ending in the bottom-right corner (`[taskbox]` only, default `0`) |
 | `hover_region` | Which part of the clock answers when it is on: `minutes`, `hours` or `both` (`[taskbox]` only, default `minutes`) |
 | `show_tabs` | `1` gives a tabbed application's tabs their own task icons (`[taskbox]` only, default `0`) |
 | `tab_classes` | Extra window classes to look for tabs in, `;`-separated (`[taskbox]` only) |
