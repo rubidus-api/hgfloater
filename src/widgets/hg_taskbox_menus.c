@@ -421,6 +421,26 @@ static HMENU taskbox_create_topology_menu(void)
         AppendMenuW(h_menu, MF_STRING | (i == current ? MF_CHECKED : 0),
                     (UINT_PTR)(HG_IDM_TOPOLOGY_BASE + (UINT)i), hg_display_topology_label(i));
     }
+
+    /* Then the resolution of the display the taskbox is on (R1.14): five
+     * fixed sizes, all offered on every display - one it cannot show is
+     * refused with the reason on the status line. */
+    int mon = taskbox_monitor_index_for_taskbox();
+    if (mon >= 0 && mon < hg_g_monitor_count) {
+        int cw = 0, ch = 0;
+        hg_display_resolution_current(hg_g_monitors[mon].name, &cw, &ch);
+        AppendMenuW(h_menu, MF_SEPARATOR, 0, NULL);
+        const WCHAR *display = hg_g_monitors[mon].label[0] ? hg_g_monitors[mon].label : hg_g_monitors[mon].name;
+        AppendMenuW(h_menu, MF_STRING | MF_GRAYED, 0, display);
+        for (int i = 0; i < HG_RESOLUTION_OPTION_COUNT; ++i) {
+            int w = hg_display_resolution_options[i][0], h = hg_display_resolution_options[i][1];
+            WCHAR text[32];
+            hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%d x %d", w, h);
+            AppendMenuW(h_menu, MF_STRING | ((w == cw && h == ch) ? MF_CHECKED : 0),
+                        (UINT_PTR)((UINT)HG_IDM_RESOLUTION_BASE + (UINT)mon * HG_RESOLUTION_OPTION_COUNT + (UINT)i),
+                        text);
+        }
+    }
     return h_menu;
 }
 

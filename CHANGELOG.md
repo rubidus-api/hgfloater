@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **`Mon`'s right-click sets the screen resolution**: under the four screen arrangements, five sizes for the
+  screen the taskbox is on - 1024 x 768, 1280 x 720, 1280 x 800, 1920 x 1080, 1920 x 1200. A size the screen
+  does not offer is refused by Windows, and the status line says why.
+
 ## [v0.17.32] - 2026-11-14
 
 ### Changed

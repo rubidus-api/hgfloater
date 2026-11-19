@@ -1301,6 +1301,31 @@ static BOOL floater_dispatch_topology_command(UINT cmd)
     return TRUE;
 }
 
+static BOOL floater_dispatch_resolution_command(UINT cmd)
+{
+    int idx = 0;
+    int step = 0;
+    if (!floater_split_display_command(cmd, HG_IDM_RESOLUTION_BASE, HG_RESOLUTION_OPTION_COUNT, &idx, &step))
+        return FALSE;
+    if (idx >= hg_g_monitor_count)
+        return TRUE;
+
+    int w = hg_display_resolution_options[step][0], h = hg_display_resolution_options[step][1];
+    LONG rc = hg_display_resolution_set(hg_g_monitors[idx].name, w, h);
+    WCHAR message[160];
+    if (rc == DISP_CHANGE_SUCCESSFUL) {
+        hellgates_wsprintf(message, HG_ARRAYSIZE(message), L"Resolution: %d x %d", w, h);
+    } else {
+        const WCHAR *why = (rc == DISP_CHANGE_BADMODE)  ? L"the display does not offer it"
+                           : (rc == DISP_CHANGE_RESTART) ? L"Windows wants a restart for it"
+                                                         : L"Windows refused it";
+        hellgates_wsprintf(message, HG_ARRAYSIZE(message), L"Resolution: %d x %d not set - %ls (%ld)", w, h, why,
+                           (long)rc);
+    }
+    append_message(message);
+    return TRUE;
+}
+
 static BOOL floater_dispatch_audio_device_command(UINT cmd)
 {
     if (cmd < HG_IDM_AUDIO_DEVICE_BASE || cmd >= HG_IDM_AUDIO_DEVICE_BASE + HG_MAX_AUDIO_DEVICES)
@@ -1376,6 +1401,7 @@ static LRESULT floater_controller_on_command(HWND hwnd, WPARAM w_param, LPARAM l
 
     BOOL handled = floater_dispatch_monitor_command(cmd) || floater_dispatch_scale_command(cmd) ||
                    floater_dispatch_brightness_command(cmd) || floater_dispatch_topology_command(cmd) ||
+                   floater_dispatch_resolution_command(cmd) ||
                    floater_dispatch_audio_device_command(cmd) ||
                    floater_dispatch_volume_command(cmd) || floater_dispatch_option_command(cmd);
     if (!handled) {

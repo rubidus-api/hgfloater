@@ -74,6 +74,10 @@ const WCHAR *hg_display_topology_label(int which);
 int hg_display_topology_current(void);
 /* Switch to one of them: the same call Win+P makes. */
 BOOL hg_display_topology_set(int which);
+/* The five resolutions Mon's right-click forces (owner, 2026-11-19). */
+extern const int hg_display_resolution_options[HG_RESOLUTION_OPTION_COUNT][2];
+BOOL hg_display_resolution_current(const WCHAR *device, int *out_w, int *out_h);
+LONG hg_display_resolution_set(const WCHAR *device, int width, int height);
 
 /* Per-monitor backlight. DDC/CI drives the real backlight where the display
  * answers; the rest fall back to a gamma ramp on that display's own DC, so

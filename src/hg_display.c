@@ -1148,6 +1148,47 @@ int hg_display_topology_current(void)
     return -1;
 }
 
+/* --------------------------------------------------------- resolution (R1.14)
+ *
+ * Mon's right-click forces one of five resolutions on the taskbox's display
+ * (owner, 2026-11-19). Only the size is asked for: the refresh rate and the
+ * colour depth are left to the driver, which picks what goes with that size.
+ * Written to the registry, as the Settings app does, so it survives a
+ * restart. A size the display does not offer is refused by Windows, and the
+ * code says why. */
+const int hg_display_resolution_options[HG_RESOLUTION_OPTION_COUNT][2] = {
+    {1024, 768},
+    {1280, 720},
+    {1280, 800},
+    {1920, 1080},
+    {1920, 1200},
+};
+
+BOOL hg_display_resolution_current(const WCHAR *device, int *out_w, int *out_h)
+{
+    DEVMODEW dm;
+    ZeroMemory(&dm, sizeof(dm));
+    dm.dmSize = sizeof(dm);
+    if (!device || !EnumDisplaySettingsExW(device, ENUM_CURRENT_SETTINGS, &dm, 0))
+        return FALSE;
+    *out_w = (int)dm.dmPelsWidth;
+    *out_h = (int)dm.dmPelsHeight;
+    return TRUE;
+}
+
+LONG hg_display_resolution_set(const WCHAR *device, int width, int height)
+{
+    if (!device || width <= 0 || height <= 0)
+        return DISP_CHANGE_BADPARAM;
+    DEVMODEW dm;
+    ZeroMemory(&dm, sizeof(dm));
+    dm.dmSize = sizeof(dm);
+    dm.dmPelsWidth = (DWORD)width;
+    dm.dmPelsHeight = (DWORD)height;
+    dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
+    return ChangeDisplaySettingsExW(device, &dm, NULL, CDS_UPDATEREGISTRY, NULL);
+}
+
 BOOL hg_display_topology_set(int which)
 {
     if (which < 0 || which >= HG_TOPOLOGY_COUNT)

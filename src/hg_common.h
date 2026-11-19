@@ -264,6 +264,8 @@ int hg_toolbar_grid_buttons(void);
 #define HG_IDM_OPTION_LIMIT 6400
 #define HG_IDM_TOPOLOGY_BASE 6400    /* the four ways displays can be arranged */
 #define HG_IDM_TOPOLOGY_LIMIT 6410
+#define HG_IDM_RESOLUTION_BASE 6500  /* 10 displays x 5 resolutions -> 6500..6549 */
+#define HG_RESOLUTION_OPTION_COUNT 5
 
 #define HG_MAX_MONITORS 10
 

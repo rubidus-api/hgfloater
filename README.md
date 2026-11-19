@@ -858,7 +858,7 @@ holds for every icon:
 | :--- | :--- | :--- | :--- |
 | **Wheel** | System volume, 5% a notch. A muted machine is unmuted first. | Brightness of the screen, 10% a notch. | Taskbox opacity, 5% a notch. |
 | **Click** | Mute and unmute. | The scaling for this screen — 100% to 225%, the same ladder Windows offers. | — |
-| **Right-click** | Which output device plays, with the current one ticked, and `Mute` below the list. | How the screens are arranged: `PC screen only`, `Duplicate`, `Extend`, `Second screen only`, with the one in force ticked. | — |
+| **Right-click** | Which output device plays, with the current one ticked, and `Mute` below the list. | How the screens are arranged: `PC screen only`, `Duplicate`, `Extend`, `Second screen only`, with the one in force ticked; below them the resolution of the screen the taskbox is on: `1024 x 768`, `1280 x 720`, `1280 x 800`, `1920 x 1080`, `1920 x 1200`. | — |
 
 The wheel changes the value, the click does the one thing you would want without
 being asked to choose, and the right button opens the choice. Nothing here is
@@ -907,6 +907,10 @@ Hiding them would be a one-way door: `PC screen only` leaves exactly one
 display, and the entries that bring the other one back would be the ones that
 had just disappeared. A percentage a display will not accept is shown greyed
 rather than left out, so the ladder is the same ladder on every screen.
+
+**The five resolutions are offered on every screen, too.** Picking one sets it
+for good (as the Settings app does); a size the screen does not offer is
+refused by Windows, and the status line says so and why.
 
 ### 6.5 Shortcuts on the grid
 
@@ -1455,6 +1459,7 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Output device** | Right-click `Vol` |
 | **Display scaling** | Left-click `Mon` |
 | **Screen arrangement** | Right-click `Mon` |
+| **Screen resolution** | Right-click `Mon` |
 | **Pin the taskbox** | Click the `Pin` row of the `Set` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
 | **Open the notes** | Left-click `Note` |
