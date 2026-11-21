@@ -38,9 +38,9 @@ refactoring_plan-20260530.md
 hgfloater_private/
 # the old name, kept so a stale checkout cannot publish it
 hgfloater_internal/
+secrets/
 
 # credentials — never track (defense in depth)
-github-personal-access-token
 *-ssh-key-*
 *.pem
 *api*key*
