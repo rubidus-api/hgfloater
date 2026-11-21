@@ -15,7 +15,6 @@ MEMORY.md
 SPEC.md
 /MAP.md
 REQUIREMENTS.md
-DECISIONS.md
 LESSONS.md
 TESTS.md
 WORKLOG.md
@@ -47,31 +46,14 @@ github-personal-access-token
 *api*key*
 cloudflare*.env
 
-# agy-only customization layer (local; see rootsator RFC-0001)
+# agy-only customization layer (local)
 /.agents/
 
-# ── Private layout (links into the private sibling; kit 0.10.0) ──
-/docs/tests
-/scripts/project-check.sh
-/scripts/gate.sh
-/scripts/gate.conf
-/scripts/context-budget.sh
-/scripts/brief.sh
-/scripts/worklog.sh
-/docs/agents
-/docs/rfc
-/docs/research
-/docs/benchmark
-/docs/backlogs
-/docs/plans
-/docs/requirements
-/docs/resources
 /docs/operations
 /test
 /scripts/check-docs.py
 # host-test binaries that `make test-host` (and gate t2) leave in the root
 /*_host
-/scripts/sot-check.sh
-/scripts/readme-topline.sh
-/scripts/claim.sh
-/scripts/install-hook.sh
+
+# ── Private layout and local tooling (zero symlinks; kit 0.16.0) ──────
+/.cache/
