@@ -21,6 +21,8 @@ void show_about_window(void);
 static HFONT s_floater_label_font = NULL;
 /* Thin host-name font; same lifecycle as the label font. */
 static HFONT s_floater_host_font = NULL;
+/* Nonzero while the pointer sits over the clock hover-expand hotzone. */
+static BOOL s_floater_hover_hot = FALSE;
 
 /* The interface family changed: every font the floater draws with is built
  * from it, so all four go and the floater is laid out for the new face. */
@@ -488,7 +490,7 @@ static int floater_stats_label_width(HDC hdc)
  * one any row can produce, so the column never moves as values change. */
 static int floater_stats_value_width(HDC hdc)
 {
-    SIZE sz = floater_text_extent(hdc, floater_label_font(), L"100%");
+    SIZE sz = floater_text_extent(hdc, floater_label_font(), L"!100%");
 
     if (sz.cx <= 0)
         return 0;
@@ -601,10 +603,6 @@ static void floater_percent_text(int percent, WCHAR *text, size_t text_cch)
 
 static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
 {
-    /* `fill` is what the bar draws, 0..100. For the three percentages it is the
-     * value; temperature is not a percentage, so it is placed on a fixed 20-100
-     * degree window instead. `text` is drawn over the bar where the number
-     * matters more than the length does. */
     WCHAR temp_text[8] = L"";
     int temp_fill = floater_temperature_fill(s_stat_temp, temp_text, HG_ARRAYSIZE(temp_text));
     WCHAR gpu_text[8] = L"";
@@ -615,19 +613,34 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
     floater_percent_text(s_stat_mem, mem_text, HG_ARRAYSIZE(mem_text));
     floater_percent_text(s_stat_has_bat ? s_stat_bat : -1, bat_text, HG_ARRAYSIZE(bat_text));
 
+    enum { HG_STAT_NORMAL = 0, HG_STAT_WARN, HG_STAT_DANGER, HG_STAT_OK };
+    int cpu_state = (s_stat_cpu >= 95) ? HG_STAT_DANGER : ((s_stat_cpu >= 85) ? HG_STAT_WARN : HG_STAT_NORMAL);
+    int tmp_state = (s_stat_temp >= 85) ? HG_STAT_DANGER : ((s_stat_temp >= 75) ? HG_STAT_WARN : HG_STAT_NORMAL);
+    int gpu_state = (s_stat_gpu >= 85) ? HG_STAT_DANGER : ((s_stat_gpu >= 75) ? HG_STAT_WARN : HG_STAT_NORMAL);
+    int mem_state = (s_stat_mem >= 95) ? HG_STAT_DANGER : ((s_stat_mem >= 85) ? HG_STAT_WARN : HG_STAT_NORMAL);
+    int bat_state = HG_STAT_NORMAL;
+    if (s_stat_has_bat && s_stat_bat >= 0) {
+        if (!s_stat_charging && s_stat_bat <= 20)
+            bat_state = HG_STAT_DANGER;
+        else if (s_stat_charging)
+            bat_state = HG_STAT_OK;
+    }
+
     struct {
         const WCHAR *label;
         int fill;
         COLORREF color;
+        COLORREF def_color;
         BOOL present;
         const WCHAR *text;
+        int state;
     } rows[5] = {
-        {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, s_stat_cpu >= 0, cpu_text},
-        /* Directly after CPU, as the readings it belongs beside. */
-        {L"TMP", temp_fill, hg_g_color_stat_temp, s_stat_temp >= 0, temp_text},
-        {L"GPU", gpu_fill, hg_g_color_stat_gpu, s_stat_gpu >= 0, gpu_text},
-        {L"MEM", s_stat_mem, hg_g_color_stat_mem, s_stat_mem >= 0, mem_text},
-        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, s_stat_has_bat, bat_text},
+        {L"CPU", s_stat_cpu, hg_g_color_stat_cpu, HG_COLOR_STAT_CPU_DEFAULT, s_stat_cpu >= 0, cpu_text, cpu_state},
+        {L"TMP", temp_fill, hg_g_color_stat_temp, HG_COLOR_STAT_TEMP_DEFAULT, s_stat_temp >= 0, temp_text, tmp_state},
+        {L"GPU", gpu_fill, hg_g_color_stat_gpu, HG_COLOR_STAT_GPU_DEFAULT, s_stat_gpu >= 0, gpu_text, gpu_state},
+        {L"MEM", s_stat_mem, hg_g_color_stat_mem, HG_COLOR_STAT_MEM_DEFAULT, s_stat_mem >= 0, mem_text, mem_state},
+        {s_stat_charging ? L"BAT+" : L"BAT", s_stat_bat, hg_g_color_stat_bat, HG_COLOR_STAT_BAT_DEFAULT,
+         s_stat_has_bat, bat_text, bat_state},
     };
 
     int count = 0;
@@ -638,49 +651,84 @@ static void floater_draw_stats_panel(HDC dc, const HgFloaterMetrics *m)
     if (count == 0 || m->label_w <= 0 || m->rows_h <= 0)
         return;
 
+    const HgUiPalette *pal = hg_ui_widget_palette();
+    BOOL flashing = (hg_g_floater_highlight_ticks > 0 && (hg_g_floater_highlight_ticks % 2 != 0));
+
     HFONT font = floater_label_font();
     HFONT old_font = NULL;
     if (font)
         old_font = (HFONT)SelectObject(dc, font);
     SetBkMode(dc, TRANSPARENT);
-    SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
 
     int row_h = m->rows_h / count;
     int bar_gap = floater_bar_inset();
+    int line_h = SC(2);
+    if (line_h < 2)
+        line_h = 2;
+    if (line_h > SC(3))
+        line_h = SC(3);
+
     int drawn = 0;
     for (int i = 0; i < (int)HG_ARRAYSIZE(rows); i++) {
         if (!rows[i].present)
             continue;
         int top = m->rows_y + drawn * row_h;
-        /* Center on the ink, not the font cell, so the label lines up with its bar. */
+
+        SetTextColor(dc, flashing ? pal->honey_fg : pal->muted);
         int label_y = floater_ink_top(dc, font, rows[i].label, top, row_h);
         RECT label_rc = {m->content_x, label_y, m->content_x + m->label_w, label_y + row_h * 4};
         DrawTextW(dc, rows[i].label, -1, &label_rc, DT_LEFT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
 
+        COLORREF line_color = pal->line_strong;
+        COLORREF val_color = pal->fg;
+        const WCHAR *prefix = L"";
+        if (flashing) {
+            line_color = pal->honey_fg;
+            val_color = pal->honey_fg;
+        } else if (rows[i].state == HG_STAT_DANGER) {
+            line_color = pal->danger;
+            val_color = pal->danger;
+            prefix = L"\x2715";
+        } else if (rows[i].state == HG_STAT_WARN) {
+            line_color = pal->warn;
+            val_color = pal->warn;
+            prefix = L"!";
+        } else if (rows[i].state == HG_STAT_OK) {
+            line_color = pal->ok;
+            val_color = pal->ok;
+            prefix = L"\x2713";
+        } else if (rows[i].color != rows[i].def_color) {
+            line_color = rows[i].color;
+        }
+
         RECT track = {m->column_x, top + bar_gap, m->column_x + m->column_w, top + row_h - bar_gap};
         if (track.right > track.left && track.bottom > track.top) {
-            /* No track fill: the floater background shows through, so the bars
-             * never clash with theme colors (the blue system highlight used to
-             * hide the blue MEM bar in dark mode). */
             int value = rows[i].fill;
             if (value < 0)
                 value = 0;
             if (value > 100)
                 value = 100;
-            RECT fill = track;
+            RECT track_line = {track.left, track.bottom - line_h, track.right, track.bottom};
+            if (track_line.top < track.top)
+                track_line.top = track.top;
+            HBRUSH track_brush = hg_cached_solid_brush(flashing ? pal->honey : pal->bg2);
+            if (track_brush)
+                FillRect(dc, &track_line, track_brush);
+
+            RECT fill = track_line;
             fill.right = track.left + ((track.right - track.left) * value) / 100;
-            HBRUSH fill_brush = hg_cached_solid_brush(rows[i].color);
+            HBRUSH fill_brush = hg_cached_solid_brush(line_color);
             if (fill_brush && fill.right > fill.left)
                 FillRect(dc, &fill, fill_brush);
-
         }
 
-        /* The reading lives in its own strip to the right of the bars, clear of
-         * both the fill and the clock, so every row can carry one. */
         if (m->value_w > 0 && rows[i].text && rows[i].text[0]) {
-            int text_y = floater_ink_top(dc, font, rows[i].text, top, row_h);
+            WCHAR disp[12];
+            hellgates_wsprintf(disp, HG_ARRAYSIZE(disp), L"%ls%ls", prefix, rows[i].text);
+            SetTextColor(dc, val_color);
+            int text_y = floater_ink_top(dc, font, disp, top, row_h);
             RECT value_rc = {m->value_x, text_y, m->value_x + m->value_w, text_y + row_h * 4};
-            DrawTextW(dc, rows[i].text, -1, &value_rc, DT_RIGHT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
+            DrawTextW(dc, disp, -1, &value_rc, DT_RIGHT | DT_TOP | DT_SINGLELINE | DT_NOCLIP);
         }
         drawn++;
     }
@@ -1033,8 +1081,10 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     const WCHAR *time_str = clock.time;
                     const WCHAR *date_str = clock.date;
 
+                    const HgUiPalette *pal = hg_ui_widget_palette();
+                    BOOL flashing = (hg_g_floater_highlight_ticks > 0 && (hg_g_floater_highlight_ticks % 2 != 0));
                     SetBkMode(mem_dc, TRANSPARENT);
-                    SetTextColor(mem_dc, HG_COLOR_TEXT_DEFAULT);
+                    SetTextColor(mem_dc, flashing ? pal->honey_fg : pal->fg);
 
                     /* Same metrics the layout pass used, so the drawing lands
                      * exactly where the window was sized for. */
@@ -1057,6 +1107,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                             int top = floater_ink_top(mem_dc, host_font, host, m.pad_y, m.host_h);
                             RECT host_rc = {m.pad_x, top, rc.right - m.pad_x, top + m.host_h * 4};
                             SelectObject(mem_dc, host_font);
+                            SetTextColor(mem_dc, flashing ? pal->honey_fg : pal->muted);
                             DrawTextW(mem_dc, host, -1, &host_rc,
                                       DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP | DT_END_ELLIPSIS);
                         }
@@ -1068,23 +1119,55 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                     int time_y = floater_ink_top(mem_dc, hg_g_floater_time_font, time_str, time_top, m.time_h);
                     int date_y = floater_ink_top(mem_dc, hg_g_floater_date_font, date_str, date_top, m.date_h);
 
+                    /* Hover-expand hotzone cue behind the active clock span (D-U8=A addendum). */
+                    HgHoverMode hover_mode = hg_clock_hover_mode();
+                    if (!flashing && hg_g_taskbox_open_on_hover && hover_mode != HG_HOVER_CLICK_ONLY) {
+                        int hz_l = 0, hz_r = 0;
+                        BOOL hz_ok = FALSE;
+                        if (hover_mode == HG_HOVER_HOURS || hover_mode == HG_HOVER_BOTH) {
+                            hz_ok = floater_time_span_x(mem_dc, &clock, &m, clock.spans.hour_start,
+                                                        clock.spans.hour_end, &hz_l, &hz_r);
+                        }
+                        if (hover_mode == HG_HOVER_MINUTES || hover_mode == HG_HOVER_BOTH) {
+                            int min_l = 0, min_r = 0;
+                            if (floater_time_span_x(mem_dc, &clock, &m, clock.spans.minute_start,
+                                                    clock.spans.minute_end, &min_l, &min_r)) {
+                                if (!hz_ok || min_l < hz_l)
+                                    hz_l = min_l;
+                                if (!hz_ok || min_r > hz_r)
+                                    hz_r = min_r;
+                                hz_ok = TRUE;
+                            }
+                        }
+                        if (!hz_ok)
+                            hz_ok = floater_time_span_x(mem_dc, &clock, &m, 0, lstrlenW(time_str), &hz_l, &hz_r);
+                        if (hz_ok && hz_r > hz_l) {
+                            RECT hz_rc = {hz_l - SC(2), m.text_y, hz_r + SC(2), m.text_y + m.time_h};
+                            if (hz_rc.left < m.column_x)
+                                hz_rc.left = m.column_x;
+                            if (hz_rc.right > m.column_x + m.column_w)
+                                hz_rc.right = m.column_x + m.column_w;
+                            HBRUSH hz_bg = hg_cached_solid_brush(s_floater_hover_hot ? pal->bg3 : pal->bg2);
+                            if (hz_bg)
+                                FillRect(mem_dc, &hz_rc, hz_bg);
+                            int ul_h = SC(2);
+                            if (ul_h < 2)
+                                ul_h = 2;
+                            RECT hz_ul = {hz_rc.left, hz_rc.bottom - ul_h, hz_rc.right, hz_rc.bottom};
+                            HBRUSH hz_bar = hg_cached_solid_brush(s_floater_hover_hot ? pal->accent2 : pal->line_strong);
+                            if (hz_bar)
+                                FillRect(mem_dc, &hz_ul, hz_bar);
+                        }
+                    }
+
                     RECT time_rc = {m.column_x, time_y, m.column_x + m.column_w, time_y + m.time_h * 4};
                     RECT date_rc = {m.column_x, date_y, m.column_x + m.column_w, date_y + m.date_h * 4};
 
-                    /* DT_NOPREFIX on both lines: the text comes from a format
-                     * somebody typed, and an ampersand in it is an ampersand,
-                     * not an instruction to underline the next character. */
                     const UINT line_format = DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOCLIP | DT_NOPREFIX;
 
-                    /* On the lit half second the hours and the minutes are
-                     * drawn in the other colour. The line is drawn whole both
-                     * times and clipped - once with those two parts cut out,
-                     * once to each of them - so every glyph sits exactly where
-                     * it sits on the unlit half second, and no edge of one
-                     * colour is left under the other. */
                     int lit_x[2][2];
                     int lit_count = 0;
-                    if (s_floater_blink_lit && hg_clock_blink()) {
+                    if (!flashing && s_floater_blink_lit && hg_clock_blink()) {
                         if (floater_time_span_x(mem_dc, &clock, &m, clock.spans.hour_start, clock.spans.hour_end,
                                                 &lit_x[lit_count][0], &lit_x[lit_count][1]))
                             lit_count++;
@@ -1093,6 +1176,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                             lit_count++;
                     }
 
+                    SetTextColor(mem_dc, flashing ? pal->honey_fg : pal->fg);
                     SelectObject(mem_dc, hg_g_floater_time_font);
                     int saved_dc = (lit_count > 0) ? SaveDC(mem_dc) : 0;
                     for (int i = 0; saved_dc && i < lit_count; ++i)
@@ -1110,6 +1194,7 @@ static LRESULT floater_controller_on_paint(HWND hwnd)
                         RestoreDC(mem_dc, part_dc);
                     }
 
+                    SetTextColor(mem_dc, flashing ? pal->honey_fg : pal->fg);
                     SelectObject(mem_dc, hg_g_floater_date_font);
                     DrawTextW(mem_dc, date_str, -1, &date_rc, line_format);
 
@@ -1618,29 +1703,37 @@ LRESULT CALLBACK floater_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
                     ensure_window_visible(hwnd, L"floater");
                 }
             }
-        } else if (hg_g_taskbox_open_on_hover && floater_pointer_on_hover_part(hwnd, l_param)) {
-            /* Off by default: pointer travel across the desktop used to expand
-             * the whole dashboard by accident, so opening is something you say
-             * with a click. Those who liked reaching it without one switch this
-             * back on, and it answers over one part of the clock - the minutes,
-             * the hours, or both, as chosen in the settings: the rest of the
-             * floater is bars, a date and a host name that a hand crosses on
-             * its way elsewhere, and it stays draggable and tunable as a
-             * result. */
-            if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
-                hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
-                /* Make it appear instantly, refresh without forcing icon reload */
-                refresh_window_list(FALSE);
-                ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
-                ShowWindow(hwnd, SW_HIDE);
-                /* After a focus-preserving auto-collapse this process may not own
-                 * the foreground anymore, so a plain SetForegroundWindow would be
-                 * refused and keys would keep going to the other application. */
-                hg_force_foreground(hg_g_taskbox_wnd);
-                SetFocus(hg_g_toolbar_wnd);
-                hg_g_hover_check_armed = TRUE;
-                SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
+        } else {
+            BOOL hot = (hg_g_taskbox_open_on_hover && hg_clock_hover_mode() != HG_HOVER_CLICK_ONLY &&
+                        floater_pointer_on_hover_part(hwnd, l_param));
+            if (hot != s_floater_hover_hot) {
+                s_floater_hover_hot = hot;
+                InvalidateRect(hwnd, NULL, FALSE);
             }
+            TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};
+            TrackMouseEvent(&tme);
+
+            if (hot) {
+                if (hg_g_taskbox_wnd && IsWindow(hg_g_taskbox_wnd) && !IsWindowVisible(hg_g_taskbox_wnd)) {
+                    s_floater_hover_hot = FALSE;
+                    hg_expand_taskbox_from_floater(hwnd, hg_g_taskbox_wnd);
+                    /* Make it appear instantly, refresh without forcing icon reload */
+                    refresh_window_list(FALSE);
+                    ShowWindow(hg_g_taskbox_wnd, SW_SHOW);
+                    ShowWindow(hwnd, SW_HIDE);
+                    hg_force_foreground(hg_g_taskbox_wnd);
+                    SetFocus(hg_g_toolbar_wnd);
+                    hg_g_hover_check_armed = TRUE;
+                    SetTimer(hg_g_taskbox_wnd, HG_TIMER_HOVER_CHECK, 100, NULL);
+                }
+            }
+        }
+        return 0;
+    }
+    case WM_MOUSELEAVE: {
+        if (s_floater_hover_hot) {
+            s_floater_hover_hot = FALSE;
+            InvalidateRect(hwnd, NULL, FALSE);
         }
         return 0;
     }

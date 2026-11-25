@@ -146,40 +146,28 @@
 #define HG_MAX_WINDOW_ITEMS 1024
 #define HG_MAX_SHORTCUTS 64
 #define HG_MAX_AUDIO_DEVICES 16
-/* Thirteen buttons always, and BakREC (index 13) while a recorder is plugged
- * in: the id space is fourteen, the grid holds hg_toolbar_grid_buttons(). */
-#define HG_NUM_BASIC_ICONS 14
+/* Ten buttons always, and BakREC (index 10) while a recorder is plugged
+ * in: the id space is eleven, the grid holds hg_toolbar_grid_buttons().
+ * R, M and X moved off the grid into the Set list / drag edge (D-U2=C). */
+#define HG_NUM_BASIC_ICONS 11
 
 /* The buttons, in index order. On the grid the highest index is leftmost, one
  * run (or, grouped, two lines - HG_GRID_BUTTON_BREAK): A/V Vol Mon Alp, then
- * Dir Set Clip Note Cmd D R M X, index 0 - X - in the bottom-right corner. (D R M X sat in the strip
- * beside the status line from 2026-10-14 to 2026-11-07.) Where the lines sit is
- * the grid's business: see HgGrid in hg_calc.h.
- *
- * Vol, Mon and Alp are on the row itself. They spent v0.17.13 and v0.17.14 in
- * a box behind an Ico button; a reading that has to be opened to be seen was
- * one step too far, so the three are back where their colour can be read at a
- * glance and the Ico button is gone.
- *
- * There is no Run button either (it existed in v0.17.14 and v0.17.15): the
- * shortcuts it opened are icons on the grid itself, once, so a button that
- * opened a second copy of them had nothing left to do. */
-#define HG_TOOL_ICON_CLOSE 0
-#define HG_TOOL_ICON_MOVE 1
-#define HG_TOOL_ICON_RESIZE 2
-#define HG_TOOL_ICON_DESKTOP 3
-#define HG_TOOL_ICON_COMMAND 4
-#define HG_TOOL_ICON_NOTE 5
-#define HG_TOOL_ICON_CLIP 6
-#define HG_TOOL_ICON_SETTINGS 7
-#define HG_TOOL_ICON_DIR 8
-#define HG_TOOL_ICON_ALPHA 9
-#define HG_TOOL_ICON_MONITOR 10
-#define HG_TOOL_ICON_VOLUME 11
-#define HG_TOOL_ICON_MENU 12
+ * Dir Set Clip Note Cmd D, index 0 - D - in the bottom-right corner. Where the
+ * lines sit is the grid's business: see HgGrid in hg_calc.h. */
+#define HG_TOOL_ICON_DESKTOP 0
+#define HG_TOOL_ICON_COMMAND 1
+#define HG_TOOL_ICON_NOTE 2
+#define HG_TOOL_ICON_CLIP 3
+#define HG_TOOL_ICON_SETTINGS 4
+#define HG_TOOL_ICON_DIR 5
+#define HG_TOOL_ICON_ALPHA 6
+#define HG_TOOL_ICON_MONITOR 7
+#define HG_TOOL_ICON_VOLUME 8
+#define HG_TOOL_ICON_MENU 9
 /* Recorder backup (R1.8): on the grid only while a recorder is plugged in,
  * the highest index, so the leftmost button - left of A/V. */
-#define HG_TOOL_ICON_RECBAK 13
+#define HG_TOOL_ICON_RECBAK 10
 
 /* A shortcut's button id: past the row, so activate_toolbar_item can tell the
  * two apart. A shortcut is an item of the grid (type 1) under this id. The row
@@ -187,17 +175,13 @@
 int hg_toolbar_grid_buttons(void);
 #define HG_SHORTCUT_BUTTON_ID(s_idx) (hg_toolbar_grid_buttons() + (s_idx))
 
-/* The one button that is not on the row: the pin, a row of the Set box. It
- * keeps an id of its own because everything that knows what a button is called
- * and what it does is written against an id. Numbered past the row and past
- * every shortcut (the row plus HG_MAX_SHORTCUTS ends at 76), so a loop over the
- * toolbar cannot reach it by accident.
- *
- * The options menu is not like it: it was a row in that list, one click deep,
- * when what it opens is a menu of its own. It has its own button - Opt, on the
- * row - because a menu that lives inside another list is a menu nobody
- * finds. */
+/* Off-grid actions reachable from the Set box or keybindings, numbered past
+ * the row and past every shortcut so a loop over the toolbar cannot reach them
+ * by accident. */
 #define HG_TOOL_ICON_PIN 103
+#define HG_TOOL_ICON_MOVE 104
+#define HG_TOOL_ICON_RESIZE 105
+#define HG_TOOL_ICON_CLOSE 106
 
 #define HG_IDM_MINIMIZE 201
 #define HG_IDM_CLOSE 202
@@ -407,9 +391,21 @@ int hg_toolbar_grid_buttons(void);
 /* =========================================================================
  * 데이터 구조체 (Data Structures)
  * ========================================================================= */
+enum {
+    HG_SCHEME_INANIS = 0,
+    HG_SCHEME_PLAIN = 1
+};
+
 typedef struct {
     COLORREF bg, border, text, flash, selected;
 } color_scheme_t;
+
+typedef struct HgUiPalette {
+    COLORREF bg, bg2, bg3, fg, muted, line, line_strong;
+    COLORREF accent, accent_fg, accent2;
+    COLORREF honey, honey_fg, honey_text, honey_soft;
+    COLORREF select, danger, ok, warn;
+} HgUiPalette;
 
 typedef struct {
     WCHAR path[HG_MAX_PATH];
@@ -572,6 +568,7 @@ static const WCHAR HG_CLASS_NOTE_LIST[] = L"hgnotelist_class";
 static const WCHAR HG_CLASS_NOTE_EDIT[] = L"hgnoteedit_class";
 static const WCHAR HG_CLASS_CLIP[] = L"hgclip_class";
 static const WCHAR HG_CLASS_TABBOX[] = L"hgtabbox_class";
+static const WCHAR HG_CLASS_AVBOX[] = L"hgavbox_class";
 static const WCHAR HG_CLASS_SETTINGS[] = L"hgsettings_class";
 static const WCHAR HG_SINGLE_INSTANCE_MUTEX_NAME[] = L"Local\\hgfloater_single_instance_mutex";
 

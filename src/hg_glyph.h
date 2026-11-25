@@ -9,14 +9,16 @@
  * where a button's key badge sits (toolbar_draw_badge), so every icon is drawn
  * in the other three, whether or not its button has a key today. */
 
-/* Nonzero when `index` (an HG_TOOL_ICON_*) has an icon. */
+/* Extra glyph slot for muted volume state (D-U3=A) and total cache slots. */
+#define HG_GLYPH_VOLUME_MUTED 11
+#define HG_GLYPH_COUNT 12
+
+/* Nonzero when `index` (an HG_TOOL_ICON_* or HG_GLYPH_*) has an icon. */
 BOOL hg_glyph_has(int index);
 
 /* Draws button `index`'s icon in `rc` (the icon square): a hard-edged band of
- * `edge` first, then the icon itself in `fg`, smoothed, inside that band. The
- * band is what keeps it readable over any plate or the desktop, as the outline
- * does for words (draw_outlined_text), and being hard-edged it never blends
- * with the window's colour key. */
+ * `edge` first (skipped when edge == CLR_NONE for Win8 flat tiles), then the
+ * icon itself in `fg`, smoothed via supersampled mask. */
 void hg_glyph_draw(HDC dc, int index, const RECT *rc, COLORREF fg, COLORREF edge);
 
 /* Frees the smoothing masks kept for the current size. */

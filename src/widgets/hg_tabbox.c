@@ -40,10 +40,14 @@ static RECT s_anchor = {0, 0, 0, 0};
  * about a dozen rows per display once its submenus are flattened out. */
 #define HG_BOX_MAX_ROWS 128
 static WCHAR s_titles[HG_BOX_MAX_ROWS][HG_MAX_STR];
+static WCHAR s_values[HG_BOX_MAX_ROWS][64];
+static BOOL s_group_start[HG_BOX_MAX_ROWS];
 static int s_count = 0;
 static int s_selected = 0;
 static int s_mode = HG_BOX_TABS;
 static BOOL s_open = FALSE;
+static HFONT s_footer_font = NULL;
+static double s_footer_font_scale = 0.0;
 
 /* Shown for a row whose text does not fit, whether the pointer found it or the
  * arrows did. The box is already as wide as it is allowed to be by then, so the
@@ -100,6 +104,7 @@ static int s_menu_row_count = 0;
  * fills the list runs above it. */
 static void tabbox_menu_row_text(int index, WCHAR *out, size_t out_cch);
 static int tabbox_row_at(POINT client_pt);
+static BOOL tabbox_row_rect(int index, RECT *out);
 
 /* The row's tooltip, off while a box is up.
  *
@@ -187,6 +192,14 @@ static void tabbox_build_control_rows(void)
         tabbox_add_control_row(commands[i]);
     }
 
+    /* Taskbox management actions moved off the toolbar grid (D-U2=C). */
+    {
+        HgControlRow move_aside = {HG_ROW_BUTTON, HG_TOOL_ICON_MOVE, L"Move Taskbox Aside"};
+        HgControlRow exit_app = {HG_ROW_BUTTON, HG_TOOL_ICON_CLOSE, L"Exit hgfloater"};
+        tabbox_add_control_row(move_aside);
+        tabbox_add_control_row(exit_app);
+    }
+
     /* And last, the ones this build cannot switch. They are still listed: a
      * feature that vanishes leaves the reader wondering whether they imagined
      * it, while a row that says why does not. */
@@ -240,24 +253,87 @@ static int tabbox_index_for_key(WPARAM key)
 
 static int tabbox_row_height(void)
 {
-    double ws = hg_window_scale(s_wnd ? s_wnd : hg_g_taskbox_wnd);
     int size = ABS(hg_g_edit_font_size);
     if (size < SC(12))
         size = SC(12);
-    (void)ws;
     return size + SC(8);
 }
 
-/* How wide the rows would like to be, measured rather than assumed.
- *
- * A fixed width cut titles that had room to spare on a wide screen and left
- * white space on short ones. The box asks its own rows instead, and takes what
- * they need up to a ceiling - past that a list stops being a list and becomes a
- * wall of text, and the rows that are still too long say so through the
- * tooltip. */
+static int tabbox_group_gap(double ws)
+{
+    int g = SCW(ws, 6);
+    return (g < 4) ? 4 : g;
+}
+
+static int tabbox_footer_height(double ws)
+{
+    int h = SCW(ws, 24);
+    return (h < 18) ? 18 : h;
+}
+
+static HFONT tabbox_ensure_footer_font(double ws)
+{
+    if (!s_footer_font || s_footer_font_scale != ws) {
+        release_font_handle(&s_footer_font, FALSE);
+        int h = SCW(ws, 12);
+        if (h < 10)
+            h = 10;
+        s_footer_font = CreateFontW(-h, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                                    CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_font_name);
+        s_footer_font_scale = ws;
+    }
+    return s_footer_font ? s_footer_font : (hg_g_main_font ? hg_g_main_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
+}
+
+static void tabbox_column_metrics(double ws, int client_w, int *out_key_w, int *out_val_w, int *out_title_x,
+                                  int *out_title_w)
+{
+    int pad = SCW(ws, 6);
+    int band = hg_box_band();
+    int key_w = SCW(ws, 26);
+    int val_w = 0;
+
+    if (s_wnd && s_count > 0) {
+        HDC dc = GetDC(s_wnd);
+        if (dc) {
+            HFONT font = hg_g_main_font ? hg_g_main_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT old = (HFONT)SelectObject(dc, font);
+            SIZE ksz = {0, 0};
+            if (GetTextExtentPoint32W(dc, L"W: ", 3, &ksz) && ksz.cx > key_w)
+                key_w = ksz.cx;
+            for (int i = 0; i < s_count; ++i) {
+                if (s_values[i][0]) {
+                    SIZE vsz = {0, 0};
+                    if (GetTextExtentPoint32W(dc, s_values[i], lstrlenW(s_values[i]), &vsz) && vsz.cx > val_w)
+                        val_w = vsz.cx;
+                }
+            }
+            SelectObject(dc, old);
+            ReleaseDC(s_wnd, dc);
+        }
+    }
+
+    int gutter_left = band + pad + SCW(ws, 6);
+    int title_x = gutter_left + key_w;
+    int right_edge = client_w - band - pad - SCW(ws, 4);
+    int gap = (val_w > 0) ? SCW(ws, 18) : 0;
+    int title_w = right_edge - val_w - gap - title_x;
+    if (title_w < SCW(ws, 60))
+        title_w = SCW(ws, 60);
+
+    if (out_key_w)
+        *out_key_w = key_w;
+    if (out_val_w)
+        *out_val_w = val_w;
+    if (out_title_x)
+        *out_title_x = title_x;
+    if (out_title_w)
+        *out_title_w = title_w;
+}
+
 static int tabbox_wanted_width(double ws)
 {
-    int fallback = SCW(ws, 320);
+    int fallback = SCW(ws, 300);
     if (!s_wnd || s_count <= 0)
         return fallback;
 
@@ -268,24 +344,31 @@ static int tabbox_wanted_width(double ws)
     HFONT font = hg_g_main_font ? hg_g_main_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
     HFONT old = (HFONT)SelectObject(dc, font);
 
-    int widest = 0;
-    for (int i = 0; i < s_count; ++i) {
-        WCHAR line[HG_MAX_STR + 8];
-        WCHAR label = tabbox_label_for(i);
-        if (label)
-            hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  %lc: %ls", label, s_titles[i]);
-        else
-            hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"  %ls", s_titles[i]);
+    int key_w = SCW(ws, 26);
+    SIZE ksz = {0, 0};
+    if (GetTextExtentPoint32W(dc, L"W: ", 3, &ksz) && ksz.cx > key_w)
+        key_w = ksz.cx;
 
+    int widest_title = 0;
+    int widest_val = 0;
+    for (int i = 0; i < s_count; ++i) {
         SIZE sz = {0, 0};
-        if (GetTextExtentPoint32W(dc, line, lstrlenW(line), &sz) && sz.cx > widest)
-            widest = sz.cx;
+        if (GetTextExtentPoint32W(dc, s_titles[i], lstrlenW(s_titles[i]), &sz) && sz.cx > widest_title)
+            widest_title = sz.cx;
+        if (s_values[i][0]) {
+            SIZE vsz = {0, 0};
+            if (GetTextExtentPoint32W(dc, s_values[i], lstrlenW(s_values[i]), &vsz) && vsz.cx > widest_val)
+                widest_val = vsz.cx;
+        }
     }
 
     SelectObject(dc, old);
     ReleaseDC(s_wnd, dc);
 
-    int want = widest + SCW(ws, 24); /* the padding either side, and room for the marker */
+    int pad = SCW(ws, 6);
+    int band = hg_box_band();
+    int gap = (widest_val > 0) ? SCW(ws, 18) : 0;
+    int want = (band + pad) * 2 + SCW(ws, 12) + key_w + widest_title + gap + widest_val;
     if (want < fallback)
         want = fallback;
     int ceiling = SCW(ws, 760);
@@ -302,10 +385,17 @@ static void tabbox_layout(void)
     int width, height;
     {
         double ws = hg_window_scale(s_wnd);
+        int band = hg_box_band();
         int row_h = tabbox_row_height();
         int pad = SCW(ws, 6);
-        int rows = (s_count > 0) ? s_count : 1;
-        height = rows * row_h + pad * 2;
+        int gap = tabbox_group_gap(ws);
+        int footer_h = tabbox_footer_height(ws);
+        int rows_h = (s_count > 0) ? (s_count * row_h) : row_h;
+        for (int i = 1; i < s_count; ++i) {
+            if (s_group_start[i])
+                rows_h += gap;
+        }
+        height = rows_h + pad * 2 + band * 2 + footer_h;
         width = tabbox_wanted_width(ws);
     }
 
@@ -400,8 +490,18 @@ static void tabbox_layout(void)
  * Three sources, one row model: a string per row, a count, and a selection.
  * Everything past this function - the placement, the painting, the keys, the
  * clicking - is written against that and does not know which list it has. */
+static void tabbox_clear_rows(void)
+{
+    for (int i = 0; i < HG_BOX_MAX_ROWS; ++i) {
+        s_values[i][0] = L'\0';
+        s_group_start[i] = FALSE;
+    }
+}
+
 static void tabbox_pull(void)
 {
+    tabbox_clear_rows();
+
     if (s_mode == HG_BOX_TABS) {
         if (!s_target)
             return;
@@ -421,47 +521,46 @@ static void tabbox_pull(void)
          * once would be a picture of the machine when the box first opened. */
         s_count = 0;
         s_menu_row_count = hg_menu_build_rows(s_menu_rows, HG_BOX_MAX_ROWS);
-        for (int i = 0; i < s_menu_row_count; ++i) {
+        for (int i = 0; i < s_menu_row_count && s_count < HG_BOX_MAX_ROWS; ++i) {
             tabbox_menu_row_text(i, s_titles[s_count], HG_MAX_STR);
             ++s_count;
         }
     } else {
+        int prev_group = -1;
         s_count = 0;
         tabbox_build_control_rows();
-        s_count = 0;
         for (int i = 0; i < s_control_row_count && s_count < HG_BOX_MAX_ROWS; ++i) {
             const HgControlRow *row = &s_control_rows[i];
+            int grp = 0;
 
             if (row->kind == HG_ROW_COMMAND) {
+                grp = (row->id == HG_IDM_SETTINGS) ? 0 : 2;
                 StringCchCopyW(s_titles[s_count], HG_MAX_STR, row->label);
-                ++s_count;
-                continue;
-            }
-
-            if (row->kind == HG_ROW_OPTION) {
+            } else if (row->kind == HG_ROW_OPTION) {
                 HgOptionInfo info;
                 if (!hg_option_info(row->id, &info))
                     continue;
-                const WCHAR *state = !info.available
-                                         ? (info.unavailable_note ? info.unavailable_note : L"unavailable")
-                                         : (hg_option_get(row->id) ? L"on" : L"off");
-                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-30ls %ls", info.label, state);
-                ++s_count;
-                continue;
+                grp = info.available ? 1 : 4;
+                StringCchCopyW(s_titles[s_count], HG_MAX_STR, info.label);
+                StringCchCopyW(s_values[s_count], HG_ARRAYSIZE(s_values[s_count]),
+                               !info.available ? (info.unavailable_note ? info.unavailable_note : L"unavailable")
+                                               : (hg_option_get(row->id) ? L"on" : L"off"));
+            } else {
+                grp = (row->id == HG_TOOL_ICON_MOVE || row->id == HG_TOOL_ICON_CLOSE) ? 3 : 1;
+                StringCchCopyW(s_titles[s_count], HG_MAX_STR, row->label);
+                int pct = 0;
+                if (hg_toolbar_value_percent(row->id, &pct)) {
+                    hellgates_wsprintf(s_values[s_count], HG_ARRAYSIZE(s_values[s_count]), L"%d%%%ls", pct,
+                                       (row->id == HG_TOOL_ICON_VOLUME && get_system_mute()) ? L" (muted)" : L"");
+                } else if (row->id == HG_TOOL_ICON_PIN) {
+                    StringCchCopyW(s_values[s_count], HG_ARRAYSIZE(s_values[s_count]),
+                                   hg_g_taskbox_pinned ? L"on" : L"off");
+                }
             }
 
-            /* Name, then the reading: the reading is the reason to open the box
-             * at all, and the row is what the wheel is spinning. */
-            int pct = 0;
-            if (hg_toolbar_value_percent(row->id, &pct)) {
-                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-30ls %3d%%%ls", row->label, pct,
-                                   (row->id == HG_TOOL_ICON_VOLUME && get_system_mute()) ? L"  (muted)" : L"");
-            } else if (row->id == HG_TOOL_ICON_PIN) {
-                hellgates_wsprintf(s_titles[s_count], HG_MAX_STR, L"%-30ls %ls", row->label,
-                                   hg_g_taskbox_pinned ? L"on" : L"off");
-            } else {
-                StringCchCopyW(s_titles[s_count], HG_MAX_STR, row->label);
-            }
+            if (s_count > 0 && grp != prev_group)
+                s_group_start[s_count] = TRUE;
+            prev_group = grp;
             ++s_count;
         }
     }
@@ -470,32 +569,27 @@ static void tabbox_pull(void)
         s_selected = (s_count > 0) ? s_count - 1 : 0;
 }
 
-/* A menu row as it is drawn.
- *
- * Written here rather than at build time because a value row is rewritten every
- * time the wheel moves it, and a row whose text is composed in two places is a
- * row that will eventually disagree with itself. The tick keeps its column so
- * ticked rows line up with the ones that are not, rather than shifting two
- * characters left. */
 static void tabbox_menu_row_text(int index, WCHAR *out, size_t out_cch)
 {
     if (index < 0 || index >= s_menu_row_count) {
         StringCchCopyW(out, out_cch, L"");
+        if (index >= 0 && index < HG_BOX_MAX_ROWS)
+            s_values[index][0] = L'\0';
         return;
     }
 
     const HgMenuRow *row = &s_menu_rows[index];
+    StringCchCopyW(out, out_cch, row->label);
     if (row->kind == HG_MENU_ROW_VALUE) {
         if (row->step_index >= 0 && row->step_index < row->step_count)
-            hellgates_wsprintf(out, out_cch, L"   %-30ls %3d%%", row->label, row->steps[row->step_index]);
+            hellgates_wsprintf(s_values[index], HG_ARRAYSIZE(s_values[index]), L"%d%%", row->steps[row->step_index]);
         else
-            /* The display would not say what it is set to. The row still works -
-             * a step from here lands on a rung and the reading appears. */
-            hellgates_wsprintf(out, out_cch, L"   %-30ls   --", row->label);
-        return;
+            StringCchCopyW(s_values[index], HG_ARRAYSIZE(s_values[index]), L"--");
+    } else if (row->checked) {
+        StringCchCopyW(s_values[index], HG_ARRAYSIZE(s_values[index]), L"\x2713");
+    } else {
+        s_values[index][0] = L'\0';
     }
-
-    hellgates_wsprintf(out, out_cch, L"%ls%ls", row->checked ? L"\u2713 " : L"   ", row->label);
 }
 
 /* What a control row answers to, asked in one place.
@@ -670,15 +764,16 @@ static BOOL tabbox_row_is_clipped(int index, WCHAR *text, size_t text_cch)
     HFONT font = hg_g_main_font ? hg_g_main_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
     HFONT old = (HFONT)SelectObject(dc, font);
     SIZE sz = {0, 0};
-    GetTextExtentPoint32W(dc, text, lstrlenW(text), &sz);
+    GetTextExtentPoint32W(dc, s_titles[index], lstrlenW(s_titles[index]), &sz);
     SelectObject(dc, old);
     ReleaseDC(s_wnd, dc);
 
     RECT rc;
     GetClientRect(s_wnd, &rc);
     double ws = hg_window_scale(s_wnd);
-    int room = rc.right - SCW(ws, 6) * 2 - SCW(ws, 20); /* the padding, and the marker column */
-    return sz.cx > room;
+    int title_w = 0;
+    tabbox_column_metrics(ws, rc.right, NULL, NULL, NULL, &title_w);
+    return sz.cx > title_w;
 }
 
 /* The tooltip that says what a clipped row says. */
@@ -702,28 +797,18 @@ static void tabbox_tip_show(int index)
         return;
     }
 
-    WCHAR text[HG_MAX_STR + 128];
-    {
-        /* Two reasons for a tip, and they compose: a row too long to be read
-         * whole, and a row whose keys are worth saying out loud. A control row
-         * gets the second whether or not it needs the first. */
-        WCHAR full[HG_MAX_STR + 8];
-        BOOL clipped = tabbox_row_is_clipped(index, full, HG_ARRAYSIZE(full));
-        const WCHAR *hint = tabbox_row_hint(index);
-        if (!clipped && !hint) {
-            /* A row that fits and does nothing surprising says everything it
-             * has to say already. */
-            tabbox_tip_hide();
-            return;
-        }
-
-        if (clipped && hint)
-            hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%ls\r\n%ls", full, hint);
-        else if (clipped)
-            StringCchCopyW(text, HG_ARRAYSIZE(text), full);
-        else
-            StringCchCopyW(text, HG_ARRAYSIZE(text), hint);
+    WCHAR full[HG_MAX_STR + 8];
+    if (!tabbox_row_is_clipped(index, full, HG_ARRAYSIZE(full))) {
+        tabbox_tip_hide();
+        return;
     }
+
+    WCHAR text[HG_MAX_STR + 128];
+    const WCHAR *hint = tabbox_row_hint(index);
+    if (hint)
+        hellgates_wsprintf(text, HG_ARRAYSIZE(text), L"%ls\r\n%ls", full, hint);
+    else
+        StringCchCopyW(text, HG_ARRAYSIZE(text), full);
 
     if (!s_tip) {
         s_tip = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -740,7 +825,6 @@ static void tabbox_tip_show(int index)
         ti.hinst = GetModuleHandleW(NULL);
         ti.lpszText = L"";
         SendMessageW(s_tip, TTM_ADDTOOLW, 0, (LPARAM)&ti);
-        /* Wide enough to wrap rather than run off the display. */
         SendMessageW(s_tip, TTM_SETMAXTIPWIDTH, 0, (LPARAM)SCW(hg_window_scale(s_wnd), 700));
     }
 
@@ -752,16 +836,12 @@ static void tabbox_tip_show(int index)
     ti.lpszText = text;
     SendMessageW(s_tip, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
 
-    /* Beside the row it belongs to, not under the pointer: the keyboard has no
-     * pointer, and a tip that jumps to the mouse while the arrows are moving
-     * would be pointing at the wrong row. */
-    POINT pt;
-    {
-        double ws = hg_window_scale(s_wnd);
-        int pad = SCW(ws, 6);
-        int row_h = tabbox_row_height();
-        pt.x = pad + SCW(ws, 12);
-        pt.y = pad + index * row_h + row_h;
+    RECT r;
+    POINT pt = {0, 0};
+    double ws = hg_window_scale(s_wnd);
+    if (tabbox_row_rect(index, &r)) {
+        pt.x = r.left + SCW(ws, 12);
+        pt.y = r.bottom;
     }
     ClientToScreen(s_wnd, &pt);
     SendMessageW(s_tip, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
@@ -769,14 +849,16 @@ static void tabbox_tip_show(int index)
     s_tip_row = index;
 }
 
-/* The window, made once and reused by all three lists. */
+/* The window, made once and reused by all lists. */
 static BOOL tabbox_ensure_window(void)
 {
     if (s_wnd)
         return TRUE;
     s_wnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE, HG_CLASS_TABBOX, L"Tabs",
-                            WS_POPUP | WS_BORDER, 0, 0, 0, 0, hg_g_taskbox_wnd, NULL, GetModuleHandle(NULL),
+                            WS_POPUP, 0, 0, 0, 0, hg_g_taskbox_wnd, NULL, GetModuleHandle(NULL),
                             NULL);
+    if (s_wnd)
+        apply_dwm_attributes(s_wnd);
     return s_wnd != NULL;
 }
 
@@ -864,6 +946,15 @@ void hg_tabbox_invalidate(void)
 {
     if (hg_tabbox_is_open())
         InvalidateRect(s_wnd, NULL, FALSE);
+}
+
+void hg_tabbox_refresh_theme(void)
+{
+    release_font_handle(&s_footer_font, FALSE);
+    if (s_wnd && IsWindow(s_wnd)) {
+        apply_dwm_attributes(s_wnd);
+        InvalidateRect(s_wnd, NULL, TRUE);
+    }
 }
 
 void hg_tabbox_enter(void)
@@ -1007,9 +1098,13 @@ static void tabbox_activate(int index)
         return;
     }
 
-    /* The same call the buttons made when they were on the row. Mute and the
-     * pin did not change by moving in here, and writing them out a second time
-     * is how two copies of one behaviour start to differ. */
+    if (row->kind == HG_ROW_BUTTON && (row->id == HG_TOOL_ICON_MOVE || row->id == HG_TOOL_ICON_CLOSE)) {
+        int btn_id = row->id;
+        hg_tabbox_close();
+        activate_toolbar_item(btn_id);
+        return;
+    }
+
     activate_toolbar_item(row->id);
 
     tabbox_pull();
@@ -1200,22 +1295,54 @@ void hg_tabbox_pointer_moved(void)
     hg_tabbox_close();
 }
 
-static int tabbox_row_at(POINT client_pt)
+static BOOL tabbox_row_rect(int index, RECT *out)
 {
+    if (!out || !s_wnd || index < 0 || index >= s_count)
+        return FALSE;
+
+    RECT rc;
+    GetClientRect(s_wnd, &rc);
     double ws = hg_window_scale(s_wnd);
+    int band = hg_box_band();
     int pad = SCW(ws, 6);
     int row_h = tabbox_row_height();
-    if (row_h <= 0 || client_pt.y < pad)
+    int gap = tabbox_group_gap(ws);
+    int y = band + pad;
+    for (int i = 0; i <= index; ++i) {
+        if (i > 0 && s_group_start[i])
+            y += gap;
+        if (i == index) {
+            out->left = band + pad;
+            out->top = y;
+            out->right = rc.right - band - pad;
+            out->bottom = y + row_h;
+            return out->right > out->left && out->bottom > out->top;
+        }
+        y += row_h;
+    }
+    return FALSE;
+}
+
+static int tabbox_row_at(POINT client_pt)
+{
+    if (!s_wnd || s_count <= 0)
         return -1;
-    int index = (client_pt.y - pad) / row_h;
-    return (index >= 0 && index < s_count) ? index : -1;
+    RECT rc;
+    GetClientRect(s_wnd, &rc);
+    double ws = hg_window_scale(s_wnd);
+    int content_bottom = rc.bottom - hg_box_band() - tabbox_footer_height(ws);
+    for (int i = 0; i < s_count; ++i) {
+        RECT r;
+        if (tabbox_row_rect(i, &r) && r.bottom <= content_bottom && PtInRect(&r, client_pt))
+            return i;
+    }
+    return -1;
 }
 
 LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     switch (msg) {
     case WM_MOUSEACTIVATE:
-        /* Clicking a row must not move the focus away from the taskbox. */
         return MA_NOACTIVATE;
 
     case WM_ERASEBKGND:
@@ -1233,23 +1360,26 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         if (buffered)
             dc = buffer.dc;
 
-        HBRUSH bg = CreateSolidBrush(hg_g_color_scheme_selected.bg);
-        if (bg) {
+        const HgUiPalette *pal = hg_ui_widget_palette();
+        HBRUSH bg = hg_cached_solid_brush(pal->bg);
+        if (bg)
             FillRect(dc, &rc, bg);
-            DeleteObject(bg);
-        }
 
         HFONT font = hg_g_main_font ? hg_g_main_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
         HFONT old_font = (HFONT)SelectObject(dc, font);
         SetBkMode(dc, TRANSPARENT);
 
         double ws = hg_window_scale(hwnd);
+        int band = hg_box_band();
         int pad = SCW(ws, 6);
         int row_h = tabbox_row_height();
+        int gap = tabbox_group_gap(ws);
+        int footer_h = tabbox_footer_height(ws);
+        int content_bottom = rc.bottom - band - footer_h;
 
         if (s_count <= 0) {
-            SetTextColor(dc, hg_g_color_scheme_selected.text);
-            RECT row = {pad, pad, rc.right - pad, pad + row_h};
+            SetTextColor(dc, pal->muted);
+            RECT row = {band + pad, band + pad, rc.right - band - pad, band + pad + row_h};
             const WCHAR *empty = (s_mode == HG_BOX_TABS)
                                      ? L"(reading tabs...)"
                                      : (s_mode == HG_BOX_DIRS)
@@ -1259,49 +1389,91 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
             DrawTextW(dc, empty, -1, &row, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
         }
 
-        /* An entered box says so with a frame, because the keys it answers
-         * change the moment it is entered. */
-        if (s_focused) {
-            HBRUSH frame = CreateSolidBrush(hg_ui_focus_color()); /* accent2 (N-I6) */
-            if (frame) {
-                RECT edge = rc;
-                for (int i = 0; i < SCW(ws, 2); ++i) {
-                    FrameRect(dc, &edge, frame);
-                    InflateRect(&edge, -1, -1);
-                }
-                DeleteObject(frame);
-            }
-        }
+        int key_w = 0, val_w = 0, title_x = 0, title_w = 0;
+        tabbox_column_metrics(ws, rc.right, &key_w, &val_w, &title_x, &title_w);
+        int marker_w = SCW(ws, 3);
+        if (marker_w < 2)
+            marker_w = 2;
 
         for (int i = 0; i < s_count; ++i) {
-            RECT row = {pad, pad + i * row_h, rc.right - pad, pad + (i + 1) * row_h};
-            BOOL selected = (i == s_selected) && (s_focused || s_pointer_on_row);
-            if (selected) {
-                /* Filled, and the text inverted over it. A row the arrows are
-                 * standing on has to be findable at a glance, or the arrows are
-                 * moving something the reader cannot see. */
-                HBRUSH sel = CreateSolidBrush(hg_ui_select_color()); /* norma_ui select */
-                if (sel) {
-                    FillRect(dc, &row, sel);
-                    DeleteObject(sel);
+            RECT row;
+            if (!tabbox_row_rect(i, &row))
+                continue;
+            if (i > 0 && s_group_start[i]) {
+                int div_y = row.top - gap / 2;
+                if (div_y >= band && div_y < content_bottom) {
+                    RECT rule = {row.left, div_y, row.right, div_y + 1};
+                    HBRUSH hbr_rule = hg_cached_solid_brush(pal->line);
+                    if (hbr_rule)
+                        FillRect(dc, &rule, hbr_rule);
                 }
             }
-            SetTextColor(dc, (selected && hg_g_is_high_contrast) ? GetSysColor(COLOR_HIGHLIGHTTEXT)
-                                                                : hg_g_color_scheme_selected.text);
+            if (row.bottom > content_bottom)
+                continue;
 
-            WCHAR line[HG_MAX_STR + 8];
+            BOOL selected = (i == s_selected) && (s_focused || s_pointer_on_row);
+            if (selected) {
+                HBRUSH sel = hg_cached_solid_brush(pal->select);
+                if (sel)
+                    FillRect(dc, &row, sel);
+                RECT bar = {row.left, row.top, row.left + marker_w, row.bottom};
+                HBRUSH acc = hg_cached_solid_brush(pal->accent);
+                if (acc)
+                    FillRect(dc, &bar, acc);
+            }
+
             WCHAR label = tabbox_label_for(i);
-            if (label)
-                hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%ls%lc: %ls", selected ? L"\u25b8 " : L"  ", label,
-                                   s_titles[i]);
-            else
-                hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%ls%ls", selected ? L"\u25b8 " : L"  ",
-                                   s_titles[i]);
+            if (label) {
+                WCHAR key_buf[8];
+                hellgates_wsprintf(key_buf, HG_ARRAYSIZE(key_buf), L"%lc:", label);
+                RECT key_rc = {row.left + marker_w + SCW(ws, 4), row.top, title_x, row.bottom};
+                SetTextColor(dc, selected ? pal->fg : pal->muted);
+                DrawTextW(dc, key_buf, -1, &key_rc, DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_NOPREFIX);
+            }
 
-            RECT text_rc = row;
-            text_rc.left += SCW(ws, 4);
-            DrawTextW(dc, line, -1, &text_rc, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+            RECT title_rc = {title_x, row.top, title_x + title_w, row.bottom};
+            SetTextColor(dc, pal->fg);
+            DrawTextW(dc, s_titles[i], -1, &title_rc,
+                      DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS | DT_NOPREFIX);
+
+            if (s_values[i][0] && val_w > 0) {
+                RECT val_rc = {row.right - SCW(ws, 4) - val_w, row.top, row.right - SCW(ws, 4), row.bottom};
+                COLORREF val_ink = pal->muted;
+                if (selected)
+                    val_ink = pal->fg;
+                else if (wcscmp(s_values[i], L"on") == 0 || wcscmp(s_values[i], L"\x2713") == 0)
+                    val_ink = pal->accent;
+                else if (s_values[i][0] >= L'0' && s_values[i][0] <= L'9')
+                    val_ink = pal->fg;
+                SetTextColor(dc, val_ink);
+                DrawTextW(dc, s_values[i], -1, &val_rc, DT_SINGLELINE | DT_VCENTER | DT_RIGHT | DT_NOPREFIX);
+            }
         }
+
+        /* Bottom hint footer strip. */
+        if (footer_h > 0 && rc.bottom - band > footer_h) {
+            RECT footer = {band, rc.bottom - band - footer_h, rc.right - band, rc.bottom - band};
+            HBRUSH hbr_ft = hg_cached_solid_brush(pal->bg2);
+            if (hbr_ft)
+                FillRect(dc, &footer, hbr_ft);
+            RECT ft_rule = {footer.left, footer.top, footer.right, footer.top + 1};
+            HBRUSH hbr_fl = hg_cached_solid_brush(pal->line);
+            if (hbr_fl)
+                FillRect(dc, &ft_rule, hbr_fl);
+
+            RECT ft_text = footer;
+            ft_text.left += pad + SCW(ws, 4);
+            ft_text.right -= pad + SCW(ws, 4);
+            SelectObject(dc, tabbox_ensure_footer_font(ws));
+            SetTextColor(dc, pal->fg);
+            const WCHAR *hint = s_focused
+                                    ? L"Arrows/Space: pick  |  Esc: back"
+                                    : ((s_mode == HG_BOX_CONTROLS) ? L"Tab: focus  |  Space: toggle  |  Esc: close"
+                                                                   : L"Tab: focus  |  1-9: pick  |  Esc: close");
+            DrawTextW(dc, hint, -1, &ft_text, DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS | DT_NOPREFIX);
+        }
+
+        hg_paint_box_frame(dc, &rc, band, s_focused);
 
         SelectObject(dc, old_font);
         if (buffered) {
@@ -1368,6 +1540,7 @@ LRESULT CALLBACK tabbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         break;
 
     case WM_DESTROY:
+        release_font_handle(&s_footer_font, FALSE);
         if (s_wnd == hwnd) {
             tabbox_flush_pending_values();
             s_wnd = NULL;

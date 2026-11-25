@@ -91,16 +91,6 @@ static BOOL open_monitor_window(int idx)
     if (mwnd) {
         apply_dwm_attributes(mwnd);
         hg_g_monitors[idx].hwnd = mwnd;
-
-        if (hg_g_tooltip_wnd) {
-            TOOLINFOW ti = {0};
-            ti.cbSize = TOOLINFO_V1_SIZE;
-            ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
-            ti.hwnd = mwnd;
-            ti.uId = (UINT_PTR)mwnd;
-            ti.lpszText = caption;
-            SendMessageW(hg_g_tooltip_wnd, TTM_ADDTOOLW, 0, (LPARAM)&ti);
-        }
         return TRUE;
     }
 
@@ -384,8 +374,8 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                             fill_color = RGB(0, 255, 0); /* green */
 
                         int len = SCW(ws, 8);
-                        /* Draw black crosshair background for contrast */
-                        HPEN hPenBg = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
+                        /* Draw cached crosshair pens (black backing + live color core). */
+                        HPEN hPenBg = hg_cached_pen(3, RGB(0, 0, 0));
                         HPEN restore_pen = NULL;
                         if (hPenBg) {
                             restore_pen = (HPEN)SelectObject(mem_dc, hPenBg);
@@ -395,8 +385,7 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
                             LineTo(mem_dc, client_pt.x, client_pt.y + len + 1);
                         }
 
-                        /* Draw colored crosshair core */
-                        HPEN hPenFg = CreatePen(PS_SOLID, 1, fill_color);
+                        HPEN hPenFg = hg_cached_pen(1, fill_color);
                         if (hPenFg) {
                             HPEN old_pen = (HPEN)SelectObject(mem_dc, hPenFg);
                             if (!restore_pen)
@@ -409,10 +398,6 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
 
                         if (restore_pen)
                             SelectObject(mem_dc, restore_pen);
-                        if (hPenBg)
-                            DeleteObject(hPenBg);
-                        if (hPenFg)
-                            DeleteObject(hPenFg);
                     }
                 }
             }
@@ -497,20 +482,8 @@ LRESULT CALLBACK monitor_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_
         }
         return 0;
     }
-    case WM_DESTROY: {
-        /* The tool registered at open outlives the window unless it is deleted
-         * here: destroying a tool's hwnd does not remove its registration, and
-         * every open/close cycle would grow the tooltip control's table. This
-         * is the one path every teardown goes through. */
-        if (hg_g_tooltip_wnd) {
-            TOOLINFOW ti = {0};
-            ti.cbSize = TOOLINFO_V1_SIZE;
-            ti.hwnd = hwnd;
-            ti.uId = (UINT_PTR)hwnd;
-            SendMessageW(hg_g_tooltip_wnd, TTM_DELTOOLW, 0, (LPARAM)&ti);
-        }
+    case WM_DESTROY:
         return 0;
-    }
     case WM_NCHITTEST: {
         POINT pt;
         pt.x = GET_X_LPARAM(l_param);

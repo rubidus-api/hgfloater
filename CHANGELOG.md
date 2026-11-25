@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.18.0] - 2026-11-25
+
 ### Added
+- **A/V Control Center popup (`hgavbox_class`, R1.15)**: 2-pane Master-Detail Win8 flat popup opened via `A/V` click/`Space`/`Enter`, `Ctrl+O`, status line right-click, or right-clicking `Vol` (Audio) / `Mon` (Display), supporting live slider drag, mute toggle, output device selection, screen topology tiles, per-display preview toggle, brightness, scaling, and screen resolution buttons.
+- **Color scheme selector & theme polish**: `[colors] scheme = inanis | plain` and a `Color Scheme` row under `WINDOW COLOURS` in Settings, plus 32-entry LRU brush and 16-entry LRU pen caches for zero per-paint GDI allocations.
+- **Settings filter bar**: live `Filter settings... (Ctrl+F)` box at the top of the Settings window.
+- **Floater hover hotzone cue**: subtle plate highlight and underline beneath the active clock span (`minutes`, `hours`, or `both`) when `[taskbox] open_on_hover` is enabled.
+
+### Changed
+- **Win8 flat UI & toolbar simplification (R1.15)**:
+  - Removed `M`, `R`, and `X` from the toolbar grid (10 built-in buttons ending with `D` in the bottom-right corner, plus `BakREC` when a USB recorder is connected); moved `Move Taskbox Aside` and `Exit hgfloater` into `Set`.
+  - Centered vector button glyphs and switched key badges to appear only on hover, keyboard focus, or modifier peek (`Shift`/`Ctrl`/`Alt`).
+  - Converted `Vol`, `Mon`, and `Alp` to bottom-up `inanis` gauge tiles with a 3 px bottom accent/danger bar (custom `[colors] value_*` ramps still apply if configured).
+  - Updated popups (`hgtabbox_class`) with 2-column alignment, group dividers, clipped-row tooltips, and a bottom hint footer strip; capped corner-bracket arm length (`min(1.5em, min(w,h)/3)`).
+  - Updated document windows: variable-height clean rows and owner-drawn layout in Settings, compact 2-line startup summary and flat owner-drawn Execute button in Command Box, owner-drawn Clipboard rows with line numbers and search cue banner, and removed the zero-row `+Add Note` in Notes (use top `Add` or `Insert`) while right-aligning `YYYY-MM-DD` sort dates and grip dots.
 - **`Mon`'s right-click sets the screen resolution**: under the four screen arrangements, five sizes for the
   screen the taskbox is on - 1024 x 768, 1280 x 720, 1280 x 800, 1920 x 1080, 1920 x 1200. A size the screen
   does not offer is refused by Windows, and the status line says why.

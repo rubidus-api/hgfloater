@@ -29,16 +29,19 @@
 #define HG_SETTINGS_LIST_ID 100
 #define HG_SETTINGS_STATUS_ID 101
 #define HG_SETTINGS_EDIT_ID 102
+#define HG_SETTINGS_FILTER_ID 103
 
 enum {
     HG_ROW_HEADING = 1,
+    HG_ROW_SPACER,
     HG_ROW_OPTION,
     HG_ROW_VALUE,
     HG_ROW_FONT, /* one of the three families */
     HG_ROW_KEY,  /* a function */
     HG_ROW_CHORD, /* one of that function's chords */
     HG_ROW_CLOCK, /* one of the floater clock's settings, below */
-    HG_ROW_COLOR  /* a window's text or background colour (settings_color_row) */
+    HG_ROW_COLOR, /* a window's text or background colour (settings_color_row) */
+    HG_ROW_SCHEME /* [colors] scheme = inanis | plain (D-U6=A) */
 };
 
 /* The floater clock's rows. Not rows of the options or the values table because
@@ -155,11 +158,9 @@ static void settings_load_view(void)
  * survive a colour scheme this program does not control. Built beside the
  * ordinary font and thrown away with it. */
 static HFONT s_row_font = NULL;
-
-/* The row the pointer is on, or -1. Drawn inverted, because a row about to be
- * clicked should look different from the row the arrows are parked on: they are
- * different claims - "this is where you are" and "this is what you would get". */
 static int s_hover_row = -1;
+static int s_measuring_kind = 0;
+static BOOL s_filter_empty_refill = FALSE;
 
 static void settings_release_row_font(void)
 {
@@ -169,12 +170,60 @@ static void settings_release_row_font(void)
     }
 }
 
-/* The actionable kinds. A heading is a label and a chord line is a chord you
- * can delete or replace, which is as actionable as it gets. */
+/* The actionable kinds. */
 static BOOL settings_row_is_actionable(int kind)
 {
     return kind == HG_ROW_OPTION || kind == HG_ROW_VALUE || kind == HG_ROW_FONT || kind == HG_ROW_KEY ||
-           kind == HG_ROW_CHORD || kind == HG_ROW_CLOCK || kind == HG_ROW_COLOR;
+           kind == HG_ROW_CHORD || kind == HG_ROW_CLOCK || kind == HG_ROW_COLOR || kind == HG_ROW_SCHEME;
+}
+
+static int settings_line_height(void)
+{
+    int px = ABS(hg_g_commandbox_font_size);
+    return (px > 0) ? px : 16;
+}
+
+static int settings_item_height_for(HWND hwnd, int kind, BOOL major_heading)
+{
+    double ws = hg_window_scale(hwnd);
+    if (kind == HG_ROW_SPACER) {
+        int h = SCW(ws, 8);
+        return (h < 6) ? 6 : h;
+    }
+    if (kind == HG_ROW_HEADING && major_heading)
+        return settings_line_height() + SCW(ws, 12);
+    return settings_line_height() + SCW(ws, 6);
+}
+
+static int settings_row_data_at(HWND list, int lb_index)
+{
+    if (!list || lb_index < 0)
+        return -1;
+    LRESULT d = SendMessageW(list, LB_GETITEMDATA, (WPARAM)lb_index, 0);
+    if (d == LB_ERR)
+        return -1;
+    int idx = (int)d;
+    return (idx >= 0 && idx < s_row_count) ? idx : -1;
+}
+
+static void settings_update_item_heights(HWND hwnd)
+{
+    HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
+    if (!list)
+        return;
+    int count = (int)SendMessageW(list, LB_GETCOUNT, 0, 0);
+    for (int i = 0; i < count; ++i) {
+        int r_idx = settings_row_data_at(list, i);
+        int kind = (r_idx >= 0) ? s_rows[r_idx].kind : HG_ROW_HEADING;
+        BOOL major = FALSE;
+        if (kind == HG_ROW_HEADING) {
+            WCHAR buf[16] = L"";
+            if (SendMessageW(list, LB_GETTEXTLEN, (WPARAM)i, 0) < (LRESULT)HG_ARRAYSIZE(buf))
+                SendMessageW(list, LB_GETTEXT, (WPARAM)i, (LPARAM)buf);
+            major = (buf[0] != L'\0' && buf[0] != L' ');
+        }
+        SendMessageW(list, LB_SETITEMHEIGHT, (WPARAM)i, (LPARAM)settings_item_height_for(hwnd, kind, major));
+    }
 }
 
 static void settings_apply_font(HWND hwnd)
@@ -183,30 +232,21 @@ static void settings_apply_font(HWND hwnd)
     if (!hg_g_commandbox_font)
         return;
 
-    /* The same face and size, marked. Read from the handle in use rather than
-     * rebuilt from the globals, so the two can never be a size apart. */
     settings_release_row_font();
     LOGFONTW lf;
     if (GetObjectW(hg_g_commandbox_font, sizeof(lf), &lf) == sizeof(lf)) {
         lf.lfWeight = FW_BOLD;
-        lf.lfUnderline = TRUE;
+        lf.lfUnderline = FALSE;
         s_row_font = CreateFontIndirectW(&lf);
     }
 
-    const int ids[] = {HG_SETTINGS_LIST_ID, HG_SETTINGS_STATUS_ID, HG_SETTINGS_EDIT_ID};
+    const int ids[] = {HG_SETTINGS_LIST_ID, HG_SETTINGS_STATUS_ID, HG_SETTINGS_EDIT_ID, HG_SETTINGS_FILTER_ID};
     for (int i = 0; i < (int)HG_ARRAYSIZE(ids); ++i) {
         HWND child = GetDlgItem(hwnd, ids[i]);
         if (child)
             SendMessageW(child, WM_SETFONT, (WPARAM)hg_g_commandbox_font, TRUE);
     }
-}
-
-/* The row height the layout reserves for the status line, from the font that is
- * actually in use. */
-static int settings_line_height(void)
-{
-    int px = ABS(hg_g_commandbox_font_size);
-    return (px > 0) ? px : 16;
+    settings_update_item_heights(hwnd);
 }
 
 static void settings_layout(HWND hwnd, int width, int height)
@@ -214,25 +254,30 @@ static void settings_layout(HWND hwnd, int width, int height)
     double ws = hg_window_scale(hwnd);
     int pad = SCW(ws, 8);
     int status_h = settings_line_height() + SCW(ws, 10);
+    int filter_h = settings_line_height() + SCW(ws, 8);
+    if (filter_h < SCW(ws, 28))
+        filter_h = SCW(ws, 28);
 
+    HWND filter = GetDlgItem(hwnd, HG_SETTINGS_FILTER_ID);
     HWND status = GetDlgItem(hwnd, HG_SETTINGS_STATUS_ID);
     HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
     HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
 
-    /* The edit line takes a row of its own above the status line while a format
-     * is being typed, and no room at all otherwise. */
     int edit_h = (s_edit_which >= 0) ? status_h + pad : 0;
-    int list_h = height - status_h - edit_h - pad * 3;
+    int list_top = pad * 2 + filter_h;
+    int list_h = height - list_top - status_h - edit_h - pad * 2;
     if (list_h < 0)
         list_h = 0;
     int inner_w = (width - pad * 2 > 0) ? width - pad * 2 : 0;
 
+    if (filter)
+        MoveWindow(filter, pad + 1, pad + 1, (inner_w > 2) ? inner_w - 2 : inner_w, filter_h - 2, TRUE);
     if (list)
-        MoveWindow(list, pad, pad, inner_w, list_h, TRUE);
+        MoveWindow(list, pad, list_top, inner_w, list_h, TRUE);
     if (edit && edit_h > 0)
-        MoveWindow(edit, pad, pad * 2 + list_h, inner_w, status_h, TRUE);
+        MoveWindow(edit, pad, list_top + list_h + pad, inner_w, status_h, TRUE);
     if (status)
-        MoveWindow(status, pad, pad * 2 + list_h + edit_h, inner_w, status_h, TRUE);
+        MoveWindow(status, pad, list_top + list_h + pad + edit_h, inner_w, status_h, TRUE);
 }
 
 static void settings_say(HWND hwnd, const WCHAR *text)
@@ -350,7 +395,12 @@ static void settings_add_row_at(HWND list, int kind, int number, int index, cons
     s_rows[s_row_count].kind = kind;
     s_rows[s_row_count].number = number;
     s_rows[s_row_count].index = index;
-    SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)text);
+    s_measuring_kind = (kind == HG_ROW_HEADING && text && text[0] != L'\0' && text[0] != L' ')
+                           ? HG_ROW_HEADING
+                           : ((kind == HG_ROW_SPACER) ? HG_ROW_SPACER : HG_ROW_OPTION);
+    int lb_idx = (int)SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)text);
+    if (lb_idx >= 0)
+        SendMessageW(list, LB_SETITEMDATA, (WPARAM)lb_idx, (LPARAM)s_row_count);
     ++s_row_count;
 }
 
@@ -359,62 +409,65 @@ static void settings_add_row(HWND list, int kind, int number, const WCHAR *text)
     settings_add_row_at(list, kind, number, 0, text);
 }
 
-/* The floater clock: how the taskbox opens from it, the colour change, the two
- * formats, and - because a format is a notation nobody should have to look up
- * elsewhere - the codes it is written in, listed right under the rows that take
- * them. */
-static void settings_fill_clock(HWND list)
+static BOOL settings_matches_filter(const WCHAR *needle, const WCHAR *haystack)
 {
-    WCHAR line[256];
-
-    settings_add_row(list, HG_ROW_HEADING, 0, L"");
-    settings_add_row(list, HG_ROW_HEADING, 0, L"FLOATER CLOCK");
-
-    StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", L"Open the Taskbox from the Floater",
-                     hg_clock_hover_mode_text(hg_clock_hover_mode()));
-    settings_add_row(list, HG_ROW_CLOCK, HG_CLOCK_ROW_HOVER, line);
-
-    StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", L"Change Hour/Minute Colour (0.5s)",
-                     hg_clock_blink() ? L"on" : L"off");
-    settings_add_row(list, HG_ROW_CLOCK, HG_CLOCK_ROW_BLINK, line);
-
-    COLORREF color = hg_clock_blink_color();
-    StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls #%02X%02X%02X", L"Colour to Change To", GetRValue(color),
-                     GetGValue(color), GetBValue(color));
-    settings_add_row(list, HG_ROW_CLOCK, HG_CLOCK_ROW_BLINK_COLOR, line);
-
-    for (int which = 0; which < HG_CLOCK_FORMAT_COUNT; ++which) {
-        /* The format goes in as an argument, never as the format string. What
-         * it renders to is said on the status line while the row is selected:
-         * the two together do not fit a row at this window's width. */
-        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", hg_clock_format_label(which),
-                         hg_clock_format(which));
-        settings_add_row(list, HG_ROW_CLOCK,
-                         (which == HG_CLOCK_FORMAT_TIME) ? HG_CLOCK_ROW_TIME_FORMAT : HG_CLOCK_ROW_DATE_FORMAT, line);
-    }
-
-    /* Two to a line and short, so every code can be read without widening the
-     * window. */
-    static const WCHAR *const help[] = {
-        L"     Format codes, as in strftime (up to 32 characters):",
-        L"       %H  hour 00-23          %I  hour 01-12",
-        L"       %M  minute 00-59        %S  second 00-59",
-        L"       %p  AM / PM             %j  day of year 001-366",
-        L"       %Y  year 2026           %y  year 26",
-        L"       %m  month 01-12         %d  day 01-31",
-        L"       %b  Jan                 %B  January",
-        L"       %a  Sun                 %A  Sunday",
-        L"       %e  day, space padded   %%  a percent sign",
-        L"       %-d drops the padding: 6, not 06 (numbers only).",
-        L"       Other text is shown as typed.",
-        L"       Example: %Y-%m-%d (%a) %I:%M %p",
-    };
-    for (size_t i = 0; i < HG_ARRAYSIZE(help); ++i)
-        settings_add_row(list, HG_ROW_HEADING, 0, help[i]);
+    if (!needle || !needle[0])
+        return TRUE;
+    return haystack && StrStrIW(haystack, needle) != NULL;
 }
 
-/* WINDOW COLOURS (owner's request, 2026-11-07, R1.4): a text and a background
- * row for each page. The row number holds both: page and which colour. */
+static void settings_fill_clock(HWND list, const WCHAR *filter)
+{
+    BOOL filtering = (filter && filter[0] != L'\0');
+    BOOL added_heading = FALSE;
+
+    WCHAR rows_txt[5][256];
+    int row_nums[5] = {HG_CLOCK_ROW_HOVER, HG_CLOCK_ROW_BLINK, HG_CLOCK_ROW_BLINK_COLOR, HG_CLOCK_ROW_TIME_FORMAT,
+                       HG_CLOCK_ROW_DATE_FORMAT};
+    StringCchPrintfW(rows_txt[0], HG_ARRAYSIZE(rows_txt[0]), L"   %-34ls %ls", L"Open the Taskbox from the Floater",
+                     hg_clock_hover_mode_text(hg_clock_hover_mode()));
+    StringCchPrintfW(rows_txt[1], HG_ARRAYSIZE(rows_txt[1]), L"   %-34ls %ls", L"Change Hour/Minute Colour (0.5s)",
+                     hg_clock_blink() ? L"on" : L"off");
+    COLORREF color = hg_clock_blink_color();
+    StringCchPrintfW(rows_txt[2], HG_ARRAYSIZE(rows_txt[2]), L"   %-34ls #%02X%02X%02X", L"Colour to Change To",
+                     GetRValue(color), GetGValue(color), GetBValue(color));
+    StringCchPrintfW(rows_txt[3], HG_ARRAYSIZE(rows_txt[3]), L"   %-34ls %ls",
+                     hg_clock_format_label(HG_CLOCK_FORMAT_TIME), hg_clock_format(HG_CLOCK_FORMAT_TIME));
+    StringCchPrintfW(rows_txt[4], HG_ARRAYSIZE(rows_txt[4]), L"   %-34ls %ls",
+                     hg_clock_format_label(HG_CLOCK_FORMAT_DATE), hg_clock_format(HG_CLOCK_FORMAT_DATE));
+
+    for (int i = 0; i < 5; ++i) {
+        if (!settings_matches_filter(filter, rows_txt[i]))
+            continue;
+        if (!added_heading) {
+            if (!filtering)
+                settings_add_row(list, HG_ROW_SPACER, 0, L"");
+            settings_add_row(list, HG_ROW_HEADING, 0, L"FLOATER CLOCK");
+            added_heading = TRUE;
+        }
+        settings_add_row(list, HG_ROW_CLOCK, row_nums[i], rows_txt[i]);
+    }
+
+    if (!filtering) {
+        static const WCHAR *const help[] = {
+            L"     Format codes, as in strftime (up to 32 characters):",
+            L"       %H  hour 00-23          %I  hour 01-12",
+            L"       %M  minute 00-59        %S  second 00-59",
+            L"       %p  AM / PM             %j  day of year 001-366",
+            L"       %Y  year 2026           %y  year 26",
+            L"       %m  month 01-12         %d  day 01-31",
+            L"       %b  Jan                 %B  January",
+            L"       %a  Sun                 %A  Sunday",
+            L"       %e  day, space padded   %%  a percent sign",
+            L"       %-d drops the padding: 6, not 06 (numbers only).",
+            L"       Other text is shown as typed.",
+            L"       Example: %Y-%m-%d (%a) %I:%M %p",
+        };
+        for (size_t i = 0; i < HG_ARRAYSIZE(help); ++i)
+            settings_add_row(list, HG_ROW_HEADING, 0, help[i]);
+    }
+}
+
 static int settings_color_row_number(int page, int which)
 {
     return (page - 1) * 2 + which + 1;
@@ -426,8 +479,6 @@ static void settings_color_row(int number, int *page, int *which)
     *which = (number - 1) % 2;
 }
 
-/* The colour the row stands for as the window shows it now: the reader's, or
- * the theme's when none is set. */
 static COLORREF settings_color_row_effective(int number)
 {
     int page, which;
@@ -436,12 +487,23 @@ static COLORREF settings_color_row_effective(int number)
     return (which == HG_DOC_COLOR_BG) ? now.bg : now.text;
 }
 
-static void settings_fill_colors(HWND list)
+static void settings_fill_colors(HWND list, const WCHAR *filter)
 {
     WCHAR line[256];
     WCHAR label[64];
-    settings_add_row(list, HG_ROW_HEADING, 0, L"");
-    settings_add_row(list, HG_ROW_HEADING, 0, L"WINDOW COLOURS");
+    BOOL filtering = (filter && filter[0] != L'\0');
+    BOOL added_heading = FALSE;
+
+    StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", L"Color Scheme",
+                     (hg_g_color_scheme_kind == HG_SCHEME_PLAIN) ? L"plain" : L"inanis");
+    if (settings_matches_filter(filter, line)) {
+        if (!filtering)
+            settings_add_row(list, HG_ROW_SPACER, 0, L"");
+        settings_add_row(list, HG_ROW_HEADING, 0, L"WINDOW COLOURS");
+        added_heading = TRUE;
+        settings_add_row(list, HG_ROW_SCHEME, 0, line);
+    }
+
     for (int page = HG_DOC_PAGE_OTHER + 1; page < HG_DOC_PAGE_COUNT; ++page) {
         for (int which = HG_DOC_COLOR_TEXT; which <= HG_DOC_COLOR_BG; ++which) {
             COLORREF color;
@@ -452,6 +514,14 @@ static void settings_fill_colors(HWND list)
                                  GetGValue(color), GetBValue(color));
             else
                 StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls theme", label);
+            if (!settings_matches_filter(filter, line))
+                continue;
+            if (!added_heading) {
+                if (!filtering)
+                    settings_add_row(list, HG_ROW_SPACER, 0, L"");
+                settings_add_row(list, HG_ROW_HEADING, 0, L"WINDOW COLOURS");
+                added_heading = TRUE;
+            }
             settings_add_row(list, HG_ROW_COLOR, settings_color_row_number(page, which), line);
         }
     }
@@ -463,6 +533,13 @@ static void settings_fill(HWND hwnd)
     if (!list)
         return;
 
+    WCHAR filter[128];
+    filter[0] = L'\0';
+    HWND f_wnd = GetDlgItem(hwnd, HG_SETTINGS_FILTER_ID);
+    if (f_wnd)
+        GetWindowTextW(f_wnd, filter, (int)HG_ARRAYSIZE(filter));
+    BOOL filtering = (filter[0] != L'\0');
+
     int selected = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
     int top = (int)SendMessageW(list, LB_GETTOPINDEX, 0, 0);
 
@@ -472,49 +549,74 @@ static void settings_fill(HWND hwnd)
 
     WCHAR line[256];
 
-    settings_add_row(list, HG_ROW_HEADING, 0, L"OPTIONS");
-    for (int i = 1; i <= hg_option_count(); ++i) {
-        HgOptionInfo info;
-        if (!hg_option_info(i, &info))
-            continue;
-        const WCHAR *state = !info.available
-                                 ? (info.unavailable_note ? info.unavailable_note : L"unavailable")
-                                 : (hg_option_get(i) ? L"on" : L"off");
-        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", info.label, state);
-        settings_add_row(list, HG_ROW_OPTION, i, line);
+    {
+        BOOL added_h = FALSE;
+        for (int i = 1; i <= hg_option_count(); ++i) {
+            HgOptionInfo info;
+            if (!hg_option_info(i, &info))
+                continue;
+            const WCHAR *state = !info.available
+                                     ? (info.unavailable_note ? info.unavailable_note : L"unavailable")
+                                     : (hg_option_get(i) ? L"on" : L"off");
+            StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", info.label, state);
+            if (!settings_matches_filter(filter, line))
+                continue;
+            if (!added_h) {
+                settings_add_row(list, HG_ROW_HEADING, 0, L"OPTIONS");
+                added_h = TRUE;
+            }
+            settings_add_row(list, HG_ROW_OPTION, i, line);
+        }
     }
 
-    settings_fill_clock(list);
+    settings_fill_clock(list, filter);
 
-    settings_add_row(list, HG_ROW_HEADING, 0, L"");
-    settings_add_row(list, HG_ROW_HEADING, 0, L"FONTS");
-    for (int i = 1; i < HG_FONT_COUNT_PLUS_ONE; ++i) {
-        WCHAR family[LF_FACESIZE];
-        int points = 0;
-        const WCHAR *label = settings_font_row(i, family, HG_ARRAYSIZE(family), &points);
-        if (!label)
-            continue;
-        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls %dpt", label, family, points);
-        settings_add_row(list, HG_ROW_FONT, i, line);
+    {
+        BOOL added_h = FALSE;
+        for (int i = 1; i < HG_FONT_COUNT_PLUS_ONE; ++i) {
+            WCHAR family[LF_FACESIZE];
+            int points = 0;
+            const WCHAR *label = settings_font_row(i, family, HG_ARRAYSIZE(family), &points);
+            if (!label)
+                continue;
+            StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls %dpt", label, family, points);
+            if (!settings_matches_filter(filter, line))
+                continue;
+            if (!added_h) {
+                if (!filtering)
+                    settings_add_row(list, HG_ROW_SPACER, 0, L"");
+                settings_add_row(list, HG_ROW_HEADING, 0, L"FONTS");
+                added_h = TRUE;
+            }
+            settings_add_row(list, HG_ROW_FONT, i, line);
+        }
     }
 
-    settings_add_row(list, HG_ROW_HEADING, 0, L"");
-    settings_add_row(list, HG_ROW_HEADING, 0, L"VALUES");
-    for (int i = 1; i <= hg_value_count(); ++i) {
-        HgValueInfo info;
-        int value = 0;
-        if (!hg_value_info(i, &info) || !hg_value_get(i, &value))
-            continue;
-        StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %d%ls   (%d-%d)", info.name, value, info.unit,
-                         info.min, info.max);
-        settings_add_row(list, HG_ROW_VALUE, i, line);
+    {
+        BOOL added_h = FALSE;
+        for (int i = 1; i <= hg_value_count(); ++i) {
+            HgValueInfo info;
+            int value = 0;
+            if (!hg_value_info(i, &info) || !hg_value_get(i, &value))
+                continue;
+            StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %d%ls   (%d-%d)", info.name, value, info.unit,
+                             info.min, info.max);
+            if (!settings_matches_filter(filter, line))
+                continue;
+            if (!added_h) {
+                if (!filtering)
+                    settings_add_row(list, HG_ROW_SPACER, 0, L"");
+                settings_add_row(list, HG_ROW_HEADING, 0, L"VALUES");
+                added_h = TRUE;
+            }
+            settings_add_row(list, HG_ROW_VALUE, i, line);
+        }
     }
 
-    settings_fill_colors(list);
+    settings_fill_colors(list, filter);
 
-    /* Window, function, keys - the headings are the windows, so the three
-     * levels read down the page in the order they are spoken. */
     int last_context = 0;
+    BOOL ctx_heading = FALSE;
     for (int action = 1; action <= hg_key_action_count(); ++action) {
         HgKeyActionInfo info;
         if (!hg_key_action_info(action, &info))
@@ -522,21 +624,35 @@ static void settings_fill(HWND hwnd)
 
         if (info.context != last_context) {
             last_context = info.context;
-            settings_add_row(list, HG_ROW_HEADING, 0, L"");
-            StringCchPrintfW(line, HG_ARRAYSIZE(line), L"KEYS - %ls (%ls)", hg_key_context_name(info.context),
-                             hg_key_context_summary(info.context));
-            settings_add_row(list, HG_ROW_HEADING, 0, line);
+            ctx_heading = FALSE;
         }
 
-        /* The function is one row and each of its chords is another, indented
-         * under it. A single row listing "Ctrl+N, Ctrl+Shift+N" could only ever
-         * offer to delete the last one, which is not the one anybody means: a
-         * chord you can point at is a chord you can remove. */
         int count = hg_key_binding_count(action);
         StringCchPrintfW(line, HG_ARRAYSIZE(line), L"   %-34ls %ls", info.label,
                          (s_capture_action == action && !s_capture_replaces)
                              ? L"[press a key, Esc to stop]"
                              : (count ? L"" : L"(no key)"));
+        BOOL match_key = settings_matches_filter(filter, line);
+        BOOL match_chord = FALSE;
+        for (int i = 0; i < count && !match_chord; ++i) {
+            HgChord chord;
+            WCHAR text[64];
+            if (hg_key_binding_chord(action, i, &chord) && hg_key_chord_text(chord, text, HG_ARRAYSIZE(text)) &&
+                settings_matches_filter(filter, text))
+                match_chord = TRUE;
+        }
+        if (!match_key && !match_chord)
+            continue;
+
+        if (!ctx_heading) {
+            WCHAR hdr[128];
+            if (!filtering)
+                settings_add_row(list, HG_ROW_SPACER, 0, L"");
+            StringCchPrintfW(hdr, HG_ARRAYSIZE(hdr), L"KEYS - %ls (%ls)", hg_key_context_name(info.context),
+                             hg_key_context_summary(info.context));
+            settings_add_row(list, HG_ROW_HEADING, 0, hdr);
+            ctx_heading = TRUE;
+        }
         settings_add_row(list, HG_ROW_KEY, action, line);
 
         for (int i = 0; i < count; ++i) {
@@ -555,10 +671,18 @@ static void settings_fill(HWND hwnd)
     SendMessageW(list, WM_SETREDRAW, TRUE, 0);
     InvalidateRect(list, NULL, TRUE);
 
-    if (selected >= 0 && selected < s_row_count)
+    int lb_count = (int)SendMessageW(list, LB_GETCOUNT, 0, 0);
+    if (lb_count > 0) {
+        if (selected < 0)
+            selected = 0;
+        if (selected >= lb_count)
+            selected = lb_count - 1;
         SendMessageW(list, LB_SETCURSEL, (WPARAM)selected, 0);
-    if (top >= 0)
-        SendMessageW(list, LB_SETTOPINDEX, (WPARAM)top, 0);
+        if (top >= 0 && top < lb_count)
+            SendMessageW(list, LB_SETTOPINDEX, (WPARAM)top, 0);
+    }
+    s_filter_empty_refill = (lb_count == 0);
+    (void)s_filter_empty_refill;
 }
 
 static BOOL settings_selected_row(HWND hwnd, HgSettingsRow *out)
@@ -566,10 +690,11 @@ static BOOL settings_selected_row(HWND hwnd, HgSettingsRow *out)
     HWND list = GetDlgItem(hwnd, HG_SETTINGS_LIST_ID);
     if (!list || !out)
         return FALSE;
-    int row = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
-    if (row < 0 || row >= s_row_count)
+    int sel = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
+    int r_idx = settings_row_data_at(list, sel);
+    if (r_idx < 0)
         return FALSE;
-    *out = s_rows[row];
+    *out = s_rows[r_idx];
     return TRUE;
 }
 
@@ -620,6 +745,9 @@ static void settings_describe(HWND hwnd)
         settings_say(hwnd, hg_g_is_high_contrast
                                ? L"Enter picks the colour, R follows the theme.  High contrast is on: its colours win."
                                : L"Enter picks the colour.  R follows the theme again.");
+        break;
+    case HG_ROW_SCHEME:
+        settings_say(hwnd, L"Enter, Space or Left/Right toggles Inanis / Plain scheme.  R restores Inanis.");
         break;
     case HG_ROW_CLOCK:
         switch (row.number) {
@@ -1141,6 +1269,15 @@ static BOOL settings_list_key(HWND parent, UINT vk)
         return TRUE;
     }
 
+    if ((ctrl && vk == 'F') || (!ctrl && vk == VK_OEM_2)) {
+        HWND filter = GetDlgItem(parent, HG_SETTINGS_FILTER_ID);
+        if (filter) {
+            SetFocus(filter);
+            SendMessageW(filter, EM_SETSEL, 0, -1);
+        }
+        return TRUE;
+    }
+
     HgSettingsRow row;
     if (!settings_selected_row(parent, &row))
         return FALSE;
@@ -1186,6 +1323,21 @@ static BOOL settings_list_key(HWND parent, UINT vk)
     case HG_ROW_COLOR:
         if (settings_color_row_command(parent, row.number, vk))
             return TRUE;
+        break;
+    case HG_ROW_SCHEME:
+        if (vk == 'R') {
+            hg_config_set_scheme(HG_SCHEME_INANIS);
+            settings_fill(parent);
+            settings_say(parent, L"Color scheme: inanis");
+            return TRUE;
+        }
+        if (vk == VK_RETURN || vk == VK_SPACE || vk == VK_LEFT || vk == VK_RIGHT) {
+            int next = (hg_g_color_scheme_kind == HG_SCHEME_PLAIN) ? HG_SCHEME_INANIS : HG_SCHEME_PLAIN;
+            hg_config_set_scheme(next);
+            settings_fill(parent);
+            settings_say(parent, (next == HG_SCHEME_PLAIN) ? L"Color scheme: plain" : L"Color scheme: inanis");
+            return TRUE;
+        }
         break;
     default:
         break;
@@ -1288,9 +1440,8 @@ static void settings_track_hover(HWND list, LPARAM l_param)
 {
     POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
     DWORD hit = (DWORD)SendMessageW(list, LB_ITEMFROMPOINT, 0, MAKELPARAM(pt.x, pt.y));
-    int row = HIWORD(hit) ? -1 : (int)LOWORD(hit); /* the high word is set when the point is outside */
-    if (row >= s_row_count)
-        row = -1;
+    int count = (int)SendMessageW(list, LB_GETCOUNT, 0, 0);
+    int row = (HIWORD(hit) || (int)LOWORD(hit) >= count) ? -1 : (int)LOWORD(hit);
 
     if (row != s_hover_row) {
         s_hover_row = row;
@@ -1299,6 +1450,45 @@ static void settings_track_hover(HWND list, LPARAM l_param)
 
     TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, list, 0};
     TrackMouseEvent(&tme);
+}
+
+static LRESULT CALLBACK settings_filter_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
+                                                      UINT_PTR subclass_id, DWORD_PTR ref_data)
+{
+    (void)subclass_id;
+    (void)ref_data;
+    HWND parent = GetParent(hwnd);
+    if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS)
+        InvalidateRect(parent, NULL, FALSE);
+    if (msg == WM_KEYDOWN) {
+        if ((GetKeyState(VK_CONTROL) < 0) && w_param == 'W') {
+            PostMessageW(parent, WM_CLOSE, 0, 0);
+            return 0;
+        }
+        if (w_param == VK_ESCAPE) {
+            if (GetWindowTextLengthW(hwnd) > 0) {
+                SetWindowTextW(hwnd, L"");
+            } else {
+                HWND list = GetDlgItem(parent, HG_SETTINGS_LIST_ID);
+                if (list)
+                    SetFocus(list);
+            }
+            return 0;
+        }
+        if (w_param == VK_DOWN || w_param == VK_RETURN) {
+            HWND list = GetDlgItem(parent, HG_SETTINGS_LIST_ID);
+            if (list) {
+                SetFocus(list);
+                if (SendMessageW(list, LB_GETCURSEL, 0, 0) < 0 && SendMessageW(list, LB_GETCOUNT, 0, 0) > 0)
+                    SendMessageW(list, LB_SETCURSEL, 0, 0);
+                settings_describe(parent);
+            }
+            return 0;
+        }
+    }
+    if (msg == WM_CHAR && (w_param == L'\r' || w_param == L'\n' || w_param == 0x1B))
+        return 0;
+    return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
 static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param,
@@ -1363,6 +1553,13 @@ static LRESULT CALLBACK settings_list_subclass_proc(HWND hwnd, UINT msg, WPARAM 
                 settings_color_row_command(parent, row.number, VK_RETURN);
                 return 0;
             }
+            if (row.kind == HG_ROW_SCHEME) {
+                int next = (hg_g_color_scheme_kind == HG_SCHEME_PLAIN) ? HG_SCHEME_INANIS : HG_SCHEME_PLAIN;
+                hg_config_set_scheme(next);
+                settings_fill(parent);
+                settings_say(parent, (next == HG_SCHEME_PLAIN) ? L"Color scheme: plain" : L"Color scheme: inanis");
+                return 0;
+            }
             if (row.kind == HG_ROW_KEY || row.kind == HG_ROW_CHORD) {
                 if (row.kind == HG_ROW_KEY)
                     settings_key_row_command(parent, row.number, VK_RETURN);
@@ -1386,16 +1583,23 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         hg_apply_dwm_attributes_document(hwnd);
         HINSTANCE instance = GetModuleHandleW(NULL);
 
+        HWND filter = CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
+                                      0, 0, 0, 0, hwnd, (HMENU)HG_SETTINGS_FILTER_ID, instance, NULL);
+        if (filter) {
+            SendMessageW(filter, EM_SETCUEBANNER, TRUE, (LPARAM)L"Filter settings... (Ctrl+F)");
+            SetWindowSubclass(filter, settings_filter_subclass_proc, 3, 0);
+        }
+
         CreateWindowExW(0, L"LISTBOX", NULL,
-                        WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_HASSTRINGS |
-                            LBS_OWNERDRAWFIXED,
+                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_HASSTRINGS |
+                            LBS_OWNERDRAWVARIABLE,
                         0, 0, 0, 0, hwnd, (HMENU)HG_SETTINGS_LIST_ID, instance, NULL);
         CreateWindowExW(0, L"STATIC", NULL, WS_CHILD | WS_VISIBLE | SS_LEFTNOWORDWRAP, 0, 0, 0, 0, hwnd,
                         (HMENU)HG_SETTINGS_STATUS_ID, instance, NULL);
 
         /* Hidden until a format row asks for it. Single line, so no line break
          * can be typed or pasted into it, and limited to the longest format. */
-        CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd,
+        CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd,
                         (HMENU)HG_SETTINGS_EDIT_ID, instance, NULL);
         HWND edit = GetDlgItem(hwnd, HG_SETTINGS_EDIT_ID);
         if (edit) {
@@ -1409,21 +1613,23 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
 
         settings_apply_font(hwnd);
         settings_fill(hwnd);
-        if (list)
+        if (list) {
             SendMessageW(list, LB_SETCURSEL, 1, 0); /* the first row that is not a heading */
+            SetFocus(list);
+        }
         settings_describe(hwnd);
         return 0;
     }
 
     case WM_SIZE:
         settings_layout(hwnd, LOWORD(l_param), HIWORD(l_param));
+        InvalidateRect(hwnd, NULL, TRUE);
         return 0;
 
     case WM_MEASUREITEM: {
         MEASUREITEMSTRUCT *mis = (MEASUREITEMSTRUCT *)l_param;
         if (mis && mis->CtlID == HG_SETTINGS_LIST_ID) {
-            double ws = hg_window_scale(hwnd);
-            mis->itemHeight = (UINT)(settings_line_height() + SCW(ws, 4));
+            mis->itemHeight = (UINT)settings_item_height_for(hwnd, s_measuring_kind, s_measuring_kind == HG_ROW_HEADING);
         }
         return TRUE;
     }
@@ -1433,59 +1639,84 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
         if (!dis || dis->CtlID != HG_SETTINGS_LIST_ID || (int)dis->itemID < 0)
             break;
 
-        int index = (int)dis->itemID;
-        int kind = (index < s_row_count) ? s_rows[index].kind : HG_ROW_HEADING;
+        int lb_index = (int)dis->itemID;
+        int r_idx = (int)dis->itemData;
+        int kind = (r_idx >= 0 && r_idx < s_row_count) ? s_rows[r_idx].kind : HG_ROW_HEADING;
+        int number = (r_idx >= 0 && r_idx < s_row_count) ? s_rows[r_idx].number : 0;
         BOOL actionable = settings_row_is_actionable(kind);
         BOOL focused = (dis->itemState & ODS_SELECTED) ? TRUE : FALSE;
-        BOOL hovered = (index == s_hover_row) && actionable;
+        BOOL hovered = (lb_index == s_hover_row) && actionable;
 
-        /* Three states, two of them loud. The arrows leave a selection; the
-         * pointer inverts what it is over; a row that is both reads as the
-         * pointer's, because that is the one about to happen. */
-        COLORREF bg = hg_g_color_scheme_selected.bg;
-        COLORREF fg = hg_g_color_scheme_selected.text;
-        if (hovered) {
-            bg = hg_g_color_scheme_selected.text;
-            fg = hg_g_color_scheme_selected.bg;
-        } else if (focused) {
-            bg = hg_ui_select_color(); /* norma_ui select, under the scheme's text */
+        const HgUiPalette *dpal = hg_ui_doc_palette();
+        HgDocumentColors page = hg_document_colors();
+        COLORREF bg = page.bg;
+        COLORREF fg = page.text;
+        if (focused) {
+            bg = hg_ui_doc_select_color();
             if (hg_g_is_high_contrast)
                 fg = GetSysColor(COLOR_HIGHLIGHTTEXT);
+        } else if (hovered) {
+            bg = dpal->bg2;
         }
 
-        HBRUSH brush = CreateSolidBrush(bg);
-        if (brush) {
+        HBRUSH brush = hg_cached_solid_brush(bg);
+        if (brush)
             FillRect(dis->hDC, &dis->rcItem, brush);
-            DeleteObject(brush);
+
+        if (kind == HG_ROW_SPACER)
+            return TRUE;
+
+        double ws = hg_window_scale(hwnd);
+        if (focused) {
+            int bw = SCW(ws, 3);
+            if (bw < 2)
+                bw = 2;
+            RECT bar = {dis->rcItem.left, dis->rcItem.top, dis->rcItem.left + bw, dis->rcItem.bottom};
+            HBRUSH acc = hg_cached_solid_brush(dpal->accent);
+            if (acc)
+                FillRect(dis->hDC, &bar, acc);
         }
 
         WCHAR text[512];
         text[0] = L'\0';
-        int len = (int)SendMessageW(dis->hwndItem, LB_GETTEXTLEN, (WPARAM)index, 0);
+        int len = (int)SendMessageW(dis->hwndItem, LB_GETTEXTLEN, (WPARAM)lb_index, 0);
         if (len > 0 && len < (int)HG_ARRAYSIZE(text))
-            SendMessageW(dis->hwndItem, LB_GETTEXT, (WPARAM)index, (LPARAM)text);
+            SendMessageW(dis->hwndItem, LB_GETTEXT, (WPARAM)lb_index, (LPARAM)text);
 
-        HFONT font = (actionable && s_row_font) ? s_row_font : hg_g_commandbox_font;
+        BOOL major_heading = (kind == HG_ROW_HEADING && text[0] != L'\0' && text[0] != L' ');
+        if (major_heading) {
+            RECT rule = {dis->rcItem.left, dis->rcItem.top + SCW(ws, 3), dis->rcItem.right,
+                         dis->rcItem.top + SCW(ws, 3) + 1};
+            HBRUSH hbr_rule = hg_cached_solid_brush(dpal->line);
+            if (hbr_rule)
+                FillRect(dis->hDC, &rule, hbr_rule);
+        }
+
+        HFONT font = (major_heading && s_row_font) ? s_row_font : hg_g_commandbox_font;
         HFONT old_font = font ? (HFONT)SelectObject(dis->hDC, font) : NULL;
         SetBkMode(dis->hDC, TRANSPARENT);
-        SetTextColor(dis->hDC, fg);
+        COLORREF text_fg = major_heading ? dpal->accent : ((kind == HG_ROW_HEADING) ? dpal->muted : fg);
+        SetTextColor(dis->hDC, text_fg);
 
         RECT text_rc = dis->rcItem;
-        text_rc.left += 2;
+        text_rc.left += SCW(ws, 6);
+        if (major_heading)
+            text_rc.top += SCW(ws, 5);
         DrawTextW(dis->hDC, text, -1, &text_rc, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
 
-        /* The colour row shows its colour, in the indent, as well as naming it. */
-        BOOL blink_row = (kind == HG_ROW_CLOCK && s_rows[index].number == HG_CLOCK_ROW_BLINK_COLOR);
+        BOOL blink_row = (kind == HG_ROW_CLOCK && number == HG_CLOCK_ROW_BLINK_COLOR);
         if (blink_row || kind == HG_ROW_COLOR) {
             int inset = (dis->rcItem.bottom - dis->rcItem.top) / 5;
             int side = (dis->rcItem.bottom - dis->rcItem.top) - inset * 2;
-            RECT swatch = {dis->rcItem.left + 2, dis->rcItem.top + inset, dis->rcItem.left + 2 + side,
-                           dis->rcItem.bottom - inset};
-            HBRUSH swatch_brush = hg_cached_solid_brush(
-                blink_row ? hg_clock_blink_color() : settings_color_row_effective(s_rows[index].number));
+            RECT swatch = {dis->rcItem.left + SCW(ws, 6), dis->rcItem.top + inset,
+                           dis->rcItem.left + SCW(ws, 6) + side, dis->rcItem.bottom - inset};
+            HBRUSH swatch_brush =
+                hg_cached_solid_brush(blink_row ? hg_clock_blink_color() : settings_color_row_effective(number));
             if (swatch_brush && side > 0) {
                 FillRect(dis->hDC, &swatch, swatch_brush);
-                FrameRect(dis->hDC, &swatch, (HBRUSH)GetStockObject(GRAY_BRUSH));
+                HBRUSH swatch_line = hg_cached_solid_brush(dpal->line_strong);
+                if (swatch_line)
+                    FrameRect(dis->hDC, &swatch, swatch_line);
             }
         }
 
@@ -1505,6 +1736,12 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
     }
 
     case WM_COMMAND:
+        if (LOWORD(w_param) == HG_SETTINGS_FILTER_ID && HIWORD(w_param) == EN_CHANGE) {
+            if (s_edit_which >= 0)
+                settings_edit_cancel(hwnd);
+            settings_fill(hwnd);
+            return 0;
+        }
         if (LOWORD(w_param) == HG_SETTINGS_EDIT_ID && HIWORD(w_param) == EN_CHANGE && s_edit_which >= 0)
             settings_edit_report(hwnd);
         return 0;
@@ -1526,13 +1763,21 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
             return 0;
         break;
 
-    case WM_ERASEBKGND:
-        /* The same background the notes, the clipboard and the command box
-         * paint. Left to the class brush this window came out in the widget
-         * colour - the floater's, inverted from the system theme - which is
-         * why the page and the frame around it did not match. */
+    case WM_ERASEBKGND: {
         hg_document_paint_background(hwnd, (HDC)w_param);
+        HWND filter = GetDlgItem(hwnd, HG_SETTINGS_FILTER_ID);
+        if (filter) {
+            RECT fr;
+            GetWindowRect(filter, &fr);
+            MapWindowPoints(NULL, hwnd, (POINT *)&fr, 2);
+            InflateRect(&fr, 1, 1);
+            const HgUiPalette *dpal = hg_ui_doc_palette();
+            HBRUSH fbr = hg_cached_solid_brush((GetFocus() == filter) ? dpal->accent2 : dpal->line_strong);
+            if (fbr)
+                FrameRect((HDC)w_param, &fr, fbr);
+        }
         return 1;
+    }
 
     case WM_SETTINGCHANGE:
         /* Light and dark can change while the window is open, and every colour
@@ -1553,7 +1798,8 @@ LRESULT CALLBACK settings_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l
          * line beneath it takes the field colour its input box uses, so the
          * part that talks back is told apart the same way in both windows. */
         HWND child = (HWND)l_param;
-        if (child && GetDlgCtrlID(child) == HG_SETTINGS_STATUS_ID)
+        int cid = child ? GetDlgCtrlID(child) : 0;
+        if (cid == HG_SETTINGS_STATUS_ID || cid == HG_SETTINGS_FILTER_ID || cid == HG_SETTINGS_EDIT_ID)
             return hg_on_ctlcolor_field((HDC)w_param);
         return hg_on_ctlcolor_document((HDC)w_param);
     }

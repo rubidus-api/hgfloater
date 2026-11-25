@@ -7,6 +7,7 @@
 #include "../hg_globals.h"
 #include "../hg_tabs.h"
 #include "hg_tabbox.h"
+#include "hg_avbox.h"
 #include "hg_hilite.h"
 
 static int toolbar_clamp_percent(int pct)
@@ -69,23 +70,29 @@ static COLORREF toolbar_basic_icon_bg_color(int index, COLORREF base_color)
     return toolbar_invert_color(base_color);
 }
 
-/* The line round a function button or a shortcut: norma_ui's box (N-D6) -
- * a one-pixel frame in the faint colour (the scheme's `selected`, inanis bg3,
- * which stands for `line`) and a square bracket on each corner in the
- * scheme's border colour (line-strong), three thick (scaled, never under
- * three pixels) with arms of eight. Flat: no bevel, no shadow (N-D7).
- *
- * It used to be a 2-px frame in the Windows accent; the brackets now carry the
- * edge, the strong colour being the one that holds against the desktop that
- * shows through this window. */
-static COLORREF toolbar_button_outline_color(void)
+static BOOL toolbar_tile_is_custom_value(int index)
 {
-    return HG_COLOR_BG_TOOLBAR;
+    if (index == HG_TOOL_ICON_ALPHA)
+        return (hg_g_color_value_alpha_lo != HG_COLOR_VALUE_ALPHA_LO_DEFAULT ||
+                hg_g_color_value_alpha_hi != HG_COLOR_VALUE_ALPHA_HI_DEFAULT);
+    if (index == HG_TOOL_ICON_MONITOR)
+        return (hg_g_color_value_bright_lo != HG_COLOR_VALUE_BRIGHT_LO_DEFAULT ||
+                hg_g_color_value_bright_hi != HG_COLOR_VALUE_BRIGHT_HI_DEFAULT);
+    if (index == HG_TOOL_ICON_VOLUME)
+        return (hg_g_color_value_vol_lo != HG_COLOR_VALUE_VOL_LO_DEFAULT ||
+                hg_g_color_value_vol_hi != HG_COLOR_VALUE_VOL_HI_DEFAULT);
+    return FALSE;
 }
 
-static void toolbar_draw_brackets(HDC hdc, const RECT *rc, COLORREF color)
+static int toolbar_value_percent_clamped(int index)
 {
-    hg_paint_brackets(hdc, rc, color);
+    if (index == HG_TOOL_ICON_ALPHA)
+        return toolbar_taskbox_alpha_percent();
+    if (index == HG_TOOL_ICON_MONITOR)
+        return toolbar_clamp_percent(get_system_brightness());
+    if (index == HG_TOOL_ICON_VOLUME)
+        return toolbar_clamp_percent(get_system_mute() ? 0 : get_system_volume());
+    return 0;
 }
 
 static COLORREF toolbar_focus_color(void)
@@ -93,15 +100,14 @@ static COLORREF toolbar_focus_color(void)
     return hg_ui_focus_color();
 }
 
-/* A separator cell: one upright line down its middle, 60% of the cell's
- * height, in the outline colour (owner's choice over the old hatching,
- * 2026-11-13). Two pixels scaled with the display, never under one. */
+/* A separator cell: one crisp vertical rule down its middle in the palette
+ * hairline colour. */
 static void toolbar_draw_separator(HDC hdc, const RECT *rc)
 {
-    HBRUSH brush = hg_cached_solid_brush(toolbar_button_outline_color());
+    HBRUSH brush = hg_cached_solid_brush(hg_ui_widget_palette()->line);
     if (!brush)
         return;
-    int width = SC(2);
+    int width = SC(1);
     if (width < 1)
         width = 1;
     int h = rc->bottom - rc->top;
@@ -112,58 +118,20 @@ static void toolbar_draw_separator(HDC hdc, const RECT *rc)
     FillRect(hdc, &line, brush);
 }
 
-static void toolbar_draw_button_outline(HDC hdc, const RECT *rc)
-{
-    HBRUSH faint = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-    if (faint)
-        FrameRect(hdc, rc, faint);
-    toolbar_draw_brackets(hdc, rc, toolbar_button_outline_color());
-}
-
-static void toolbar_draw_state_border(HDC hdc, const RECT *rc)
-{
-    if (!hdc || !rc)
-        return;
-
-    HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
-    if (!hbr)
-        return;
-
-    RECT border_rc = *rc;
-    int thickness = SC(3);
-    if (thickness < 2)
-        thickness = 2;
-    for (int i = 0; i < thickness; ++i) {
-        FrameRect(hdc, &border_rc, hbr);
-        InflateRect(&border_rc, -1, -1);
-        if (border_rc.left >= border_rc.right || border_rc.top >= border_rc.bottom)
-            break;
-    }
-}
-
-/* The little box at an icon's top-left corner that names the key.
- *
- * One painter for both kinds of icon: a task wears "S0" because Shift and the
- * label is what reaches it, and a function button wears "CN" because Ctrl+N is.
- * They are the same promise - press this and that happens - so they are drawn
- * the same, and two badges that looked different would read as two different
- * kinds of thing.
- *
- * The box grows sideways with the text rather than staying square: a modifier
- * costs a character, and a square box would either clip it or force a font too
- * small to read. It stays half an icon tall, which is what keeps it a badge
- * rather than a second label. */
+/* Key badge at the top-left corner of an icon: painted on demand (hover,
+ * keyboard focus, or modifier peek) so resting tiles stay calm (D-U1). */
 static int toolbar_badge_height(int icon_size)
 {
     int badge_h = icon_size / 2;
     return (badge_h < SC(10)) ? SC(10) : badge_h;
 }
 
-static void toolbar_draw_badge(HDC dc, const RECT *rc_item, const WCHAR *text, int icon_size)
+static void toolbar_draw_badge(HDC dc, const RECT *rc_item, const WCHAR *text, int icon_size, BOOL flashing)
 {
     if (!dc || !rc_item || !text || !*text || !hg_g_toolbar_badge_font)
         return;
 
+    const HgUiPalette *pal = hg_ui_widget_palette();
     int badge_h = toolbar_badge_height(icon_size);
 
     HFONT old_badge = (HFONT)SelectObject(dc, hg_g_toolbar_badge_font);
@@ -177,15 +145,15 @@ static void toolbar_draw_badge(HDC dc, const RECT *rc_item, const WCHAR *text, i
     RECT badge_rc = {rc_item->left - SC(2), rc_item->top - SC(2), rc_item->left - SC(2) + badge_w,
                      rc_item->top - SC(2) + badge_h};
 
-    HBRUSH hbr_badge = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+    HBRUSH hbr_badge = hg_cached_solid_brush(flashing ? pal->honey : pal->bg2);
     if (hbr_badge)
         FillRect(dc, &badge_rc, hbr_badge);
-    HBRUSH hbr_edge = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
+    HBRUSH hbr_edge = hg_cached_solid_brush(flashing ? pal->honey_fg : pal->line);
     if (hbr_edge)
         FrameRect(dc, &badge_rc, hbr_edge);
 
     SetBkMode(dc, TRANSPARENT);
-    SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
+    SetTextColor(dc, flashing ? pal->honey_fg : pal->fg);
     DrawTextW(dc, text, -1, &badge_rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     SelectObject(dc, old_badge);
 }
@@ -323,31 +291,19 @@ static HFONT toolbar_label_font(HDC dc, const WCHAR *label, int box_w, int box_h
     return s_font;
 }
 
-/* A function button's word, fitted to the button and centred on its icon square. */
-static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, const RECT *rc_btn)
+/* A function button's word, fitted to the button and centred on its plate. */
+static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, const RECT *rc_btn, COLORREF fg,
+                                       COLORREF bg)
 {
+    (void)rc_item;
     const WCHAR *btn_text = hg_toolbar_builtin_label(index);
     WCHAR stacked[16];
     int lines = toolbar_label_lines(btn_text, stacked, HG_ARRAYSIZE(stacked));
-    /* A button that wears its key has the badge over its top-left corner, and
-     * a word centred on the whole square lost its first letter under it - the
-     * A of A/V, the C of Cmd. Those words sit in what is left below the badge,
-     * down to the plate's inner edge. */
-    /* The word is fitted to the plate's width, so it is drawn across the
-     * plate rather than the icon square inside it: DrawText clips to its box,
-     * and a word wider than the square lost an edge of its outer letters. */
-    RECT text_rc = *rc_item;
-    text_rc.left = rc_btn->left + SC(1);
-    text_rc.right = rc_btn->right - SC(1);
-    WCHAR badge[8];
-    if (hg_toolbar_builtin_badge_text(index, badge, HG_ARRAYSIZE(badge))) {
-        text_rc.top = rc_item->top - SC(2) + toolbar_badge_height(rc_item->bottom - rc_item->top);
-        text_rc.bottom = rc_btn->bottom - SC(2);
-        if (text_rc.bottom - text_rc.top < SC(7)) {
-            text_rc.top = rc_item->top;
-            text_rc.bottom = rc_item->bottom;
-        }
-    }
+    RECT text_rc = *rc_btn;
+    text_rc.left = rc_btn->left + SC(2);
+    text_rc.right = rc_btn->right - SC(2);
+    text_rc.top = rc_btn->top + SC(2);
+    text_rc.bottom = rc_btn->bottom - SC(2);
     HFONT label_font =
         toolbar_label_font(dc, btn_text, rc_btn->right - rc_btn->left, text_rc.bottom - text_rc.top, lines);
     if (!label_font)
@@ -355,69 +311,55 @@ static void toolbar_draw_builtin_label(HDC dc, int index, const RECT *rc_item, c
     if (!label_font)
         return;
 
-    SetTextColor(dc, HG_COLOR_TEXT_DEFAULT);
+    SetTextColor(dc, fg);
     SetBkMode(dc, TRANSPARENT);
     HFONT old_font = (HFONT)SelectObject(dc, label_font);
-    /* Two lines centre as a block, which is what makes a split word sit on the
-     * button rather than above or below its middle. */
     UINT format = (lines > 1) ? (DT_CENTER | DT_VCENTER | DT_EDITCONTROL | DT_WORDBREAK)
                               : (DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    draw_outlined_text(dc, stacked, lstrlenW(stacked), &text_rc, format, HG_COLOR_TEXT_DEFAULT,
-                       HG_COLOR_BG_DEFAULT);
+    draw_outlined_text(dc, stacked, lstrlenW(stacked), &text_rc, format, fg, bg);
     SelectObject(dc, old_font);
 }
 
-/* The keyboard's mark where a fill would hide something: a ring in the focus
- * colour, inside the button's edge. Used for a shortcut (no plate, and its icon
- * is the thing to see) and for Vol, Mon and Alp (the plate is the reading). */
+/* Crisp 1px keyboard focus ring (Win8 flat). Only painted when
+ * hg_g_keyboard_mode is active. */
 static void toolbar_draw_focus_ring(HDC dc, const RECT *rc_btn)
 {
     HBRUSH ring = hg_cached_solid_brush(toolbar_focus_color());
     if (!ring)
         return;
-    int thickness = SC(2);
-    if (thickness < 2)
-        thickness = 2;
-    RECT edge = *rc_btn;
-    for (int i = 0; i < thickness; ++i) {
-        FrameRect(dc, &edge, ring);
-        InflateRect(&edge, -1, -1);
-    }
-    toolbar_draw_brackets(dc, rc_btn, toolbar_focus_color()); /* N-D6: focus turns the brackets accent2 */
+    FrameRect(dc, rc_btn, ring);
 }
 
-/* A shortcut on the grid. No plate -
- * the colour behind it would say nothing - and a ring in the focus colour for
- * the one the keyboard is on. The badge is the Shift+letter that launches it from anywhere in the
- * taskbox; this box is the one place that letter is still written down. */
+/* A shortcut on the Win8 flat grid: resting bg2 plate, bg3 hover plate,
+ * accent2 1px focus ring when hg_g_keyboard_mode, and on-demand badge. */
 void hg_toolbar_paint_shortcut_cell(HDC dc, int s_idx, const RECT *rc_item, int icon_size, BOOL selected,
                                     BOOL hovered)
 {
     if (!dc || !rc_item || s_idx < 0 || s_idx >= hg_g_shortcut_count)
         return;
 
+    const HgUiPalette *pal = hg_ui_widget_palette();
+    BOOL flashing = (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0));
     RECT rc_btn = *rc_item;
     InflateRect(&rc_btn, SC(4), SC(4));
 
-    if (hovered && !selected) {
-        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-        if (hbr)
-            FillRect(dc, &rc_btn, hbr);
-    }
+    COLORREF plate = flashing ? pal->honey : (hovered ? pal->bg3 : pal->bg2);
+    HBRUSH hbr = hg_cached_solid_brush(plate);
+    if (hbr)
+        FillRect(dc, &rc_btn, hbr);
 
-    if (selected) {
+    if (selected && hg_g_keyboard_mode)
         toolbar_draw_focus_ring(dc, &rc_btn);
-    } else {
-        toolbar_draw_button_outline(dc, &rc_btn);
-    }
 
     if (hg_g_shortcuts[s_idx].icon)
         DrawIconEx(dc, rc_item->left, rc_item->top, hg_g_shortcuts[s_idx].icon, icon_size, icon_size, 0, NULL,
                    DI_NORMAL);
 
-    WCHAR badge[8];
-    if (hg_shortcut_badge_text(s_idx, badge, HG_ARRAYSIZE(badge)))
-        toolbar_draw_badge(dc, rc_item, badge, icon_size);
+    if (hovered || (selected && hg_g_keyboard_mode) || hg_g_badge_mod_peek) {
+        WCHAR badge[8];
+        if (hg_shortcut_badge_text(s_idx, badge, HG_ARRAYSIZE(badge)))
+            toolbar_draw_badge(dc, rc_item, badge, icon_size, flashing);
+    }
 }
 
 static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hovered_index, int pressed_type,
@@ -434,12 +376,9 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
         if (hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &paint_buffer)) {
             HDC mem_dc = paint_buffer.dc;
 
-                /* The taskbox's own fill (a filled box, 2026-11-13): this child
-                 * covers nearly all of that window and must match it. */
-                COLORREF bg_color = HG_COLOR_BG_DEFAULT;
-                if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
-                    bg_color = HG_COLOR_BG_FLASH;
-                }
+                const HgUiPalette *pal = hg_ui_widget_palette();
+                BOOL flashing = (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0));
+                COLORREF bg_color = flashing ? pal->honey : pal->bg;
                 HBRUSH hbr_bg = hg_cached_solid_brush(bg_color);
                 if (hbr_bg) {
                     FillRect(mem_dc, &rc, hbr_bg);
@@ -486,7 +425,7 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     }
                 }
 
-                // Draw tasks (type 0)
+                // Draw tasks (type 0): transparent on pal->bg, hover bg3, active bottom bar, on-demand badge.
                 for (int pos = 0; pos < hg_g_window_count; pos++) {
                     int r_idx = visual_order[pos];
                     RECT rc_item, rc_btn;
@@ -496,37 +435,30 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
 
                     if (drag_state->is_dragging && drag_state->source_index != -1 &&
                         r_idx == drag_state->source_index) {
-                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+                        HBRUSH hbr = hg_cached_solid_brush(pal->line_strong);
                         if (hbr) {
                             FrameRect(mem_dc, &rc_btn, hbr);
                         }
                         continue;
                     }
 
-                    if (pressed_type == 0 && pressed_index == r_idx && !drag_state->is_dragging) {
-                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-                        if (hbr) {
-                            FillRect(mem_dc, &rc_btn, hbr);
-                        }
-                    } else if (hovered_type == 0 && hovered_index == pos && !drag_state->is_dragging) {
-                        HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+                    BOOL task_pointed = ((pressed_type == 0 && pressed_index == r_idx) ||
+                                         (hovered_type == 0 && hovered_index == pos)) &&
+                                        !drag_state->is_dragging;
+                    BOOL task_focused = (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx);
+                    if (task_pointed) {
+                        HBRUSH hbr = hg_cached_solid_brush(flashing ? pal->honey : pal->bg3);
                         if (hbr) {
                             FillRect(mem_dc, &rc_btn, hbr);
                         }
                     }
-                    /* Flat fills only (N-D7); the keyboard focus is the accent2
-                     * ring (N-I6), over whatever fill is there. */
-                    if (hg_taskbox_focus.area == 0 && hg_taskbox_focus.index == r_idx)
+                    if (task_focused && hg_g_keyboard_mode)
                         toolbar_draw_focus_ring(mem_dc, &rc_btn);
+
                     if (hg_g_window_items[r_idx].icon) {
                         DrawIconEx(mem_dc, rc_item.left, rc_item.top, hg_g_window_items[r_idx].icon, icon_size,
                                    icon_size, 0, NULL, DI_NORMAL);
                     } else if (hg_g_toolbar_btn_font) {
-                        /* An icon that would not load left an empty cell, and an
-                         * empty cell reads as no window at all - until the
-                         * pointer crossed it and the highlight box appeared out
-                         * of nowhere. The window is there either way, so the
-                         * title's first character stands in for the icon. */
                         const WCHAR *title = hg_g_window_items[r_idx].title;
                         WCHAR initial[2];
                         initial[0] = (title && title[0]) ? title[0] : L'?';
@@ -535,38 +467,38 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                         HFONT old_font = (HFONT)SelectObject(mem_dc, hg_g_toolbar_btn_font);
                         SetBkMode(mem_dc, TRANSPARENT);
                         draw_outlined_text(mem_dc, initial, 1, &rc_item, DT_CENTER | DT_VCENTER | DT_SINGLELINE,
-                                           HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
+                                           flashing ? pal->honey_fg : pal->fg, bg_color);
                         SelectObject(mem_dc, old_font);
                     }
 
-                    /* The key, over the icon's top-left corner. Drawn last so
-                     * it is never the thing hidden by the icon. */
-                    WCHAR badge[8];
-                    if (hg_task_badge_text(r_idx, badge, HG_ARRAYSIZE(badge)))
-                        toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
+                    if (task_pointed || (task_focused && hg_g_keyboard_mode) || hg_g_badge_mod_peek) {
+                        WCHAR badge[8];
+                        if (hg_task_badge_text(r_idx, badge, HG_ARRAYSIZE(badge)))
+                            toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size, flashing);
+                    }
 
-                    /* Draw active status indicator (elegant pill/dot under the active task's icon) */
+                    /* Win8 flat bottom indicator bar on the active task. */
                     if (hg_g_window_items[r_idx].hwnd == hg_g_prev_active_hwnd) {
-                        int dot_w = SC(6);
-                        if (dot_w < 4)
-                            dot_w = 4;
-                        int dot_h = SC(3);
-                        if (dot_h < 2)
-                            dot_h = 2;
-                        int dot_x = rc_item.left + (icon_size - dot_w) / 2;
-                        int dot_y = rc_item.bottom + SC(1);
-                        RECT dot_rc = {dot_x, dot_y, dot_x + dot_w, dot_y + dot_h};
-                        HBRUSH hbr_dot = hg_cached_solid_brush(HG_COLOR_BORDER_SELECTED);
+                        int bar_w = SC(16);
+                        int max_w = (rc_btn.right - rc_btn.left) - SC(4);
+                        if (bar_w > max_w)
+                            bar_w = max_w;
+                        if (bar_w < SC(6))
+                            bar_w = SC(6);
+                        int bar_h = SC(3);
+                        if (bar_h < 2)
+                            bar_h = 2;
+                        int bar_x = rc_btn.left + ((rc_btn.right - rc_btn.left) - bar_w) / 2;
+                        int bar_y = rc_btn.bottom - bar_h;
+                        RECT dot_rc = {bar_x, bar_y, bar_x + bar_w, bar_y + bar_h};
+                        HBRUSH hbr_dot = hg_cached_solid_brush(flashing ? pal->honey_fg : pal->accent);
                         if (hbr_dot) {
                             FillRect(mem_dc, &dot_rc, hbr_dot);
                         }
                     }
                 }
 
-                /* The shortcuts: on rows of their own between the windows and
-                 * the buttons when the grouped layout is on, beside the buttons
-                 * when it is not. No plate, an outline, the program's icon, its
-                 * Shift letter, and a ring when the keyboard is on it. */
+                /* The shortcuts: Win8 flat bg2 tiles (`hg_toolbar_paint_shortcut_cell`). */
                 for (int s_idx = 0; s_idx < hg_toolbar_grid_shortcuts(); s_idx++) {
                     int id = HG_SHORTCUT_BUTTON_ID(s_idx);
                     RECT rc_item;
@@ -579,10 +511,8 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     hg_toolbar_paint_shortcut_cell(mem_dc, s_idx, &rc_item, icon_size, focused, pointed);
                 }
 
-                /* A function button wears its key the same way a task icon
-                 * wears its label, because they are the same promise: press
-                 * this and that happens. */
-                // Draw hg_g_shortcuts (type 1)
+                /* Function buttons: Win8 flat bg2/bg3 tiles; Vol/Mon/Alp gauge tiles (D-U3=A);
+                 * keyboard focus 1px ring only when hg_g_keyboard_mode; on-demand badges (D-U1). */
                 int total_buttons = hg_toolbar_grid_buttons();
                 for (int i = 0; i < total_buttons; i++) {
                     RECT rc_item, rc_btn;
@@ -592,85 +522,64 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     rc_btn = rc_item;
                     InflateRect(&rc_btn, SC(4), SC(4));
 
-                    COLORREF button_bg = toolbar_basic_icon_bg_color(i, bg_color);
-                    BOOL keep_value_bg = hg_toolbar_builtin_has_value(i);
-                    /* No plate behind a function button or a shortcut: the
-                     * box's fill runs through, the same as everywhere else in
-                     * this window. The three reading buttons keep theirs,
-                     * because for them the background is not decoration - it is
-                     * the reading: Vol, Mon and Alp say the volume, the
-                     * brightness and the opacity by how deep their colour is.
-                     *
-                     * This also undoes an accident of making the toolbar
-                     * transparent: these plates were painted as the inverse of
-                     * the toolbar background, and the inverse of the colour key
-                     * is very nearly white. */
-                    if (!keep_value_bg)
-                        button_bg = bg_color;
-                    HBRUSH hbr_opp = hg_cached_solid_brush(button_bg);
-                    if (hbr_opp) {
-                        FillRect(mem_dc, &rc_btn, hbr_opp);
+                    BOOL pointed = (pressed_type == 1 && pressed_index == i) ||
+                                   (hovered_type == 1 && hovered_index == i);
+                    BOOL focused = (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i);
+                    BOOL has_val = hg_toolbar_builtin_has_value(i);
+                    BOOL muted_vol = (i == HG_TOOL_ICON_VOLUME && get_system_mute());
+
+                    if (has_val && !flashing && toolbar_tile_is_custom_value(i)) {
+                        COLORREF custom_bg = toolbar_basic_icon_bg_color(i, bg_color);
+                        HBRUSH hbr_custom = hg_cached_solid_brush(custom_bg);
+                        if (hbr_custom)
+                            FillRect(mem_dc, &rc_btn, hbr_custom);
+                    } else {
+                        COLORREF tile_bg = flashing ? pal->honey : (pointed ? pal->bg3 : pal->bg2);
+                        HBRUSH hbr_tile = hg_cached_solid_brush(tile_bg);
+                        if (hbr_tile)
+                            FillRect(mem_dc, &rc_btn, hbr_tile);
+
+                        if (has_val && !flashing) {
+                            int pct = toolbar_value_percent_clamped(i);
+                            int tile_h = rc_btn.bottom - rc_btn.top;
+                            if (!muted_vol && pct > 0 && tile_h > 0) {
+                                int gauge_h = (tile_h * pct) / 100;
+                                if (gauge_h > 0) {
+                                    RECT rc_fill = {rc_btn.left, rc_btn.bottom - gauge_h, rc_btn.right, rc_btn.bottom};
+                                    HBRUSH hbr_gauge = hg_cached_solid_brush(pal->select);
+                                    if (hbr_gauge)
+                                        FillRect(mem_dc, &rc_fill, hbr_gauge);
+                                }
+                            }
+                            int bar_h = SC(3);
+                            if (bar_h < 2)
+                                bar_h = 2;
+                            RECT rc_bar = {rc_btn.left, rc_btn.bottom - bar_h, rc_btn.right, rc_btn.bottom};
+                            HBRUSH hbr_bar = hg_cached_solid_brush(muted_vol ? pal->danger : pal->accent);
+                            if (hbr_bar)
+                                FillRect(mem_dc, &rc_bar, hbr_bar);
+                        }
                     }
 
-                    if (pressed_type == 1 && pressed_index == i) {
-                        if (!keep_value_bg) {
-                            HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-                            if (hbr) {
-                                FillRect(mem_dc, &rc_btn, hbr);
-                            }
-                        }
-                    } else if (hovered_type == 1 && hovered_index == i) {
-                        /* Vol, Mon and Alp are never filled over: their plate
-                         * is the reading, and the moment it is pointed at is
-                         * the moment it is being turned. */
-                        if (!keep_value_bg) {
-                            HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
-                            if (hbr) {
-                                FillRect(mem_dc, &rc_btn, hbr);
-                            }
-                        }
-                    }
-
-                    /* One line around every button in this half of the grid -
-                     * the function buttons and the shortcuts alike. With the
-                     * plate gone they would otherwise float loose over the
-                     * desktop, and a button needs an edge to be a button; a
-                     * shortcut is as much a button as Note is, so it gets the
-                     * same edge rather than being the one thing here without
-                     * one. Drawn after the pressed and hover fills so it
-                     * survives them - the yellow still fills the button, and
-                     * the line still frames it - and before the state border,
-                     * which is a louder mark and should win where both apply. */
-                    toolbar_draw_button_outline(mem_dc, &rc_btn);
-                    /* The focus: the accent2 ring and brackets on every button
-                     * (N-I6, N-D6), a fill on none - flat, and the plates of
-                     * Vol, Mon and Alp stay readable under it. */
-                    if (hg_taskbox_focus.area == 1 && hg_taskbox_focus.index == i)
+                    if (focused && hg_g_keyboard_mode)
                         toolbar_draw_focus_ring(mem_dc, &rc_btn);
 
-                    if ((i == HG_TOOL_ICON_VOLUME && get_system_mute()) ||
-                        (i == HG_TOOL_ICON_PIN && hg_g_taskbox_pinned)) {
-                        toolbar_draw_state_border(mem_dc, &rc_btn);
-                    }
-
-                    /* The icon (R1.9); the word only where there is no icon,
-                     * and for BakREC while it moves - the percent is a reading,
-                     * and a reading is a number. */
-                    if (hg_glyph_has(i) && !(i == HG_TOOL_ICON_RECBAK && hg_recbak_busy()))
-                        hg_glyph_draw(mem_dc, i, &rc_item, HG_COLOR_TEXT_DEFAULT, HG_COLOR_BG_DEFAULT);
+                    int glyph_id = muted_vol ? HG_GLYPH_VOLUME_MUTED : i;
+                    COLORREF glyph_fg = flashing ? pal->honey_fg : (muted_vol ? pal->danger : pal->fg);
+                    COLORREF tile_outline_bg = flashing ? pal->honey : (pointed ? pal->bg3 : pal->bg2);
+                    if (hg_glyph_has(glyph_id) && !(i == HG_TOOL_ICON_RECBAK && hg_recbak_busy()))
+                        hg_glyph_draw(mem_dc, glyph_id, &rc_item, glyph_fg, CLR_NONE);
                     else
-                        toolbar_draw_builtin_label(mem_dc, i, &rc_item, &rc_btn);
+                        toolbar_draw_builtin_label(mem_dc, i, &rc_item, &rc_btn, glyph_fg, tile_outline_bg);
 
-                    /* And its key in the corner, over the label, for the
-                     * buttons a chord reaches. */
-                    WCHAR badge[8];
-                    if (hg_toolbar_builtin_badge_text(i, badge, HG_ARRAYSIZE(badge)))
-                        toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size);
+                    if (pointed || (focused && hg_g_keyboard_mode) || hg_g_badge_mod_peek) {
+                        WCHAR badge[8];
+                        if (hg_toolbar_builtin_badge_text(i, badge, HG_ARRAYSIZE(badge)))
+                            toolbar_draw_badge(mem_dc, &rc_item, badge, icon_size, flashing);
+                    }
                 }
 
-                /* The separators between the kinds (separated grid only):
-                 * one upright line, with no plate and no edge, so they read
-                 * as a mark between buttons and never as one more button. */
+                /* The separators between the kinds (separated grid only). */
                 {
                     HgGrid grid;
                     hg_toolbar_grid(rc.right, rc.bottom, icon_size, &grid);
@@ -690,11 +599,11 @@ static LRESULT toolbar_controller_on_paint(HWND hwnd, int hovered_type, int hove
                     int cx = drag_state->current_pt.x - icon_size / 2;
                     int cy = drag_state->current_pt.y - icon_size / 2;
                     RECT drag_rc = {cx - SC(4), cy - SC(4), cx + icon_size + SC(4), cy + icon_size + SC(4)};
-                    HBRUSH hbr = hg_cached_solid_brush(HG_COLOR_BG_SELECTED);
+                    HBRUSH hbr = hg_cached_solid_brush(pal->bg3);
                     if (hbr) {
                         FillRect(mem_dc, &drag_rc, hbr);
                     }
-                    toolbar_draw_brackets(mem_dc, &drag_rc, toolbar_button_outline_color());
+                    toolbar_draw_focus_ring(mem_dc, &drag_rc);
                     if (hg_g_window_items[drag_state->source_index].icon) {
                         DrawIconEx(mem_dc, cx, cy, hg_g_window_items[drag_state->source_index].icon, icon_size, icon_size,
                                    0, NULL, DI_NORMAL);
@@ -1203,11 +1112,11 @@ BOOL hg_toolbar_builtin_context_menu(int index, BOOL at_pointer)
     LPARAM where = at_pointer ? (LPARAM)1 : 0;
     int icon_size = taskbox_toolbar_icon_size();
     if (index == HG_TOOL_ICON_VOLUME) {
-        toolbar_controller_show_audio_device_menu(owner, index, icon_size, where);
+        hg_avbox_open(HG_AVBOX_SECTION_AUDIO, -1);
         return TRUE;
     }
     if (index == HG_TOOL_ICON_MONITOR) {
-        toolbar_controller_show_topology_menu(owner, index, icon_size, where);
+        hg_avbox_open(HG_AVBOX_SECTION_DISPLAY, -1);
         return TRUE;
     }
     if (index == HG_TOOL_ICON_RECBAK && hg_recbak_present()) {
@@ -1310,8 +1219,11 @@ LRESULT CALLBACK toolbar_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_para
     case WM_PAINT:
         return toolbar_controller_on_paint(hwnd, state.hovered_type, state.hovered_index, state.pressed_type,
                                            state.pressed_index, &drag_state, &state.cached_icon_size);
-    case WM_KEYDOWN: {
-        SendMessage(GetParent(hwnd), WM_KEYDOWN, w_param, l_param);
+    case WM_SYSKEYDOWN:
+    case WM_KEYDOWN:
+    case WM_SYSKEYUP:
+    case WM_KEYUP: {
+        SendMessage(GetParent(hwnd), msg, w_param, l_param);
         return 0;
     }
     case WM_LBUTTONDOWN:

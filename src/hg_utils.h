@@ -203,6 +203,12 @@ void release_shortcut_item_icon(ShortcutItem *item);
 void release_font_handle(HFONT *font, BOOL preserve_stock);
 void release_brush_handle(HBRUSH *brush);
 HBRUSH hg_cached_solid_brush(COLORREF color);
+HPEN hg_cached_pen(int width, COLORREF color);
+void hg_flush_pen_cache(void);
+/* Full 18-role norma_ui palette (`inanis` | `plain`, D-U6=A). Widgets invert
+ * against OS theme; document windows follow OS theme directly. */
+const HgUiPalette *hg_ui_widget_palette(void);
+const HgUiPalette *hg_ui_doc_palette(void);
 /* norma_ui colours outside the five-field scheme (see SPEC "Theme"). The
  * widget ones follow the widget scheme (inverted against Windows), the
  * document one the document colours (Windows' own theme). */

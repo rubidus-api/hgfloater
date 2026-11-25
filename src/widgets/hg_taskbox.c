@@ -5,6 +5,7 @@
 #include "hg_taskbox_internal.h"
 #include "hg_note.h"
 #include "hg_tabbox.h"
+#include "hg_avbox.h"
 #include "hg_hilite.h"
 #include "hg_clip.h"
 #include "../hg_tabs.h"
@@ -255,6 +256,7 @@ void hide_taskbox(HWND hwnd)
     /* The list belongs to a button on this window, so it goes when the window
      * does - and closing it is what sends anything it was holding back. */
     hg_tabbox_close();
+    hg_avbox_close();
     /* The hover-check timer must die on every hide path, not only its own collapse. */
     KillTimer(hwnd, HG_TIMER_HOVER_CHECK);
     s_hover_outside_ticks = 0;
@@ -412,8 +414,6 @@ int taskbox_box_mode_for_button(int index)
         return HG_BOX_DIRS;
     case HG_TOOLBAR_CLICK_OPEN_CONTROLS:
         return HG_BOX_CONTROLS;
-    case HG_TOOLBAR_CLICK_OPEN_MENU:
-        return HG_BOX_MENU;
     default:
         return -1;
     }
@@ -473,6 +473,10 @@ void activate_toolbar_item(int index)
 
     switch (hg_toolbar_builtin_click_role(index)) {
     case HG_TOOLBAR_CLICK_NONE:
+        break;
+    case HG_TOOLBAR_CLICK_OPEN_MENU:
+        hg_tabbox_close();
+        hg_avbox_toggle(HG_AVBOX_SECTION_AUDIO, -1);
         break;
     case HG_TOOLBAR_CLICK_EXIT_APP:
         if (hg_g_floater_wnd)
@@ -718,30 +722,9 @@ LRESULT CALLBACK edit_subclass_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM 
         break;
     }
     case WM_CONTEXTMENU: {
-        /* The status line holds a single message, so a copy-only menu earned its
-         * space poorly; right-clicking it opens the options instead - the same
-         * list the Opt button opens, in the same box, because two ways of
-         * showing one list is one way too many. */
-        POINT pt;
-        if (l_param == (LPARAM)-1) { /* Keyboard shortcut */
-            RECT rc;
-            GetWindowRect(hwnd, &rc);
-            pt.x = rc.left + 5;
-            pt.y = rc.top + 5;
-        } else {
-            pt.x = GET_X_LPARAM(l_param);
-            pt.y = GET_Y_LPARAM(l_param);
-        }
-
-        /* An anchor with some width to it: the box sits clear of its anchor and
-         * closes when the pointer is on neither, so a zero-size one at the
-         * pointer would shut on the first twitch of the mouse. */
-        RECT anchor = {pt.x, pt.y, pt.x, pt.y};
-        InflateRect(&anchor, SC(12), SC(12));
-        hg_tabbox_open_menu(&anchor);
-        /* Right-clicking is a deliberate act, so the keyboard goes in with it -
-         * and the keyboard is the only way in when the menu key asked. */
-        hg_tabbox_enter();
+        (void)l_param;
+        hg_tabbox_close();
+        hg_avbox_open(HG_AVBOX_SECTION_AUDIO, -1);
         return 0;
     }
     }
@@ -820,8 +803,8 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
                         (HMENU)HG_IDC_EDIT_MSG, GetModuleHandle(NULL), NULL);
     if (hg_g_edit_msg_wnd) {
         SendMessageW(hg_g_edit_msg_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-        SetWindowTextW(hg_g_edit_msg_wnd,
-                       L"X: Exit | Ctrl+O: A/V | Ctrl+Arrow/Wheel: Grid/Size | Alt+Arrow/Wheel: Move/Alpha");
+        SetWindowTextW(hg_g_edit_msg_wnd, L"Ready  |  Ctrl+O: A/V  |  ?: F1");
+        hg_g_status_is_welcome = TRUE;
         hg_g_edit_msg_tick = GetTickCount64();
         SetWindowSubclass(hg_g_edit_msg_wnd, edit_subclass_proc, 0, 0);
         disable_window_ime(hg_g_edit_msg_wnd);
@@ -836,8 +819,8 @@ static LRESULT taskbox_controller_on_create(HWND hwnd)
         SendMessageW(hg_g_tooltip_wnd, TTM_SETMAXTIPWIDTH, 0, SC(1000));
         /* 툴팁 폰트도 DPI 배율이 적용된 폰트로 설정 */
         SendMessageW(hg_g_tooltip_wnd, WM_SETFONT, (WPARAM)hg_g_main_font, TRUE);
-        /* 즉시 표시되도록 설정 (약간의 지연 시간 부여) */
-        SendMessageW(hg_g_tooltip_wnd, TTM_SETDELAYTIME, TTDT_INITIAL, 100);
+        /* Delay slightly longer so hovering icons opens lists before tooltips collide. */
+        SendMessageW(hg_g_tooltip_wnd, TTM_SETDELAYTIME, TTDT_INITIAL, 450);
         /* 시스템 테마를 해제하여 설정한 폰트와 컬러가 적용되게 함 */
         SendMessageW(hg_g_tooltip_wnd, CCM_SETWINDOWTHEME, 0, (LPARAM)L"");
         SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
@@ -936,6 +919,16 @@ static BOOL taskbox_run_key_action(HWND hwnd, int action)
     return TRUE;
 }
 
+static void taskbox_sync_badge_peek(void)
+{
+    BOOL peek = (GetKeyState(VK_SHIFT) < 0) || (GetKeyState(VK_CONTROL) < 0) || (GetKeyState(VK_MENU) < 0);
+    if (peek != hg_g_badge_mod_peek) {
+        hg_g_badge_mod_peek = peek;
+        if (hg_g_toolbar_wnd && IsWindow(hg_g_toolbar_wnd))
+            InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+    }
+}
+
 static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     /* From here until the mouse actually moves, the pointer is not consulted:
@@ -943,6 +936,7 @@ static LRESULT taskbox_controller_on_keydown(HWND hwnd, UINT msg, WPARAM w_param
      * say - open that icon's list, close this one, collapse the taskbox - would
      * be about a place the reader is no longer looking. */
     hg_keyboard_mode_begin();
+    taskbox_sync_badge_peek();
 
     /* The tab box has no focus of its own - it must not steal the keyboard on
      * a hover - so its keys are offered here first, before anything else can
@@ -1317,6 +1311,11 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
         return 0;
     }
     case WM_ACTIVATE: {
+        if (LOWORD(w_param) == WA_INACTIVE && hg_g_badge_mod_peek) {
+            hg_g_badge_mod_peek = FALSE;
+            if (hg_g_toolbar_wnd && IsWindow(hg_g_toolbar_wnd))
+                InvalidateRect(hg_g_toolbar_wnd, NULL, FALSE);
+        }
         InvalidateRect(hwnd, NULL, FALSE);
         return 0;
     }
@@ -1464,6 +1463,9 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
                  * icon onto the list it just opened must not read as leaving,
                  * and the box closes itself when the pointer is on neither. */
                 BOOL inside = PtInRect(&rc, pt);
+                if (!inside && hg_avbox_is_open()) {
+                    inside = TRUE;
+                }
                 if (!inside && hg_tabbox_is_open()) {
                     RECT box;
                     if (GetWindowRect(hg_tabbox_window(), &box) && PtInRect(&box, pt))
@@ -1521,6 +1523,10 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
     case WM_SYSKEYDOWN:
     case WM_KEYDOWN:
         return taskbox_controller_on_keydown(hwnd, msg, w_param, l_param);
+    case WM_SYSKEYUP:
+    case WM_KEYUP:
+        taskbox_sync_badge_peek();
+        return 0;
     case WM_COMMAND:
         return taskbox_controller_on_command(hwnd, w_param, l_param);
     case WM_SIZE: {
@@ -1536,13 +1542,22 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param
 
         /* 하이라이트 중에는 깜빡임 배경 유지 (브러시는 캐싱하여 GDI 누수 방지) */
         if (hg_g_taskbox_highlight_ticks > 0 && (hg_g_taskbox_highlight_ticks % 2 != 0)) {
-            SetTextColor(hdc_static, hg_g_color_scheme_selected.text);
+            const HgUiPalette *pal = hg_ui_widget_palette();
+            SetTextColor(hdc_static, pal->honey_fg);
             SetBkMode(hdc_static, OPAQUE);
-            SetBkColor(hdc_static, HG_COLOR_BG_FLASH);
-            if (!hg_g_hbr_highlight) {
-                hg_g_hbr_highlight = CreateSolidBrush(HG_COLOR_BG_FLASH);
-            }
-            return hg_g_hbr_highlight ? (LRESULT)hg_g_hbr_highlight : (LRESULT)GetStockObject(BLACK_BRUSH);
+            SetBkColor(hdc_static, pal->honey);
+            HBRUSH hbr = hg_cached_solid_brush(pal->honey);
+            return hbr ? (LRESULT)hbr : (LRESULT)GetStockObject(BLACK_BRUSH);
+        }
+
+        if ((HWND)l_param == hg_g_edit_msg_wnd &&
+            (hg_g_status_is_welcome || (GetTickCount64() - hg_g_edit_msg_tick >= HG_STATUS_CLOCK_IDLE_MS))) {
+            const HgUiPalette *pal = hg_ui_widget_palette();
+            SetTextColor(hdc_static, pal->muted);
+            SetBkMode(hdc_static, OPAQUE);
+            SetBkColor(hdc_static, pal->bg);
+            HBRUSH hbr = hg_cached_solid_brush(pal->bg);
+            return hbr ? (LRESULT)hbr : (LRESULT)GetStockObject(BLACK_BRUSH);
         }
 
         return hg_on_ctlcolor_edit(hdc_static);

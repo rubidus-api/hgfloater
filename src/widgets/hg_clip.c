@@ -26,6 +26,7 @@
 #define HG_CLIP_LIST_ID 101
 #define HG_CLIP_MAX_ID 102
 #define HG_CLIP_SPIN_ID 103
+#define HG_CLIP_LABEL_ID 104
 
 #define HG_CLIP_LIMIT 64 /* the most the maximum may be set to */
 #define HG_CLIP_DEFAULT_MAX 16
@@ -42,6 +43,8 @@ static int s_clip_max = HG_CLIP_DEFAULT_MAX;
 static HWND s_clip_wnd = NULL;      /* the history window, or NULL */
 static HWND s_clip_listener = NULL; /* message-only; outlives the window */
 static HFONT s_clip_font = NULL;
+static HFONT s_clip_idx_font = NULL;
+static int s_clip_hover_row = -1;
 static BOOL s_clip_started = FALSE;
 
 /* This window's own text size and opacity, not the shared ones. The list is
@@ -338,6 +341,7 @@ static void clip_list_fill(void)
 
     if (SendMessageW(list, LB_GETCOUNT, 0, 0) > 0)
         SendMessageW(list, LB_SETCURSEL, 0, 0);
+    InvalidateRect(list, NULL, TRUE);
 }
 
 /* Drop one clip and close the gap. The history is a plain array of owned
@@ -505,6 +509,10 @@ void hg_clip_shutdown(void)
         DeleteObject(s_clip_font);
         s_clip_font = NULL;
     }
+    if (s_clip_idx_font) {
+        DeleteObject(s_clip_idx_font);
+        s_clip_idx_font = NULL;
+    }
     s_clip_started = FALSE;
 }
 
@@ -512,6 +520,14 @@ void hg_clip_shutdown(void)
 
 int hg_clip_font_size(void);
 void hg_clip_set_font_size(int points);
+
+static int clip_row_height(HWND hwnd)
+{
+    double ws = hg_window_scale(hwnd);
+    int h = SCW(ws, s_clip_font_pt) + SCW(ws, 8);
+    int min_h = SCW(ws, 24);
+    return (h < min_h) ? min_h : h;
+}
 
 static void clip_apply_font(HWND hwnd)
 {
@@ -523,7 +539,14 @@ static void clip_apply_font(HWND hwnd)
     if (!font)
         return;
 
-    const int ids[] = {HG_CLIP_SEARCH_ID, HG_CLIP_LIST_ID, HG_CLIP_MAX_ID};
+    int small_h = SCW(ws, 12);
+    if (small_h < 10)
+        small_h = 10;
+    HFONT idx_font = CreateFontW(-small_h, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                 DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                 DEFAULT_PITCH | FF_SWISS, hg_g_doc_font_name);
+
+    const int ids[] = {HG_CLIP_SEARCH_ID, HG_CLIP_LIST_ID, HG_CLIP_MAX_ID, HG_CLIP_LABEL_ID};
     for (int i = 0; i < (int)HG_ARRAYSIZE(ids); ++i) {
         HWND child = GetDlgItem(hwnd, ids[i]);
         if (child)
@@ -532,31 +555,45 @@ static void clip_apply_font(HWND hwnd)
     if (s_clip_font)
         DeleteObject(s_clip_font);
     s_clip_font = font;
+    if (s_clip_idx_font)
+        DeleteObject(s_clip_idx_font);
+    s_clip_idx_font = idx_font;
+
+    HWND list = GetDlgItem(hwnd, HG_CLIP_LIST_ID);
+    if (list)
+        SendMessageW(list, LB_SETITEMHEIGHT, 0, (LPARAM)clip_row_height(hwnd));
 }
 
-/* The spin sits at the right of the top row with the search box taking what is
- * left, and the list has everything below. */
 static void clip_layout(HWND hwnd, int width, int height)
 {
     double ws = hg_window_scale(hwnd);
     int pad = SCW(ws, 6);
-    int row_h = SCW(ws, 24);
+    int edge_pad = SCW(ws, 2);
+    if (edge_pad < 2)
+        edge_pad = 2;
+    int row_h = SCW(ws, 30);
+    if (row_h < 24)
+        row_h = 24;
+    int lbl_w = SCW(ws, 34);
     int max_w = SCW(ws, 56);
 
-    int search_w = width - pad * 3 - max_w;
+    int search_w = width - pad * 4 - lbl_w - max_w - edge_pad * 2;
     if (search_w < SCW(ws, 40))
         search_w = SCW(ws, 40);
 
     HWND search = GetDlgItem(hwnd, HG_CLIP_SEARCH_ID);
     if (search)
-        MoveWindow(search, pad, pad, search_w, row_h, TRUE);
+        MoveWindow(search, pad + edge_pad, pad + edge_pad, search_w, row_h - edge_pad * 2, TRUE);
+
+    int max_lbl_x = pad * 2 + search_w + edge_pad * 2;
+    HWND lbl = GetDlgItem(hwnd, HG_CLIP_LABEL_ID);
+    if (lbl)
+        MoveWindow(lbl, max_lbl_x, pad, lbl_w, row_h, TRUE);
 
     HWND max_edit = GetDlgItem(hwnd, HG_CLIP_MAX_ID);
     if (max_edit)
-        MoveWindow(max_edit, pad * 2 + search_w, pad, max_w, row_h, TRUE);
+        MoveWindow(max_edit, max_lbl_x + lbl_w + pad / 2, pad + edge_pad, max_w, row_h - edge_pad * 2, TRUE);
 
-    /* The up-down puts itself back against its buddy's edge when told about it
-     * again, which is how it follows a resize. */
     HWND spin = GetDlgItem(hwnd, HG_CLIP_SPIN_ID);
     if (spin && max_edit)
         SendMessageW(spin, UDM_SETBUDDY, (WPARAM)max_edit, 0);
@@ -665,11 +702,55 @@ static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
      * the same trade the command box's input box makes, and the same reason:
      * a window key that works in the window but not in its boxes is a window
      * key that looks broken. */
-    if (clip_adjust_message(GetParent(hwnd), msg, w_param, l_param))
+    HWND parent = GetParent(hwnd);
+    if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS) {
+        if (parent)
+            InvalidateRect(parent, NULL, TRUE);
+    }
+    if (parent && hwnd == GetDlgItem(parent, HG_CLIP_LIST_ID)) {
+        if (msg == WM_MOUSEMOVE) {
+            DWORD hit = (DWORD)SendMessageW(hwnd, LB_ITEMFROMPOINT, 0, l_param);
+            int cnt = (int)SendMessageW(hwnd, LB_GETCOUNT, 0, 0);
+            int row = (HIWORD(hit) || (int)LOWORD(hit) >= cnt) ? -1 : (int)LOWORD(hit);
+            if (row != s_clip_hover_row) {
+                s_clip_hover_row = row;
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};
+            TrackMouseEvent(&tme);
+        } else if (msg == WM_MOUSELEAVE) {
+            if (s_clip_hover_row != -1) {
+                s_clip_hover_row = -1;
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+        } else if (msg == WM_PAINT && SendMessageW(hwnd, LB_GETCOUNT, 0, 0) == 0) {
+            PAINTSTRUCT ps;
+            HDC dc = BeginPaint(hwnd, &ps);
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            HgDocumentColors page = hg_document_colors_for(HG_DOC_PAGE_CLIP);
+            const HgUiPalette *dpal = hg_ui_doc_palette();
+            HBRUSH bg = hg_cached_solid_brush(page.bg);
+            if (bg)
+                FillRect(dc, &rc, bg);
+            HWND search = GetDlgItem(parent, HG_CLIP_SEARCH_ID);
+            BOOL has_q = (search && GetWindowTextLengthW(search) > 0);
+            HFONT font = s_clip_font ? s_clip_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT old_font = (HFONT)SelectObject(dc, font);
+            SetBkMode(dc, TRANSPARENT);
+            SetTextColor(dc, dpal->muted);
+            DrawTextW(dc, has_q ? L"No matching clips." : L"Clipboard history is empty.", -1, &rc,
+                      DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_NOPREFIX);
+            SelectObject(dc, old_font);
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
+    }
+
+    if (clip_adjust_message(parent, msg, w_param, l_param))
         return 0;
 
     if (msg == WM_MOUSEWHEEL) {
-        HWND parent = GetParent(hwnd);
         POINT pt;
         pt.x = GET_X_LPARAM(l_param);
         pt.y = GET_Y_LPARAM(l_param);
@@ -689,7 +770,6 @@ static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
      * passed over. The default handler runs first so the selection has landed
      * on the row that was actually clicked. */
     if (msg == WM_LBUTTONUP) {
-        HWND parent = GetParent(hwnd);
         if (parent && hwnd == GetDlgItem(parent, HG_CLIP_LIST_ID)) {
             LRESULT result = DefSubclassProc(hwnd, msg, w_param, l_param);
             clip_take_selected(parent);
@@ -702,7 +782,6 @@ static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
      * itself is what selects it. Handling this here and returning means no
      * WM_CONTEXTMENU follows, so the menu cannot open twice. */
     if (msg == WM_RBUTTONUP) {
-        HWND parent = GetParent(hwnd);
         if (parent && hwnd == GetDlgItem(parent, HG_CLIP_LIST_ID)) {
             POINT pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             int row = (int)SendMessageW(hwnd, LB_ITEMFROMPOINT, 0, MAKELPARAM(pt.x, pt.y));
@@ -717,7 +796,6 @@ static LRESULT CALLBACK clip_child_subclass_proc(HWND hwnd, UINT msg, WPARAM w_p
     /* The keyboard's context-menu key arrives this way, with (-1,-1) for the
      * point; the menu anchors itself to the selected row when it sees that. */
     if (msg == WM_CONTEXTMENU) {
-        HWND parent = GetParent(hwnd);
         if (parent && hwnd == GetDlgItem(parent, HG_CLIP_LIST_ID)) {
             POINT screen_pt = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             int row = (int)SendMessageW(hwnd, LB_GETCURSEL, 0, 0);
@@ -779,14 +857,19 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
         /* No WS_EX_CLIENTEDGE on any of the three. The list is the page and
          * needs no line around it; the two boxes are told apart by their field
          * colour instead. */
-        CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0,
-                        0, hwnd, (HMENU)HG_CLIP_SEARCH_ID, instance, NULL);
+        HWND search = CreateWindowExW(0, L"EDIT", NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL, 0,
+                                      0, 0, 0, hwnd, (HMENU)HG_CLIP_SEARCH_ID, instance, NULL);
+        if (search)
+            SendMessageW(search, EM_SETCUEBANNER, TRUE, (LPARAM)L"Search clips...");
+        CreateWindowExW(0, L"STATIC", L"Max:", WS_CHILD | WS_VISIBLE | SS_RIGHT | SS_CENTERIMAGE, 0, 0, 0, 0, hwnd,
+                        (HMENU)HG_CLIP_LABEL_ID, instance, NULL);
         CreateWindowExW(0, L"EDIT", NULL,
-                        WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd,
+                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_NUMBER | ES_RIGHT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd,
                         (HMENU)HG_CLIP_MAX_ID, instance, NULL);
         CreateWindowExW(0, L"LISTBOX", NULL,
-                        WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_HASSTRINGS, 0, 0, 0, 0,
-                        hwnd, (HMENU)HG_CLIP_LIST_ID, instance, NULL);
+                        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY | LBS_HASSTRINGS |
+                            LBS_OWNERDRAWFIXED | LBS_NOINTEGRALHEIGHT,
+                        0, 0, 0, 0, hwnd, (HMENU)HG_CLIP_LIST_ID, instance, NULL);
 
         HWND spin = CreateWindowExW(0, UPDOWN_CLASSW, NULL,
                                     WS_CHILD | WS_VISIBLE | UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_ARROWKEYS |
@@ -811,7 +894,72 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
 
     case WM_SIZE:
         clip_layout(hwnd, (int)LOWORD(l_param), (int)HIWORD(l_param));
+        InvalidateRect(hwnd, NULL, TRUE);
         return 0;
+
+    case WM_MEASUREITEM: {
+        MEASUREITEMSTRUCT *mis = (MEASUREITEMSTRUCT *)l_param;
+        if (mis && mis->CtlID == HG_CLIP_LIST_ID) {
+            mis->itemHeight = (UINT)clip_row_height(hwnd);
+            return TRUE;
+        }
+        break;
+    }
+
+    case WM_DRAWITEM: {
+        const DRAWITEMSTRUCT *dis = (const DRAWITEMSTRUCT *)l_param;
+        if (!dis || dis->CtlID != HG_CLIP_LIST_ID || (int)dis->itemID < 0)
+            break;
+
+        int row = (int)dis->itemID;
+        BOOL selected = (dis->itemState & ODS_SELECTED) != 0;
+        BOOL hovered = (row == s_clip_hover_row);
+        HgDocumentColors page = hg_document_colors_for(HG_DOC_PAGE_CLIP);
+        const HgUiPalette *dpal = hg_ui_doc_palette();
+        COLORREF bg = selected ? hg_ui_doc_select_color() : (hovered ? dpal->bg2 : page.bg);
+        HBRUSH hbr_bg = hg_cached_solid_brush(bg);
+        if (hbr_bg)
+            FillRect(dis->hDC, &dis->rcItem, hbr_bg);
+
+        double ws = hg_window_scale(hwnd);
+        int bar_w = SCW(ws, 3);
+        if (bar_w < 2)
+            bar_w = 2;
+        if (selected) {
+            RECT bar = {dis->rcItem.left, dis->rcItem.top, dis->rcItem.left + bar_w, dis->rcItem.bottom};
+            HBRUSH acc = hg_cached_solid_brush(dpal->accent);
+            if (acc)
+                FillRect(dis->hDC, &bar, acc);
+        }
+        if ((dis->itemState & ODS_FOCUS) && GetFocus() == dis->hwndItem) {
+            HBRUSH ring = hg_cached_solid_brush(dpal->accent2);
+            if (ring)
+                FrameRect(dis->hDC, &dis->rcItem, ring);
+        }
+
+        WCHAR num[16];
+        hellgates_wsprintf(num, HG_ARRAYSIZE(num), L"%d", row + 1);
+        int num_w = SCW(ws, 28);
+        RECT num_rc = {dis->rcItem.left + bar_w + SCW(ws, 4), dis->rcItem.top,
+                       dis->rcItem.left + bar_w + SCW(ws, 4) + num_w, dis->rcItem.bottom};
+        SetBkMode(dis->hDC, TRANSPARENT);
+        HFONT old_font = (HFONT)SelectObject(dis->hDC, s_clip_idx_font ? s_clip_idx_font : s_clip_font);
+        SetTextColor(dis->hDC, selected ? page.text : dpal->muted);
+        DrawTextW(dis->hDC, num, -1, &num_rc, DT_SINGLELINE | DT_VCENTER | DT_RIGHT | DT_NOPREFIX);
+
+        WCHAR text[HG_CLIP_ROW_CCH];
+        text[0] = L'\0';
+        if (SendMessageW(dis->hwndItem, LB_GETTEXTLEN, (WPARAM)row, 0) < (LRESULT)HG_ARRAYSIZE(text))
+            SendMessageW(dis->hwndItem, LB_GETTEXT, (WPARAM)row, (LPARAM)text);
+        RECT text_rc = {num_rc.right + SCW(ws, 8), dis->rcItem.top, dis->rcItem.right - SCW(ws, 6), dis->rcItem.bottom};
+        if (s_clip_font)
+            SelectObject(dis->hDC, s_clip_font);
+        SetTextColor(dis->hDC, (selected && hg_g_is_high_contrast) ? GetSysColor(COLOR_HIGHLIGHTTEXT) : page.text);
+        DrawTextW(dis->hDC, text, -1, &text_rc, DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS | DT_NOPREFIX);
+        if (old_font)
+            SelectObject(dis->hDC, old_font);
+        return TRUE;
+    }
 
     case WM_COMMAND:
         if (LOWORD(w_param) == HG_CLIP_SEARCH_ID && HIWORD(w_param) == EN_CHANGE) {
@@ -863,9 +1011,36 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
         }
         break;
 
-    case WM_ERASEBKGND:
+    case WM_ERASEBKGND: {
         hg_document_paint_background_for(hwnd, (HDC)w_param, HG_DOC_PAGE_CLIP);
+        const HgUiPalette *dpal = hg_ui_doc_palette();
+        HDC dc = (HDC)w_param;
+        HWND focus = GetFocus();
+        HWND search = GetDlgItem(hwnd, HG_CLIP_SEARCH_ID);
+        if (search) {
+            RECT sr;
+            GetWindowRect(search, &sr);
+            MapWindowPoints(NULL, hwnd, (POINT *)&sr, 2);
+            InflateRect(&sr, 1, 1);
+            HBRUSH sb = hg_cached_solid_brush((focus == search) ? dpal->accent2 : dpal->line_strong);
+            if (sb)
+                FrameRect(dc, &sr, sb);
+        }
+        HWND max_e = GetDlgItem(hwnd, HG_CLIP_MAX_ID);
+        HWND spin = GetDlgItem(hwnd, HG_CLIP_SPIN_ID);
+        if (max_e && spin) {
+            RECT mr, sp_r, ur;
+            GetWindowRect(max_e, &mr);
+            GetWindowRect(spin, &sp_r);
+            UnionRect(&ur, &mr, &sp_r);
+            MapWindowPoints(NULL, hwnd, (POINT *)&ur, 2);
+            InflateRect(&ur, 1, 1);
+            HBRUSH mb = hg_cached_solid_brush((focus == max_e || focus == spin) ? dpal->accent2 : dpal->line_strong);
+            if (mb)
+                FrameRect(dc, &ur, mb);
+        }
         return 1;
+    }
 
     case WM_SETTINGCHANGE:
         if (should_refresh_theme_on_setting_change(l_param)) {
@@ -896,6 +1071,7 @@ LRESULT CALLBACK clip_wnd_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_par
         return 0;
 
     case WM_DESTROY:
+        s_clip_hover_row = -1;
         if (s_clip_wnd == hwnd)
             s_clip_wnd = NULL;
         return 0;

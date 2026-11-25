@@ -40,6 +40,9 @@ typedef struct IPolicyConfig {
     IPolicyConfigVtbl *lpVtbl;
 } IPolicyConfig;
 
+static const PROPERTYKEY hg_pkey_device_friendly_name = {
+    {0xa45c254e, 0xdf1c, 0x4efd, {0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0}}, 14};
+
 static BOOL hg_acquire_default_audio_endpoint_volume(IAudioEndpointVolume **out_endpoint)
 {
     IMMDeviceEnumerator *enumerator = NULL;
@@ -184,7 +187,7 @@ void update_audio_device_list()
                         if (SUCCEEDED(device->lpVtbl->OpenPropertyStore(device, STGM_READ, &props))) {
                             PROPVARIANT var;
                             PropVariantInit(&var);
-                            if (SUCCEEDED(props->lpVtbl->GetValue(props, &PKEY_Device_FriendlyName, &var)) &&
+                            if (SUCCEEDED(props->lpVtbl->GetValue(props, &hg_pkey_device_friendly_name, &var)) &&
                                 var.vt == VT_LPWSTR && var.pwszVal) {
 
                                 if (SUCCEEDED(StringCchCopyW(hg_g_audio_devices[hg_g_audio_device_count].name,

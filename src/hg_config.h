@@ -22,6 +22,7 @@ void load_font_name_config(void);
 void save_font_name_config(void);
 void load_colors_config(void);
 void reset_colors_config(void);
+void hg_config_set_scheme(int scheme);
 /* One [colors] key, as RRGGBB. For a colour that is set from outside this file. */
 void hg_config_save_color(const WCHAR *key, COLORREF color);
 void save_alpha_config(void);

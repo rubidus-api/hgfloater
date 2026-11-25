@@ -111,6 +111,10 @@ static BOOL s_notes_loaded = FALSE;
 static HgNoteSort s_sort[HG_NOTE_SECTION_COUNT];
 static int s_font_size = HG_NOTE_FONT_DEFAULT;
 static HFONT s_list_font = NULL;
+static HFONT s_list_date_font = NULL;
+static int s_visible_note_count = 0;
+static int s_pressed_row = -1;
+static int s_head_hover_id = 0;
 
 /* Defined with the list window; the editor reaches back through it whenever it
  * changes something the list is showing. */
@@ -1571,14 +1575,11 @@ static void note_list_add_section(HWND list, int section, BOOL show_heading, con
 
     for (int i = 0; i < count; ++i) {
         const HgNote *note = &s_notes[order[i]];
-        WCHAR line[HG_NOTE_TITLE_CCH + 48];
-        hellgates_wsprintf(line, HG_ARRAYSIZE(line), L"%02d%02d%02d  %02d%02d%02d  %ls", note->created.wYear % 100,
-                           note->created.wMonth, note->created.wDay, note->modified.wYear % 100,
-                           note->modified.wMonth, note->modified.wDay, note->title);
-        int row = (int)SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)line);
+        int row = (int)SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)note->title);
         if (row >= 0)
             SendMessageW(list, LB_SETITEMDATA, (WPARAM)row, (LPARAM)order[i]);
     }
+    s_visible_note_count += count;
 }
 
 static void note_list_fill(HWND hwnd)
@@ -1589,8 +1590,6 @@ static void note_list_fill(HWND hwnd)
 
     int selected = (int)SendMessageW(list, LB_GETCURSEL, 0, 0);
 
-    /* An open editor may hold newer text than the note does; the search reads
-     * the note, so it is brought up to date first. */
     WCHAR query[HG_NOTE_SEARCH_CCH];
     query[0] = L'\0';
     HWND search = GetDlgItem(hwnd, HG_NOTE_SEARCH_ID);
@@ -1605,24 +1604,15 @@ static void note_list_fill(HWND hwnd)
 
     SendMessageW(list, WM_SETREDRAW, FALSE, 0);
     SendMessageW(list, LB_RESETCONTENT, 0, 0);
+    s_visible_note_count = 0;
 
-    /* The action comes first and is never a note, so making one needs no
-     * remembered key and an empty list still offers something to do. */
-    int add_row = (int)SendMessageW(list, LB_ADDSTRING, 0, (LPARAM)L"+Add Note");
-    if (add_row >= 0)
-        SendMessageW(list, LB_SETITEMDATA, (WPARAM)add_row, (LPARAM)HG_NOTE_ITEM_ADD);
-
-    /* Headings only earn their rows once something has been archived; until then
-     * the list is just notes and a label would be noise. They are still what a
-     * right-click aims at to sort an empty-looking half, so they appear for both
-     * groups at once or not at all. */
     BOOL show_headings = FALSE;
     for (int i = 0; i < s_note_count && !show_headings; ++i) {
         if (s_notes[i].used && s_notes[i].archived)
             show_headings = TRUE;
     }
 
-    /* Notes being written stay on top; archived ones settle underneath. */
+    /* D-U5=A: zero-row +Add Note omitted; top Add button and Insert create notes. */
     note_list_add_section(list, HG_NOTE_SECTION_ACTIVE, show_headings, query);
     note_list_add_section(list, HG_NOTE_SECTION_ARCHIVED, show_headings, query);
 
@@ -1637,7 +1627,7 @@ static void note_list_fill(HWND hwnd)
     InvalidateRect(list, NULL, TRUE);
     HWND all = GetDlgItem(hwnd, HG_NOTE_CHECKALL_ID);
     if (all)
-        InvalidateRect(all, NULL, FALSE); /* what it shows depends on the rows */
+        InvalidateRect(all, NULL, FALSE);
 }
 
 static int note_list_item(HWND list, int row)
@@ -1732,9 +1722,7 @@ static void note_list_open_selected(HWND hwnd)
     HWND list = GetDlgItem(hwnd, HG_NOTE_LIST_ID);
     int item = note_list_item(list, (int)SendMessageW(list, LB_GETCURSEL, 0, 0));
 
-    if (item == HG_NOTE_ITEM_ADD) {
-        note_list_create(hwnd);
-    } else if (item >= 0) {
+    if (item >= 0) {
         note_open_editor(item);
     }
 }
@@ -1927,8 +1915,9 @@ static void note_grip_row(HWND hwnd, const RECT *rc, int row, NoteGripRow *g)
 }
 
 /* Grip and bar as one outline: eight corners, no line between the two. */
-static void note_draw_grip_shape(HDC dc, HWND hwnd, const NoteGripRow *g, COLORREF fill, BOOL focused)
+static void note_draw_grip_shape(HDC dc, HWND hwnd, const NoteGripRow *g, COLORREF fill, BOOL focused, BOOL active_dots)
 {
+    const HgUiPalette *dpal = hg_ui_doc_palette();
     int gl = g->grip.left, gr = g->grip.right - 1, gt = g->grip.top, gb = g->grip.bottom - 1;
     int bl = g->bar.left, br = g->bar.right - 1, bt = g->bar.top, bb = g->bar.bottom - 1;
     POINT pt[8];
@@ -1940,14 +1929,14 @@ static void note_draw_grip_shape(HDC dc, HWND hwnd, const NoteGripRow *g, COLORR
         memcpy(pt, p, sizeof(pt));
     }
     int pw = 1;
-    COLORREF line = hg_ui_doc_line_strong();
+    COLORREF line = dpal->line;
     if (focused) {
         pw = SCW(hg_window_scale(hwnd), 2);
         if (pw < 2)
             pw = 2;
-        line = hg_ui_doc_focus_color();
+        line = dpal->accent2;
     }
-    HPEN pen = CreatePen(PS_INSIDEFRAME, pw, line);
+    HPEN pen = hg_cached_pen(pw, line);
     HBRUSH brush = hg_cached_solid_brush(fill);
     HGDIOBJ old_pen = pen ? SelectObject(dc, pen) : NULL;
     HGDIOBJ old_brush = brush ? SelectObject(dc, brush) : NULL;
@@ -1956,8 +1945,24 @@ static void note_draw_grip_shape(HDC dc, HWND hwnd, const NoteGripRow *g, COLORR
         SelectObject(dc, old_brush);
     if (old_pen)
         SelectObject(dc, old_pen);
-    if (pen)
-        DeleteObject(pen);
+
+    /* N-D4: 2x3 grip dot matrix centered inside grip box. */
+    double ws = hg_window_scale(hwnd);
+    int dot = SCW(ws, 2);
+    if (dot < 2)
+        dot = 2;
+    int step = dot * 2;
+    int gx = (g->grip.left + g->grip.right) / 2 - (dot + step / 2) / 2;
+    int gy = (g->grip.top + g->grip.bottom) / 2 - step - dot / 2;
+    HBRUSH dot_br = hg_cached_solid_brush(active_dots ? dpal->accent : dpal->line_strong);
+    if (dot_br) {
+        for (int ry = 0; ry < 3; ++ry) {
+            for (int cx = 0; cx < 2; ++cx) {
+                RECT dr = {gx + cx * step, gy + ry * step, gx + cx * step + dot, gy + ry * step + dot};
+                FillRect(dc, &dr, dot_br);
+            }
+        }
+    }
 }
 
 /* state 0 empty, 1 a dash (some), 2 a tick */
@@ -2007,9 +2012,12 @@ static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
 {
     HDC dc = dis->hDC;
     RECT rc = dis->rcItem;
+    double ws = hg_window_scale(hwnd);
+    const HgUiPalette *dpal = hg_ui_doc_palette();
     HgDocumentColors page = hg_document_colors_for(HG_DOC_PAGE_NOTE);
     HgDocumentColors field = hg_document_field_colors_for(HG_DOC_PAGE_NOTE);
     BOOL selected = (dis->itemState & ODS_SELECTED) != 0;
+    BOOL pressed = ((int)dis->itemID == s_pressed_row);
     HBRUSH fill = hg_cached_solid_brush(page.bg);
     if (fill)
         FillRect(dc, &rc, fill);
@@ -2019,18 +2027,30 @@ static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
     int row_h = rc.bottom - rc.top;
     int item = (int)dis->itemData;
     BOOL heading = (item == HG_NOTE_ITEM_HEAD_ACTIVE || item == HG_NOTE_ITEM_HEAD_ARCHIVED);
+    BOOL is_archived_row = (item >= 0 && item < s_note_count && s_notes[item].used && s_notes[item].archived);
     BOOL focused = (dis->itemState & ODS_FOCUS) && GetFocus() == dis->hwndItem;
     NoteGripRow g;
     note_grip_row(hwnd, &rc, (int)dis->itemID, &g);
     COLORREF ink = page.text;
+
     if (!heading) {
-        note_draw_grip_shape(dc, hwnd, &g, selected ? hg_ui_doc_select_color() : field.bg, focused);
-        ink = field.text;
+        COLORREF bar_bg = pressed ? dpal->bg3 : (selected ? hg_ui_doc_select_color() : (is_archived_row ? dpal->bg2 : field.bg));
+        note_draw_grip_shape(dc, hwnd, &g, bar_bg, focused, selected || pressed);
+        ink = (selected && hg_g_is_high_contrast) ? GetSysColor(COLOR_HIGHLIGHTTEXT) : field.text;
     } else if (selected) {
         HBRUSH sel = hg_cached_solid_brush(hg_ui_doc_select_color());
         if (sel)
             FillRect(dc, &rc, sel);
+    } else if (item == HG_NOTE_ITEM_HEAD_ARCHIVED) {
+        HBRUSH hbr_arc = hg_cached_solid_brush(dpal->bg2);
+        if (hbr_arc)
+            FillRect(dc, &rc, hbr_arc);
+        RECT rule = {rc.left, rc.top, rc.right, rc.top + 1};
+        HBRUSH hbr_ln = hg_cached_solid_brush(dpal->line);
+        if (hbr_ln)
+            FillRect(dc, &rule, hbr_ln);
     }
+
     if (item >= 0 && item < s_note_count && s_notes[item].used) {
         int box = note_check_box_size(hwnd, row_h);
         int y = rc.top + (row_h - box) / 2;
@@ -2042,13 +2062,43 @@ static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
     text[0] = L'\0';
     if (SendMessageW(dis->hwndItem, LB_GETTEXTLEN, dis->itemID, 0) < (LRESULT)HG_ARRAYSIZE(text))
         SendMessageW(dis->hwndItem, LB_GETTEXT, dis->itemID, (LPARAM)text);
+
     RECT rt = rc;
     rt.left = g.text_x;
     if (!heading)
-        rt.right = g.bar.right - SCW(hg_window_scale(hwnd), 4);
+        rt.right = g.bar.right - SCW(ws, 6);
+
     SetBkMode(dc, TRANSPARENT);
-    SetTextColor(dc, ink);
+    HFONT old_font = NULL;
+    if (!heading && item >= 0 && item < s_note_count && s_notes[item].used && (g.bar.right - g.bar.left) >= SCW(ws, 180)) {
+        const HgNote *note = &s_notes[item];
+        int sec = note->archived ? HG_NOTE_SECTION_ARCHIVED : HG_NOTE_SECTION_ACTIVE;
+        const SYSTEMTIME *st = (s_sort[sec].key == HG_NOTE_SORT_CREATED) ? &note->created : &note->modified;
+        WCHAR date_buf[24];
+        hellgates_wsprintf(date_buf, HG_ARRAYSIZE(date_buf), L"%04d-%02d-%02d", st->wYear, st->wMonth, st->wDay);
+
+        HFONT df = s_list_date_font ? s_list_date_font : s_list_font;
+        if (df)
+            old_font = (HFONT)SelectObject(dc, df);
+        SIZE dsz = {0, 0};
+        GetTextExtentPoint32W(dc, date_buf, lstrlenW(date_buf), &dsz);
+        int date_w = dsz.cx + SCW(ws, 6);
+        RECT drc = {rt.right - date_w, rc.top, rt.right, rc.bottom};
+        SetTextColor(dc, selected ? ink : dpal->muted);
+        DrawTextW(dc, date_buf, -1, &drc, DT_SINGLELINE | DT_VCENTER | DT_RIGHT | DT_NOPREFIX);
+        rt.right = drc.left - SCW(ws, 8);
+        if (s_list_font)
+            SelectObject(dc, s_list_font);
+    } else if (heading) {
+        HFONT hf = (item == HG_NOTE_ITEM_HEAD_ARCHIVED && s_list_date_font) ? s_list_date_font : s_list_font;
+        if (hf)
+            old_font = (HFONT)SelectObject(dc, hf);
+    }
+
+    SetTextColor(dc, heading ? (selected ? ink : ((item == HG_NOTE_ITEM_HEAD_ARCHIVED) ? dpal->fg : dpal->accent)) : ink);
     DrawTextW(dc, text, -1, &rt, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
+    if (old_font)
+        SelectObject(dc, old_font);
 
     if (heading && focused)
         note_draw_focus_ring(dc, hwnd, &rc);
@@ -2058,14 +2108,13 @@ static void note_draw_head_button(HWND hwnd, const DRAWITEMSTRUCT *dis)
 {
     HDC dc = dis->hDC;
     RECT rc = dis->rcItem;
+    const HgUiPalette *dpal = hg_ui_doc_palette();
     HgDocumentColors field = hg_document_field_colors_for(HG_DOC_PAGE_NOTE);
     BOOL pressed = (dis->itemState & ODS_SELECTED) != 0;
-    HBRUSH fill = hg_cached_solid_brush(pressed ? hg_ui_doc_select_color() : field.bg);
+    BOOL hovered = ((int)dis->CtlID == s_head_hover_id);
+    HBRUSH fill = hg_cached_solid_brush(pressed ? hg_ui_doc_select_color() : (hovered ? dpal->bg3 : dpal->bg2));
     if (fill)
         FillRect(dc, &rc, fill);
-    HBRUSH edge = hg_cached_solid_brush(hg_ui_doc_line_strong());
-    if (edge)
-        FrameRect(dc, &rc, edge);
 
     if (dis->CtlID == HG_NOTE_CHECKALL_ID) {
         int side = rc.bottom - rc.top;
@@ -2108,6 +2157,16 @@ static int note_list_row_height(HWND hwnd)
 static void note_list_apply_fonts(HWND hwnd)
 {
     note_apply_font(hwnd, HG_NOTE_LIST_ID, &s_list_font);
+    double ws = hg_window_scale(hwnd);
+    int dh = SCW(ws, 12);
+    if (dh < 10)
+        dh = 10;
+    if (s_list_date_font) {
+        DeleteObject(s_list_date_font);
+        s_list_date_font = NULL;
+    }
+    s_list_date_font = CreateFontW(-dh, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                                   CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, hg_g_doc_font_name);
     for (size_t i = 0; i < HG_ARRAYSIZE(s_head_ids); ++i) {
         HWND child = GetDlgItem(hwnd, s_head_ids[i]);
         if (child)
@@ -2126,6 +2185,9 @@ static void note_list_layout(HWND hwnd, int width, int height)
     int pad = SCW(ws, 6);
     int gap = SCW(ws, 4);
     int row_h = note_list_row_height(hwnd) + SCW(ws, 4);
+    int min_h = SCW(ws, 30);
+    if (row_h < min_h)
+        row_h = min_h;
     int x = pad;
 
     HDC dc = GetDC(hwnd);
@@ -2234,6 +2296,20 @@ static LRESULT CALLBACK note_head_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         return 0;
     int id = GetDlgCtrlID(hwnd);
     BOOL is_search = (id == HG_NOTE_SEARCH_ID);
+
+    if (!is_search && msg == WM_MOUSEMOVE) {
+        if (s_head_hover_id != id) {
+            s_head_hover_id = id;
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+        TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};
+        TrackMouseEvent(&tme);
+    } else if (!is_search && msg == WM_MOUSELEAVE) {
+        if (s_head_hover_id == id) {
+            s_head_hover_id = 0;
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+    }
 
     if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS) {
         if (msg == WM_SETFOCUS)
@@ -2478,19 +2554,57 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
             note_list_toggle_checked(GetParent(hwnd), row);
             return 0;
         }
+        if (msg == WM_LBUTTONDOWN && row >= 0 && row != s_pressed_row) {
+            s_pressed_row = row;
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
     }
 
-    /* The action row reads as a button, so it answers a single click rather than
-     * the double click a note needs. Both button messages are swallowed so a
-     * quick second click cannot make a second note. */
-    if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK) {
-        int row = note_list_row_at(hwnd, l_param);
-        if (note_list_item(hwnd, row) == HG_NOTE_ITEM_ADD) {
-            SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)row, 0);
-            if (msg == WM_LBUTTONDOWN)
-                PostMessageW(GetParent(hwnd), HG_NOTE_MSG_ADD, 0, 0);
-            return 0;
+    if (msg == WM_LBUTTONUP || msg == WM_CAPTURECHANGED) {
+        if (s_pressed_row != -1) {
+            s_pressed_row = -1;
+            InvalidateRect(hwnd, NULL, FALSE);
         }
+    }
+
+    if (msg == WM_PAINT && s_visible_note_count == 0) {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        HgPaintBuffer buffer;
+        BOOL buffered = hg_paint_buffer_begin(hdc, rc.right, rc.bottom, &buffer);
+        HDC dc = buffered ? buffer.dc : hdc;
+
+        DefSubclassProc(hwnd, WM_PRINTCLIENT, (WPARAM)dc, PRF_CLIENT | PRF_ERASEBKGND);
+
+        int count = (int)SendMessageW(hwnd, LB_GETCOUNT, 0, 0);
+        int top_y = rc.top;
+        if (count > 0) {
+            RECT last_r;
+            if (SendMessageW(hwnd, LB_GETITEMRECT, (WPARAM)(count - 1), (LPARAM)&last_r) != LB_ERR)
+                top_y = last_r.bottom;
+        }
+        RECT empty_rc = {rc.left, top_y, rc.right, rc.bottom};
+        if (empty_rc.bottom > empty_rc.top + 8) {
+            const HgUiPalette *dpal = hg_ui_doc_palette();
+            HWND search = GetDlgItem(GetParent(hwnd), HG_NOTE_SEARCH_ID);
+            BOOL has_q = (search && GetWindowTextLengthW(search) > 0);
+            HFONT font = s_list_font ? s_list_font : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT old = (HFONT)SelectObject(dc, font);
+            SetBkMode(dc, TRANSPARENT);
+            SetTextColor(dc, dpal->muted);
+            DrawTextW(dc, has_q ? L"No matching notes." : L"No notes yet. Click Add or press Insert.", -1, &empty_rc,
+                      DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_NOPREFIX);
+            SelectObject(dc, old);
+        }
+
+        if (buffered) {
+            BitBlt(hdc, 0, 0, rc.right, rc.bottom, buffer.dc, 0, 0, SRCCOPY);
+            hg_paint_buffer_end(&buffer);
+        }
+        EndPaint(hwnd, &ps);
+        return 0;
     }
 
     if (msg == WM_MOUSEWHEEL && (GET_KEYSTATE_WPARAM(w_param) & MK_CONTROL)) {
@@ -2692,11 +2806,17 @@ LRESULT CALLBACK note_list_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_pa
         return 0;
 
     case WM_DESTROY:
+        s_pressed_row = -1;
+        s_head_hover_id = 0;
         if (s_note_list_wnd == hwnd)
             s_note_list_wnd = NULL;
         if (s_list_font) {
             DeleteObject(s_list_font);
             s_list_font = NULL;
+        }
+        if (s_list_date_font) {
+            DeleteObject(s_list_date_font);
+            s_list_date_font = NULL;
         }
         return 0;
     }

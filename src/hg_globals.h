@@ -16,6 +16,7 @@ extern COLORREF hg_g_color_value_bright_lo;
 extern COLORREF hg_g_color_value_bright_hi;
 extern COLORREF hg_g_color_value_vol_lo;
 extern COLORREF hg_g_color_value_vol_hi;
+extern int hg_g_color_scheme_kind; /* HG_SCHEME_INANIS or HG_SCHEME_PLAIN */
 extern color_scheme_t hg_g_color_scheme_dark;
 extern color_scheme_t hg_g_color_scheme_light;
 extern color_scheme_t hg_g_color_scheme_selected;
@@ -56,8 +57,6 @@ extern HFONT hg_g_toolbar_badge_font;
 /* Ticks on every release_font_handle; see the note there. */
 extern unsigned hg_g_font_generation;
 extern HBRUSH hg_g_main_bg_brush;
-extern HBRUSH hg_g_edit_bg_brush;
-extern HBRUSH hg_g_hbr_highlight;
 extern int hg_g_floater_font_size;
 extern int hg_g_current_font_size;
 extern int hg_g_edit_font_size;
@@ -103,6 +102,7 @@ extern POINT hg_g_last_mouse_pos;
 /* TRUE while the taskbox is being driven by the keyboard. See
  * hg_keyboard_mode_begin in hg_taskbox.h for what it changes and why. */
 extern BOOL hg_g_keyboard_mode;
+extern BOOL hg_g_badge_mod_peek; /* TRUE while Shift/Ctrl/Alt is held in Taskbox (D-U1) */
 extern BOOL hg_g_hover_check_armed;
 extern BOOL hg_g_floater_show_stats; /* [floater] show_stats: battery/CPU/memory line */
 extern RECT hg_g_floater_home_rect;   /* floater position before a click/hotkey expand */
@@ -110,6 +110,10 @@ extern RECT hg_g_taskbox_expand_rect; /* taskbox position right after that expan
 extern BOOL hg_g_floater_home_valid;
 extern BOOL hg_g_taskbox_pinned;      /* P button: taskbox stays open, no hover auto-collapse */
 extern BOOL hg_g_taskbox_group_rows;    /* [taskbox] rows_by_group: windows, shortcuts and buttons each start a row */
+/* Set at initial taskbox creation and cleared as soon as append_message() or
+ * the idle status clock updates the status line (D-U9 / Phase 1). */
+extern BOOL hg_g_status_is_welcome;
+
 extern BOOL hg_g_taskbox_open_on_hover; /* [taskbox] open_on_hover: pointer opens it, not just a click */
 extern BOOL hg_g_window_outline;        /* [taskbox] window_outline: a task icon outlines its window */
 extern BOOL hg_g_tabbox_on_hover;       /* [taskbox] tab_box: a tabbed icon opens its list of tabs */

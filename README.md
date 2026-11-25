@@ -1,17 +1,17 @@
-[한국어](README.ko.md) | **English** — **HGFloater v0.17.32** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.17.32/hgfloater.exe)
+[한국어](README.ko.md) | **English** — **HGFloater v0.18.0** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.0/hgfloater.exe)
 
 # HGFloater
 
-**v0.17.32** — built 2026-11-14
+**v0.18.0** — built 2026-11-25
 
-**[Download hgfloater.exe — v0.17.32, 780 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.18.0, 840 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 780 KB** that needs no installer and no runtime, so
+single **executable of about 840 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -29,7 +29,7 @@ it starts instantly and stays out of your way.
 4. [The Floater](#4-the-floater)
 5. [The Taskbox](#5-the-taskbox)
 6. [The Toolbar](#6-the-toolbar)
-7. [The A/V List](#7-the-av-list)
+7. [The A/V Control Center](#7-the-av-control-center)
 8. [The Command Box](#8-the-command-box)
 9. [Monitor Thumbnails](#9-monitor-thumbnails)
 10. [Notes](#10-notes)
@@ -198,11 +198,14 @@ if it hangs off the edge, it is pulled back inside.
 - **Hover** — nothing, unless you ask for it. **Open the Taskbox from the
   Floater** in the [settings window](#71-the-settings-window) has four choices:
   **click only** (the default), or the pointer resting on **the minutes**, on
-  **the hours**, or on **either** of them. Nothing else on the floater answers
-  a hover — the bars, the date and the host name are things a hand crosses on
-  its way elsewhere. The click above keeps working from anywhere in every mode.
-  **Open the Taskbox on Hover** in the [`Set` list](#62-the-set-button) is
-  the same switch, on and off; which part answers is the settings window's.
+  **the hours**, or on **either** of them. When a hover zone is active, the clock
+  digits inside it show a subtle flat hotzone plate and bottom underline (which
+  brightens when pointed at) so the trigger area is easy to spot. Nothing else on
+  the floater answers a hover — the micro-line bars, the date and the host name
+  are things a hand crosses on its way elsewhere. The click above keeps working
+  from anywhere in every mode. **Open the Taskbox on Hover** in the
+  [`Set` list](#62-the-set-button) is the same switch, on and off; which part
+  answers is the settings window's.
 - **Left drag** — moves the floater anywhere on any monitor, the taskbar
   included. A press and
   release without moving is a click and toggles the taskbox; a few pixels of
@@ -304,7 +307,7 @@ and nothing else; it holds no keyboard hook and never has.
 
 The taskbox is a grid of icons under the status line, which runs its whole
 width. The built-in buttons are in the grid, ending in the bottom-right corner
-with `X`.
+with `D`.
 
 ### 5.1 Running windows and shortcuts
 
@@ -352,9 +355,11 @@ with `X`.
 > renaming everything after it.
 - **Left click** activates a task or launches a shortcut.
 
-**Every icon carries its key** in a small box at its top-left corner. The badge
-is the whole chord: the `S` is `Shift`, so `S3` means **`Shift + 3`**, which
-activates that icon exactly as clicking it would.
+**Every icon knows its key**, and reveals a small badge at its top-left corner on
+demand — when pointed at, when it holds keyboard focus, or while holding a
+modifier key (`Shift`, `Ctrl`, or `Alt`) — keeping resting tiles uncluttered.
+The badge is the whole chord: the `S` is `Shift`, so `S3` means **`Shift + 3`**,
+which activates that icon exactly as clicking it would.
 
 - **Windows take the digits:** `S0` to `S9`, the first ten, and no key past
   that.
@@ -372,12 +377,12 @@ nobody can press is furniture.
 `Shift` is what keeps this clear of the bare-letter grid movement (`WASD`) and
 of the bare `C` that opens the command box.
 
-**Every button in that half of the grid is framed** — the function buttons, and
-the shortcuts alike — with a faint one-pixel line and a square bracket on each
-corner; the button the keyboard is on gets a two-pixel ring in the focus colour.
+**Every button in that half of the grid sits on a flat Win8 tile** — a quiet
+surface tint that lifts on hover, with no heavy resting border around each icon;
+the button the keyboard is on gets a crisp one-pixel ring in the focus colour.
 
-**The function buttons wear the same badge**, for the same reason: `Cmd` shows
-`C`, `Note` shows `N`, `Clip` shows `CL`, `A/V` shows `CO`, `X` shows `CQ`. The
+**The function buttons wear the same on-demand badge**, for the same reason:
+`Cmd` shows `C`, `Note` shows `N`, `Clip` shows `CL`, `A/V` shows `CO`. The
 modifiers are their initials in a fixed order — `C`trl, `A`lt, `S`hift, `W`in —
 so `CN` is `Ctrl + N` and `CSR` is `Ctrl + Shift + R`. A button no chord reaches
 wears nothing, and a key whose name is too long for the box (`Space`, `Delete`)
@@ -495,33 +500,33 @@ publish off-screen tabs at all, and those tabs will not appear.
 
 ### 5.2 The status line
 
-A single-line read-only field in the top-left corner of the taskbox, against
-the frame's top and left edges. It runs as far as the `D` `R` `M` `X` buttons
-beside it and stops a gap short of them, so the two never overlap. The strip is
-as tall as the taller of the two - a large status-line font or large icons - and
-the grid starts under it. The taskbox is never narrower than six columns, so
-the line always has room.
+A single-line read-only field across the top strip of the taskbox, against the
+frame's top and left edges. It runs the full width above the grid without
+competing with corner buttons. The strip is as tall as the taller of the two —
+a large status-line font or a compact minimum bar height — and the grid starts
+under it.
 
-- It shows **one message at a time** — the most recent one replaces its
-  predecessor.
+- On startup, before messages arrive, it shows a brief hint line (`Ready  |  Ctrl+O: A/V  |  ?: F1`).
+- After that it shows **one message at a time** — the most recent one replaces
+  its predecessor.
 - Ten seconds after the last message it falls back to the **current time**,
   written as `2026. 11. 23.(Tue) 13:24`, and refreshes as the minute changes.
-- **Right click** it to open the A/V list (the same one the `A/V` button
-  opens).
+- **Right click** it to open the [A/V Control Center](#7-the-av-control-center)
+  (the same popup the `A/V` button opens).
 - **Left drag** it to move the whole taskbox.
 - **Ctrl + Wheel** over it changes only its own font size.
 
 ### 5.3 Shape and size
 
 **The grid has no breaks:** your windows fill from the top-left corner, and
-your shortcuts and the thirteen buttons are one run that ends in the
-bottom-right corner - `A/V` `Vol` `Mon` `Alp` `Dir` `Set` `Clip` `Note` `Cmd`
-`D` `R` `M` `X`, `X` in the corner, and the shortcuts to the left of `A/V`, the
+your shortcuts and the ten buttons are one run that ends in the
+bottom-right corner — `A/V` `Vol` `Mon` `Alp` `Dir` `Set` `Clip` `Note` `Cmd`
+`D`, with `D` in the corner, and the shortcuts to the left of `A/V`, the
 first one nearest. Whatever room is left over is empty cells between the two,
 so the buttons are always in the same place however many windows are open. A
-**separator cell**, one upright line down its middle, separates each kind from the next: one before the shortcuts,
-one between the shortcuts and the buttons. It is not a button; nothing happens
-when it is clicked.
+**separator cell**, one upright line down its middle, separates each kind from
+the next: one before the shortcuts, one between the shortcuts and the buttons.
+It is not a button; nothing happens when it is clicked.
 
 The arrow keys walk them all: `Right` off the last window lands on the last
 shortcut, off the first shortcut on `A/V`, and neither the empty cells nor the
@@ -531,11 +536,9 @@ separators cost a key. What a shortcut answers to is in
 **Windows, Shortcuts, Buttons by Row** in the `Set` list or the
 [settings window](#71-the-settings-window) gives each kind rows of its own
 instead (`[taskbox] rows_by_group=1`, or `write option grouprows on`): your
-windows, then your shortcuts on a fresh row, then the buttons in two lines -
-`A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd` `D` `R` `M` `X` -
-each ending at the right edge. That was the default until v0.17.23, under the
-key `group_rows`; that key is no longer read, so an older settings file starts
-in the new layout.
+windows, then your shortcuts on a fresh row, then the buttons in two lines —
+`A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd` `D` —
+each ending at the right edge.
 
 - **Drag any border** to change the grid: the taskbox snaps to whole columns, so
   no half icon is ever left hanging.
@@ -546,22 +549,24 @@ in the new layout.
 
 ## 6. The Toolbar
 
-Thirteen built-in buttons, in the same grid as the icons, in two lines that end
-at the right edge: `A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd`
-`D` `R` `M` `X`, with `X` in the bottom-right corner - and a fourteenth,
+Ten built-in buttons, in the same grid as the icons, in two lines that end at
+the right edge: `A/V` `Vol` `Mon` `Alp`, then `Dir` `Set` `Clip` `Note` `Cmd`
+`D`, with `D` in the bottom-right corner — and an eleventh,
 [`Bak REC`](#66-bakrec-moving-a-recorders-recordings), left of `A/V` while a
-voice recorder is plugged in. The names are what the tooltips and the status
-line call them; on the button itself each has **an icon** (the table below says
-which). Three of them open a box instead of doing something outright, and three —
-`Vol`, `Mon` and `Alp` — show a reading by the colour behind the icon.
+voice recorder is plugged in. Moving the taskbox (`Move Taskbox Aside`) and
+exiting (`Exit hgfloater`, or `Ctrl + Q`) live in the [`Set` list](#62-the-set-button),
+and resizing uses the window borders, keeping those utility actions off the
+main tile grid. The names are what the tooltips and the status line call them;
+on the button itself each has **an icon** (the table below says which). Three of
+them open a list or popup window instead of doing something outright, and
+three — `Vol`, `Mon` and `Alp` — show a reading by a gauge bar inside the flat
+tile behind the icon.
 
 **The icons are drawn, not stored**: each is a few strokes, drawn fresh at the
 size the taskbox's icons have, so they stay sharp however large the font makes
-them. Every icon **leaves the top-left quarter of its button empty** — that is
-where a button's key badge goes (below) — and is drawn in the other three.
-`R`, which has no key, is the one exception: a small window in that corner
-growing toward the far one. While
-BakREC moves recordings its icon gives way to the percent done.
+them. Each glyph sits centered on its flat tile; when hovered, keyboard-focused,
+or while a modifier key is held, the button's key badge appears in the top-left
+corner. While BakREC moves recordings its icon gives way to the percent done.
 
 **A button's tooltip names its key.** Hovering `Cmd` reads
 `Command Box  (C, Ctrl+E)`; a button that no chord reaches says only what it
@@ -571,17 +576,14 @@ built, so a key you rebind is the key the tooltip shows.
 
 | Button — icon | Click | Drag / Wheel |
 | :--- | :--- | :--- |
-| **`R`** Resize — a frame, its top-left corner filled, an arrow to the far corner | — | **Drag** resizes the taskbox grid. |
-| **`M`** Move — arrows four ways | **Click** moves the taskbox aside (see below). | **Drag** moves the window. |
-| **`X`** Exit — a cross | Quits HGFloater. | — |
 | **`D`** Desktop — a screen, an arrow down | Minimizes every window; click again to restore. | — |
 | **`Cmd`** Command — a prompt `>_` | Opens the [Command Box](#8-the-command-box). | — |
 | **`Note`** Note — a pen and the line it wrote | Opens the [note list](#10-notes). | — |
 | **`Clip`** Clipboard — a clipboard | Opens the clipboard history, as `Ctrl + L` does; press again, with it in front, to close it. | — |
-| **`Set`** Settings — three sliders | Opens the [control list](#62-the-set-button): the pin, the switches, and the doors to the settings. | — |
-| **`A/V`** Audio / Video — a speaker and a screen | Opens the [A/V list](#7-the-av-list) — output device, screens, scaling, brightness — **directly under the button**. | — |
-| **`Vol`** Volume — a speaker and its waves | Mutes and unmutes. Right-click: which output device plays. See [the reading buttons](#64-vol-mon-and-alp). | **Wheel** sets the volume. |
-| **`Mon`** Monitor — a lit bulb | The scaling for this screen. Right-click: how the screens are arranged. | **Wheel** sets the brightness. |
+| **`Set`** Settings — three sliders | Opens the [control list](#62-the-set-button): the pin, switches, `Move Taskbox Aside`, settings doors, and `Exit hgfloater`. | — |
+| **`A/V`** Audio / Video — a speaker and a screen | Opens the [A/V Control Center](#7-the-av-control-center) popup — output device, screens, scaling, brightness. | — |
+| **`Vol`** Volume — a speaker and its waves | Mutes and unmutes. Right-click: opens Audio in the A/V Control Center. See [the reading buttons](#64-vol-mon-and-alp). | **Wheel** sets the volume. |
+| **`Mon`** Monitor — a lit bulb | The scaling for this screen. Right-click: opens Display in the A/V Control Center. | **Wheel** sets the brightness. |
 | **`Alp`** Opacity — two overlapping sheets | — | **Wheel** sets the taskbox's opacity. |
 | **`Dir`** Folders — a folder | Opens the [folder list](#61-the-dir-button) — the shortcuts that point at a directory. | — |
 | **`Bak REC`** Recorder backup — an arrow into a tray, the record dot | Only while a USB voice recorder is plugged in. Moves its recordings to a folder; right-click to set the recorder's clock or edit its settings. See [BakREC](#66-bakrec-moving-a-recorders-recordings). | — |
@@ -670,94 +672,49 @@ button under the pointer.
 
 ### 6.3 The A/V button
 
-**`A/V` opens the sound and picture controls as a list** — the output device,
-how the screens are arranged, and each display's scaling and brightness. It was
-called `Opt` up to v0.17.15, when the list also held the shortcuts folder, the
-lock and About; those are rows of the [`Set` list](#62-the-set-button) now. It
-is — the same box `Dir` and `Set` use, in the
-same place, answering the same keys. Click it, press `Space` on it, or press
-`Ctrl + O`. Right-clicking the status line opens the same list.
+**`A/V` opens the [A/V Control Center](#7-the-av-control-center)** — a dedicated
+2-pane popup window holding output device selection, mute and master volume,
+Windows display topology, and each display's preview thumbnail, scaling and
+brightness. It was called `Opt` up to v0.17.15, when the list also held the
+shortcuts folder, the lock and About; those are rows of the
+[`Set` list](#62-the-set-button) now, alongside `Move Taskbox Aside` and
+`Exit hgfloater`.
 
-**Like `Dir` and `Set`, it opens on hover** — and when the arrows land on it.
-It is assembled as it opens, by enumerating the audio endpoints and asking every
-display for its scaling, so on a machine with many of either it can take a
-moment longer to appear than the other two.
+**Unlike `Dir` and `Set`, `A/V` does not pop open on accidental pointer hover.**
+Because enumerating audio endpoints and per-display DDC/CI brightness takes a
+short moment, it waits for a deliberate open: click `A/V`, press `Space` or
+`Enter` on it, press `Ctrl + O`, right-click the status line, or right-click
+`Vol` or `Mon`.
 
-**Every submenu is flattened into that one list**, each row carrying the path
-that led to it:
+Everything lives inside that 2-pane popup: select **Audio** or a specific
+**Display** on the left sidebar, and adjust its controls in the detail pane on
+the right.
 
-```
-Select Audio Device > Speakers (Realtek)
-Select Audio Device > Mute
-Screens > PC screen only
-Screens > Duplicate
-Screens > Extend
-Screens > Second screen only
-Display 1 > Preview Window
-Display 1 > Scale                 125%
-Display 1 > Brightness             50%
-```
-
-**`Screens >` is `Win + P` without the overlay** — the four arrangements Windows
+**`Screens` is `Win + P` without the overlay** — the four arrangements Windows
 has, by the same call: one screen, the same picture on both, one desk across
-both, the other screen. The one in force is ticked. They come before the
-per-display rows because they decide which displays there are to set.
+both, the other screen, laid out as a 2x2 tile grid with the active one highlighted.
 
-They are **named the way Windows names them**, not "display 1" and "display 2":
-the call is not numbered — it speaks of the internal panel and the external one,
-which are 1 and 2 on a laptop, and on a desktop are Windows' choice. A row
-promising a particular monitor would be promising something this cannot do.
+All four tiles are always shown, even when one screen is attached. Hiding them would
+be a one-way door: **PC screen only** leaves a single display, and the tile that
+brings the other one back would have just vanished. Windows refuses an
+arrangement it cannot make — asking for the second screen when there is no second
+screen — and the status line says so rather than appearing to do nothing.
 
-All four are always listed, even when one screen is attached. Hiding them would
-be a one-way door: **PC screen only** leaves a single display, and the rows that
-bring the other one back would be the rows that had just vanished. Windows
-refuses an arrangement it cannot make — asking for the second screen when there
-is no second screen — and the status line says so rather than the row appearing
-to do nothing.
+**Brightness applies as you slide; scaling applies right when you click a chip.**
+Each display panel also offers the resolution chips and the **Preview Window**
+toggle. Displays are named by index, EDID model name and connector (for example
+`2. DELL U2720Q (DP)`). A display that will not report a value shows `--`.
 
-**Scale and brightness are rows you turn**, the way the reading buttons are turned: the
-**wheel** over the row, or **Left / Right** (or **PageUp / PageDown**) once it is
-selected, walks the
-display through the values it accepts — the same 100/125/150/175/200% ladder
-Windows offers and the same quarter steps for the backlight, one rung per notch.
-They used to be a rung each, so one display cost eleven rows and three displays
-cost thirty-three; the reading is on the row now and the ladder is behind it. A
-display that will not report a value shows `--` and still steps.
-
-**Brightness applies as you step; scaling applies when the list closes.** A
-backlight step is a message to the monitor and seeing it is the whole point of
-stepping. Changing a display's scaling is not: Windows relays out every window
-on that display, so walking from 100% to 150% while each rung applied would be
-three reflows of the desktop to reach the one you wanted. The row moves its
-reading as you walk it and the change is sent once — when you press `Esc`, step
-away to another icon, click elsewhere, or the taskbox folds up. The tooltip on
-that row says so.
-
-There is no `Exit` row: the `X` button and `Ctrl + Q` quit.
-
-A submenu that only opens when you hover its parent is a thing to discover, and
-there is nothing here to discover: four displays' worth of brightness steps is a
-long list, not a deep one. A ticked row keeps its `✓`, and a row that cannot be
-used right now — a display whose driver will not report its scaling — stays in
-place but dead, and says why in its tooltip.
-
-**There is no Windows menu behind this.** There was: the options were a real
-menu with submenus, and for one version that menu was still being built, walked
-back into rows, and thrown away every time the list opened — a tree assembled
-only to be flattened. The rows are what gets built now, and they are built fresh
-each time the list opens, so what it shows — the audio devices, the displays,
-which row is ticked — is the machine as it is at that moment.
-
-**`M` — move aside.** Clicking the move handle without dragging nudges the pair
-out of the way on its own, just far enough to stop covering the spot it was
-sitting on. Clicks keep their heading, so pressing it repeatedly walks the
-window across the screen; when that heading runs out of room it turns
+**Move Taskbox Aside** (now a row in the `Set` list) nudges the taskbox out of
+the way on its own, just far enough to stop covering the spot it was sitting on.
+Repeated triggers keep the heading until reaching a screen edge, turning
 counter-clockwise — north, west, south, east, and back to north. If no direction
-has room, nothing moves.
+has room, nothing moves. `Exit hgfloater` in the `Set` list (and `Ctrl + Q`
+anywhere) quits the program.
 
-**`Bri` — brightness.** The wheel moves brightness in **10% steps**; opacity
-and volume move in 5%. The `A/V` list offers quarter steps per display when you
-want a specific level rather than a nudge.
+**`Mon` — brightness.** The wheel moves brightness in **10% steps**; opacity
+and volume move in 5%. The A/V Control Center slider lets you pick any value per
+display cleanly.
 
 HGFloater tries three things per display, in order, and remembers which one
 answered. First the **low-level DDC/CI** path: it reads the monitor's
@@ -779,8 +736,10 @@ service, the same one the system slider uses. That moves the lamp, not the
 picture.
 
 **`Pin`** is a row of the `Set` list. While pinned, moving the mouse away no
-longer collapses the taskbox. Explicit closes — `X`, `Esc`, the global hotkey,
-a floater click — still work. Click it again to unpin.
+longer collapses the taskbox. Explicit closes — `Esc`, the global hotkey,
+a floater click, or quitting via `Exit hgfloater` / `Ctrl + Q` — still work.
+Click it again to unpin. The `Set` list groups its rows with hairline dividers
+and shows a bottom hint strip (`Tab: focus | Space: toggle | Esc: close`).
 
 
 ### The clipboard history
@@ -805,7 +764,7 @@ image or a file leaves the history untouched rather than adding an empty row.
 | **Click** a row, or `Enter` | Makes that clip the current one. **The window stays open**, so taking several clips in a row needs no reopening. |
 | **Right click** a row | A menu for that clip: **Copy to Clipboard**, **Delete**, **Delete All**. The row under the pointer is selected first, so the menu always acts on what you aimed at. |
 | `Del` | Deletes the selected clip. The selection stays where it was, so deleting several needs no re-aiming. |
-| **Search box**, top left | Shows only the clips containing what you type, ignoring case. Clear it to see them all again. |
+| **Search box**, top left | Shows only the clips containing what you type, ignoring case (cued with `Search clipboard...`). Clear it to see them all again. Rows carry a subtle ordinal number (`1.`, `2.`, ...) on the left. |
 | **Number box**, top right | The most clips to keep. Default 16, set with the spin buttons, the arrow keys, or the wheel over it. |
 | `Ctrl + Wheel` | Text size in this window, kept separate from the rest. |
 | `Alt + Wheel` | Opacity of this window. |
@@ -842,10 +801,11 @@ HGFloater empties the history.**
 ### 6.4 Vol, Mon and Alp
 
 **Three buttons on the row carry a reading: `Vol`, `Mon` and `Alp`.** They sit
-together between `Dir` and `A/V`, drawn like every other button except for one
-thing — **the colour behind each icon is the value.** A loud machine gives `Vol`
-a deep plate, a dim screen gives `Mon` a pale one, a see-through taskbox gives
-`Alp` a pale one. The three can be read at a glance, without opening anything.
+together between `A/V` and `Dir`, drawn on flat Win8 tiles with a live gauge —
+**a bottom-up partial fill and a 3-pixel bottom accent bar inside each tile**
+show the percentage at a glance without opening anything (with custom `[colors]
+value_*` ramps still honoured when set). When muted, `Vol` switches its gauge bar
+to the warning colour.
 
 For two releases (v0.17.13 and v0.17.14) they lived in a box behind an `Ico`
 button. A reading that has to be opened to be seen was one step too many, so
@@ -858,14 +818,13 @@ holds for every icon:
 | :--- | :--- | :--- | :--- |
 | **Wheel** | System volume, 5% a notch. A muted machine is unmuted first. | Brightness of the screen, 10% a notch. | Taskbox opacity, 5% a notch. |
 | **Click** | Mute and unmute. | The scaling for this screen — 100% to 225%, the same ladder Windows offers. | — |
-| **Right-click** | Which output device plays, with the current one ticked, and `Mute` below the list. | How the screens are arranged: `PC screen only`, `Duplicate`, `Extend`, `Second screen only`, with the one in force ticked; below them the resolution of the screen the taskbox is on: `1024 x 768`, `1280 x 720`, `1280 x 800`, `1920 x 1080`, `1920 x 1200`. | — |
+| **Right-click** | Opens the [A/V Control Center](#7-the-av-control-center) focused on **Audio** (output device list, mute, volume slider). | Opens the [A/V Control Center](#7-the-av-control-center) focused on the taskbox's **Display** (topology, preview, brightness, scaling, resolution). | — |
 
 The wheel changes the value, the click does the one thing you would want without
-being asked to choose, and the right button opens the choice. Nothing here is
-new behaviour — every one of these was already in the [A/V
-list](#7-the-av-list), and picking from these menus sends the very same
-instruction. What the buttons add is that it takes one gesture on the button
-that shows the reading.
+being asked to choose, and the right button opens the full
+[A/V Control Center](#7-the-av-control-center) directly on the matching section.
+Nothing here is new behaviour — the button simply jumps straight to Sound or
+Display with one gesture.
 
 **"This screen" means the screen the taskbox is on.** Not the screen the pointer
 is on: the pointer is over the button when the menu opens, so the two are almost
@@ -888,27 +847,23 @@ is the right-click.
 
 The arrows only move, on these three as on every other button: a reading is
 turned by keys of its own, so the way out of a button never depends on which
-button you are standing on. The text lists are the other way round — a list is
-a column, so on a row that holds a number `Left` and `Right` turn it (the scale
-and brightness rows of the [A/V list](#7-the-av-list)).
+button you are standing on.
 
 **The plate is never covered.** Pointing at one of these three, or arriving on
-it with the arrows, leaves its colour as it is: the focus is a ring in the
-focus colour round its edge, where every other button is filled. So the colour
-deepens or pales under your hand, notch by notch, while you turn it - and the
-status line says the number each time, from the wheel as from the keys,
-`Brightness: 60%` first and what the button does after it. `E` and
-`Q` work on these three buttons only; in the text lists every row from the
-tenth down wears a letter that jumps straight to it, so both letters are
-already spoken for in there.
+it with the arrows, keeps its gauge readable: the focus is a one-pixel ring in
+the focus colour round its edge. So the gauge bar rises or falls under your
+hand, notch by notch, while you turn it — and the status line says the number
+each time, from the wheel as from the keys, `Brightness: 60%` first and what
+the button does after it. `E` and `Q` work on these three buttons only; in the
+text lists (`Dir` and `Set`) every row from the tenth down wears a letter that
+jumps straight to it, so both letters are already spoken for in there.
 
-**The four screen arrangements are listed even with one screen attached.**
+**All four screen arrangements are shown even with one screen attached.**
 Hiding them would be a one-way door: `PC screen only` leaves exactly one
 display, and the entries that bring the other one back would be the ones that
-had just disappeared. A percentage a display will not accept is shown greyed
-rather than left out, so the ladder is the same ladder on every screen.
+had just disappeared.
 
-**The five resolutions are offered on every screen, too.** Picking one sets it
+**Scale and resolution chips appear per display.** Picking a resolution sets it
 for good (as the Settings app does); a size the screen does not offer is
 refused by Windows, and the status line says so and why.
 
@@ -978,44 +933,41 @@ nothing but say so.
   file, keeping everything else in it exactly as it was; **Cancel** leaves it
   alone. A recorder without the file gets the standard one when you save.
 
-## 7. The A/V List
+## 7. The A/V Control Center
 
-Open it with the [`A/V` button](#63-the-av-button) — as a list under the
-button, flattened to one level — with `Ctrl + O` in the taskbox, or by
-right-clicking the status line, which opens the same list at the pointer.
+Open it with the [`A/V` button](#63-the-av-button) (`Space`, `Enter`, or a
+click — it stays quiet on hover), with `Ctrl + O` in the taskbox, by
+right-clicking the status line, or by right-clicking `Vol` (for Audio) or
+`Mon` (for Display). To quit, use `Exit hgfloater` in the
+[`Set` list](#62-the-set-button) or `Ctrl + Q`. Switches, the settings window,
+`config.ini`, reset, the shortcuts folder, the lock and About all live in the
+[`Set` list](#62-the-set-button).
 
-It holds the machine's sound and picture, and nothing else. To quit, use the
-`X` button or `Ctrl + Q`. The switches, the
-settings window, the config file, the reset, the shortcuts folder, the lock and
-About are all rows of the [`Set` button's list](#62-the-set-button).
+Unlike the narrow hover menus used by `Dir` and `Set`, the **A/V Control Center**
+is a two-pane Master-Detail popup in the flat Win8 style:
 
-- **Select Audio Device** — lists the output devices with the current one
-  checked, and offers a **Mute** toggle.
-- **_(one entry per display)_** — every connected monitor gets its own submenu,
-  named the way you would name it: its number, the monitor name the driver reads
-  out of the display's EDID, and the connector it hangs off, as in
-  `2. DELL U2720Q (DP)`. Each submenu holds everything the app can do to that
-  one display:
-  - **Preview Window** — turns that display's
-    [thumbnail](#9-monitor-thumbnails) on and off.
-  - **Scale** — the Windows display-scaling percentages (100, 125, 150, 175,
-    200, 225). The current scale is checked; percentages the monitor cannot
-    reach are greyed out. Choosing one changes that monitor's scale
-    system-wide, exactly as the Settings app would.
-  - **Brightness** — the backlight in quarter steps (0, 25, 50, 75, 100). The
-    step nearest the monitor's current level is checked. Displays that answer
-    DDC/CI are driven directly; the rest fall back to a gamma curve applied to
-    that display alone, so dimming one screen leaves the others as they were.
-
-  The port is the socket on the graphics adapter, not the cable: a USB-C screen
-  running DisplayPort alt mode reports as `DP` and cannot be told apart from a
-  DisplayPort socket. `USB-C` appears when DisplayPort is tunnelled over USB4 or
-  Thunderbolt, which is the only case Windows reports separately.
+- **Left sidebar (Master)** — **Audio**, followed by one entry per attached
+  monitor named by index, EDID model name, and connector, such as
+  `1. DELL U2720Q (DP)` (USB-C tunnels over USB4/Thunderbolt report `USB-C`;
+  DisplayPort alt mode reports `DP`). Selecting a sidebar item swaps the right
+  pane; arrow keys move through the sidebar, `Tab` moves into controls, and
+  `Esc`, `Ctrl + W`, clicking the close button, or clicking outside dismisses
+  the popup.
+- **Right detail pane — Audio** — lists the audio output devices (active one
+  selected), a **Mute** toggle button, and a **Master Volume** slider.
+- **Right detail pane — Display** — shows a **2x2 Screen Topology** grid
+  (`PC screen only`, `Duplicate`, `Extend`, `Second screen only`, matching
+  `Win + P`), a **Preview Window** toggle for that monitor's
+  [thumbnail](#9-monitor-thumbnails), a live **Brightness** slider (DDC/CI
+  hardware backlight or laptop internal panel, with per-display gamma fallback),
+  **Scale** chips (`100` to `225%`, unsupported values disabled), and
+  **Resolution** chips (`1024 x 768` up to native modes).
 
 ### 7.1 The settings window
 
 **Settings Window...** in the `Set` list, `Ctrl + ,` from the floater or the
-taskbox, or `settings` in the command box. One list, in six parts:
+taskbox, or `settings` in the command box. One searchable list with a live
+top **`Filter settings... (Ctrl+F)`** bar, in six parts:
 
 - **Options** — the switches above. `Enter` or `Space` flips the selected one.
 - **Floater Clock** — five rows for [the clock](#41-the-clock-and-the-date):
@@ -1057,11 +1009,12 @@ taskbox, or `settings` in the command box. One list, in six parts:
   box, the notes (every editor and the note list together) and the clipboard
   window each have an opacity of their own: `commandbox-alpha`, `note-alpha`,
   `clip-alpha`. At 100% a note or clipboard window is not translucent at all.
-- **Window Colours** — the text and the background of the notes, the clipboard
-  window and the command box, six rows. `Enter` opens Windows' colour chooser
-  and `R` hands the colour back to the theme, which is where every one of them
-  starts. Each row wears a swatch of the colour the window shows. With Windows'
-  high contrast on, its colours win over these.
+- **Window Colours** — the **Color Scheme** selector (**`inanis`** default or
+  **`plain`** minimal palette), followed by the text and the background of the
+  notes, the clipboard window and the command box, six rows. `Enter` opens
+  Windows' colour chooser and `R` hands the colour back to the theme, which is
+  where every one of them starts. Each row wears a swatch of the colour the
+  window shows. With Windows' high contrast on, its colours win over these.
 - **Keys** — **window, function, keys**, which is how they are stored. A heading
   names the window, each row under it is a function, and **each chord is its own
   row** beneath the function it runs. On a function row, `Enter` waits for a
@@ -1073,11 +1026,11 @@ taskbox, or `settings` in the command box. One list, in six parts:
   While the window is waiting for a chord, nothing else in the program answers
   the keyboard: `F1` records `F1` instead of opening About.
 
-**A row that does something looks like it does something**: the actionable rows
-are drawn bold and underlined, and the row under the pointer is inverted. The
-arrows leave a selection and the pointer inverts what it is over — two different
-claims, "this is where you are" and "this is what you would get" — so a click
-lands where you expect it to.
+**A row that does something looks clean and clear**: section headers carry a
+subtle background band, hovered rows take a flat tint with a left accent stripe,
+and rows stay legible without bold-and-underline clutter. The arrows move the
+selection while the pointer tracks hover independently — so a click always lands
+where you expect it to.
 
 Nothing here has an OK button. Every change reaches `config.ini` and the running
 program at the moment it is made, which is what the wheel and the menus have
@@ -1097,8 +1050,8 @@ while the floater or taskbox has focus.
 
 **The keyboard goes to the input box** the moment the window opens, and again
 whenever it is activated, so the first thing you type lands where you meant it.
-**The window opens on its own key list** rather than a blank prompt — the same
-list `help key` prints.
+**The window opens with a compact two-line startup summary** (typing `help key`
+prints the full key list on request), paired with a flat **Execute** button.
 
 | Key | What it does |
 | :--- | :--- |
@@ -1189,7 +1142,7 @@ could come and go between the list you read and the number you typed.
 
 `X` and `Y` are measured from the target display's own top-left corner, not from
 the virtual desktop's, so the same pair of numbers means the same place on every
-screen. The display number is the one the A/V list shows beside that
+screen. The display number is the one the A/V Control Center shows beside that
 monitor's name. A search term may contain spaces; everything after `windows` is
 the term.
 
@@ -1245,19 +1198,15 @@ body. Notes live in `%USERPROFILE%\.HellGates\hgfloater\note\` and are named
   **every** word is somewhere in its title or body, in any order and any case.
   The words are plain text, not patterns.
 
-**The list** starts with **`+Add Note`** and then shows one note per row: a
-check box, creation date, last-modified date, and title. Each row is a long
-bar with a square grip on one end, the grips alternating left and right from
-row to row. Double-click the bar to open the note; click the box or the grip,
-or press `Space`, to check it.
+**The list** shows one note per row: a subtle left-edge grip mark, a check box,
+the title, and a right-aligned `YYYY-MM-DD` date (showing the active sort date).
+Double-click the bar to open the note; click the box or grip, or press `Space`,
+to check it. New notes are created with the top **`Add`** button or by pressing
+`Insert`.
 
-The arrow keys move between the rows and the top row: `Up` from the first row
-goes up to the buttons, `Left` and `Right` walk along them into the search
+The arrow keys move between the rows and the top bar: `Up` from the first row
+goes up to the top buttons, `Left` and `Right` walk along them into the search
 box, and `Down` comes back to the list.
-
-`+Add Note` is the row the list opens on, so `N` then `Enter` writes a new note
-without a key to remember. It answers a single click, unlike the note rows, and
-it is there even when there are no notes yet.
 
 **Active and archived notes are separate.** Notes you are still writing stay on
 top; archived ones settle underneath. Headings appear once something has been
@@ -1265,9 +1214,8 @@ archived - until then the list is just notes, and a label would be noise.
 
 | Key | What it does |
 | :--- | :--- |
-| `Enter` on `+Add Note`, or one click on it | Create a note and open it. |
 | `Enter`, double click | Open the note in its own editor window. |
-| `Insert` | Create a note and open it, from any row. |
+| `Insert`, or top `Add` button | Create a note and open it, from anywhere in the list. |
 | `Space`, a click on the box | Check the note, or uncheck it. |
 | `K` | Archive the checked notes (or the selected one), or restore them. |
 | `Delete` | Delete the checked notes (or the selected one). |
@@ -1373,14 +1321,13 @@ a chord.
 | `C`, `Ctrl + E` | Open the Command Box |
 | `N`, `Ctrl + N` | Open the note list |
 | `Ctrl + L` | Open the clipboard history |
-| `Ctrl + O` | The A/V list, as if `A/V` had been chosen |
+| `Ctrl + O` | Open the A/V Control Center, as if `A/V` had been chosen |
 | `Esc` | Hide the taskbox and re-scan shortcuts |
 
 ### Inside the note list
 
 | Key | Action |
 | :--- | :--- |
-| `Enter` on `+Add Note` | Create a note and open it |
 | `Enter` on a note | Open it in its own editor |
 | `Insert` | Create a note, from any row |
 | `Space` | Check the selected note, or uncheck it |
@@ -1444,32 +1391,31 @@ returns to the taskbox; `Ctrl + W` just closes.
 | **Activate an item** | Left-click an icon |
 | **Reorder icons** | Left-drag a task icon |
 | **Item context menu** | Right-click an icon |
-| **A/V list** | Left-click `A/V`, or right-click the status line |
+| **A/V Control Center** | Click `A/V`, right-click the status line, or right-click `Vol` / `Mon` |
 | **Open a folder** | Point at `Dir`, then click a row |
 | **Launch a shortcut** | Click its icon on the grid |
 | **Open the control list** | Point at `Set` |
-| **Move a window** | Left-drag empty space, the status line, or the `M` button |
+| **Move a window** | Left-drag empty space or the status line |
 | **Move the floater** | Drag the floater, or `Alt + drag` it |
-| **Move the taskbox aside** | Left-click the `M` button |
-| **Resize the taskbox grid** | Drag a border, or drag the `R` button |
+| **Move the taskbox aside** | Click `Move Taskbox Aside` in the `Set` list |
+| **Resize the taskbox grid** | Drag a border |
 | **Font / icon size** | `Ctrl` + wheel |
 | **Opacity** | `Alt` + wheel, or wheel over `Alp` |
 | **Screen brightness** | Wheel over `Mon` |
 | **Volume / mute** | Wheel over `Vol` / left-click it |
-| **Output device** | Right-click `Vol` |
+| **Audio Control pane** | Right-click `Vol` |
 | **Display scaling** | Left-click `Mon` |
-| **Screen arrangement** | Right-click `Mon` |
-| **Screen resolution** | Right-click `Mon` |
+| **Display Control pane** | Right-click `Mon` |
 | **Pin the taskbox** | Click the `Pin` row of the `Set` list |
 | **Remote monitor control** | Click or drag inside a monitor thumbnail |
 | **Open the notes** | Left-click `Note` |
-| **New note** | Left-click `+Add Note` (a single click, unlike a note row) |
+| **New note** | Click the top `Add` button |
 | **Open a note** | Double-click it |
 | **Sort, archive, or delete a note** | Right-click it, or right-click a section heading |
 | **Note text size** | `Ctrl` + wheel over the list or an editor |
 | **Edit a note's text** | Right-click inside an editor |
 | **Command box text size** | `Ctrl` + wheel |
-| **Quit** | Left-click `X` |
+| **Quit** | Click `Exit hgfloater` in the `Set` list, or press `Ctrl + Q` |
 
 ## 13. Configuration File
 
@@ -1549,6 +1495,9 @@ inanis palette of the workspace's design guide (dark: background `1B1822`, text
 `config.ini` still holding the old defaults takes the new ones; a color you
 changed yourself is kept:
 
+- `scheme` — `inanis` (default Win8 flat + inanis palette) or `plain` (minimal
+  flat palette); also changeable under **Window Colours** -> **Color Scheme** in
+  the settings window.
 - `scheme_bg`, `scheme_border`, `scheme_text`, `scheme_flash`, `scheme_selected`
   — the dark palette (a dark Windows gets the light inanis palette, which is
   fixed). These are the **widget** colors: the floater, the taskbox
@@ -1558,8 +1507,9 @@ changed yourself is kept:
   palette uses its own darker `96530F`).
 - `stat_cpu`, `stat_temp`, `stat_gpu`, `stat_mem`, `stat_bat` — the floater's status bars.
 - `value_alpha_low` / `value_alpha_high`, `value_brightness_low` /
-  `value_brightness_high`, `value_volume_low` / `value_volume_high` — the
-  plates behind `Alp`, `Mon` and `Vol`.
+  `value_brightness_high`, `value_volume_low` / `value_volume_high` — optional
+  custom fill ramps for `Alp`, `Mon` and `Vol` (when kept at defaults, Win8 flat
+  gauge bars render in the scheme's accent colour).
 - `clock_blink` — the colour the clock's hours and minutes change to when
   `[floater] blink` is on.
 - `note_text`, `note_bg`, `clip_text`, `clip_bg`, `commandbox_text`,
@@ -1626,7 +1576,7 @@ size, so `Ctrl + Wheel` in either one moves both.
 | `%USERPROFILE%\.HellGates\hgfloater\note\` | One `.txt` per [note](#10-notes), plus `note.ini` for everything the text files cannot carry |
 
 That is the complete list on disk. The only thing written outside it is the
-`Run` registry value behind [Start with Windows](#7-the-av-list), and only
+`Run` registry value behind [Start with Windows](#62-the-set-button), and only
 while that is switched on. HGFloater writes no log files, no caches, and no
 temporary files, and nothing it writes grows without bound.
 

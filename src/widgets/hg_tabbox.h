@@ -42,8 +42,9 @@ void hg_tabbox_open_dirs(const RECT *anchor_screen_rc);
 void hg_tabbox_open_controls(const RECT *anchor_screen_rc);
 void hg_tabbox_open_menu(const RECT *anchor_screen_rc);
 
-/* Repaint the box if it is up: a reading it shows has changed. */
+/* Repaint and re-theme the box if it exists: theme, scheme, or values changed. */
 void hg_tabbox_invalidate(void);
+void hg_tabbox_refresh_theme(void);
 
 /* Which list is up, or HG_BOX_TABS when nothing is. */
 int hg_tabbox_mode(void);

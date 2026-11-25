@@ -1,7 +1,160 @@
 #include "hg_utils.h"
 #include "hg_keys.h" /* the tooltips say which chord reaches a button */
 #include "hg_recbak.h" /* BakREC is a button only while a recorder is in */
+#include "widgets/hg_tabbox.h"
+#include "widgets/hg_avbox.h"
 #include <knownfolders.h>
+
+static const HgUiPalette s_pal_inanis_light = {
+    RGB(0xF8, 0xF6, 0xFB), /* bg: whisper */
+    RGB(0xEE, 0xEA, 0xF4), /* bg2: magnolia */
+    RGB(0xE0, 0xD8, 0xEC), /* bg3: snuff */
+    RGB(0x22, 0x1E, 0x2C), /* fg: bastille */
+    RGB(0x59, 0x50, 0x66), /* muted: smoky */
+    RGB(0xCE, 0xC5, 0xDB), /* line: blue_haze */
+    RGB(0x93, 0x7F, 0xB0), /* line_strong: purple_mountains_majesty */
+    RGB(0x58, 0x45, 0x76), /* accent: victoria */
+    RGB(0xFF, 0xFF, 0xFF), /* accent_fg: white */
+    RGB(0x96, 0x53, 0x0F), /* accent2: hawaiian_tan */
+    RGB(0xF2, 0xB0, 0x4A), /* honey: casablanca */
+    RGB(0x2B, 0x1D, 0x00), /* honey_fg: brown_tumbleweed */
+    RGB(0x85, 0x54, 0x00), /* honey_text: rusty_nail */
+    RGB(0xFB, 0xEB, 0xC6), /* honey_soft: oasis */
+    RGB(0xD0, 0xC5, 0xE0), /* select: prelude */
+    RGB(0x9B, 0x1B, 0x30), /* danger: paprika */
+    RGB(0x1D, 0x6E, 0x37), /* ok: fun_green */
+    RGB(0x85, 0x54, 0x00)  /* warn: honey_text */
+};
+
+static const HgUiPalette s_pal_inanis_dark = {
+    RGB(0x1B, 0x18, 0x22), /* bg: vulcan */
+    RGB(0x23, 0x1F, 0x2C), /* bg2: baltic_sea */
+    RGB(0x33, 0x2C, 0x40), /* bg3: blackcurrant */
+    RGB(0xE6, 0xE1, 0xEE), /* fg: selago */
+    RGB(0xAA, 0xA1, 0xB8), /* muted: amethyst_smoke */
+    RGB(0x3E, 0x36, 0x50), /* line: martinique */
+    RGB(0x72, 0x63, 0x93), /* line_strong: deluge */
+    RGB(0xC4, 0xB3, 0xE6), /* accent: perfume */
+    RGB(0x1B, 0x18, 0x22), /* accent_fg: vulcan */
+    RGB(0xD4, 0x88, 0x3B), /* accent2: brandy_punch */
+    RGB(0xF2, 0xB0, 0x4A), /* honey: casablanca */
+    RGB(0x1B, 0x18, 0x22), /* honey_fg: vulcan */
+    RGB(0xF2, 0xB0, 0x4A), /* honey_text: casablanca */
+    RGB(0x3B, 0x31, 0x1E), /* honey_soft: birch */
+    RGB(0x4A, 0x40, 0x63), /* select: mulled_wine */
+    RGB(0xF0, 0x7A, 0x8C), /* danger: froly */
+    RGB(0x7B, 0xCB, 0x95), /* ok: de_york */
+    RGB(0xF2, 0xB0, 0x4A)  /* warn: casablanca */
+};
+
+static const HgUiPalette s_pal_plain_light = {
+    RGB(0xFF, 0xFF, 0xFF), /* bg */
+    RGB(0xD9, 0xD9, 0xD9), /* bg2 */
+    RGB(0xBF, 0xBF, 0xBF), /* bg3 */
+    RGB(0x00, 0x00, 0x00), /* fg */
+    RGB(0x59, 0x59, 0x59), /* muted */
+    RGB(0xA6, 0xA6, 0xA6), /* line */
+    RGB(0x00, 0x00, 0x00), /* line_strong */
+    RGB(0x00, 0x00, 0x00), /* accent */
+    RGB(0xFF, 0xFF, 0xFF), /* accent_fg */
+    RGB(0x00, 0x00, 0x00), /* accent2 */
+    RGB(0xA6, 0xA6, 0xA6), /* honey */
+    RGB(0x00, 0x00, 0x00), /* honey_fg */
+    RGB(0x00, 0x00, 0x00), /* honey_text */
+    RGB(0xD9, 0xD9, 0xD9), /* honey_soft */
+    RGB(0xA6, 0xA6, 0xA6), /* select */
+    RGB(0x00, 0x00, 0x00), /* danger */
+    RGB(0x00, 0x00, 0x00), /* ok */
+    RGB(0x00, 0x00, 0x00)  /* warn */
+};
+
+static const HgUiPalette s_pal_plain_dark = {
+    RGB(0x00, 0x00, 0x00), /* bg */
+    RGB(0x26, 0x26, 0x26), /* bg2 */
+    RGB(0x40, 0x40, 0x40), /* bg3 */
+    RGB(0xFF, 0xFF, 0xFF), /* fg */
+    RGB(0xA6, 0xA6, 0xA6), /* muted */
+    RGB(0x59, 0x59, 0x59), /* line */
+    RGB(0xFF, 0xFF, 0xFF), /* line_strong */
+    RGB(0xFF, 0xFF, 0xFF), /* accent */
+    RGB(0x00, 0x00, 0x00), /* accent_fg */
+    RGB(0xFF, 0xFF, 0xFF), /* accent2 */
+    RGB(0x59, 0x59, 0x59), /* honey */
+    RGB(0xFF, 0xFF, 0xFF), /* honey_fg */
+    RGB(0xFF, 0xFF, 0xFF), /* honey_text */
+    RGB(0x26, 0x26, 0x26), /* honey_soft */
+    RGB(0x59, 0x59, 0x59), /* select */
+    RGB(0xFF, 0xFF, 0xFF), /* danger */
+    RGB(0xFF, 0xFF, 0xFF), /* ok */
+    RGB(0xFF, 0xFF, 0xFF)  /* warn */
+};
+
+static HgUiPalette s_widget_pal;
+static HgUiPalette s_doc_pal;
+static BOOL s_pal_initialized = FALSE;
+
+static void build_high_contrast_palette(HgUiPalette *out, BOOL is_widget)
+{
+    COLORREF bg = GetSysColor(is_widget ? COLOR_BTNFACE : COLOR_WINDOW);
+    COLORREF fg = GetSysColor(is_widget ? COLOR_BTNTEXT : COLOR_WINDOWTEXT);
+    COLORREF edge = GetSysColor(COLOR_WINDOWFRAME);
+    COLORREF hi = GetSysColor(COLOR_HIGHLIGHT);
+    COLORREF hifg = GetSysColor(COLOR_HIGHLIGHTTEXT);
+    *out = (HgUiPalette){
+        .bg = bg,
+        .bg2 = bg,
+        .bg3 = GetSysColor(COLOR_3DFACE),
+        .fg = fg,
+        .muted = GetSysColor(COLOR_GRAYTEXT),
+        .line = edge,
+        .line_strong = fg,
+        .accent = hi,
+        .accent_fg = hifg,
+        .accent2 = hi,
+        .honey = hi,
+        .honey_fg = hifg,
+        .honey_text = fg,
+        .honey_soft = bg,
+        .select = hi,
+        .danger = fg,
+        .ok = fg,
+        .warn = fg,
+    };
+}
+
+static void refresh_runtime_palettes(void)
+{
+    if (hg_g_is_high_contrast) {
+        build_high_contrast_palette(&s_widget_pal, TRUE);
+        build_high_contrast_palette(&s_doc_pal, FALSE);
+        s_pal_initialized = TRUE;
+        return;
+    }
+    BOOL plain = (hg_g_color_scheme_kind == HG_SCHEME_PLAIN);
+    if (hg_g_is_dark_mode) {
+        s_widget_pal = plain ? s_pal_plain_light : s_pal_inanis_light;
+        s_doc_pal = plain ? s_pal_plain_dark : s_pal_inanis_dark;
+    } else {
+        s_widget_pal = plain ? s_pal_plain_dark : s_pal_inanis_dark;
+        s_doc_pal = plain ? s_pal_plain_light : s_pal_inanis_light;
+        if (!plain) {
+            /* Respect manual [colors] scheme_* overrides on dark widget scheme. */
+            if (hg_g_custom_palette.bg != HG_THEME_CUSTOM_BG)
+                s_widget_pal.bg = hg_g_custom_palette.bg;
+            if (hg_g_custom_palette.border != HG_THEME_CUSTOM_BORDER)
+                s_widget_pal.line_strong = hg_g_custom_palette.border;
+            if (hg_g_custom_palette.text != HG_THEME_CUSTOM_TEXT)
+                s_widget_pal.fg = hg_g_custom_palette.text;
+            if (hg_g_custom_palette.flash != HG_THEME_CUSTOM_FLASH)
+                s_widget_pal.honey = hg_g_custom_palette.flash;
+            if (hg_g_custom_palette.selected != HG_THEME_CUSTOM_SELECTED)
+                s_widget_pal.bg3 = hg_g_custom_palette.selected;
+        }
+    }
+    if (hg_g_color_focus_bg != HG_COLOR_FOCUS_BG_DEFAULT)
+        s_widget_pal.accent2 = hg_g_color_focus_bg;
+    s_pal_initialized = TRUE;
+}
 
 static void refresh_system_accent_color(void)
 {
@@ -19,16 +172,13 @@ static void refresh_system_accent_color(void)
 
 void init_color_scheme(void)
 {
-    hg_g_color_scheme_dark = hg_g_custom_palette; /* configurable via [colors] */
+    BOOL plain = (hg_g_color_scheme_kind == HG_SCHEME_PLAIN);
+    const HgUiPalette *dk = plain ? &s_pal_plain_dark : &s_pal_inanis_dark;
+    const HgUiPalette *lt = plain ? &s_pal_plain_light : &s_pal_inanis_light;
 
-    /* inanis light (norma_ui), for a dark Windows by the inversion below. */
-    hg_g_color_scheme_light = (color_scheme_t){
-        .bg = HG_THEME_LIGHT_BG,
-        .border = HG_THEME_LIGHT_BORDER,
-        .text = HG_THEME_LIGHT_TEXT,
-        .flash = HG_THEME_LIGHT_FLASH,
-        .selected = HG_THEME_LIGHT_SELECTED,
-    };
+    hg_g_color_scheme_dark = plain ? (color_scheme_t){dk->bg, dk->line_strong, dk->fg, dk->honey, dk->bg3}
+                                   : hg_g_custom_palette;
+    hg_g_color_scheme_light = (color_scheme_t){lt->bg, lt->line_strong, lt->fg, lt->honey, lt->bg3};
 }
 
 void update_theme_colors()
@@ -57,65 +207,59 @@ void update_theme_colors()
         hg_g_is_dark_mode = 1;
 
     init_color_scheme();
+    refresh_runtime_palettes();
 
-    if (hg_g_is_high_contrast) {
-        hg_g_color_scheme_selected = (color_scheme_t){
-            .bg = GetSysColor(COLOR_BTNFACE),
-            .border = GetSysColor(COLOR_WINDOWFRAME),
-            .text = GetSysColor(COLOR_BTNTEXT),
-            .flash = GetSysColor(COLOR_HOTLIGHT),
-            .selected = GetSysColor(COLOR_HIGHLIGHT),
-        };
-    } else if (hg_g_is_dark_mode) {
-        /* Deliberate contrast inversion (see SPEC): the widgets must stand out
-         * against the system theme, so dark systems get the light scheme and
-         * light systems get the dark custom palette. */
-        hg_g_color_scheme_selected = hg_g_color_scheme_light;
-    } else {
-        hg_g_color_scheme_selected = hg_g_color_scheme_dark;
-    }
+    hg_g_color_scheme_selected = (color_scheme_t){
+        .bg = s_widget_pal.bg,
+        .border = s_widget_pal.line_strong,
+        .text = s_widget_pal.fg,
+        .flash = s_widget_pal.honey,
+        .selected = s_widget_pal.bg3,
+    };
+}
+
+const HgUiPalette *hg_ui_widget_palette(void)
+{
+    if (!s_pal_initialized)
+        refresh_runtime_palettes();
+    return &s_widget_pal;
+}
+
+const HgUiPalette *hg_ui_doc_palette(void)
+{
+    if (!s_pal_initialized)
+        refresh_runtime_palettes();
+    return &s_doc_pal;
 }
 
 COLORREF hg_ui_focus_color(void)
 {
-    if (hg_g_is_high_contrast)
-        return GetSysColor(COLOR_HIGHLIGHT);
-    if (hg_g_color_focus_bg == HG_COLOR_FOCUS_BG_DEFAULT && hg_g_is_dark_mode)
-        return HG_THEME_LIGHT_FOCUS;
-    return hg_g_color_focus_bg;
+    return hg_ui_widget_palette()->accent2;
 }
 
 COLORREF hg_ui_doc_focus_color(void)
 {
-    if (hg_g_is_high_contrast)
-        return GetSysColor(COLOR_HIGHLIGHT);
-    return hg_g_is_dark_mode ? HG_COLOR_FOCUS_BG_DEFAULT : HG_THEME_LIGHT_FOCUS;
+    return hg_ui_doc_palette()->accent2;
 }
 
 COLORREF hg_ui_select_color(void)
 {
-    if (hg_g_is_high_contrast)
-        return GetSysColor(COLOR_HIGHLIGHT);
-    return hg_g_is_dark_mode ? HG_THEME_LIGHT_SELECT : HG_THEME_DARK_SELECT;
+    return hg_ui_widget_palette()->select;
 }
 
 COLORREF hg_ui_doc_select_color(void)
 {
-    if (hg_g_is_high_contrast)
-        return GetSysColor(COLOR_HIGHLIGHT);
-    return hg_g_is_dark_mode ? HG_THEME_DARK_SELECT : HG_THEME_LIGHT_SELECT;
+    return hg_ui_doc_palette()->select;
 }
 
 COLORREF hg_ui_doc_line_strong(void)
 {
-    if (hg_g_is_high_contrast)
-        return GetSysColor(COLOR_WINDOWTEXT);
-    return hg_g_is_dark_mode ? HG_THEME_CUSTOM_BORDER : HG_THEME_LIGHT_BORDER;
+    return hg_ui_doc_palette()->line_strong;
 }
 
 COLORREF hg_ui_honey(void)
 {
-    return hg_g_is_high_contrast ? GetSysColor(COLOR_HIGHLIGHT) : HG_THEME_HONEY;
+    return hg_ui_widget_palette()->honey;
 }
 
 /* The box's em: the status line's font height, which already carries the
@@ -179,8 +323,13 @@ void hg_paint_box_frame(HDC dc, const RECT *rc, int thickness, BOOL focused)
 {
     if (!dc || !rc || thickness <= 0)
         return;
-    paint_brackets_sized(dc, rc, focused ? hg_ui_focus_color() : HG_COLOR_BG_TOOLBAR, thickness,
-                         (hg_box_em() * 3 + 1) / 2);
+    int w = rc->right - rc->left;
+    int h = rc->bottom - rc->top;
+    int arm = (hg_box_em() * 3 + 1) / 2;
+    int cap = (w < h ? w : h) / 3; /* D-U4=A: prevent opposing brackets meeting on compact widgets */
+    if (cap > 0 && arm > cap)
+        arm = cap;
+    paint_brackets_sized(dc, rc, focused ? hg_ui_focus_color() : HG_COLOR_BG_TOOLBAR, thickness, arm);
 }
 
 BOOL should_refresh_theme_on_setting_change(LPARAM l_param)
@@ -222,10 +371,8 @@ void hg_apply_class_background(HWND hwnd)
     }
 }
 
-/* Small color-keyed cache so paint paths stop creating and destroying dozens
- * of solid brushes per frame. Entries are never selected across messages, so
- * evicting the oldest entry when the cache is full is safe. */
-#define HG_BRUSH_CACHE_CAPACITY 16
+/* LRU GDI brush & pen caches so paint paths stay allocation-free and handle-safe. */
+#define HG_BRUSH_CACHE_CAPACITY 32
 static struct {
     COLORREF color;
     HBRUSH brush;
@@ -236,7 +383,13 @@ HBRUSH hg_cached_solid_brush(COLORREF color)
 {
     for (int i = 0; i < s_solid_brush_cache_count; ++i) {
         if (s_solid_brush_cache[i].color == color) {
-            return s_solid_brush_cache[i].brush;
+            HBRUSH found = s_solid_brush_cache[i].brush;
+            for (int j = i; j > 0; --j) {
+                s_solid_brush_cache[j] = s_solid_brush_cache[j - 1];
+            }
+            s_solid_brush_cache[0].color = color;
+            s_solid_brush_cache[0].brush = found;
+            return found;
         }
     }
 
@@ -246,14 +399,14 @@ HBRUSH hg_cached_solid_brush(COLORREF color)
     }
 
     if (s_solid_brush_cache_count == HG_BRUSH_CACHE_CAPACITY) {
-        DeleteObject(s_solid_brush_cache[0].brush);
-        for (int i = 1; i < HG_BRUSH_CACHE_CAPACITY; ++i) {
-            s_solid_brush_cache[i - 1] = s_solid_brush_cache[i];
-        }
+        DeleteObject(s_solid_brush_cache[HG_BRUSH_CACHE_CAPACITY - 1].brush);
         s_solid_brush_cache_count--;
     }
-    s_solid_brush_cache[s_solid_brush_cache_count].color = color;
-    s_solid_brush_cache[s_solid_brush_cache_count].brush = brush;
+    for (int i = s_solid_brush_cache_count; i > 0; --i) {
+        s_solid_brush_cache[i] = s_solid_brush_cache[i - 1];
+    }
+    s_solid_brush_cache[0].color = color;
+    s_solid_brush_cache[0].brush = brush;
     s_solid_brush_cache_count++;
     return brush;
 }
@@ -265,6 +418,58 @@ void hg_flush_solid_brush_cache(void)
         s_solid_brush_cache[i].brush = NULL;
     }
     s_solid_brush_cache_count = 0;
+}
+
+#define HG_PEN_CACHE_CAPACITY 16
+static struct {
+    int width;
+    COLORREF color;
+    HPEN pen;
+} s_pen_cache[HG_PEN_CACHE_CAPACITY];
+static int s_pen_cache_count = 0;
+
+HPEN hg_cached_pen(int width, COLORREF color)
+{
+    if (width < 1)
+        width = 1;
+    for (int i = 0; i < s_pen_cache_count; ++i) {
+        if (s_pen_cache[i].width == width && s_pen_cache[i].color == color) {
+            HPEN found = s_pen_cache[i].pen;
+            for (int j = i; j > 0; --j) {
+                s_pen_cache[j] = s_pen_cache[j - 1];
+            }
+            s_pen_cache[0].width = width;
+            s_pen_cache[0].color = color;
+            s_pen_cache[0].pen = found;
+            return found;
+        }
+    }
+
+    HPEN pen = CreatePen(PS_SOLID, width, color);
+    if (!pen)
+        return NULL;
+
+    if (s_pen_cache_count == HG_PEN_CACHE_CAPACITY) {
+        DeleteObject(s_pen_cache[HG_PEN_CACHE_CAPACITY - 1].pen);
+        s_pen_cache_count--;
+    }
+    for (int i = s_pen_cache_count; i > 0; --i) {
+        s_pen_cache[i] = s_pen_cache[i - 1];
+    }
+    s_pen_cache[0].width = width;
+    s_pen_cache[0].color = color;
+    s_pen_cache[0].pen = pen;
+    s_pen_cache_count++;
+    return pen;
+}
+
+void hg_flush_pen_cache(void)
+{
+    for (int i = 0; i < s_pen_cache_count; ++i) {
+        DeleteObject(s_pen_cache[i].pen);
+        s_pen_cache[i].pen = NULL;
+    }
+    s_pen_cache_count = 0;
 }
 
 void hg_update_scale_from_dpi(UINT dpi)
@@ -554,6 +759,7 @@ void hg_document_set_page_color(int page, int which, BOOL set, COLORREF color)
     else
         StringCchCopyW(text, HG_ARRAYSIZE(text), L"theme");
     WritePrivateProfileStringW(L"colors", key, text, hg_g_config_path);
+    hg_flush_solid_brush_cache();
     hg_page_windows_apply(page, TRUE, FALSE);
 }
 
@@ -654,16 +860,9 @@ HgDocumentColors hg_document_colors(void)
 
 HgDocumentColors hg_document_colors_for(int page)
 {
-    if (hg_g_is_high_contrast) {
-        HgDocumentColors hc = {GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT)};
-        return hc;
-    }
-    HgDocumentColors doc = {HG_DOC_LIGHT_BG, HG_DOC_LIGHT_TEXT};
-    if (hg_g_is_dark_mode) {
-        doc.bg = HG_DOC_DARK_BG;
-        doc.text = HG_DOC_DARK_TEXT;
-    }
-    if (hg_page_valid(page)) {
+    const HgUiPalette *doc_pal = hg_ui_doc_palette();
+    HgDocumentColors doc = {doc_pal->bg, doc_pal->fg};
+    if (!hg_g_is_high_contrast && hg_page_valid(page)) {
         if (s_page_colors[page].set[HG_DOC_COLOR_BG])
             doc.bg = s_page_colors[page].color[HG_DOC_COLOR_BG];
         if (s_page_colors[page].set[HG_DOC_COLOR_TEXT])
@@ -700,7 +899,7 @@ HgDocumentColors hg_document_field_colors_for(int page)
                        hg_field_mix(GetBValue(field.bg), GetBValue(field.text)));
         return field;
     }
-    field.bg = hg_g_is_dark_mode ? HG_DOC_DARK_FIELD_BG : HG_DOC_LIGHT_FIELD_BG;
+    field.bg = hg_ui_doc_palette()->bg2;
     return field;
 }
 
@@ -793,9 +992,8 @@ LRESULT hg_on_ctlcolor_edit(HDC hdc)
     SetTextColor(hdc, hg_g_color_scheme_selected.text);
     SetBkMode(hdc, OPAQUE);
     SetBkColor(hdc, hg_g_color_scheme_selected.bg);
-    if (!hg_g_edit_bg_brush)
-        hg_g_edit_bg_brush = CreateSolidBrush(hg_g_color_scheme_selected.bg);
-    return hg_g_edit_bg_brush ? (LRESULT)hg_g_edit_bg_brush : (LRESULT)GetStockObject(BLACK_BRUSH);
+    HBRUSH hbr = hg_cached_solid_brush(hg_g_color_scheme_selected.bg);
+    return hbr ? (LRESULT)hbr : (LRESULT)GetStockObject(BLACK_BRUSH);
 }
 
 /* Shared single-line edit height measurement (font metrics plus padding). */
@@ -846,6 +1044,7 @@ void refresh_theme_surfaces(HWND hwnd)
     }
 
     hg_flush_solid_brush_cache();
+    hg_flush_pen_cache();
     release_brush_handle(&hg_g_main_bg_brush);
     hg_g_main_bg_brush = CreateSolidBrush(HG_CLICKABLE_BG);
     /* Every class registered with the shared brush must be re-stamped, or the class
@@ -866,12 +1065,13 @@ void refresh_theme_surfaces(HWND hwnd)
         }
     }
 
-    release_brush_handle(&hg_g_edit_bg_brush);
-
     if (hg_g_tooltip_wnd && IsWindow(hg_g_tooltip_wnd)) {
         SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPBKCOLOR, hg_g_color_scheme_selected.bg, 0);
         SendMessageW(hg_g_tooltip_wnd, TTM_SETTIPTEXTCOLOR, hg_g_color_scheme_selected.text, 0);
     }
+
+    hg_tabbox_refresh_theme();
+    hg_avbox_refresh_theme();
 
 
 
@@ -1026,6 +1226,7 @@ void append_message(const WCHAR *msg)
     if (!hg_g_edit_msg_wnd || !msg)
         return;
 
+    hg_g_status_is_welcome = FALSE;
     SetWindowTextW(hg_g_edit_msg_wnd, msg);
     SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, 0, 0);
     hg_g_edit_msg_tick = GetTickCount64();
@@ -1054,6 +1255,7 @@ void hg_update_status_clock(void)
         return;
 
     /* Not append_message: showing the clock must not restart the idle timer. */
+    hg_g_status_is_welcome = FALSE;
     SetWindowTextW(hg_g_edit_msg_wnd, clock_text);
     SendMessageW(hg_g_edit_msg_wnd, EM_SETSEL, 0, 0);
 }
@@ -1178,11 +1380,13 @@ static const HgToolbarBuiltinDescriptor hg_toolbar_builtin_descriptors[] = {
      HG_TOOLBAR_CLICK_TOGGLE_PIN, HG_TOOLBAR_DRAG_NONE},
 };
 
-/* Fourteen on the row (BakREC only while a recorder is in), and the pin in the Set box. Stated rather than derived,
- * so adding a descriptor without deciding where it belongs does not compile. */
+/* Eleven on the grid (BakREC only while a recorder is in), plus four off-grid
+ * actions reachable from Set or keybindings (Pin, Move Aside, Resize, Exit).
+ * Stated rather than derived, so adding a descriptor without deciding where it
+ * belongs does not compile. */
 enum {
     HG_TOOLBAR_BUILTIN_DESCRIPTOR_COUNT_CHECK =
-        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 1) ? 1 : 0)
+        1 / ((HG_ARRAYSIZE(hg_toolbar_builtin_descriptors) == HG_NUM_BASIC_ICONS + 4) ? 1 : 0)
 };
 
 static const HgToolbarBuiltinDescriptor *hg_toolbar_builtin_descriptor(int index)

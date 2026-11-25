@@ -316,8 +316,43 @@ static COLORREF load_color_value(const WCHAR *key, COLORREF def)
     return color;
 }
 
+static BOOL CALLBACK scheme_notify_window_proc(HWND hwnd, LPARAM l_param)
+{
+    (void)l_param;
+    if (hg_is_document_window(hwnd)) {
+        SendMessageW(hwnd, WM_SETTINGCHANGE, 0, (LPARAM)L"ImmersiveColorSet");
+        RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+        return TRUE;
+    }
+    WCHAR cls[64];
+    if (GetClassNameW(hwnd, cls, (int)HG_ARRAYSIZE(cls)) > 0) {
+        if (lstrcmpiW(cls, HG_CLASS_TABBOX) == 0 || lstrcmpiW(cls, HG_CLASS_AVBOX) == 0 ||
+            lstrcmpiW(cls, HG_CLASS_MONITOR) == 0) {
+            apply_dwm_attributes(hwnd);
+            RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+        }
+    }
+    return TRUE;
+}
+
+void hg_config_set_scheme(int scheme)
+{
+    hg_g_color_scheme_kind = (scheme == HG_SCHEME_PLAIN) ? HG_SCHEME_PLAIN : HG_SCHEME_INANIS;
+    WritePrivateProfileStringW(L"colors", L"scheme",
+                               (hg_g_color_scheme_kind == HG_SCHEME_PLAIN) ? L"plain" : L"inanis", hg_g_config_path);
+    refresh_theme_surfaces(hg_g_taskbox_wnd);
+    EnumThreadWindows(GetCurrentThreadId(), scheme_notify_window_proc, 0);
+}
+
 void load_colors_config(void)
 {
+    WCHAR scheme_buf[16] = {0};
+    GetPrivateProfileStringW(L"colors", L"scheme", L"inanis", scheme_buf, (DWORD)HG_ARRAYSIZE(scheme_buf),
+                             hg_g_config_path);
+    hg_g_color_scheme_kind = (lstrcmpiW(scheme_buf, L"plain") == 0) ? HG_SCHEME_PLAIN : HG_SCHEME_INANIS;
+    WritePrivateProfileStringW(L"colors", L"scheme",
+                               (hg_g_color_scheme_kind == HG_SCHEME_PLAIN) ? L"plain" : L"inanis", hg_g_config_path);
+
     hg_g_custom_palette.bg = load_color_value(L"scheme_bg", HG_THEME_CUSTOM_BG);
     hg_g_custom_palette.border = load_color_value(L"scheme_border", HG_THEME_CUSTOM_BORDER);
     hg_g_custom_palette.text = load_color_value(L"scheme_text", HG_THEME_CUSTOM_TEXT);
@@ -340,6 +375,8 @@ void load_colors_config(void)
 
 void reset_colors_config(void)
 {
+    hg_g_color_scheme_kind = HG_SCHEME_INANIS;
+    WritePrivateProfileStringW(L"colors", L"scheme", L"inanis", hg_g_config_path);
     color_scheme_t defaults = {HG_THEME_CUSTOM_BG, HG_THEME_CUSTOM_BORDER, HG_THEME_CUSTOM_TEXT, HG_THEME_CUSTOM_FLASH,
                                HG_THEME_CUSTOM_SELECTED};
     hg_g_custom_palette = defaults;

@@ -7,6 +7,14 @@
 
 void commandbox_execute(void);
 
+static BOOL s_cb_btn_hover = FALSE;
+
+static int commandbox_button_height(double scale)
+{
+    int h = SCW(scale, 30);
+    return (h < 24) ? 24 : h;
+}
+
 static int commandbox_line_height(HWND hwnd, double scale)
 {
     int line_h = SCW(scale, 16);
@@ -234,8 +242,30 @@ static LRESULT CALLBACK commandbox_button_subclass_proc(HWND hwnd, UINT msg, WPA
 {
     (void)subclass_id;
     (void)ref_data;
-    if (msg == WM_KEYDOWN && commandbox_run_key_action(GetParent(hwnd), (UINT)w_param, FALSE))
-        return 0;
+    if (msg == WM_MOUSEMOVE) {
+        if (!s_cb_btn_hover) {
+            s_cb_btn_hover = TRUE;
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+        TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};
+        TrackMouseEvent(&tme);
+    } else if (msg == WM_MOUSELEAVE) {
+        if (s_cb_btn_hover) {
+            s_cb_btn_hover = FALSE;
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+    } else if (msg == WM_KEYDOWN) {
+        if (commandbox_run_key_action(GetParent(hwnd), (UINT)w_param, FALSE))
+            return 0;
+        if (w_param == VK_RETURN) {
+            SendMessageW(hwnd, BM_CLICK, 0, 0);
+            return 0;
+        }
+        if (w_param == VK_ESCAPE) {
+            PostMessageW(GetParent(hwnd), WM_CLOSE, 0, 0);
+            return 0;
+        }
+    }
     return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
@@ -404,8 +434,10 @@ void commandbox_execute()
         return;
 
     int in_len = GetWindowTextLengthW(hg_g_commandbox_in_wnd);
-    if (in_len <= 0)
+    if (in_len <= 0) {
+        SetFocus(hg_g_commandbox_in_wnd);
         return;
+    }
 
     size_t in_len_cch = (size_t)in_len;
     WCHAR *in_buf = (WCHAR *)malloc(sizeof(WCHAR) * (in_len_cch + 1u));
@@ -502,7 +534,7 @@ void show_commandbox_window()
     if (w < SCW(ws, 200)) w = SCW(ws, 200);
 
     int border = SCW(ws, 8);
-    int btn_h = SCW(ws, 26);
+    int btn_h = commandbox_button_height(ws);
     load_commandbox_font();
     int line_h = commandbox_line_height(NULL, ws);
     int min_out_h = line_h * 3 + SCW(ws, 6);
@@ -558,7 +590,7 @@ void show_commandbox_window()
 
         hg_g_commandbox_btn_wnd = CreateWindowExW(
             0, L"BUTTON", L"Execute (Enter)",
-            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+            WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
             0, 0, 0, 0, hg_g_commandbox_wnd, (HMENU)103, GetModuleHandle(NULL), NULL
         );
 
@@ -595,10 +627,9 @@ void show_commandbox_window()
         GetClientRect(hg_g_commandbox_wnd, &rc_client);
         SendMessageW(hg_g_commandbox_wnd, WM_SIZE, 0, MAKELPARAM(rc_client.right, rc_client.bottom));
 
-        /* What the box opens on. A blank transcript and a cursor is a prompt
-         * you have to have been told about; the keys are the thing a first-time
-         * reader needs and the thing a returning one forgets. */
-        hg_command_print_key_help();
+        /* Concise startup banner (D-U9=A). */
+        commandbox_print(L"Type 'help' for commands or 'h k' for keys.");
+        commandbox_print(L"Enter: run  |  Shift+Enter: newline  |  Ctrl+S: scroll  |  Ctrl+H: history  |  Esc: close");
 
         ShowWindow(hg_g_commandbox_wnd, SW_SHOWNORMAL);
         commandbox_after_show();
@@ -644,15 +675,11 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
 
         double ws = hg_window_scale(hwnd);
         int border = SCW(ws, 8);
-        int btn_h = SCW(ws, 26);
+        int btn_h = commandbox_button_height(ws);
         int cx_inner = cx - border * 2;
 
         int line_h = commandbox_line_height(hwnd, ws);
 
-        /* The input is exactly three lines, always: tall enough to see a
-         * multi-line paste coming, small enough that the transcript owns the
-         * window. It tracks the font and nothing else - resizing the window
-         * resizes the transcript - and past three lines it scrolls. */
         int min_out_h = line_h * 3 + SCW(ws, 6);
         int in_h = line_h * 3 + SCW(ws, 8);
 
@@ -664,14 +691,13 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         if (hg_g_commandbox_out_wnd)
             MoveWindow(hg_g_commandbox_out_wnd, border, border, cx_inner, out_h, TRUE);
         if (s_cb_hist_wnd)
-            /* The history list sits exactly where the transcript is; being a
-             * later sibling it covers it while shown. */
             MoveWindow(s_cb_hist_wnd, border, border, cx_inner, out_h, TRUE);
         if (hg_g_commandbox_in_wnd)
             MoveWindow(hg_g_commandbox_in_wnd, border, border * 2 + out_h, cx_inner, in_h, TRUE);
-        if (hg_g_commandbox_btn_wnd)
-            MoveWindow(hg_g_commandbox_btn_wnd, border, border * 3 + out_h + in_h, cx_inner, btn_h, TRUE);
-        /* The mode border lives in the margins; a resize has to repaint it. */
+        if (hg_g_commandbox_btn_wnd) {
+            int btn_w = (cx >= SCW(ws, 360)) ? SCW(ws, 140) : cx_inner;
+            MoveWindow(hg_g_commandbox_btn_wnd, border, border * 3 + out_h + in_h, btn_w, btn_h, TRUE);
+        }
         InvalidateRect(hwnd, NULL, TRUE);
         return 0;
     }
@@ -681,11 +707,11 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
 
         double ws = hg_window_scale(hwnd);
         int border = SCW(ws, 8);
-        int btn_h = SCW(ws, 26);
+        int btn_h = commandbox_button_height(ws);
         int line_h = commandbox_line_height(hwnd, ws);
 
         int min_out_h = line_h * 3 + SCW(ws, 6);
-        int min_in_h = line_h * 3 + SCW(ws, 8); /* the fixed three-line input */
+        int min_in_h = line_h * 3 + SCW(ws, 8);
         int min_cy = border * 4 + min_out_h + min_in_h + btn_h;
 
         RECT rc_win = {0, 0, SCW(ws, 200), min_cy};
@@ -698,13 +724,50 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
         return 0;
     }
 
+    case WM_DRAWITEM: {
+        const DRAWITEMSTRUCT *dis = (const DRAWITEMSTRUCT *)l_param;
+        if (!dis || dis->CtlID != 103)
+            break;
+        const HgUiPalette *dpal = hg_ui_doc_palette();
+        HgDocumentColors field = hg_document_field_colors_for(HG_DOC_PAGE_COMMANDBOX);
+        BOOL pressed = (dis->itemState & ODS_SELECTED) != 0;
+        COLORREF fill = pressed ? hg_ui_doc_select_color() : (s_cb_btn_hover ? dpal->bg3 : dpal->bg2);
+        HBRUSH hbr = hg_cached_solid_brush(fill);
+        if (hbr)
+            FillRect(dis->hDC, &dis->rcItem, hbr);
+        if (dis->itemState & ODS_FOCUS) {
+            HBRUSH ring = hg_cached_solid_brush(dpal->accent2);
+            if (ring)
+                FrameRect(dis->hDC, &dis->rcItem, ring);
+        }
+        SetBkMode(dis->hDC, TRANSPARENT);
+        SetTextColor(dis->hDC, field.text);
+        HFONT old_font = hg_g_commandbox_font ? (HFONT)SelectObject(dis->hDC, hg_g_commandbox_font) : NULL;
+        DrawTextW(dis->hDC, L"Execute (Enter)", -1, (RECT *)&dis->rcItem,
+                  DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_NOPREFIX);
+        if (old_font)
+            SelectObject(dis->hDC, old_font);
+        return TRUE;
+    }
+
     case WM_PAINT: {
-        /* The mode borders. A mode silently remapping the arrow keys is easy
-         * to forget; the caption says so in words, and this says so at a
-         * glance - scroll mode frames the transcript the arrows now scroll,
-         * history mode frames the input the picked line will land in. */
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
+        RECT crc;
+        GetClientRect(hwnd, &crc);
+        double ws = hg_window_scale(hwnd);
+        const HgUiPalette *dpal = hg_ui_doc_palette();
+
+        if (s_cb_mode != HG_CB_MODE_HISTORY && hg_g_commandbox_in_wnd && IsWindow(hg_g_commandbox_in_wnd)) {
+            RECT rc_in;
+            GetWindowRect(hg_g_commandbox_in_wnd, &rc_in);
+            MapWindowPoints(NULL, hwnd, (POINT *)&rc_in, 2);
+            InflateRect(&rc_in, 1, 1);
+            HBRUSH edge_br = hg_cached_solid_brush(dpal->line_strong);
+            if (edge_br)
+                FrameRect(hdc, &rc_in, edge_br);
+        }
+
         if (s_cb_mode != HG_CB_MODE_NONE) {
             HWND framed = (s_cb_mode == HG_CB_MODE_SCROLL)
                               ? ((s_cb_hist_wnd && IsWindowVisible(s_cb_hist_wnd)) ? s_cb_hist_wnd
@@ -714,18 +777,32 @@ LRESULT CALLBACK commandbox_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_p
                 RECT rc;
                 GetWindowRect(framed, &rc);
                 MapWindowPoints(NULL, hwnd, (POINT *)&rc, 2);
-                double ws = hg_window_scale(hwnd);
                 int thickness = SCW(ws, 3);
                 InflateRect(&rc, thickness, thickness);
-                COLORREF color = hg_ui_doc_focus_color(); /* accent2 of the page's theme (N-I6) */
-                HBRUSH brush = CreateSolidBrush(color);
+                COLORREF color = hg_ui_doc_focus_color();
+                HBRUSH brush = hg_cached_solid_brush(color);
                 if (brush) {
                     for (int i = 0; i < thickness; ++i) {
                         FrameRect(hdc, &rc, brush);
                         InflateRect(&rc, -1, -1);
                     }
-                    DeleteObject(brush);
                 }
+            }
+        }
+
+        if (crc.right >= SCW(ws, 360) && hg_g_commandbox_btn_wnd && IsWindow(hg_g_commandbox_btn_wnd)) {
+            RECT brc;
+            GetWindowRect(hg_g_commandbox_btn_wnd, &brc);
+            MapWindowPoints(NULL, hwnd, (POINT *)&brc, 2);
+            RECT hrc = {brc.right + SCW(ws, 12), brc.top, crc.right - SCW(ws, 8), brc.bottom};
+            if (hrc.right > hrc.left) {
+                HFONT old_font = hg_g_commandbox_font ? (HFONT)SelectObject(hdc, hg_g_commandbox_font) : NULL;
+                SetBkMode(hdc, TRANSPARENT);
+                SetTextColor(hdc, dpal->muted);
+                DrawTextW(hdc, L"Ctrl+S: Scroll  |  Ctrl+H: History  |  Esc: Close", -1, &hrc,
+                          DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS | DT_NOPREFIX);
+                if (old_font)
+                    SelectObject(hdc, old_font);
             }
         }
         EndPaint(hwnd, &ps);
