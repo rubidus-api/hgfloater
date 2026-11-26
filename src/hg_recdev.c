@@ -521,6 +521,13 @@ static DWORD recdev_config_write(WCHAR drive, const RecdevConfig *c)
 
 /* ------------------------------------------------------------ the settings box */
 
+/* The recorder's own DATE and TIME lines, as it ships them and as its manual
+ * says to leave them (owner, 2026-11-26). The template above carries the same. */
+#define RECDEV_FIXED_DATE "05-02-2026"
+#define RECDEV_FIXED_TIME "12:00:00"
+#define RECDEV_FIXED_DATE_W L"05-02-2026"
+#define RECDEV_FIXED_TIME_W L"12:00:00"
+
 typedef enum RecdevKind { RECDEV_NUMBER, RECDEV_CHOICE, RECDEV_DATE, RECDEV_TIME } RecdevKind;
 
 typedef struct RecdevField {
@@ -530,6 +537,11 @@ typedef struct RecdevField {
     int min, max;
     BOOL bracketed; /* stored as "(nnn)" */
     const WCHAR *const *choices;
+    /* Shown, never changed: the recorder's DATE and TIME lines stay as the
+     * file has them (owner, 2026-11-26: the recorder's manual says to leave
+     * the two as they are). The clock is set by the clock
+     * command, not through this file. */
+    BOOL keep;
 } RecdevField;
 
 static const WCHAR *const recdev_bit_rates[] = {
@@ -539,21 +551,20 @@ static const WCHAR *const recdev_bit_rates[] = {
 static const WCHAR *const recdev_on_off[] = {L"Off", L"On", NULL};
 
 static const RecdevField recdev_fields[] = {
-    {"VOR", L"Voice activation (0 off, 1-7; higher records less)", RECDEV_NUMBER, 0, 7, FALSE, NULL},
-    {"BIT RATE", L"Bit rate", RECDEV_CHOICE, 0, 8, FALSE, recdev_bit_rates},
-    {"GAIN", L"Recording gain (0-7, higher is louder)", RECDEV_NUMBER, 0, 7, FALSE, NULL},
-    {"SECTION", L"Split into files every N minutes (0 off)", RECDEV_NUMBER, 0, 999, TRUE, NULL},
-    {"DATE", L"Date in the file (DD-MM-YYYY)", RECDEV_DATE, 0, 0, FALSE, NULL},
-    {"TIME", L"Time in the file (HH:MM:SS)", RECDEV_TIME, 0, 0, FALSE, NULL},
-    {"TIMER", L"Timed recording", RECDEV_CHOICE, 0, 1, FALSE, recdev_on_off},
-    {"START", L"Timed recording starts at (HH:MM:SS)", RECDEV_TIME, 0, 0, FALSE, NULL},
-    {"TIMELONG", L"Timed recording length (1-720 minutes)", RECDEV_NUMBER, 1, 720, TRUE, NULL},
-    {"CYCLE", L"Timed recording every N days (0 every day)", RECDEV_NUMBER, 0, 999, TRUE, NULL},
+    {"VOR", L"Voice activation (0 off, 1-7; higher records less)", RECDEV_NUMBER, 0, 7, FALSE, NULL, FALSE},
+    {"BIT RATE", L"Bit rate", RECDEV_CHOICE, 0, 8, FALSE, recdev_bit_rates, FALSE},
+    {"GAIN", L"Recording gain (0-7, higher is louder)", RECDEV_NUMBER, 0, 7, FALSE, NULL, FALSE},
+    {"SECTION", L"Split into files every N minutes (0 off)", RECDEV_NUMBER, 0, 999, TRUE, NULL, FALSE},
+    {"DATE", L"Date in the file (kept as it is)", RECDEV_DATE, 0, 0, FALSE, NULL, TRUE},
+    {"TIME", L"Time in the file (kept as it is)", RECDEV_TIME, 0, 0, FALSE, NULL, TRUE},
+    {"TIMER", L"Timed recording", RECDEV_CHOICE, 0, 1, FALSE, recdev_on_off, FALSE},
+    {"START", L"Timed recording starts at (HH:MM:SS)", RECDEV_TIME, 0, 0, FALSE, NULL, FALSE},
+    {"TIMELONG", L"Timed recording length (1-720 minutes)", RECDEV_NUMBER, 1, 720, TRUE, NULL, FALSE},
+    {"CYCLE", L"Timed recording every N days (0 every day)", RECDEV_NUMBER, 0, 999, TRUE, NULL, FALSE},
 };
 #define RECDEV_FIELD_COUNT ((int)HG_ARRAYSIZE(recdev_fields))
 
 #define RECDEV_ID_PROMPT 100
-#define RECDEV_ID_NOW 101
 #define RECDEV_ID_LABEL0 200
 #define RECDEV_ID_FIELD0 300
 
@@ -632,6 +643,8 @@ static void recdev_form_fill(HWND dlg, const RecdevForm *form)
                 StringCchPrintfW(text, HG_ARRAYSIZE(text), L"%hs", value);
             SendMessageW(ctl, EM_LIMITTEXT, 10, 0);
             SetWindowTextW(ctl, text);
+            if (f->keep)
+                SendMessageW(ctl, EM_SETREADONLY, TRUE, 0);
         }
     }
 }
@@ -643,8 +656,8 @@ static BOOL recdev_form_take(HWND dlg, RecdevForm *form)
     for (int i = 0; i < RECDEV_FIELD_COUNT; ++i) {
         const RecdevField *f = &recdev_fields[i];
         HWND ctl = GetDlgItem(dlg, RECDEV_ID_FIELD0 + i);
-        if (!IsWindowEnabled(ctl))
-            continue;
+        if (f->keep || !IsWindowEnabled(ctl))
+            continue; /* the file's own line goes back unchanged */
         char out[32];
         const WCHAR *problem = NULL;
         if (f->kind == RECDEV_CHOICE) {
@@ -696,26 +709,6 @@ static BOOL recdev_form_take(HWND dlg, RecdevForm *form)
     return TRUE;
 }
 
-static void recdev_form_now(HWND dlg)
-{
-    SYSTEMTIME t;
-    GetLocalTime(&t);
-    for (int i = 0; i < RECDEV_FIELD_COUNT; ++i) {
-        const RecdevField *f = &recdev_fields[i];
-        HWND ctl = GetDlgItem(dlg, RECDEV_ID_FIELD0 + i);
-        if (!IsWindowEnabled(ctl))
-            continue;
-        WCHAR text[16];
-        if (strcmp(f->key, "DATE") == 0)
-            StringCchPrintfW(text, HG_ARRAYSIZE(text), L"%02u-%02u-%04u", t.wDay, t.wMonth, t.wYear);
-        else if (strcmp(f->key, "TIME") == 0)
-            StringCchPrintfW(text, HG_ARRAYSIZE(text), L"%02u:%02u:%02u", t.wHour, t.wMinute, t.wSecond);
-        else
-            continue;
-        SetWindowTextW(ctl, text);
-    }
-}
-
 static INT_PTR CALLBACK recdev_dialog_proc(HWND dlg, UINT msg, WPARAM w_param, LPARAM l_param)
 {
     RecdevForm *form = (RecdevForm *)GetWindowLongPtrW(dlg, DWLP_USER);
@@ -741,9 +734,6 @@ static INT_PTR CALLBACK recdev_dialog_proc(HWND dlg, UINT msg, WPARAM w_param, L
     }
     case WM_COMMAND:
         switch (LOWORD(w_param)) {
-        case RECDEV_ID_NOW:
-            recdev_form_now(dlg);
-            return TRUE;
         case IDOK: {
             if (!form || !recdev_form_take(dlg, form))
                 return TRUE;
@@ -816,7 +806,47 @@ void hg_recdev_settings(HWND owner, WCHAR drive)
         return;
     }
 
-    /* Rows: a label, its control; Now beside the file's time; Save, Cancel. */
+    /* DATE and TIME are fixed. A file that holds anything else is asked about
+     * before the form opens: Yes writes the two lines back at once (and only
+     * them), No leaves the file as it is. A line the file lacks is not added. */
+    if (!form->missing) {
+        char date[32], time[32];
+        BOOL have_date = recdev_config_get(&form->config, "DATE", date, sizeof(date));
+        BOOL have_time = recdev_config_get(&form->config, "TIME", time, sizeof(time));
+        BOOL off_date = have_date && strcmp(date, RECDEV_FIXED_DATE) != 0;
+        BOOL off_time = have_time && strcmp(time, RECDEV_FIXED_TIME) != 0;
+        if (off_date || off_time) {
+            WCHAR ask[512];
+            StringCchPrintfW(ask, HG_ARRAYSIZE(ask),
+                             L"The date and time in %lc:\\" RECDEV_CONFIG_NAME L" are not the recorder's original "
+                             L"values.\n\n"
+                             L"In the file:\tDATE %hs, TIME %hs\n"
+                             L"Original:\tDATE " RECDEV_FIXED_DATE_W L", TIME " RECDEV_FIXED_TIME_W L"\n\n"
+                             L"Put them back to the original values now?",
+                             drive, have_date ? date : "-", have_time ? time : "-");
+            if (MessageBoxW(owner, ask, RECDEV_TITLE, MB_YESNO | MB_ICONQUESTION) == IDYES) {
+                RecdevConfig fixed = form->config;
+                BOOL ok = (!off_date || recdev_config_set(&fixed, "DATE", RECDEV_FIXED_DATE)) &&
+                          (!off_time || recdev_config_set(&fixed, "TIME", RECDEV_FIXED_TIME));
+                DWORD we = ERROR_INVALID_DATA;
+                if (ok && hg_recbak_drive())
+                    we = recdev_config_write(drive, &fixed);
+                else if (ok)
+                    we = ERROR_NOT_READY;
+                if (we == ERROR_SUCCESS) {
+                    form->config = fixed;
+                } else {
+                    WCHAR text[256];
+                    StringCchPrintfW(text, HG_ARRAYSIZE(text),
+                                     L"The date and time were not put back (error %lu). The file is as it was.",
+                                     (unsigned long)we);
+                    MessageBoxW(owner, text, RECDEV_TITLE, MB_OK | MB_ICONWARNING);
+                }
+            }
+        }
+    }
+
+    /* Rows: a label, its control; Save, Cancel. */
     enum { CX = 300, LABEL_X = 8, LABEL_CX = 196, CTL_X = 208, CTL_CX = 84, ROW0 = 36, ROW = 16 };
     DWORD *storage = (DWORD *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 8192 * sizeof(DWORD));
     if (!storage) {
@@ -827,7 +857,7 @@ void hg_recdev_settings(HWND owner, WCHAR drive)
     DLGTEMPLATE *tmpl = (DLGTEMPLATE *)storage;
     tmpl->style = DS_MODALFRAME | DS_CENTER | DS_SETFONT | DS_SETFOREGROUND | WS_POPUP | WS_CAPTION | WS_SYSMENU;
     tmpl->dwExtendedStyle = WS_EX_TOPMOST;
-    tmpl->cdit = (WORD)(1 + 2 * RECDEV_FIELD_COUNT + 3);
+    tmpl->cdit = (WORD)(1 + 2 * RECDEV_FIELD_COUNT + 2);
     tmpl->cx = CX;
     tmpl->cy = (short)(rows_end + 26);
     WORD *p = (WORD *)(tmpl + 1);
@@ -841,8 +871,6 @@ void hg_recdev_settings(HWND owner, WCHAR drive)
         const RecdevField *f = &recdev_fields[i];
         short y = (short)(ROW0 + i * ROW);
         short cx = CTL_CX;
-        if (strcmp(f->key, "TIME") == 0)
-            cx = CTL_CX - 30; /* room for Now */
         p = hg_dlg_put_item(p, SS_LEFT | SS_NOPREFIX, LABEL_X, (short)(y + 2), LABEL_CX, 10,
                             (WORD)(RECDEV_ID_LABEL0 + i), 0x0082, f->label);
         if (f->kind == RECDEV_CHOICE)
@@ -851,14 +879,6 @@ void hg_recdev_settings(HWND owner, WCHAR drive)
         else
             p = hg_dlg_put_item(p, ES_AUTOHSCROLL | WS_BORDER | WS_TABSTOP, CTL_X, y, cx, 12,
                                 (WORD)(RECDEV_ID_FIELD0 + i), 0x0081, L"");
-    }
-    {
-        int time_row = 0;
-        for (int i = 0; i < RECDEV_FIELD_COUNT; ++i)
-            if (strcmp(recdev_fields[i].key, "TIME") == 0)
-                time_row = i;
-        p = hg_dlg_put_item(p, BS_PUSHBUTTON | WS_TABSTOP, CTL_X + CTL_CX - 26, (short)(ROW0 + time_row * ROW - 1),
-                            26, 14, RECDEV_ID_NOW, 0x0080, L"Now");
     }
     p = hg_dlg_put_item(p, BS_DEFPUSHBUTTON | WS_TABSTOP, CX - 116, (short)(rows_end + 6), 52, 15, IDOK, 0x0080,
                         L"Save");

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.18.2] - 2026-11-26
+
+### Changed
+- **Recorder Settings keeps the file's DATE and TIME fixed** at the recorder's original `05-02-2026` and
+  `12:00:00`, as its manual says: the two lines are shown read-only and Save leaves them untouched; the
+  **Now** button is gone. A file holding other values asks first whether to put them back. The
+  recorder's clock is set with **Set Recorder Clock to Now**.
+
 ## [v0.18.1] - 2026-11-26
 
 ### Added

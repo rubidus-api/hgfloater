@@ -1,10 +1,10 @@
-[한국어](README.ko.md) | **English** — **HGFloater v0.18.1** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.1/hgfloater.exe)
+[한국어](README.ko.md) | **English** — **HGFloater v0.18.2** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.2/hgfloater.exe)
 
 # HGFloater
 
-**v0.18.1** — built 2026-11-26
+**v0.18.2** — built 2026-11-26
 
-**[Download hgfloater.exe — v0.18.1, 850 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.18.2, 850 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
@@ -928,8 +928,11 @@ nothing but say so.
   says why.
 - **Recorder Settings...** opens the recorder's settings file
   (`Seo&0h.txt` at the root of its drive) as a form: voice activation, bit rate,
-  gain, file splitting, the date and time in the file (**Now** fills in this
-  computer's), and the timed recording. **Save** writes the changes into the
+  gain, file splitting, and the timed recording. The date and time lines of
+  the file are fixed at the recorder's original values, `05-02-2026` and
+  `12:00:00`, as its manual says; the form shows them but does not change
+  them, and the clock is set with the command above. If the file holds other
+  values, you are asked first whether to put them back. **Save** writes the changes into the
   file, keeping everything else in it exactly as it was; **Cancel** leaves it
   alone. A recorder without the file gets the standard one when you save.
 

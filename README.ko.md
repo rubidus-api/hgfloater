@@ -1,10 +1,10 @@
-**한국어** | [English](README.md) — **HGFloater v0.18.1** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.1/hgfloater.exe)
+**한국어** | [English](README.md) — **HGFloater v0.18.2** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.2/hgfloater.exe)
 
 # HGFloater
 
-**v0.18.1** — 빌드 2026-11-26
+**v0.18.2** — 빌드 2026-11-26
 
-**[hgfloater.exe 내려받기 — v0.18.1, 850 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
+**[hgfloater.exe 내려받기 — v0.18.2, 850 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 클릭하면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인
@@ -784,8 +784,10 @@ DDC/CI**입니다. 모니터의 capabilities 문자열을 읽어 휘도 제어�
   맞춰지면 플로터(태스크박스가 열려 있으면 태스크박스)가 **반짝이고**, 안 되면 이유를 창으로
   알려 줍니다.
 - **Recorder Settings...** 는 녹음기의 설정 파일(드라이브 루트의 `Seo&0h.txt`)을 입력 창으로
-  엽니다. 음성 감지 녹음, 음질, 녹음 감도, 파일 나누기, 파일 안의 날짜와 시각(**Now** 는 이
-  컴퓨터의 시각을 넣습니다), 예약 녹음입니다. **Save** 는 바꾼 값을 파일에 쓰고 파일의 나머지는
+  엽니다. 음성 감지 녹음, 음질, 녹음 감도, 파일 나누기, 예약 녹음입니다. 파일 안의 날짜와
+  시각 줄은 녹음기 매뉴얼대로 원래 값 `05-02-2026`, `12:00:00` 으로 고정이라 보여 주기만 하고
+  바꾸지 않으며, 시계는 위의 명령으로 맞춥니다. 파일에 다른 값이 들어 있으면 원래대로 되돌릴지
+  먼저 묻습니다. **Save** 는 바꾼 값을 파일에 쓰고 파일의 나머지는
   그대로 둡니다. **Cancel** 은 아무것도 바꾸지 않습니다. 파일이 없는 녹음기에는 저장할 때 표준
   파일을 만듭니다.
 
