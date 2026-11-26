@@ -1,15 +1,15 @@
-**한국어** | [English](README.md) — **HGFloater v0.18.0** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.0/hgfloater.exe)
+**한국어** | [English](README.md) — **HGFloater v0.18.1** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.1/hgfloater.exe)
 
 # HGFloater
 
-**v0.18.0** — 빌드 2026-11-25
+**v0.18.1** — 빌드 2026-11-26
 
-**[hgfloater.exe 내려받기 — v0.18.0, 840 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
+**[hgfloater.exe 내려받기 — v0.18.1, 850 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [모든 릴리스](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater는 **윈도우 11 이상**을 위한 가벼운 데스크톱 유틸리티입니다. 반투명한 작은
 위젯이 바탕화면에 떠 있고, 클릭하면 대시보드가 펼쳐져 단축 아이콘 실행, 실행 중인
 창 전환, 볼륨·밝기·투명도 조절, 명령 콘솔을 한 번의 조작으로 처리합니다. 순수 C와 Win32
-API만으로 작성되어 외부 의존성이 전혀 없습니다. 프로그램 전체가 **약 840 KB짜리 실행 파일
+API만으로 작성되어 외부 의존성이 전혀 없습니다. 프로그램 전체가 **약 850 KB짜리 실행 파일
 하나**이고 설치 과정도 런타임도 필요 없어서, 즉시 실행되며 작업을 방해하지 않습니다.
 
 > 이 문서는 영어판 [README.md](README.md)의 번역본입니다. 내용이 어긋날 경우 영어판이
@@ -1025,6 +1025,12 @@ Master-Detail 팝업 창입니다.
 열리고, 박스나 손잡이를 클릭하거나 `Space`를 누르면 체크됩니다. 새 노트는 위쪽 **`Add`**
 버튼이나 `Insert` 키로 만듭니다.
 
+**손잡이를 잡고 끌면** 그 줄을 같은 목록(작성 중 또는 보관) 안의 다른 자리로 옮길 수
+있습니다. 놓일 자리에 선이 그려지고, 목록 위나 아래 가장자리 너머로 끌면 목록이 따라
+움직입니다. 놓기 전에 `Esc`를 누르면 제자리에 둡니다. 처음 끌 때 그쪽 목록의 정렬이 지금
+보이는 순서 그대로 **Manual**(수동)로 바뀌므로 다른 줄은 움직이지 않습니다. 새 노트나, 보관
+또는 되돌리기로 Manual 목록에 들어온 노트는 맨 위에 놓입니다.
+
 화살표 키로 목록과 맨 윗줄 사이를 오갑니다: 첫 줄에서 `Up`이면 위쪽 버튼들로, `Left`·`Right`로
 버튼을 따라 검색칸까지, `Down`이면 목록으로 돌아옵니다.
 
@@ -1044,8 +1050,8 @@ Master-Detail 팝업 창입니다.
 **노트를(또는 구분 머리글을) 오른쪽 클릭**하면 그쪽 목록에 대한 메뉴가 열립니다.
 
 - **Open**, **Archive**(보관) 또는 **Restore**(되돌리기), 그리고 **Delete**(삭제).
-- **정렬**: 생성일시·최종수정일시·제목 각각 오름차순/내림차순이며, 지금 적용된 것에 체크가
-  붙습니다.
+- **정렬**: 생성일시·최종수정일시·제목 각각 오름차순/내림차순, 또는 끌어서 정한 순서인
+  **Manual**이며, 지금 적용된 것에 체크가 붙습니다.
 
 **보관한 노트는 읽기 전용입니다.** 보관은 치워 두는 일이고, 치워 둔 것은 더 쓰지 않는
 것입니다. 편집창이 읽기 전용으로 열리고 제목 표시줄이 그렇다고 말합니다 — 입력을 말없이

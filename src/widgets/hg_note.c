@@ -66,6 +66,9 @@ typedef enum HgNoteSortKey {
     HG_NOTE_SORT_CREATED = 0,
     HG_NOTE_SORT_MODIFIED,
     HG_NOTE_SORT_TITLE,
+    /* The order the reader dragged the rows into (owner, 2026-11-26). It has
+     * no descending form: the hand-kept order is the order. */
+    HG_NOTE_SORT_MANUAL,
     HG_NOTE_SORT_KEY_COUNT
 } HgNoteSortKey;
 
@@ -91,6 +94,7 @@ typedef struct HgNote {
     WCHAR title[HG_NOTE_TITLE_CCH];
     WCHAR *text; /* the whole note, title line included; never NULL once used */
     BOOL archived;
+    int order;    /* the place in a Manual section, lowest first; [note-<id>] order */
     BOOL checked; /* the row's box in the list; not saved, a selection for Del and Arc */
     BOOL dirty;
     /* The editor holds newer text than note->text. Set by every keystroke,
@@ -116,6 +120,20 @@ static int s_visible_note_count = 0;
 static int s_pressed_row = -1;
 static int s_head_hover_id = 0;
 
+/* A press on a row's grip: a click checks the row, a drag moves it. Which of
+ * the two it was is known only once the pointer has travelled the system's
+ * drag distance or the button has come up, so the press is held here. */
+typedef struct NoteDrag {
+    int row;      /* the pressed row, -1 when no press is held */
+    int item;     /* the note on it */
+    int section;  /* the half it may move in */
+    POINT start;  /* where the press landed, list client coordinates */
+    BOOL active;  /* past the drag distance: a move, not a click */
+    int slot;     /* the row it would be put before; first..last+1 of its half */
+} NoteDrag;
+static NoteDrag s_drag = {-1, -1, 0, {0, 0}, FALSE, -1};
+static void note_drag_cancel(HWND list);
+
 /* Defined with the list window; the editor reaches back through it whenever it
  * changes something the list is showing. */
 static void note_list_refresh(void);
@@ -130,6 +148,7 @@ static void note_editor_sync(HgNote *note);
 static BOOL note_list_frame_key(HWND wnd, UINT msg, WPARAM w_param);
 static void note_list_apply_fonts(HWND hwnd);
 static void note_list_focus_list(HWND hwnd);
+static int note_row_section(HWND list, int row);
 
 static void note_directory(WCHAR *out, size_t out_cch)
 {
@@ -225,6 +244,8 @@ static const WCHAR *note_sort_key_name(HgNoteSortKey key)
         return L"created";
     case HG_NOTE_SORT_TITLE:
         return L"title";
+    case HG_NOTE_SORT_MANUAL:
+        return L"manual";
     case HG_NOTE_SORT_MODIFIED:
     default:
         return L"modified";
@@ -237,6 +258,8 @@ static HgNoteSortKey note_sort_key_from_name(const WCHAR *name)
         return HG_NOTE_SORT_CREATED;
     if (lstrcmpiW(name, L"title") == 0)
         return HG_NOTE_SORT_TITLE;
+    if (lstrcmpiW(name, L"manual") == 0)
+        return HG_NOTE_SORT_MANUAL;
     return HG_NOTE_SORT_MODIFIED;
 }
 
@@ -529,6 +552,16 @@ static int note_compare(const void *a, const void *b)
     const HgNote *right = &s_notes[*(const int *)b];
 
     int result = 0;
+    if (s_sort_in_use.key == HG_NOTE_SORT_MANUAL) {
+        result = (left->order > right->order) - (left->order < right->order);
+        /* Notes that never had a place of their own (no order key yet) keep
+         * the newest-first order the list shows by default. */
+        if (result == 0)
+            result = -note_compare_time(&left->created, &right->created);
+        if (result == 0)
+            result = lstrcmpiW(left->id, right->id);
+        return result;
+    }
     switch (s_sort_in_use.key) {
     case HG_NOTE_SORT_CREATED:
         result = note_compare_time(&left->created, &right->created);
@@ -706,6 +739,24 @@ static void note_save_archived_flag(const HgNote *note)
     note_ini_set_int(section, L"archived", note->archived ? 1 : 0);
 }
 
+static void note_save_order(const HgNote *note)
+{
+    WCHAR section[32];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+    note_ini_set_int(section, L"order", note->order);
+}
+
+/* Read as text: GetPrivateProfileInt turns a negative value into 0, and a note
+ * put above the first one takes the first one's place less one. */
+static void note_load_order(HgNote *note)
+{
+    WCHAR section[32];
+    WCHAR text[16];
+    note_section_name(note, section, HG_ARRAYSIZE(section));
+    note_ini_get_str(section, L"order", L"0", text, HG_ARRAYSIZE(text));
+    note->order = (int)wcstol(text, NULL, 10);
+}
+
 /* The file name only carries the day. Sorting by creation asked for the time of
  * day too, so it is written out once and read back beside the note. */
 static void note_save_created(const HgNote *note)
@@ -785,6 +836,105 @@ static void note_load_editor_rect(HgNote *note)
     note->editor_rect_valid = TRUE;
 }
 
+/* --------------------------------------------------- the hand-kept order */
+
+static int note_section_of(const HgNote *note)
+{
+    return note->archived ? HG_NOTE_SECTION_ARCHIVED : HG_NOTE_SECTION_ACTIVE;
+}
+
+/* Every note of one half in the order that half shows, search or no search. */
+static int note_section_sorted(int section, int *out, int max)
+{
+    int count = 0;
+    for (int i = 0; i < s_note_count && count < max; ++i) {
+        if (s_notes[i].used && note_section_of(&s_notes[i]) == section)
+            out[count++] = i;
+    }
+    s_sort_in_use = s_sort[section];
+    if (count > 1)
+        qsort(out, (size_t)count, sizeof(out[0]), note_compare);
+    return count;
+}
+
+/* Numbers the half 0, 1, 2... in the given order, writing only what changed. */
+static void note_section_number(const int *order, int count)
+{
+    for (int i = 0; i < count; ++i) {
+        HgNote *note = &s_notes[order[i]];
+        if (note->order != i) {
+            note->order = i;
+            note_save_order(note);
+        }
+    }
+}
+
+/* Turns a half to Manual keeping exactly the order it shows now, so the first
+ * drag moves one row and nothing else jumps. */
+static void note_section_make_manual(int section)
+{
+    if (s_sort[section].key == HG_NOTE_SORT_MANUAL)
+        return;
+    int order[HG_MAX_NOTES];
+    int count = note_section_sorted(section, order, HG_MAX_NOTES);
+    note_section_number(order, count);
+    s_sort[section].key = HG_NOTE_SORT_MANUAL;
+    s_sort[section].descending = FALSE;
+    note_save_sort_settings(section);
+}
+
+/* A note that arrives in a Manual half - a new one, or one archived or
+ * restored into it - goes to the top, where the reader is looking. */
+static void note_place_first(HgNote *note)
+{
+    int section = note_section_of(note);
+    if (s_sort[section].key != HG_NOTE_SORT_MANUAL)
+        return;
+    BOOL any = FALSE;
+    int lowest = 0;
+    for (int i = 0; i < s_note_count; ++i) {
+        const HgNote *other = &s_notes[i];
+        if (other == note || !other->used || note_section_of(other) != section)
+            continue;
+        if (!any || other->order < lowest)
+            lowest = other->order;
+        any = TRUE;
+    }
+    note->order = any ? lowest - 1 : 0;
+    note_save_order(note);
+}
+
+/* Moves one note to just before another of its half, or to the end of the half
+ * when before is -1, and renumbers the half. */
+static void note_section_move(int section, int moved, int before)
+{
+    note_section_make_manual(section);
+    int order[HG_MAX_NOTES];
+    int count = note_section_sorted(section, order, HG_MAX_NOTES);
+    int at = -1;
+    for (int i = 0; i < count; ++i) {
+        if (order[i] == moved)
+            at = i;
+    }
+    if (at < 0)
+        return;
+    for (int i = at; i + 1 < count; ++i)
+        order[i] = order[i + 1];
+    --count;
+    int to = count;
+    for (int i = 0; i < count; ++i) {
+        if (order[i] == before) {
+            to = i;
+            break;
+        }
+    }
+    for (int i = count; i > to; --i)
+        order[i] = order[i - 1];
+    order[to] = moved;
+    ++count;
+    note_section_number(order, count);
+}
+
 /* ------------------------------------------------------------ note lifetime */
 
 static HgNote *note_slot(void)
@@ -827,6 +977,7 @@ static HgNote *note_create(void)
     note_set_text(note, L"");
     note_write_file(note);
     note_save_created(note);
+    note_place_first(note);
     return note;
 }
 
@@ -926,6 +1077,7 @@ void hg_notes_load(void)
         WCHAR section[32];
         note_section_name(note, section, HG_ARRAYSIZE(section));
         note->archived = (note_ini_get_int(section, L"archived", 0) != 0);
+        note_load_order(note);
         note_load_created(note);
         note_load_editor_rect(note);
     } while (FindNextFileW(search, &find));
@@ -1019,6 +1171,7 @@ static void note_toggle_archived(HgNote *note)
         return;
     note->archived = !note->archived;
     note_save_archived_flag(note);
+    note_place_first(note);
     note_editor_apply_archived(note);
     note_list_refresh();
 }
@@ -1602,6 +1755,9 @@ static void note_list_fill(HWND hwnd)
         }
     }
 
+    /* The rows a held press counts in are about to go. */
+    note_drag_cancel(list);
+
     SendMessageW(list, WM_SETREDRAW, FALSE, 0);
     SendMessageW(list, LB_RESETCONTENT, 0, 0);
     s_visible_note_count = 0;
@@ -1859,6 +2015,7 @@ static void note_list_archive_targets(HWND hwnd)
         if (note->used && (note->archived ? TRUE : FALSE) != any_active) { /* the state to reach: any_active */
             note->archived = !note->archived;
             note_save_archived_flag(note);
+            note_place_first(note);
             note_editor_apply_archived(note);
         }
     }
@@ -1883,8 +2040,8 @@ static int note_check_box_size(HWND hwnd, int row_h)
  * The bar takes the row's own action (a double click opens); the grip only
  * picks the row - a click there checks it, as the box does. The check box is
  * at the start of the bar, and every row's text starts at the same x whichever
- * side its grip is on. (Rows are not dragged: the notes have no hand-kept
- * order to move them in.) */
+ * side its grip is on. A press on the grip that moves drags the row to another
+ * place in its half instead (owner, 2026-11-26), and that half sorts Manual. */
 typedef struct NoteGripRow {
     RECT grip;
     RECT bar;
@@ -2102,6 +2259,33 @@ static void note_draw_list_row(HWND hwnd, const DRAWITEMSTRUCT *dis)
 
     if (heading && focused)
         note_draw_focus_ring(dc, hwnd, &rc);
+
+    /* Where a dragged row would land: a line across the gap above the slot's
+     * row, or below the half's last row when it would go last. */
+    if (s_drag.row >= 0 && s_drag.active && s_drag.slot >= 0 && s_drag.slot != s_drag.row &&
+        s_drag.slot != s_drag.row + 1) {
+        int line = SCW(ws, 2);
+        if (line < 2)
+            line = 2;
+        RECT mark = {g.grip_left ? g.grip.left : g.bar.left, 0, g.grip_left ? g.bar.right : g.grip.right, 0};
+        BOOL draw = FALSE;
+        if ((int)dis->itemID == s_drag.slot && !heading) {
+            mark.top = rc.top;
+            draw = TRUE;
+        } else if ((int)dis->itemID == s_drag.slot - 1 && !heading) {
+            int next = note_list_item(dis->hwndItem, s_drag.slot);
+            if (next < 0 || note_row_section(dis->hwndItem, s_drag.slot) != s_drag.section) {
+                mark.top = rc.bottom - line;
+                draw = TRUE;
+            }
+        }
+        if (draw) {
+            mark.bottom = mark.top + line;
+            HBRUSH accent = hg_cached_solid_brush(dpal->accent2);
+            if (accent)
+                FillRect(dc, &mark, accent);
+        }
+    }
 }
 
 static void note_draw_head_button(HWND hwnd, const DRAWITEMSTRUCT *dis)
@@ -2396,9 +2580,15 @@ static void note_append_sort_items(HMENU menu, int section)
         {L"Created, oldest first", L"Created, newest first"},
         {L"Modified, oldest first", L"Modified, newest first"},
         {L"Title, A to Z", L"Title, Z to A"},
+        {L"Manual (drag a grip)", NULL},
     };
 
     for (int key = 0; key < HG_NOTE_SORT_KEY_COUNT; ++key) {
+        if (key == HG_NOTE_SORT_MANUAL) {
+            UINT flags = MF_STRING | ((s_sort[section].key == HG_NOTE_SORT_MANUAL) ? MF_CHECKED : 0);
+            AppendMenuW(menu, flags, (UINT_PTR)(HG_NOTE_CMD_SORT_BASE + key * 2), labels[key][0]);
+            continue;
+        }
         for (int desc = 0; desc < 2; ++desc) {
             UINT flags = MF_STRING;
             if (s_sort[section].key == (HgNoteSortKey)key && (s_sort[section].descending ? 1 : 0) == desc)
@@ -2454,9 +2644,13 @@ static void note_list_show_context_menu(HWND hwnd, HWND list, int row, POINT scr
         note_list_delete(hwnd, note_index);
     } else if (cmd >= HG_NOTE_CMD_SORT_BASE && cmd < HG_NOTE_CMD_SORT_BASE + HG_NOTE_SORT_KEY_COUNT * 2) {
         int offset = cmd - HG_NOTE_CMD_SORT_BASE;
-        s_sort[section].key = (HgNoteSortKey)(offset / 2);
-        s_sort[section].descending = ((offset % 2) != 0);
-        note_save_sort_settings(section);
+        if (offset / 2 == HG_NOTE_SORT_MANUAL) {
+            note_section_make_manual(section); /* keeps the order on screen */
+        } else {
+            s_sort[section].key = (HgNoteSortKey)(offset / 2);
+            s_sort[section].descending = ((offset % 2) != 0);
+            note_save_sort_settings(section);
+        }
         note_list_fill(hwnd);
     }
 }
@@ -2468,6 +2662,139 @@ static int note_list_row_at(HWND list, LPARAM l_param)
     if (HIWORD(hit) != 0)
         return -1; /* outside the items */
     return (int)LOWORD(hit);
+}
+
+/* ------------------------------------------------- dragging a row by its grip */
+
+#define HG_NOTE_DRAG_TIMER 0x4E44 /* the list box's own timer, for scrolling at an edge */
+#define HG_NOTE_DRAG_SCROLL_MS 60
+
+/* The rows the pressed note may land among: its own half's note rows. */
+static void note_drag_range(HWND list, int *first, int *last)
+{
+    int rows = (int)SendMessageW(list, LB_GETCOUNT, 0, 0);
+    int lo = s_drag.row, hi = s_drag.row;
+    while (lo - 1 >= 0 && note_list_item(list, lo - 1) >= 0 && note_row_section(list, lo - 1) == s_drag.section)
+        --lo;
+    while (hi + 1 < rows && note_list_item(list, hi + 1) >= 0 && note_row_section(list, hi + 1) == s_drag.section)
+        ++hi;
+    *first = lo;
+    *last = hi;
+}
+
+static void note_drag_invalidate_slot(HWND list, int slot)
+{
+    if (slot < 0)
+        return;
+    RECT rc;
+    if (SendMessageW(list, LB_GETITEMRECT, (WPARAM)slot, (LPARAM)&rc) != LB_ERR)
+        InvalidateRect(list, &rc, FALSE);
+    if (slot > 0 && SendMessageW(list, LB_GETITEMRECT, (WPARAM)(slot - 1), (LPARAM)&rc) != LB_ERR)
+        InvalidateRect(list, &rc, FALSE);
+}
+
+/* The slot under a point: before the row whose upper half it is in, after the
+ * row whose lower half it is in, held inside the half. Rows are all one height,
+ * so a point above or below the client area still names a row. */
+static int note_drag_slot_at(HWND list, int y)
+{
+    int top = (int)SendMessageW(list, LB_GETTOPINDEX, 0, 0);
+    int h = (int)SendMessageW(list, LB_GETITEMHEIGHT, 0, 0);
+    if (h <= 0)
+        h = 1;
+    int rows_down = (y >= 0) ? y / h : -((-y + h - 1) / h); /* rounded toward minus infinity */
+    int within = y - rows_down * h;
+    int slot = top + rows_down + ((2 * within >= h) ? 1 : 0);
+    int first, last;
+    note_drag_range(list, &first, &last);
+    if (slot < first)
+        slot = first;
+    if (slot > last + 1)
+        slot = last + 1;
+    return slot;
+}
+
+static void note_drag_update(HWND list, int y)
+{
+    int slot = note_drag_slot_at(list, y);
+    if (slot != s_drag.slot) {
+        note_drag_invalidate_slot(list, s_drag.slot);
+        s_drag.slot = slot;
+        note_drag_invalidate_slot(list, s_drag.slot);
+    }
+    RECT client;
+    GetClientRect(list, &client);
+    if (y < client.top || y >= client.bottom)
+        SetTimer(list, HG_NOTE_DRAG_TIMER, HG_NOTE_DRAG_SCROLL_MS, NULL);
+    else
+        KillTimer(list, HG_NOTE_DRAG_TIMER);
+}
+
+/* Drops the held press without doing anything: Escape, a lost capture, or the
+ * rows being refilled under it. */
+static void note_drag_cancel(HWND list)
+{
+    if (s_drag.row < 0)
+        return;
+    int slot = s_drag.slot;
+    s_drag.row = -1;
+    s_drag.active = FALSE;
+    s_drag.slot = -1;
+    if (!list)
+        return;
+    KillTimer(list, HG_NOTE_DRAG_TIMER);
+    note_drag_invalidate_slot(list, slot);
+    if (GetCapture() == list)
+        ReleaseCapture();
+    if (s_pressed_row != -1) {
+        s_pressed_row = -1;
+        InvalidateRect(list, NULL, FALSE);
+    }
+}
+
+static void note_drag_begin(HWND list, int row, int item, POINT at)
+{
+    s_drag.row = row;
+    s_drag.item = item;
+    s_drag.section = note_row_section(list, row);
+    s_drag.start = at;
+    s_drag.active = FALSE;
+    s_drag.slot = -1;
+    SendMessageW(list, LB_SETCURSEL, (WPARAM)row, 0);
+    SetFocus(list);
+    SetCapture(list);
+    s_pressed_row = row;
+    InvalidateRect(list, NULL, FALSE);
+}
+
+/* The button came up: a click checks the row, a drag puts it in its new place
+ * and turns that half to Manual. */
+static void note_drag_end(HWND list)
+{
+    int row = s_drag.row, item = s_drag.item, section = s_drag.section;
+    int slot = s_drag.slot;
+    BOOL active = s_drag.active;
+    int first, last;
+    note_drag_range(list, &first, &last);
+    note_drag_cancel(list);
+    HWND hwnd = GetParent(list);
+    if (!active) {
+        note_list_toggle_checked(hwnd, row);
+        return;
+    }
+    if (slot < 0 || slot == row || slot == row + 1)
+        return; /* put back where it was */
+    (void)first;
+    int before = (slot <= last) ? note_list_item(list, slot) : -1;
+    note_section_move(section, item, before);
+    note_list_fill(hwnd);
+    int rows = (int)SendMessageW(list, LB_GETCOUNT, 0, 0);
+    for (int r = 0; r < rows; ++r) {
+        if (note_list_item(list, r) == item) {
+            SendMessageW(list, LB_SETCURSEL, (WPARAM)r, 0);
+            break;
+        }
+    }
 }
 
 /* Ctrl+arrows resize the note list and Alt+arrows move it (owner's request,
@@ -2508,6 +2835,51 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
 {
     (void)subclass_id;
     (void)ref_data;
+    /* A held grip press owns the pointer until the button comes up. */
+    if (s_drag.row >= 0) {
+        if (msg == WM_KEYDOWN && w_param == VK_ESCAPE) {
+            note_drag_cancel(hwnd);
+            return 0;
+        }
+        if (msg == WM_MOUSEMOVE) {
+            POINT at = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+            if (!s_drag.active && (abs(at.x - s_drag.start.x) >= GetSystemMetrics(SM_CXDRAG) ||
+                                   abs(at.y - s_drag.start.y) >= GetSystemMetrics(SM_CYDRAG)))
+                s_drag.active = TRUE;
+            if (s_drag.active) {
+                SetCursor(LoadCursorW(NULL, IDC_SIZENS));
+                note_drag_update(hwnd, at.y);
+            }
+            return 0;
+        }
+        if (msg == WM_TIMER && w_param == HG_NOTE_DRAG_TIMER) {
+            POINT at;
+            RECT client;
+            GetCursorPos(&at);
+            ScreenToClient(hwnd, &at);
+            GetClientRect(hwnd, &client);
+            int top = (int)SendMessageW(hwnd, LB_GETTOPINDEX, 0, 0);
+            if (at.y < client.top && top > 0)
+                SendMessageW(hwnd, LB_SETTOPINDEX, (WPARAM)(top - 1), 0);
+            else if (at.y >= client.bottom)
+                SendMessageW(hwnd, LB_SETTOPINDEX, (WPARAM)(top + 1), 0);
+            note_drag_update(hwnd, at.y);
+            return 0;
+        }
+        if (msg == WM_LBUTTONUP) {
+            note_drag_end(hwnd);
+            return 0;
+        }
+        if (msg == WM_CAPTURECHANGED) {
+            note_drag_cancel(hwnd);
+            return 0;
+        }
+    }
+    if (msg == WM_TIMER && w_param == HG_NOTE_DRAG_TIMER) {
+        KillTimer(hwnd, HG_NOTE_DRAG_TIMER);
+        return 0;
+    }
+
     /* Before the list box sees them: Ctrl+Up and Ctrl+Down move its caret. */
     if (note_list_frame_key(GetParent(hwnd), msg, w_param))
         return 0;
@@ -2536,7 +2908,10 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         return 0;
 
     /* A click on a row's box or on its grip checks it, and does nothing else:
-     * the row is selected, never opened, however fast the clicks come. */
+     * the row is selected, never opened, however fast the clicks come. A press
+     * on the grip that moves instead drags the row to a new place (owner,
+     * 2026-11-26); the check waits for the button to come up to tell the two
+     * apart. */
     if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK) {
         int row = note_list_row_at(hwnd, l_param);
         int item = note_list_item(hwnd, row);
@@ -2547,6 +2922,10 @@ static LRESULT CALLBACK note_list_subclass_proc(HWND hwnd, UINT msg, WPARAM w_pa
         if (item >= 0 && SendMessageW(hwnd, LB_GETITEMRECT, (WPARAM)row, (LPARAM)&rc) != LB_ERR) {
             note_grip_row(GetParent(hwnd), &rc, row, &g);
             on_pick = PtInRect(&g.grip, at) || (at.x >= g.bar.left && at.x < g.text_x);
+        }
+        if (on_pick && msg == WM_LBUTTONDOWN && PtInRect(&g.grip, at)) {
+            note_drag_begin(hwnd, row, item, at);
+            return 0;
         }
         if (on_pick) {
             SendMessageW(hwnd, LB_SETCURSEL, (WPARAM)row, 0);

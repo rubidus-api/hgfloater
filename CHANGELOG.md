@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.18.1] - 2026-11-26
+
+### Added
+- **Notes: drag a row by its grip to reorder it** within its half of the list, with a drop line,
+  edge auto-scroll and `Esc` to cancel. A new **Manual** sort (in the right-click Sort menu) keeps the
+  dragged order; the first drag switches that half to Manual from the order on screen. A click on the
+  grip still checks the row.
+
 ## [v0.18.0] - 2026-11-25
 
 ### Added

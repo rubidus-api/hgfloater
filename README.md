@@ -1,17 +1,17 @@
-[한국어](README.ko.md) | **English** — **HGFloater v0.18.0** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.0/hgfloater.exe)
+[한국어](README.ko.md) | **English** — **HGFloater v0.18.1** — [EXE(x64)](https://github.com/rubidus-api/hgfloater/releases/download/v0.18.1/hgfloater.exe)
 
 # HGFloater
 
-**v0.18.0** — built 2026-11-25
+**v0.18.1** — built 2026-11-26
 
-**[Download hgfloater.exe — v0.18.0, 840 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
+**[Download hgfloater.exe — v0.18.1, 850 KB](https://github.com/rubidus-api/hgfloater/releases/latest/download/hgfloater.exe)** · [All releases](https://github.com/rubidus-api/hgfloater/releases)
 
 HGFloater is a lightweight desktop utility for **Windows 11 and above**. A small
 translucent widget floats on your desktop; clicking it opens a dashboard that
 launches your shortcuts, switches between running windows, and puts volume,
 brightness, opacity, and a command console one click away. It is written in pure
 C against the Win32 API with zero external dependencies: the whole program is a
-single **executable of about 840 KB** that needs no installer and no runtime, so
+single **executable of about 850 KB** that needs no installer and no runtime, so
 it starts instantly and stays out of your way.
 
 <!-- SKIP_START -->
@@ -1204,6 +1204,13 @@ Double-click the bar to open the note; click the box or grip, or press `Space`,
 to check it. New notes are created with the top **`Add`** button or by pressing
 `Insert`.
 
+**Drag a row by its grip** to put it somewhere else in its half of the list: a
+line shows where it will land, and the list scrolls when you drag past its top
+or bottom edge. `Esc` before you let go leaves it where it was. The first drag
+turns that half's sort to **Manual**, starting from the order it was showing,
+so nothing else moves; a new note, or one archived or restored into a Manual
+half, goes to the top.
+
 The arrow keys move between the rows and the top bar: `Up` from the first row
 goes up to the top buttons, `Left` and `Right` walk along them into the search
 box, and `Down` comes back to the list.
@@ -1224,8 +1231,9 @@ archived - until then the list is just notes, and a label would be noise.
 **Right-click a note** (or a heading) for that half of the list:
 
 - **Open**, **Archive** or **Restore**, and **Delete**.
-- **Sort by** created, modified, or title, each ascending or descending, with
-  the one in force ticked.
+- **Sort by** created, modified, or title, each ascending or descending, or
+  **Manual** - the order you dragged the rows into - with the one in force
+  ticked.
 
 **An archived note is read-only.** Archiving files a note away, and something
 filed away has stopped being written: its editor opens read-only, and the
