@@ -105,7 +105,7 @@ release: $(EXE)
 debug: MODE_FLAGS := $(DEBUG_FLAGS)
 debug: $(EXE)
 
-# The About dialog renders README.md, so the generated header is refreshed on
+# The About dialog renders src/help.md, so the generated header is refreshed on
 # every build rather than edited by hand.
 about:
 	@$(PYTHON) scripts/gen_about.py . || echo "[Warning] About text not regenerated."

@@ -1,17 +1,17 @@
-# Generate hg_about_text.h from README.md.
+# Generate hg_about_text.h from src/help.md.
 # Run from the repository root: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 #
-# The About window (F1) is a plain text box, so the README is turned into text a
+# The About window (F1) is a plain text box, so the help is turned into text a
 # person can read there rather than copied in as Markdown. scripts\gen_about.py
 # is the same program for hosts without PowerShell: the rules are listed at its
 # top, and the two must produce the same bytes - change one, change the other.
-$readmePath = 'README.md'
+$readmePath = 'src/help.md'
 $outputPath = 'src/hg_about_text.h'
 $enc = New-Object System.Text.UTF8Encoding($false)
 if (-not (Test-Path $readmePath)) {
-    $content = "#ifndef HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_README_W L`"(README.md not found)`"`r`n#endif"
+    $content = "#ifndef HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_HELP_W L`"(src/help.md not found)`"`r`n#endif"
     [System.IO.File]::WriteAllText($outputPath, $content, $enc)
-    Write-Host "[Warning] README.md not found." -ForegroundColor Yellow
+    Write-Host "[Warning] src/help.md not found." -ForegroundColor Yellow
     exit 0
 }
 
@@ -135,7 +135,7 @@ foreach ($raw in $readme.Split("`n")) {
     }
 
     # A paragraph or a list item is converted once all its lines are joined:
-    # bold and links run across the README's hard line breaks.
+    # bold and links run across the source's hard line breaks.
     if ($para -and $out.Count -gt 0 -and $out[$out.Count - 1] -cne '') { $out[$out.Count - 1] = $out[$out.Count - 1] + ' ' + $s }
     else { Add $s $true; $para = $true }
 }
@@ -150,6 +150,6 @@ for ($i = 0; $i -lt $out.Count; $i++) {
     $parts.Add('L"' + $escaped + '\r\n"')
 }
 $joined = [string]::Join(' ', $parts)
-$content = "#ifndef HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_README_W $joined`r`n#endif"
+$content = "#ifndef HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_TEXT_H`r`n#define HG_ABOUT_HELP_W $joined`r`n#endif"
 [System.IO.File]::WriteAllText($outputPath, $content, $enc)
-Write-Host "[Success] README.md processed successfully." -ForegroundColor Green
+Write-Host "[Success] src/help.md processed successfully." -ForegroundColor Green

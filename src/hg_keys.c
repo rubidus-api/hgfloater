@@ -34,7 +34,7 @@ static const HgKeyActionRow hg_key_actions[] = {
     /* -- the floater and the taskbox share these, as an accelerator table */
     {HG_KEYCTX_WIDGET, L"quit", NULL, L"Quit hgfloater", L"from any of its windows",
      L"Ctrl+Q, Alt+F4", HG_IDM_CLOSE_APP, TRUE},
-    {HG_KEYCTX_WIDGET, L"about", NULL, L"About", L"the README, in a window", L"F1", HG_IDM_ABOUT, TRUE},
+    {HG_KEYCTX_WIDGET, L"about", NULL, L"About", L"the help, in a window", L"F1", HG_IDM_ABOUT, TRUE},
     {HG_KEYCTX_WIDGET, L"reset", NULL, L"Reset position, size and opacity",
      L"widgets only, so these are safe to press while typing",
      L"Ctrl+R, Ctrl+Shift+R, F5, Ctrl+0", HG_IDM_RESET_ALL, FALSE},

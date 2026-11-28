@@ -95,28 +95,29 @@
 #define HG_BUILD_STAMP_W L"unknown"
 #endif
 
-/* Include generated About text from README.md if available */
+/* Include the generated About text (from src/help.md) if available */
 #if __has_include("hg_about_text.h")
 #include "hg_about_text.h"
 #endif
 
-#ifndef HG_ABOUT_README_W
-#define HG_ABOUT_README_W L"(Additional information from README.md could not be loaded.)"
+#ifndef HG_ABOUT_HELP_W
+#define HG_ABOUT_HELP_W L"(The help text from src/help.md could not be loaded.)"
 #endif
 
 #define HG_ABOUT_FIXED_W                                                                                               \
     L"hgfloater " HG_VERSION_W L"\r\n"                                                                                 \
     L"Built: " HG_BUILD_STAMP_W L"\r\n"                                                                                \
     L"A lightweight WinAPI-based floating widget & task switcher.\r\n\r\n"                                             \
-    L"Homepage:\r\n"                                                                                                   \
-    L"https://github.com/rubidus-api/hgfloater\r\n\r\n"                                                                \
+    L"Homepage and manual:\r\n"                                                                                        \
+    L"https://rubidus-api.github.io/hgfloater/\r\n"                                                                    \
+    L"Source: https://github.com/rubidus-api/hgfloater\r\n\r\n"                                                        \
     L"Developer: rubidus-api (rubidus@gmail.com)\r\n\r\n"                                                              \
     L"License: MIT License\r\n\r\n"                                                                                    \
-    L"The address above can be selected and copied (Ctrl+C). Esc or Ctrl+W closes this window.\r\n"                    \
-    L"What follows is the manual.\r\n"                                                                                 \
+    L"The addresses above can be selected and copied (Ctrl+C). Esc or Ctrl+W closes this window.\r\n"                  \
+    L"What follows is the help.\r\n"                                                                                   \
     L"------------------------------\r\n\r\n"
 
-#define HG_ABOUT_TEXT_W HG_ABOUT_FIXED_W HG_ABOUT_README_W
+#define HG_ABOUT_TEXT_W HG_ABOUT_FIXED_W HG_ABOUT_HELP_W
 
 #ifndef HG_ARRAYSIZE
 #define HG_ARRAYSIZE(a) (sizeof(a) / sizeof((a)[0]))

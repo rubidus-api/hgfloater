@@ -13,11 +13,11 @@
 #
 #   1. build   - warning-clean cross build, every test compiled, host tests run
 #   2. package - stage the exe into dist/, write its version, date and size into
-#                the download block at the top of both READMEs, verify
-#   3. build   - again: About renders README.md, so the size measured in 2 has to
-#                be compiled in
-#   4. package - again: the checksum printed must belong to the binary that is
-#                actually published, which is the one built in 3
+#                the download block of both READMEs, print its checksum, verify
+#
+# One pass is enough: About renders src/help.md, which names no size, so the
+# READMEs written in 2 do not reach the binary. (Until the help was split from
+# the README there were two passes, so the measured size could be compiled in.)
 #
 # Set HG_RELEASE_ZIP=1 to also drop a zip of the same exe beside it, for a
 # browser that objects to a bare unsigned .exe. Off by default: the exe is the
@@ -34,12 +34,7 @@ VERSION=$(cat VER.txt | tr -d '\r\n')
 
 rm -rf "$DIST"
 
-echo "release: $VERSION - pass 1 of 2"
-sh scripts/build-mingw.sh build-mingw
-sh scripts/package-release.sh "$DIST"
-
-echo
-echo "release: $VERSION - pass 2 of 2 (folding the measured size into About)"
+echo "release: $VERSION - build and package"
 sh scripts/build-mingw.sh build-mingw
 sh scripts/package-release.sh "$DIST"
 

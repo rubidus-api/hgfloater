@@ -8,7 +8,7 @@ Two sources, one writer:
 
   a path      the artifact being released, read off disk, with VER.txt for the
               version. This is the release path: the file is measured before it
-              is published, and the second build folds the number into About.
+              is published.
   --latest    whatever GitHub serves as the latest release right now. Refreshes
               the page without a build, and after publishing it is the check
               that the page and the download agree.
@@ -39,7 +39,7 @@ def from_disk(exe):
     stat = os.stat(exe)
     # The date, not the minute: the line is a claim about which release this is,
     # and a stamp that changed on every build would rewrite the top of both
-    # READMEs - and the About window with them - for no news at all.
+    # READMEs for no news at all.
     stamp = time.strftime("%Y-%m-%d", time.localtime(stat.st_mtime))
     return version, stamp, rounded_kb(stat.st_size)
 
@@ -68,10 +68,17 @@ def from_latest_release():
 # this script exists to prevent.
 def rules(version, stamp, kb):
     # Line 1 of each README is the workspace-wide top line (languages, name and
-    # version, a direct link per release file); it names the tag, so it moves too.
+    # version, a direct link per release file: the exe and the manual's PDF and
+    # HTML editions); it names the tag in every link, so all of them move.
+    number = version.lstrip("v")
+
+    def top_line(m):
+        line = re.sub(r"(\*\*HGFloater )v[\d.]+(\*\*)", r"\g<1>%s\g<2>" % version, m.group(0))
+        line = re.sub(r"/releases/download/v[\d.]+/", "/releases/download/%s/" % version, line)
+        return re.sub(r"(hgfloater-manual-)[\d.]+(-)", r"\g<1>%s\g<2>" % number, line)
+
     top = [
-        (re.compile(r"\A(.*?\*\*HGFloater )v[\d.]+(\*\*)"), r"\g<1>%s\g<2>" % version),
-        (re.compile(r"\A(.*?/releases/download/)v[\d.]+(/hgfloater\.exe\))"), r"\g<1>%s\g<2>" % version),
+        (re.compile(r"\A[^\n]*\*\*HGFloater v[\d.]+\*\*[^\n]*/releases/download/v[\d.]+/hgfloater\.exe\)[^\n]*"), top_line),
     ]
     return {
         "README.md": top + [

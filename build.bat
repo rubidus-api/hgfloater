@@ -69,8 +69,8 @@ taskkill /f /im hgfloater.exe >nul 2>&1
 
 echo Building hgfloater [%MODE%] [Version !VERSION_STRING!] using GCC...
 
-:: Generate hg_about_text.h from README.md (scripts\gen_about.py mirrors this for non-Windows hosts)
-echo Generating About text from README.md...
+:: Generate hg_about_text.h from src\help.md (scripts\gen_about.py mirrors this for non-Windows hosts)
+echo Generating About text from src\help.md...
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\gen_about.ps1
 
 :: Using standard MinGW-w64 GCC command

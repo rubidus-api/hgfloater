@@ -39,8 +39,8 @@ fi
 
 # The top of the README offers this download by version, date and size. All
 # three are about the file sitting right here, so they are written from it
-# rather than trusted to whoever last typed them. About renders the README, so
-# what is written now reaches it at the next build.
+# rather than trusted to whoever last typed them. (About renders src/help.md,
+# so none of this reaches the binary.)
 sh scripts/update-readme-download.sh "$EXE"
 
 echo "package: OK $EXE"

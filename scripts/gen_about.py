@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Generate hg_about_text.h from README.md (mirror of scripts/gen_about.ps1).
+"""Generate hg_about_text.h from src/help.md (mirror of scripts/gen_about.ps1).
 
 Usage: python3 scripts/gen_about.py [repo-root]
 Intended for hosts without PowerShell; the output is byte-compatible with the
 PowerShell generator that build.bat invokes.
 
-The About window (F1) is a plain text box, so the README is not copied into it
+The About window (F1) is a plain text box, so the help is not copied into it
 as Markdown: it is turned into text a person can read there. Both generators
 apply the same rules, in the same order:
 
@@ -26,12 +26,12 @@ import sys
 
 root = sys.argv[1] if len(sys.argv) > 1 else "."
 try:
-    readme = open(root + "/README.md", encoding="utf-8").read()
+    readme = open(root + "/src/help.md", encoding="utf-8").read()
 except OSError:
     content = ('#ifndef HG_ABOUT_TEXT_H\r\n#define HG_ABOUT_TEXT_H\r\n'
-               '#define HG_ABOUT_README_W L"(README.md not found)"\r\n#endif')
+               '#define HG_ABOUT_HELP_W L"(src/help.md not found)"\r\n#endif')
     open(root + "/src/hg_about_text.h", "w", encoding="utf-8", newline="").write(content)
-    print("[Warning] README.md not found.")
+    print("[Warning] src/help.md not found.")
     sys.exit(0)
 
 RE_CODE = re.compile(r"`([^`]*)`")
@@ -181,7 +181,7 @@ for raw in readme.split("\n"):
         continue
 
     # A paragraph or a list item is converted once all its lines are joined:
-    # bold and links run across the README's hard line breaks.
+    # bold and links run across the source's hard line breaks.
     if para and out and out[-1] != "":
         out[-1] += " " + s
     else:
@@ -200,6 +200,6 @@ for text, still_markdown in zip(out, marked):
     parts.append('L"' + escaped + '\\r\\n"')
 
 content = ("#ifndef HG_ABOUT_TEXT_H\r\n#define HG_ABOUT_TEXT_H\r\n"
-           "#define HG_ABOUT_README_W " + " ".join(parts) + "\r\n#endif")
+           "#define HG_ABOUT_HELP_W " + " ".join(parts) + "\r\n#endif")
 open(root + "/src/hg_about_text.h", "w", encoding="utf-8", newline="").write(content)
-print("[Success] README.md processed successfully.")
+print("[Success] src/help.md processed successfully.")

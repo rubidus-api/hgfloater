@@ -19,9 +19,8 @@
 # refreshed without a build, and how a release is checked after publishing:
 # same numbers means the page and the download agree.
 #
-# The About window renders README.md, so anything written here reaches About at
-# the next build - which is why the release recipe builds, packages (this runs),
-# and builds again before the artifact is published.
+# The About window renders src/help.md, not the README, so nothing written here
+# reaches the binary.
 set -e
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)

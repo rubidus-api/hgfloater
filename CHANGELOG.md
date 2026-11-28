@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [v0.18.3] - 2026-11-28
+
+### Added
+- **A homepage and a user manual on GitHub Pages**: <https://rubidus-api.github.io/hgfloater/>, with
+  screenshots of every window, and the manual in English and Korean as a web edition. The PDF and the
+  offline HTML edition of the manual are attached to the release.
+
+### Changed
+- **The README is a short front page**: what HGFloater is, how to install and start it, its features,
+  its status, and links to the homepage and the manual, which now hold the details.
+- **The F1 help is its own text**, written for the help window: how to start, the keys and gestures of
+  each window, a summary of the commands, and the files, with the web manual's address for the rest. It
+  used to be the whole README, converted. The help window's header names the homepage and the source.
+- The release build is one build and one packaging pass: the help names no size, so the measured size
+  no longer has to be compiled in.
+
 ## [v0.18.2] - 2026-11-26
 
 ### Changed

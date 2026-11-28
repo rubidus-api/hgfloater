@@ -64,10 +64,11 @@ LRESULT CALLBACK about_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
          * inversion of the system theme. */
         hg_apply_dwm_attributes_document(hwnd);
         double ws = hg_window_scale(hwnd);
-        /* Created empty and filled afterwards. The help is the whole README,
-         * some eighty thousand characters, and a window cannot be *created*
+        /* Created empty and filled afterwards. The help (src/help.md) runs to
+         * some ten thousand characters, and a window cannot be *created*
          * with a name that long: CreateWindowExW failed, no text box existed,
-         * and F1 opened an empty frame. WM_SETTEXT has no such limit. */
+         * and F1 opened an empty frame when the whole README was the help.
+         * WM_SETTEXT has no such limit. */
         HWND edit_wnd =
             CreateWindowExW(0, L"EDIT", NULL,
                             WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
