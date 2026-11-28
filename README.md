@@ -75,10 +75,11 @@ mouse hook) and **Start with Windows**.
 ## Status
 
 Each release is built warning-clean and its behaviour is checked automatically
-on a Windows 11 virtual machine before it is published. That machine has no
-real backlight, one virtual monitor and no USB voice recorder, so brightness on
-physical monitors, multi-monitor placement and the recorder features are
-checked by hand on the author's hardware, not by the automated run.
+on a Windows 11 virtual machine before it is published. That machine has one
+virtual monitor, no real backlight and no USB voice recorder, so three things
+have not been verified yet: brightness of physical monitors over DDC/CI, use
+with two or more monitors, and the recorder's clock command. The recorder's
+settings form was checked by the author on a real recorder.
 
 ## Documentation
 
