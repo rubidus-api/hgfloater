@@ -95,11 +95,10 @@ move the taskbox; right-click it for the A/V Control Center.
 | `Note` | The note list | — | — |
 | `Cmd` | The command box | — | — |
 | `D` | Shows the desktop; again to restore | — | — |
-| `Bak REC` | Moves a USB voice recorder's recordings | — | Recorder clock and settings |
 
 `Dir` and `Set` open when pointed at; `A/V` waits for a click. On `Vol`,
 `Mon` and `Alp`, `PageUp` / `PageDown` or `E` / `Q` turn the value from the
-keyboard. `Bak REC` is there only while the recorder is plugged in.
+keyboard.
 
 In the `Dir`, `Set` and tab lists: `1`-`9` and `0` jump to a row, `Up` / `Down`
 or `Tab` step in, `Enter` or `Space` takes the row, `Left` / `Right` leave the
